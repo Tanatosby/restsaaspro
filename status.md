@@ -9,7 +9,8 @@
 - 0 issues abiertos (`issues/ISSUES.md`)
 - 0 refactors pendientes
 - Todas las features de prioridad alta cerradas (gaps 1-8 + ARCH-001 a 004 + A1/A2/A3)
-- Rediseño Opus 4.8 completo: 6 fases (owner, menú cliente, super admin)
+- Rediseño Opus 4.8: 6 fases completas (owner, menú cliente, super admin)
+- **Fase 7 (landing + manuales)** queda como polish pendiente — no bloquea deploy, plan completo en `features.md`
 
 **Infraestructura:** ⏳ Pendiente (lado del operador, no del código)
 - VPS, dominio, SSL, PM2, Nginx, backups → ver `deploy.md` §1-9
@@ -30,7 +31,7 @@
 - Identidad visual: **elevar la actual (terracota/azul peruana) + dark mode**, ejecutada a nivel premium.
 - Mobile-first sigue siendo no negociable (44px touch, 16px inputs, 360px sin overflow).
 
-**Plan por fases — TODAS COMPLETAS ✅:**
+**Plan por fases:**
 | Fase | Qué | Estado |
 |------|-----|--------|
 | 0 | Clonar RestSaas→RestSaasPro, `npm install`, baseline tests | ✅ 197/197 tests OK |
@@ -40,6 +41,7 @@
 | 4 | Rediseño premium de `menu.html` (cara del comensal): CSS extraído a `menu.css`, dark mode auto sin toggle, hero ken-burns, header sticky shrink, skeletons, modal de foto, código de reserva pulse-glow | ✅ |
 | 5 | Auditoría 360px + accesibilidad (modal con role/aria) + smoke E2E con curl + docs | ✅ |
 | 6 | Rediseño "Pro Console" del super admin: nueva identidad **slate + índigo-violeta**, Inter + JetBrains Mono + Syne, bottom-nav, skeletons, charts theme nuevo (`charts-theme-admin.js`), modales premium, copy "Menú Pro" | ✅ |
+| **7** | **Rediseño premium de `landing.html` + `manuales.html`** (cara pública del producto): repaint a terracota, hero con gradient mesh + phone flotante + glow, CTA secundario "Demo en vivo", animaciones on-scroll IntersectionObserver, nav glassmorphism, FAQ semántico con `<details>`, cards con hover lift, footer con socials, manuales repulido al mismo estilo | ⏳ **Pendiente — TODO completo en `features.md`** |
 
 **Fixes paralelos durante las fases:**
 - CSP `upgradeInsecureRequests: null` en `app.js` — Chrome rompía POSTs en LAN por HTTPS upgrade

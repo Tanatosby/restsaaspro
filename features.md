@@ -173,6 +173,54 @@ Clon de `RestSaas` elevado a nivel "Opus 4.8": mejores gráficos, dark mode, mic
 | 4 | `menu.html` (cara del comensal): CSS extraído a `public/css/menu.css` (~736 líneas con tokens compartidos), dark mode auto sin toggle, hero con efecto ken-burns, header sticky con shrink al scroll, skeleton loaders, modal de foto al tap (`role="dialog"` + `aria-modal`), drawer del carrito repulido, código de reserva con animación `pulse-glow`, touch targets ≥44px garantizados, `prefers-reduced-motion` respetado | ✅ |
 | 5 | Auditoría 360px (cero overflow, cero font-sizes problemáticos, 0 inputs sin type, 0 imgs sin alt) + accesibilidad mínima (modal con role/aria) + smoke test E2E (login → menú público → orden → reserva con código → consulta) + docs (`status.md`, `features.md`, `deploy.md`) | ✅ |
 | 6 | Rediseño **"Pro Console"** del super admin (`admin/dashboard.html` + `admin/login.html`): nueva identidad **slate + índigo-violeta** distinta de la del owner; Inter + JetBrains Mono + Syne; sidebar con backdrop-blur y brand-dot animado; stat cards con gradient text + hover lift; tablas con datos mono tabular-nums; bottom-nav móvil de 5 destinos sin "Más"; skeletons en grid y tablas; charts con paleta nueva (`charts-theme-admin.js`); modales con `modalPop` + glow del accent; copy "Menú Pro" en lugar de "Restaurant SaaS" | ✅ |
+| 7 | Rediseño premium de `landing.html` + `manuales.html` (cara pública del producto) | ⏳ Pendiente — plan abajo |
+
+---
+
+#### Fase 7 (pendiente) — Rediseño premium de landing.html + manuales.html
+
+**Contexto del estado actual:**
+- `public/landing.html` (570 líneas) — 7 secciones (Nav, Hero, Problema, Tutorial, Features, Quién, FAQ, CTA, Footer) con Tailwind CDN, color `brand: #f97316` (orange-500), fuente Inter, screenshots reales del bot. Funcional pero **rompe consistencia de marca** con el owner panel (terracota `#c8692a`).
+- `public/manuales.html` (222 líneas) — renderiza los 4 manuales `.md` con marked.js, mismo estilo Tailwind básico.
+
+**Limitaciones detectadas:**
+1. Paleta naranja brillante (`#f97316`) ≠ terracota del owner (`#c8692a`) — la landing se siente "otro producto"
+2. Sin animaciones de entrada (todo aparece simultáneo)
+3. Hero estático, phone frame quieto sobre `bg-gray-900` plano
+4. **No hay demo viva** — el visitante solo ve screenshots, no puede tocar el menú real
+5. FAQ con checkbox hack (`<input type="checkbox">`) — funciona pero sin semántica
+6. Sin dark mode ni glassmorphism en nav
+7. CTA único hacia WhatsApp, sin variante secundaria
+
+**Objetivo Fase 7:** llevar la landing al mismo nivel que owner+menu+admin sin tocar copy, estructura de secciones, ni screenshots actuales del bot.
+
+**TODO list propuesto:**
+
+| # | Tarea | Detalle | Riesgo |
+|---|-------|---------|--------|
+| 7.1 | **Repaint a paleta terracota del owner** | Reemplazar `brand: '#f97316'` (Tailwind config inline) por `brand: '#c8692a'` con scale completa (`light: #fdf0e8`, `DEFAULT: #c8692a`, `dark: #a0521e`, `glow: rgba(200,105,42,0.28)`). Auditar todos los `bg-orange-*`, `text-orange-*`, `border-orange-*` y reemplazarlos por la nueva escala. | Bajo |
+| 7.2 | **Mantener Tailwind CDN** (decisión) | CLAUDE.md permite Tailwind en módulos nuevos. Más rápido y la landing es marketing aislado. Si en el futuro se quiere extraer a CSS custom, queda como deuda baja. **No mezclar Tailwind con `public/css/owner.css` en este archivo** — landing es independiente. | Bajo |
+| 7.3 | **Hero premium** | Añadir gradient mesh (3-4 radial-gradients superpuestos en violeta/terracota/azul con `mix-blend-mode: screen`), phone frame con `transform: rotate(-3deg) translateY(0)` + animación `float 6s ease-in-out infinite` (ya-yó subtle), glow del producto detrás del phone (`box-shadow` con blur 80px del color brand). **Mantener screenshot real del bot dentro del frame**, no mockup. | Medio |
+| 7.4 | **CTA secundario "Ver demo en vivo"** | Botón nuevo al lado de "Probar gratis" en hero y CTA final. Link a `/menu?restaurante=1&mesa=1`. Asumir que en producción habrá un restaurante demo (slug `demo` o id sembrado por seeder de prod). En dev usa el id=1 del seeder. **Importante**: documentar en `deploy.md §10` que hay que crear un restaurante "demo" con menú/carta pre-sembrado para que el botón funcione en prod. | Bajo |
+| 7.5 | **Animaciones on-scroll** | Bloque `<script>` con `IntersectionObserver` que añade clase `.in-view` a cada sección al entrar en viewport. CSS: `section { opacity: 0; transform: translateY(20px); transition: .6s cubic-bezier(.16,1,.3,1) }` `section.in-view { opacity: 1; transform: translateY(0) }`. Stagger entre tarjetas usando `transition-delay: var(--i, 0) * .08s`. Respetar `prefers-reduced-motion`. | Bajo |
+| 7.6 | **Nav glassmorphism + shrink** | `bg-gray-900/95` → `bg-gray-900/70 backdrop-blur-md`. Al pasar 80px de scroll, agregar clase `.nav-shrunk` que reduzca padding vertical y opacidad del border. Wiring con `requestAnimationFrame`. | Bajo |
+| 7.7 | **FAQ con `<details>`** | Reemplazar el truco `<input type=checkbox>` + `~` selector por `<details><summary>…</summary>…</details>` semántico. Custom CSS: `summary::-webkit-details-marker { display: none }`, chevron con `details[open] summary .faq-chevron { transform: rotate(180deg) }`. Animación de altura via `interpolate-size: allow-keywords` (con fallback). | Bajo |
+| 7.8 | **Tarjetas con hover lift** | Las cards de Features, Tutorial y Problema reciben `transition: transform .25s, box-shadow .25s; :hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.10) }`. Touch-friendly: el lift también se activa en `:active` para feedback en mobile. | Bajo |
+| 7.9 | **Footer con socials + branding** | Agregar bloque con WhatsApp icon link, email de contacto, copyright, y mini-logo. Tono `bg-gray-950 text-gray-500`. | Bajo |
+| 7.10 | **Repulir `manuales.html`** | Misma paleta terracota. Tabs de rol con la estética del owner (pills con `box-shadow accent-glow` al activarse). Hero compacto con nombre del manual seleccionado en Playfair. Botón "← Volver" link a `/`. Mantener marked.js render del .md. | Bajo |
+| 7.11 | **Verificación en vivo** | Levantar server, abrir `/` en viewport 360px y 1280px, scroll completo, click en "Demo en vivo", abrir `/manuales`, click en cada tab de rol. Verificar que `prefers-reduced-motion` desactiva animaciones. | Bajo |
+| 7.12 | **Docs Fase 7** | Anotar en `status.md` con detalle de cambios + marcar Fase 7 ✅ en tabla. Actualizar tabla en `features.md`. | Bajo |
+
+**Decisiones clave para la próxima sesión:**
+1. **Tailwind se queda** en la landing (decisión simple, no extraer a CSS custom).
+2. **No tocar copy** — Hero, secciones, FAQ y CTA text quedan idénticos.
+3. **No regenerar screenshots** — los del bot actuales son auténticos y suficientes.
+4. **El restaurante "demo"** que necesita "Ver demo en vivo" en producción se documenta como tarea operativa en `deploy.md §10` (crear restaurante con slug `demo`, sembrar menú simple, dejar mesa 1 fija).
+5. **Coherencia con admin** — el admin tiene su propia identidad (índigo-violeta) que es intencional. La landing usa terracota porque la audiencia es el owner del restaurante (no el operador).
+
+**Tiempo estimado:** 1 sesión (~2 horas) si se sigue el TODO al pie de la letra.
+
+**Bloqueante:** nada. Es polish puro de cara pública. No afecta deploy del backend.
 
 **Fix paralelo durante Fase 5:** desactivado `upgrade-insecure-requests` en CSP de Helmet (`app.js`) — Chrome trataba IP de LAN como insegura y rompía POSTs en HTTP. Localhost no se veía afectado porque es secure context. Documentado en `deploy.md §8.2` con nota para reactivar en producción HTTPS.
 
