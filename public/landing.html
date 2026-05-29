@@ -5,13 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menupro — Sistema de pedidos para tu restaurante</title>
   <meta name="description" content="Menupro es un sistema de pedidos, reservas y cocina para restaurantes pequeños. El cliente escanea un QR, pide desde su celular, y tú gestionas todo desde el tuyo.">
+  <meta name="theme-color" content="#1a1612">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            brand: { DEFAULT: '#f97316', dark: '#ea580c', light: '#fed7aa' },
+            // Paleta terracota — coherente con el owner panel (#c8692a)
+            brand: { light: '#fdf0e8', DEFAULT: '#c8692a', dark: '#a0521e' },
           },
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -24,28 +26,141 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --brand: #c8692a;
+      --brand-dark: #a0521e;
+      --brand-glow: rgba(200, 105, 42, 0.28);
+    }
+
     html { scroll-behavior: smooth; }
 
+    /* ── Phone frame ───────────────────────────── */
     .phone-frame {
-      border-radius: 24px;
-      box-shadow: 0 0 0 3px #374151, 0 20px 60px rgba(0,0,0,0.5);
+      border-radius: 26px;
+      box-shadow: 0 0 0 3px #3a342e, 0 24px 70px rgba(0,0,0,0.55);
       overflow: hidden;
       display: block;
       max-width: 260px;
     }
+    .phone-frame img { display: block; width: 100%; height: auto; }
 
-    .phone-frame img {
-      display: block;
-      width: 100%;
-      height: auto;
+    /* Hero phone: flotante con leve rotación + glow del producto */
+    .hero-phone {
+      position: relative;
+      transform: rotate(-3deg);
+      animation: float 6s ease-in-out infinite;
+    }
+    .hero-phone::before {
+      content: "";
+      position: absolute;
+      inset: -28px;
+      border-radius: 50%;
+      background: var(--brand-glow);
+      filter: blur(80px);
+      z-index: -1;
+    }
+    @keyframes float {
+      0%, 100% { transform: rotate(-3deg) translateY(0); }
+      50%      { transform: rotate(-3deg) translateY(-14px); }
     }
 
-    .faq-item input[type="checkbox"] { display: none; }
-    .faq-item label { cursor: pointer; }
-    .faq-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
-    .faq-item input:checked ~ .faq-body { max-height: 300px; }
-    .faq-chevron { transition: transform 0.3s ease; }
-    .faq-item input:checked ~ label .faq-chevron { transform: rotate(180deg); }
+    /* ── Gradient mesh del hero ────────────────── */
+    .gradient-mesh {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .gradient-mesh::before,
+    .gradient-mesh::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      mix-blend-mode: screen;
+      opacity: 0.55;
+    }
+    .gradient-mesh::before {
+      width: 480px; height: 480px;
+      top: -120px; left: -80px;
+      background: radial-gradient(circle, #c8692a 0%, transparent 70%);
+    }
+    .gradient-mesh::after {
+      width: 420px; height: 420px;
+      bottom: -140px; right: -60px;
+      background: radial-gradient(circle, #7c5cff 0%, transparent 70%);
+    }
+    .gradient-mesh .blob-3 {
+      content: "";
+      position: absolute;
+      width: 360px; height: 360px;
+      top: 40%; left: 45%;
+      border-radius: 50%;
+      filter: blur(100px);
+      mix-blend-mode: screen;
+      opacity: 0.4;
+      background: radial-gradient(circle, #2563eb 0%, transparent 70%);
+    }
+
+    /* ── Animaciones on-scroll ─────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1);
+    }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+    /* Stagger para tarjetas hijas */
+    .reveal.in-view .stagger { animation: rise .6s cubic-bezier(.16,1,.3,1) backwards; }
+    .stagger { --i: 0; }
+    .reveal.in-view .stagger { animation-delay: calc(var(--i) * .08s); }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Nav glassmorphism + shrink ────────────── */
+    #nav {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(55, 65, 81, 0.6);
+      transition: padding .3s ease, background .3s ease, border-color .3s ease;
+    }
+    #nav.nav-shrunk {
+      background: rgba(17, 24, 39, 0.92);
+      border-bottom-color: rgba(55, 65, 81, 0.25);
+    }
+    #nav.nav-shrunk .nav-inner { height: 3rem; }
+
+    /* ── Cards con hover/active lift ───────────── */
+    .card-lift {
+      transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s ease, border-color .25s ease;
+    }
+    .card-lift:hover, .card-lift:active {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.12);
+    }
+
+    /* ── FAQ con <details> ─────────────────────── */
+    .faq-item summary { list-style: none; cursor: pointer; }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-chevron { transition: transform .3s ease; }
+    .faq-item[open] .faq-chevron { transform: rotate(180deg); }
+    .faq-body { animation: faqOpen .3s cubic-bezier(.16,1,.3,1); }
+    @keyframes faqOpen {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── prefers-reduced-motion ────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .hero-phone { animation: none; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .reveal.in-view .stagger { animation: none; }
+      .faq-body { animation: none; }
+      .card-lift { transition: none; }
+    }
   </style>
 </head>
 <body class="font-sans bg-white text-gray-900 antialiased">
@@ -53,8 +168,8 @@
   <!-- ═══════════════════════════════════════════
        NAV
   ═══════════════════════════════════════════ -->
-  <nav class="sticky top-0 z-50 bg-gray-900/95 backdrop-blur border-b border-gray-800">
-    <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+  <nav id="nav" class="sticky top-0 z-50">
+    <div class="nav-inner max-w-5xl mx-auto px-4 h-14 flex items-center justify-between transition-all">
       <a href="/" class="text-white font-bold text-lg tracking-tight">
         menu<span class="text-brand">pro</span>
       </a>
@@ -76,14 +191,15 @@
   <!-- ═══════════════════════════════════════════
        HERO
   ═══════════════════════════════════════════ -->
-  <section class="bg-gray-900 text-white pt-16 pb-20 px-4 overflow-hidden">
-    <div class="max-w-5xl mx-auto">
+  <section class="relative bg-gray-900 text-white pt-16 pb-20 px-4 overflow-hidden">
+    <div class="gradient-mesh"><div class="blob-3"></div></div>
+    <div class="relative max-w-5xl mx-auto">
       <div class="flex flex-col lg:flex-row lg:items-center lg:gap-16">
 
         <!-- Texto -->
         <div class="lg:flex-1">
           <div class="flex flex-wrap gap-2 mb-5">
-            <span class="inline-block bg-brand/15 text-brand text-xs font-semibold px-3 py-1 rounded-full tracking-wide uppercase">
+            <span class="inline-block bg-brand/20 text-brand-light text-xs font-semibold px-3 py-1 rounded-full tracking-wide uppercase">
               Para restaurantes pequeños
             </span>
             <span class="inline-block bg-green-500/15 text-green-400 text-xs font-semibold px-3 py-1 rounded-full tracking-wide uppercase">
@@ -105,10 +221,11 @@
               Quiero probarlo gratis
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
-            <a href="#tutorial"
-               class="border border-gray-600 hover:border-gray-400 text-gray-300 hover:text-white font-semibold px-6 py-3 rounded-xl text-base text-center transition-colors min-h-[52px] flex items-center justify-center gap-2">
-              Ver cómo funciona
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <a href="/menu?restaurante=1&mesa=1"
+               target="_blank" rel="noopener"
+               class="border border-gray-600 hover:border-brand hover:text-white text-gray-300 font-semibold px-6 py-3 rounded-xl text-base text-center transition-colors min-h-[52px] flex items-center justify-center gap-2">
+              Ver demo en vivo
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
             </a>
           </div>
           <p class="text-gray-500 text-sm mt-4">
@@ -121,10 +238,12 @@
 
         <!-- Screenshot hero -->
         <div class="lg:flex-shrink-0 flex justify-center mt-12 lg:mt-0">
-          <div class="phone-frame">
-            <img src="/landing/screenshots/hero-menu-cliente.png"
-                 alt="Menú QR del cliente en celular"
-                 width="260">
+          <div class="hero-phone">
+            <div class="phone-frame">
+              <img src="/landing/screenshots/hero-menu-cliente.png"
+                   alt="Menú QR del cliente en celular"
+                   width="260">
+            </div>
           </div>
         </div>
 
@@ -136,7 +255,7 @@
   <!-- ═══════════════════════════════════════════
        PROBLEMA
   ═══════════════════════════════════════════ -->
-  <section class="bg-gray-50 py-20 px-4">
+  <section class="reveal bg-gray-50 py-20 px-4">
     <div class="max-w-3xl mx-auto">
       <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
         ¿Todavía gestionas todo<br class="hidden sm:block"> con cuaderno y WhatsApp?
@@ -145,7 +264,7 @@
 
       <div class="flex flex-col gap-5">
 
-        <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start">
+        <div class="stagger card-lift bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start" style="--i:0">
           <span class="text-3xl flex-shrink-0 mt-0.5">📋</span>
           <div>
             <p class="font-bold text-gray-900 mb-1">El mozo olvida pedidos en hora pico</p>
@@ -156,7 +275,7 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start">
+        <div class="stagger card-lift bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start" style="--i:1">
           <span class="text-3xl flex-shrink-0 mt-0.5">👨‍🍳</span>
           <div>
             <p class="font-bold text-gray-900 mb-1">La cocina no sabe qué preparar primero</p>
@@ -167,7 +286,7 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start">
+        <div class="stagger card-lift bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start" style="--i:2">
           <span class="text-3xl flex-shrink-0 mt-0.5">📊</span>
           <div>
             <p class="font-bold text-gray-900 mb-1">No sabes cuánto ganaste este mes</p>
@@ -186,7 +305,7 @@
   <!-- ═══════════════════════════════════════════
        TUTORIAL — ASÍ DE SIMPLE
   ═══════════════════════════════════════════ -->
-  <section id="tutorial" class="bg-white py-20 px-4">
+  <section id="tutorial" class="reveal bg-white py-20 px-4">
     <div class="max-w-5xl mx-auto">
 
       <div class="text-center mb-14">
@@ -266,7 +385,7 @@
   <!-- ═══════════════════════════════════════════
        FEATURES — QUÉ INCLUYE
   ═══════════════════════════════════════════ -->
-  <section class="bg-gray-900 text-white py-20 px-4">
+  <section class="reveal bg-gray-900 text-white py-20 px-4">
     <div class="max-w-5xl mx-auto">
 
       <div class="text-center mb-14">
@@ -276,7 +395,7 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-        <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4">
+        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:0">
           <span class="text-2xl flex-shrink-0">📱</span>
           <div>
             <p class="font-semibold mb-1">Menú QR para el cliente</p>
@@ -284,7 +403,7 @@
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4">
+        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:1">
           <span class="text-2xl flex-shrink-0">🍽</span>
           <div>
             <p class="font-semibold mb-1">Pedidos y reservas</p>
@@ -292,7 +411,7 @@
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4">
+        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:2">
           <span class="text-2xl flex-shrink-0">👨‍🍳</span>
           <div>
             <p class="font-semibold mb-1">Panel de cocina</p>
@@ -300,7 +419,7 @@
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4">
+        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:3">
           <span class="text-2xl flex-shrink-0">📋</span>
           <div>
             <p class="font-semibold mb-1">Kanban del día</p>
@@ -308,7 +427,7 @@
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4">
+        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:4">
           <span class="text-2xl flex-shrink-0">💳</span>
           <div>
             <p class="font-semibold mb-1">Yape / Plin / Efectivo</p>
@@ -316,7 +435,7 @@
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4">
+        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:5">
           <span class="text-2xl flex-shrink-0">📊</span>
           <div>
             <p class="font-semibold mb-1">Reportes y ganancias</p>
@@ -324,7 +443,7 @@
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4">
+        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:6">
           <span class="text-2xl flex-shrink-0">🔔</span>
           <div>
             <p class="font-semibold mb-1">Notificaciones push</p>
@@ -332,7 +451,7 @@
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4">
+        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:7">
           <span class="text-2xl flex-shrink-0">🗺</span>
           <div>
             <p class="font-semibold mb-1">Plano de mesas</p>
@@ -340,7 +459,7 @@
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4">
+        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:8">
           <span class="text-2xl flex-shrink-0">📲</span>
           <div>
             <p class="font-semibold mb-1">Instala como app</p>
@@ -371,7 +490,7 @@
   <!-- ═══════════════════════════════════════════
        QUIÉN LO HACE
   ═══════════════════════════════════════════ -->
-  <section class="bg-orange-50 py-20 px-4">
+  <section class="reveal bg-brand-light py-20 px-4">
     <div class="max-w-3xl mx-auto">
 
       <div class="flex flex-col md:flex-row md:items-center gap-10">
@@ -411,7 +530,7 @@
   <!-- ═══════════════════════════════════════════
        FAQ
   ═══════════════════════════════════════════ -->
-  <section class="bg-white py-20 px-4">
+  <section class="reveal bg-white py-20 px-4">
     <div class="max-w-2xl mx-auto">
 
       <div class="text-center mb-12">
@@ -421,103 +540,97 @@
       <div class="flex flex-col gap-3">
 
         <!-- FAQ 1 -->
-        <div class="faq-item border border-gray-200 rounded-2xl overflow-hidden">
-          <input type="checkbox" id="faq1">
-          <label for="faq1" class="flex items-center justify-between gap-4 p-5 cursor-pointer">
+        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
+          <summary class="flex items-center justify-between gap-4 p-5">
             <span class="font-semibold text-gray-900 text-sm">¿Necesito instalar algo en el restaurante?</span>
             <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
-          </label>
+          </summary>
           <div class="faq-body">
             <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
               No. Solo necesitas celular con internet. Ni computadora ni tablet obligatorio.
             </p>
           </div>
-        </div>
+        </details>
 
         <!-- FAQ 2 -->
-        <div class="faq-item border border-gray-200 rounded-2xl overflow-hidden">
-          <input type="checkbox" id="faq2">
-          <label for="faq2" class="flex items-center justify-between gap-4 p-5 cursor-pointer">
+        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
+          <summary class="flex items-center justify-between gap-4 p-5">
             <span class="font-semibold text-gray-900 text-sm">¿El cliente necesita crear una cuenta para pedir?</span>
             <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
-          </label>
+          </summary>
           <div class="faq-body">
             <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
               No. El cliente abre el QR, pide y listo. Sin registros, sin contraseñas.
             </p>
           </div>
-        </div>
+        </details>
 
         <!-- FAQ 3 -->
-        <div class="faq-item border border-gray-200 rounded-2xl overflow-hidden">
-          <input type="checkbox" id="faq3">
-          <label for="faq3" class="flex items-center justify-between gap-4 p-5 cursor-pointer">
+        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
+          <summary class="flex items-center justify-between gap-4 p-5">
             <span class="font-semibold text-gray-900 text-sm">¿Funciona sin internet?</span>
             <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
-          </label>
+          </summary>
           <div class="faq-body">
             <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
               El sistema necesita conexión para recibir pedidos. Cualquier celular con datos
               o WiFi es suficiente.
             </p>
           </div>
-        </div>
+        </details>
 
         <!-- FAQ 4 -->
-        <div class="faq-item border border-gray-200 rounded-2xl overflow-hidden">
-          <input type="checkbox" id="faq4">
-          <label for="faq4" class="flex items-center justify-between gap-4 p-5 cursor-pointer">
+        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
+          <summary class="flex items-center justify-between gap-4 p-5">
             <span class="font-semibold text-gray-900 text-sm">¿Qué pasa si tengo varios menús (universitario y ejecutivo)?</span>
             <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
-          </label>
+          </summary>
           <div class="faq-body">
             <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
               Puedes crear varios menús activos al mismo tiempo con precios distintos.
               El cliente elige cuál quiere.
             </p>
           </div>
-        </div>
+        </details>
 
         <!-- FAQ 5 -->
-        <div class="faq-item border border-gray-200 rounded-2xl overflow-hidden">
-          <input type="checkbox" id="faq5">
-          <label for="faq5" class="flex items-center justify-between gap-4 p-5 cursor-pointer">
+        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
+          <summary class="flex items-center justify-between gap-4 p-5">
             <span class="font-semibold text-gray-900 text-sm">¿Puedo usar Yape o Plin?</span>
             <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
-          </label>
+          </summary>
           <div class="faq-body">
             <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
               Sí. El sistema genera un botón que abre directo la app de Yape o Plin en el celular
               del cliente con tu número precargado.
             </p>
           </div>
-        </div>
+        </details>
 
         <!-- FAQ 6 -->
-        <div class="faq-item border border-gray-200 rounded-2xl overflow-hidden">
-          <input type="checkbox" id="faq6">
-          <label for="faq6" class="flex items-center justify-between gap-4 p-5 cursor-pointer">
+        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
+          <summary class="flex items-center justify-between gap-4 p-5">
             <span class="font-semibold text-gray-900 text-sm">¿Hay contrato de permanencia?</span>
             <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
-          </label>
+          </summary>
           <div class="faq-body">
             <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
               No. Pagas mes a mes. Si no funciona para ti, listo.
             </p>
           </div>
-        </div>
+        </details>
 
       </div>
     </div>
@@ -527,7 +640,7 @@
   <!-- ═══════════════════════════════════════════
        CTA FINAL
   ═══════════════════════════════════════════ -->
-  <section class="bg-gray-900 text-white py-20 px-4">
+  <section class="reveal bg-gray-900 text-white py-20 px-4">
     <div class="max-w-2xl mx-auto text-center">
       <span class="inline-block bg-green-500/15 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-5 uppercase tracking-wide">
         🎁 Primer mes gratis
@@ -539,15 +652,23 @@
         Los primeros restaurantes usan el sistema <strong class="text-white">gratis durante 1 mes</strong>.
         Escríbeme por WhatsApp y coordinamos una demo de 15 minutos.
       </p>
-      <a href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante.%20%C2%BFPodemos%20coordinar%20una%20demo%3F"
-         target="_blank" rel="noopener"
-         class="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-8 py-4 rounded-2xl text-base transition-colors min-h-[56px]">
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-          <path d="M11.998 0C5.372 0 0 5.372 0 12c0 2.114.551 4.1 1.513 5.834L.057 23.268a.5.5 0 00.611.64l5.598-1.465A11.945 11.945 0 0011.998 24c6.626 0 12-5.372 12-12S18.624 0 11.998 0zm0 21.818a9.818 9.818 0 01-5.015-1.378l-.36-.213-3.722.976.994-3.624-.234-.373A9.818 9.818 0 012.18 12c0-5.417 4.403-9.818 9.818-9.818 5.416 0 9.818 4.401 9.818 9.818 0 5.416-4.402 9.818-9.818 9.818z"/>
-        </svg>
-        Escribir por WhatsApp
-      </a>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante.%20%C2%BFPodemos%20coordinar%20una%20demo%3F"
+           target="_blank" rel="noopener"
+           class="inline-flex items-center justify-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-8 py-4 rounded-2xl text-base transition-colors min-h-[56px]">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M11.998 0C5.372 0 0 5.372 0 12c0 2.114.551 4.1 1.513 5.834L.057 23.268a.5.5 0 00.611.64l5.598-1.465A11.945 11.945 0 0011.998 24c6.626 0 12-5.372 12-12S18.624 0 11.998 0zm0 21.818a9.818 9.818 0 01-5.015-1.378l-.36-.213-3.722.976.994-3.624-.234-.373A9.818 9.818 0 012.18 12c0-5.417 4.403-9.818 9.818-9.818 5.416 0 9.818 4.401 9.818 9.818 0 5.416-4.402 9.818-9.818 9.818z"/>
+          </svg>
+          Escribir por WhatsApp
+        </a>
+        <a href="/menu?restaurante=1&mesa=1"
+           target="_blank" rel="noopener"
+           class="inline-flex items-center justify-center gap-2 border border-gray-600 hover:border-brand text-gray-300 hover:text-white font-bold px-8 py-4 rounded-2xl text-base transition-colors min-h-[56px]">
+          Ver demo en vivo
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+      </div>
       <p class="text-gray-600 text-sm mt-5">Sin compromiso · Respuesta en menos de 24 horas</p>
     </div>
   </section>
@@ -556,15 +677,83 @@
   <!-- ═══════════════════════════════════════════
        FOOTER
   ═══════════════════════════════════════════ -->
-  <footer class="bg-gray-950 text-gray-500 py-8 px-4">
-    <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
-      <span>menu<span class="text-brand font-semibold">pro</span> · Sistema de pedidos para restaurantes</span>
-      <div class="flex gap-6">
-        <a href="/manuales" class="hover:text-white transition-colors">Manuales</a>
-        <a href="/login" class="hover:text-white transition-colors">Ingresar</a>
+  <footer class="bg-gray-950 text-gray-500 py-10 px-4">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+
+        <div class="text-center sm:text-left">
+          <a href="/" class="text-white font-bold text-lg tracking-tight">
+            menu<span class="text-brand">pro</span>
+          </a>
+          <p class="text-sm mt-1">Sistema de pedidos para restaurantes</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-sm">
+          <a href="/manuales" class="hover:text-white transition-colors">Manuales</a>
+          <a href="/login" class="hover:text-white transition-colors">Ingresar</a>
+          <a href="mailto:hola@menupro.tech" class="hover:text-white transition-colors flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            Contacto
+          </a>
+          <a href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante."
+             target="_blank" rel="noopener"
+             class="hover:text-white transition-colors flex items-center gap-1.5" aria-label="WhatsApp">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M11.998 0C5.372 0 0 5.372 0 12c0 2.114.551 4.1 1.513 5.834L.057 23.268a.5.5 0 00.611.64l5.598-1.465A11.945 11.945 0 0011.998 24c6.626 0 12-5.372 12-12S18.624 0 11.998 0zm0 21.818a9.818 9.818 0 01-5.015-1.378l-.36-.213-3.722.976.994-3.624-.234-.373A9.818 9.818 0 012.18 12c0-5.417 4.403-9.818 9.818-9.818 5.416 0 9.818 4.401 9.818 9.818 0 5.416-4.402 9.818-9.818 9.818z"/>
+            </svg>
+            WhatsApp
+          </a>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-800 mt-8 pt-6 text-xs text-gray-600 text-center">
+        © <span id="year"></span> Menupro · Hecho en Perú 🇵🇪
       </div>
     </div>
   </footer>
+
+
+  <!-- ═══════════════════════════════════════════
+       SCRIPTS — animaciones on-scroll + nav shrink
+  ═══════════════════════════════════════════ -->
+  <script>
+    // Año dinámico del footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ── Animaciones on-scroll (IntersectionObserver) ──
+    if (!reduceMotion && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('in-view');
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      document.querySelectorAll('.reveal').forEach((s) => io.observe(s));
+    } else {
+      // Sin animación: mostrar todo de inmediato
+      document.querySelectorAll('.reveal').forEach((s) => s.classList.add('in-view'));
+    }
+
+    // ── Nav glassmorphism shrink al scrollear ──
+    const nav = document.getElementById('nav');
+    let ticking = false;
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          nav.classList.toggle('nav-shrunk', window.scrollY > 80);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  </script>
 
 </body>
 </html>

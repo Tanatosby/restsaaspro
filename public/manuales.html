@@ -5,36 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manuales — Menupro</title>
   <meta name="description" content="Guías de uso del sistema Menupro para dueños, cocineros, mozos y clientes.">
+  <meta name="theme-color" content="#1a1612">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            brand: { DEFAULT: '#f97316', dark: '#ea580c' },
+            // Paleta terracota — coherente con landing + owner panel
+            brand: { light: '#fdf0e8', DEFAULT: '#c8692a', dark: '#a0521e' },
           },
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['Playfair Display', 'Georgia', 'serif'],
           },
-          typography: {
-            DEFAULT: {
-              css: {
-                maxWidth: '100%',
-              }
-            }
-          }
         }
       },
       plugins: []
     }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    /* Prose styles para el contenido markdown */
-    .prose h1 { font-size: 1.5rem; font-weight: 800; color: #111827; margin-bottom: 0.5rem; margin-top: 2rem; }
-    .prose h2 { font-size: 1.15rem; font-weight: 700; color: #1f2937; margin-top: 2rem; margin-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; }
+    :root { --brand: #c8692a; --brand-glow: rgba(200,105,42,0.28); }
+
+    /* ── Nav glassmorphism ─────────────────────── */
+    #nav {
+      background: rgba(17, 24, 39, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(55, 65, 81, 0.6);
+    }
+
+    /* ── Prose styles para el contenido markdown ── */
+    .prose h1 { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: #1a1612; margin-bottom: 0.5rem; margin-top: 2rem; }
+    .prose h2 { font-size: 1.15rem; font-weight: 700; color: #1f2937; margin-top: 2rem; margin-bottom: 0.5rem; border-bottom: 1px solid #f0e3d8; padding-bottom: 0.25rem; }
     .prose h3 { font-size: 1rem; font-weight: 600; color: #374151; margin-top: 1.5rem; margin-bottom: 0.25rem; }
     .prose p { color: #4b5563; line-height: 1.75; margin-bottom: 0.75rem; font-size: 0.9375rem; }
     .prose strong { color: #1f2937; font-weight: 600; }
@@ -42,41 +49,51 @@
     .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
     .prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
     .prose li { color: #4b5563; line-height: 1.75; margin-bottom: 0.25rem; font-size: 0.9375rem; }
-    .prose blockquote { border-left: 3px solid #f97316; background: #fff7ed; padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 1rem 0; }
-    .prose blockquote p { color: #92400e; margin: 0; font-size: 0.875rem; }
+    .prose blockquote { border-left: 3px solid var(--brand); background: #fdf0e8; padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 1rem 0; }
+    .prose blockquote p { color: #a0521e; margin: 0; font-size: 0.875rem; }
     .prose hr { border-color: #f3f4f6; margin: 1.5rem 0; }
     .prose code { background: #f3f4f6; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.875em; color: #374151; }
     .prose img {
-      border-radius: 12px;
-      box-shadow: 0 0 0 2px #374151, 0 8px 30px rgba(0,0,0,0.3);
+      border-radius: 14px;
+      box-shadow: 0 0 0 2px #3a342e, 0 10px 34px rgba(0,0,0,0.32);
       max-width: 280px;
       width: 100%;
       display: block;
       margin: 1rem auto;
     }
-    .prose a { color: #f97316; text-decoration: underline; }
+    .prose a { color: var(--brand); text-decoration: underline; }
 
-    /* Tabs activos */
+    /* ── Tabs estilo owner (pill con glow al activar) ── */
+    .tab-btn {
+      transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+    }
     .tab-btn.active {
-      background-color: #f97316;
+      background-color: var(--brand);
       color: white;
-      border-color: #f97316;
+      border-color: var(--brand);
+      box-shadow: 0 6px 18px var(--brand-glow);
     }
     .tab-btn:not(.active) {
       background-color: white;
       color: #374151;
       border-color: #e5e7eb;
     }
+    .tab-btn:not(.active):hover { border-color: var(--brand); color: var(--brand); }
+    .tab-btn:active { transform: scale(0.97); }
 
     #loading-indicator { display: flex; }
     #manual-content.loaded + #loading-indicator,
     #manual-content:not(:empty) ~ #loading-indicator { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tab-btn, .animate-spin { transition: none; }
+    }
   </style>
 </head>
 <body class="font-sans bg-gray-50 text-gray-900 antialiased min-h-screen">
 
   <!-- NAV -->
-  <nav class="sticky top-0 z-50 bg-gray-900/95 backdrop-blur border-b border-gray-800">
+  <nav id="nav" class="sticky top-0 z-50">
     <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
       <a href="/" class="text-white font-bold text-lg tracking-tight">
         menu<span class="text-brand">pro</span>
@@ -92,9 +109,13 @@
   </nav>
 
   <!-- HEADER -->
-  <div class="bg-gray-900 text-white py-10 px-4">
-    <div class="max-w-4xl mx-auto">
-      <h1 class="text-2xl sm:text-3xl font-extrabold mb-2">Manuales de uso</h1>
+  <div class="bg-gray-900 text-white py-10 px-4 relative overflow-hidden">
+    <div class="absolute -top-20 -right-16 w-72 h-72 rounded-full" style="background: radial-gradient(circle, rgba(200,105,42,0.35) 0%, transparent 70%); filter: blur(60px);"></div>
+    <div class="max-w-4xl mx-auto relative">
+      <span class="inline-block bg-brand/20 text-brand-light text-xs font-semibold px-3 py-1 rounded-full mb-3 uppercase tracking-wide">
+        Manual del <span id="header-rol">dueño</span>
+      </span>
+      <h1 class="font-display text-3xl sm:text-4xl font-bold mb-2">Manuales de uso</h1>
       <p class="text-gray-400">Guías paso a paso para cada rol del sistema.</p>
     </div>
   </div>
@@ -103,20 +124,20 @@
   <div class="bg-white border-b border-gray-200 sticky top-14 z-40">
     <div class="max-w-4xl mx-auto px-4">
       <div class="flex gap-2 overflow-x-auto py-3 scrollbar-hide" id="tabs-container">
-        <button class="tab-btn active flex-shrink-0 border rounded-lg px-4 py-2 text-sm font-semibold transition-colors min-h-[44px]"
-                data-rol="owner">
+        <button class="tab-btn active flex-shrink-0 border rounded-full px-4 py-2 text-sm font-semibold min-h-[44px]"
+                data-rol="owner" data-nombre="dueño">
           👑 Dueño
         </button>
-        <button class="tab-btn flex-shrink-0 border rounded-lg px-4 py-2 text-sm font-semibold transition-colors min-h-[44px]"
-                data-rol="cocina">
+        <button class="tab-btn flex-shrink-0 border rounded-full px-4 py-2 text-sm font-semibold min-h-[44px]"
+                data-rol="cocina" data-nombre="cocinero">
           👨‍🍳 Cocinero
         </button>
-        <button class="tab-btn flex-shrink-0 border rounded-lg px-4 py-2 text-sm font-semibold transition-colors min-h-[44px]"
-                data-rol="mozo">
+        <button class="tab-btn flex-shrink-0 border rounded-full px-4 py-2 text-sm font-semibold min-h-[44px]"
+                data-rol="mozo" data-nombre="mozo">
           🛎 Mozo
         </button>
-        <button class="tab-btn flex-shrink-0 border rounded-lg px-4 py-2 text-sm font-semibold transition-colors min-h-[44px]"
-                data-rol="cliente">
+        <button class="tab-btn flex-shrink-0 border rounded-full px-4 py-2 text-sm font-semibold min-h-[44px]"
+                data-rol="cliente" data-nombre="cliente">
           📱 Cliente
         </button>
       </div>
@@ -139,7 +160,7 @@
     <div id="error-indicator" class="hidden py-20 text-center">
       <p class="text-gray-400 text-sm">No se pudo cargar el manual. Intenta de nuevo.</p>
       <button onclick="cargarManual(rolActual)"
-              class="mt-4 bg-brand text-white px-4 py-2 rounded-lg text-sm font-semibold min-h-[44px]">
+              class="mt-4 bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-semibold min-h-[44px] transition-colors">
         Reintentar
       </button>
     </div>
@@ -150,9 +171,10 @@
   </main>
 
   <!-- FOOTER -->
-  <footer class="bg-gray-900 text-gray-500 py-6 px-4 mt-12">
-    <div class="max-w-4xl mx-auto text-sm text-center">
+  <footer class="bg-gray-950 text-gray-500 py-8 px-4 mt-12">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
       <span>menu<span class="text-brand font-semibold">pro</span> · Sistema de pedidos para restaurantes</span>
+      <a href="/" class="hover:text-white transition-colors">← Volver al inicio</a>
     </div>
   </footer>
 
@@ -170,8 +192,16 @@
       return md.replace(/\(\.\/screenshots\//g, '(/bot-screenshots/');
     }
 
+    // Actualiza el nombre del rol en el header (badge)
+    function actualizarHeader(rol) {
+      const btn = document.querySelector(`[data-rol="${rol}"]`);
+      const nombre = btn ? btn.dataset.nombre : rol;
+      document.getElementById('header-rol').textContent = nombre;
+    }
+
     async function cargarManual(rol) {
       rolActual = rol;
+      actualizarHeader(rol);
       const contenedor = document.getElementById('manual-content');
       const loading    = document.getElementById('loading-indicator');
       const error      = document.getElementById('error-indicator');

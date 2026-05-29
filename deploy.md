@@ -351,6 +351,22 @@ pm2 reload menupro   # zero-downtime reload
 7. Generar QR: `https://tudominio.com/menu?restaurante=ID&mesa=N`
 8. Imprimir QRs y pegarlos en mesas
 
+### 10.1. Restaurante "demo" para el botón "Ver demo en vivo" de la landing
+
+La landing pública (`/`) tiene un CTA **"Ver demo en vivo"** que abre `https://tudominio.com/menu?restaurante=1&mesa=1`.
+Para que el visitante vea un menú real (no un restaurante vacío), hay que dejar **un restaurante demo sembrado** apuntado por ese link.
+
+Pasos operativos (una sola vez, post-deploy):
+1. Asegurar que exista el restaurante con `id=1` (o ajustar el link de la landing al id real del demo — buscar `restaurante=1&mesa=1` en `public/landing.html`, hero y CTA final).
+2. Sembrar datos de muestra realistas en ese restaurante:
+   - Menú del día con 1-2 opciones y precio.
+   - 3-4 categorías de carta con platos (idealmente con foto).
+   - Al menos la **mesa 1** activa (el link usa `mesa=1`).
+3. Verificar abriendo `https://tudominio.com/menu?restaurante=1&mesa=1` en incógnito: debe cargar menú + carta.
+4. **Opcional pero recomendado:** marcar este restaurante como "solo demo" para no mezclarlo con clientes reales en reportes del admin.
+
+> En desarrollo el botón ya funciona porque `scripts/seed-demo-data.js` siembra el restaurante `id=1` (Crisolito) con menú, carta y 6 mesas. En producción hay que replicar ese sembrado manualmente o correr el seeder contra la BD de prod con cuidado.
+
 ---
 
 ## 11. Costos estimados mes 1

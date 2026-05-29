@@ -9,8 +9,8 @@
 - 0 issues abiertos (`issues/ISSUES.md`)
 - 0 refactors pendientes
 - Todas las features de prioridad alta cerradas (gaps 1-8 + ARCH-001 a 004 + A1/A2/A3)
-- Rediseño Opus 4.8: 6 fases completas (owner, menú cliente, super admin)
-- **Fase 7 (landing + manuales)** queda como polish pendiente — no bloquea deploy, plan completo en `features.md`
+- Rediseño Opus 4.8: **7 fases completas** (owner, menú cliente, super admin, landing + manuales)
+- **Fase 7 (landing + manuales)** ✅ completada 2026-05-29 — repaint terracota + hero premium + animaciones + FAQ semántico
 
 **Infraestructura:** ⏳ Pendiente (lado del operador, no del código)
 - VPS, dominio, SSL, PM2, Nginx, backups → ver `deploy.md` §1-9
@@ -41,7 +41,7 @@
 | 4 | Rediseño premium de `menu.html` (cara del comensal): CSS extraído a `menu.css`, dark mode auto sin toggle, hero ken-burns, header sticky shrink, skeletons, modal de foto, código de reserva pulse-glow | ✅ |
 | 5 | Auditoría 360px + accesibilidad (modal con role/aria) + smoke E2E con curl + docs | ✅ |
 | 6 | Rediseño "Pro Console" del super admin: nueva identidad **slate + índigo-violeta**, Inter + JetBrains Mono + Syne, bottom-nav, skeletons, charts theme nuevo (`charts-theme-admin.js`), modales premium, copy "Menú Pro" | ✅ |
-| **7** | **Rediseño premium de `landing.html` + `manuales.html`** (cara pública del producto): repaint a terracota, hero con gradient mesh + phone flotante + glow, CTA secundario "Demo en vivo", animaciones on-scroll IntersectionObserver, nav glassmorphism, FAQ semántico con `<details>`, cards con hover lift, footer con socials, manuales repulido al mismo estilo | ⏳ **Pendiente — TODO completo en `features.md`** |
+| **7** | **Rediseño premium de `landing.html` + `manuales.html`** (cara pública del producto): repaint a terracota, hero con gradient mesh + phone flotante + glow, CTA secundario "Demo en vivo", animaciones on-scroll IntersectionObserver, nav glassmorphism, FAQ semántico con `<details>`, cards con hover lift, footer con socials, manuales repulido al mismo estilo | ✅ **Completada 2026-05-29** |
 
 **Fixes paralelos durante las fases:**
 - CSP `upgradeInsecureRequests: null` en `app.js` — Chrome rompía POSTs en LAN por HTTPS upgrade
@@ -51,6 +51,19 @@
 - Generación `.env` con VAPID + JWT_SECRET
 
 **Registro de cambios (RestSaasPro):**
+- 2026-05-29 — **Fase 7 (rediseño premium de `landing.html` + `manuales.html` — cara pública):**
+  - **Repaint terracota** (7.1): Tailwind config `brand {light:#fdf0e8, DEFAULT:#c8692a, dark:#a0521e}` + var CSS `--brand-glow`. Eliminadas todas las referencias a naranja `#f97316` / `orange-*` (verificado: 0 residuales en HTML servido). `bg-orange-50` → `bg-brand-light`.
+  - **Hero premium** (7.3): `.gradient-mesh` con 3 radiales (terracota + violeta `#7c5cff` + azul `#2563eb`) en `mix-blend-mode:screen` + blur 90-100px; `.hero-phone` con `rotate(-3deg)` + `@keyframes float 6s` y glow del producto detrás (`::before` blur 80px del color brand). Screenshot real del bot intacto dentro del frame.
+  - **CTA "Ver demo en vivo"** (7.4): botón secundario en hero y CTA final → `/menu?restaurante=1&mesa=1`. Documentado restaurante demo en `deploy.md §10.1`.
+  - **Animaciones on-scroll** (7.5): `IntersectionObserver` añade `.in-view` a cada `<section class="reveal">`; stagger por card vía `--i` + `@keyframes rise`. Fallback a "todo visible" si no hay IO o `prefers-reduced-motion`.
+  - **Nav glassmorphism** (7.6): `rgba(17,24,39,0.7)` + `backdrop-filter blur(14px)`, clase `.nav-shrunk` al pasar 80px de scroll (wiring `requestAnimationFrame`).
+  - **FAQ semántico** (7.7): `<input type=checkbox>` → `<details>/<summary>`, chevron rotado en `[open]`, `@keyframes faqOpen`. `summary::-webkit-details-marker { display:none }`.
+  - **Cards hover lift** (7.8): `.card-lift` con `translateY(-3px)` + sombra en `:hover` y `:active` (feedback táctil móvil) en Problema, Features y FAQ.
+  - **Footer ampliado** (7.9): mini-logo, WhatsApp icon, Contacto (mailto), Manuales, Ingresar, año dinámico, "Hecho en Perú 🇵🇪".
+  - **`manuales.html` repulido** (7.10): paleta terracota, nav glassmorphism, tabs pill estilo owner (`box-shadow` glow al activarse + scale en `:active`), header con badge dinámico del rol + título Playfair + glow radial, blockquote/links/imgs terracota, footer con "← Volver". `marked.js` y carga por `?rol=` intactos.
+  - **Decisiones respetadas**: Tailwind se quedó (no se extrajo a CSS custom), copy idéntico, screenshots del bot sin regenerar.
+  - **Verificado en vivo (PORT 3310)**: `/` 200, `/manuales` 200, `/menu?restaurante=1&mesa=1` 200, 6/6 screenshots 200, 4/4 manuales por rol 200. HTML confirma terracota/gradient-mesh/hero-phone/IntersectionObserver/nav-shrunk/`<details>`/"Ver demo en vivo"/reduced-motion/footer. **0 referencias a `#f97316`.**
+  - **Fix ISS-013 (service worker rompía CDN/fuentes)**: el usuario reportó la landing "sin estilos". Diagnóstico con Playwright: el SW (`sw.js`, scope `/`, registrado por login/owner/menu) controlaba la landing e interceptaba peticiones cross-origin reenviándolas con `fetch(e.request)` → Tailwind CDN y Google Fonts fallaban con `ERR_FAILED`. Fix: `if (url.origin !== self.location.origin) return;` en el handler `fetch` (no tocar cross-origin) + bump cache `menupro-v1`→`v2`. Verificado: con SW activo la landing ahora carga Tailwind correctamente. Ver `issues/ISS-013-sw-bloquea-cdn.md`.
 - 2026-05-28 — Fase 0: clon creado (`RestSaasPro`, 213 archivos sin node_modules), deps instaladas, baseline **197/197 tests verde**.
 - 2026-05-28 — Fase 1: `public/css/owner.css` reescrito como sistema premium (tokens completos, dark mode con `data-theme` + `prefers-color-scheme`, sombras en capas, micro-interacciones, skeleton loaders, bottom-nav listo). Cero ruptura: todos los selectores originales preservados. Definidos `--surface`/`--accent-dim`/`--accent-glow` que el CSS original referenciaba sin declarar.
 - 2026-05-28 — Fase 2 (parcial): toggle de tema 🌙/☀️ en topbar de `owner.html` + script anti-flash en `<head>` (lee `localStorage['mp-theme']`, respeta preferencia del sistema, actualiza `theme-color`).

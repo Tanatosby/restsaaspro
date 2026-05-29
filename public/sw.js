@@ -1,4 +1,4 @@
-const CACHE = 'menupro-v1';
+const CACHE = 'menupro-v2';
 
 const ASSETS = [
   '/owner.html',
@@ -27,6 +27,12 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+
+  // Solo manejar peticiones del mismo origen.
+  // Las cross-origin (CDN de Tailwind, Google Fonts, Chart.js, etc.) deben ir
+  // directo a la red: si el SW las reenvía con fetch(e.request) fallan con
+  // ERR_FAILED por ser peticiones no-cors, y la página queda sin estilos.
+  if (url.origin !== self.location.origin) return;
 
   // Llamadas a la API siempre van a la red
   if (url.pathname.startsWith('/api/')) return;

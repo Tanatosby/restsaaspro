@@ -173,11 +173,28 @@ Clon de `RestSaas` elevado a nivel "Opus 4.8": mejores gráficos, dark mode, mic
 | 4 | `menu.html` (cara del comensal): CSS extraído a `public/css/menu.css` (~736 líneas con tokens compartidos), dark mode auto sin toggle, hero con efecto ken-burns, header sticky con shrink al scroll, skeleton loaders, modal de foto al tap (`role="dialog"` + `aria-modal`), drawer del carrito repulido, código de reserva con animación `pulse-glow`, touch targets ≥44px garantizados, `prefers-reduced-motion` respetado | ✅ |
 | 5 | Auditoría 360px (cero overflow, cero font-sizes problemáticos, 0 inputs sin type, 0 imgs sin alt) + accesibilidad mínima (modal con role/aria) + smoke test E2E (login → menú público → orden → reserva con código → consulta) + docs (`status.md`, `features.md`, `deploy.md`) | ✅ |
 | 6 | Rediseño **"Pro Console"** del super admin (`admin/dashboard.html` + `admin/login.html`): nueva identidad **slate + índigo-violeta** distinta de la del owner; Inter + JetBrains Mono + Syne; sidebar con backdrop-blur y brand-dot animado; stat cards con gradient text + hover lift; tablas con datos mono tabular-nums; bottom-nav móvil de 5 destinos sin "Más"; skeletons en grid y tablas; charts con paleta nueva (`charts-theme-admin.js`); modales con `modalPop` + glow del accent; copy "Menú Pro" en lugar de "Restaurant SaaS" | ✅ |
-| 7 | Rediseño premium de `landing.html` + `manuales.html` (cara pública del producto) | ⏳ Pendiente — plan abajo |
+| 7 | Rediseño premium de `landing.html` + `manuales.html` (cara pública del producto) | ✅ Completado 2026-05-29 |
 
 ---
 
-#### Fase 7 (pendiente) — Rediseño premium de landing.html + manuales.html
+#### Fase 7 ✅ COMPLETADA 2026-05-29 — Rediseño premium de landing.html + manuales.html
+
+**Resultado:** landing + manuales repintados a terracota `#c8692a` (coherencia total con owner/menu). Ejecutado todo el TODO sin tocar copy ni screenshots.
+- **7.1** Repaint terracota: `brand {light:#fdf0e8, DEFAULT:#c8692a, dark:#a0521e}` + var `--brand-glow`. 0 referencias a `#f97316` / `orange-*` (verificado en HTML servido). `bg-orange-50` → `bg-brand-light`.
+- **7.3** Hero premium: `.gradient-mesh` (3 radiales terracota/violeta/azul con `mix-blend-mode:screen` + blur), `.hero-phone` flotante `rotate(-3deg)` + `@keyframes float 6s` con glow del producto detrás (`::before` blur 80px). Screenshot real del bot intacto dentro del frame.
+- **7.4** CTA secundario **"Ver demo en vivo"** → `/menu?restaurante=1&mesa=1` en hero y CTA final. Documentado en `deploy.md §10.1` (restaurante demo sembrado para prod).
+- **7.5** Animaciones on-scroll: `IntersectionObserver` añade `.in-view` a cada `<section class="reveal">`; stagger en cards vía `--i` + `@keyframes rise`. Fallback: si no hay IO o `reduce`, todo visible.
+- **7.6** Nav glassmorphism (`rgba(17,24,39,0.7)` + `backdrop-filter blur(14px)`) + `.nav-shrunk` al pasar 80px (wiring `requestAnimationFrame`).
+- **7.7** FAQ semántico: `<input type=checkbox>` → `<details>/<summary>` con chevron rotado en `[open]` y `@keyframes faqOpen`.
+- **7.8** Cards Problema/Features/FAQ con `.card-lift` (`translateY(-3px)` + sombra en `:hover` y `:active` para feedback táctil).
+- **7.9** Footer ampliado: mini-logo, WhatsApp icon, Contacto (mailto), Manuales, Ingresar, año dinámico, "Hecho en Perú 🇵🇪".
+- **7.10** `manuales.html` repintado: paleta terracota, nav glassmorphism, tabs pill estilo owner (`box-shadow` glow al activarse), header con badge dinámico del rol ("Manual del cocinero…") + título en Playfair, glow radial de fondo, blockquote/links/imgs en terracota, footer con "← Volver". marked.js intacto.
+- **7.11** Verificación en vivo (PORT 3310): `/` 200, `/manuales` 200, `/menu?restaurante=1&mesa=1` 200, 6/6 screenshots 200, 4/4 manuales por rol 200. HTML servido confirma terracota, gradient-mesh, hero-phone, IntersectionObserver, nav-shrunk, `<details>`, "Ver demo en vivo", reduced-motion, footer Contacto. **0 referencias residuales a `#f97316`.**
+- `prefers-reduced-motion` respetado en ambos archivos.
+
+<details><summary>Plan original (archivado)</summary>
+
+##### Fase 7 (plan) — Rediseño premium de landing.html + manuales.html
 
 **Contexto del estado actual:**
 - `public/landing.html` (570 líneas) — 7 secciones (Nav, Hero, Problema, Tutorial, Features, Quién, FAQ, CTA, Footer) con Tailwind CDN, color `brand: #f97316` (orange-500), fuente Inter, screenshots reales del bot. Funcional pero **rompe consistencia de marca** con el owner panel (terracota `#c8692a`).
@@ -230,6 +247,8 @@ Clon de `RestSaas` elevado a nivel "Opus 4.8": mejores gráficos, dark mode, mic
 3. Bootstrap inicial: script inline que crea `restaurantes id=1` (Crisolito) + admin `admin@local / Admin2026!`
 4. `npm run bot:setup` → usuarios `owner@bot.com / cocina@bot.com / mozo@bot.com` (pass `BotMenuPro2026!`)
 5. `node scripts/seed-demo-data.js` → menú del día + carta + mesas + 6 reservas y 5 órdenes en todos los flags del kanban (idempotente para el día actual)
+
+</details>
 
 ---
 
