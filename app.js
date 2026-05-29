@@ -31,6 +31,7 @@ webpush.setVapidDetails(
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
+const isProd = process.env.NODE_ENV === 'production';
 
 // Seguridad: headers HTTP
 app.use(helmet({
@@ -45,9 +46,11 @@ app.use(helmet({
       imgSrc:        ["'self'", "data:", "blob:"],
       connectSrc:    ["'self'", "https://cdn.jsdelivr.net"],
       scriptSrcAttr: ["'unsafe-inline'"],
-      // Desactivar el upgrade automático a HTTPS — rompe el login en LAN/celular
-      // mientras el server no tenga TLS. En producción con HTTPS real, reactivar.
-      upgradeInsecureRequests: null,
+      // upgrade-insecure-requests: automático por entorno.
+      // En producción (HTTPS real) se activa ([]); en dev se desactiva (null)
+      // porque rompe el login en LAN/celular mientras el server no tiene TLS.
+      // Ver deploy.md §8.2. Controlado por NODE_ENV=production.
+      upgradeInsecureRequests: isProd ? [] : null,
     },
   },
 }));

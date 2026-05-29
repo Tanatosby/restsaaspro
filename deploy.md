@@ -266,12 +266,14 @@ crontab -e
 
 > **Nota sobre eval():** El warning de CSP en Chrome DevTools viene de la librería `qrcodejs` (CDN) que usa `eval()` internamente. La directiva `'unsafe-eval'` lo permite de forma controlada. Si en el futuro se reemplaza `qrcodejs` por otra librería (ej: `qrcode` npm package), se puede eliminar `'unsafe-eval'`.
 
-> ⚠️ **`upgrade-insecure-requests` desactivado en desarrollo (2026-05-29).**
+> ✅ **`upgrade-insecure-requests` ahora es automático por entorno (2026-05-29).**
 > Helmet añade esta directiva por defecto. Cuando el frontend se sirve en HTTP por IP de LAN (ej: `http://10.147.11.131:3000` desde un celular en la misma WiFi), Chrome trata el origen como **inseguro** y, gracias a esa directiva, intenta convertir cada `fetch()` a HTTPS. Como el server de desarrollo no tiene TLS, la conexión se cae y el frontend muestra "Error de red" en todos los POST (login, crear orden, etc.). `localhost` no se ve afectado porque Chrome lo considera secure context.
 >
-> Por eso en `app.js` está seteado `upgradeInsecureRequests: null` dentro de las directivas CSP de Helmet.
+> En `app.js` está seteado `upgradeInsecureRequests: isProd ? [] : null` (donde `isProd = process.env.NODE_ENV === 'production'`):
+> - **Desarrollo** (`NODE_ENV` ≠ production): `null` → directiva desactivada, los POST por LAN/celular funcionan sin TLS.
+> - **Producción** (`NODE_ENV=production`): `[]` → directiva activa, defensa contra mixed-content con HTTPS real.
 >
-> **En producción con HTTPS real (Nginx + Let's Encrypt):** recomendado **reactivar** la directiva — borra la línea `upgradeInsecureRequests: null` y Helmet la vuelve a emitir. Es una buena defensa contra mixed-content cuando ya todo viaja por HTTPS. Verifica el header con `curl -I https://tudominio.com/ | grep -i csp` después del cambio.
+> **No hay que tocar `app.js` en el deploy** — basta con tener `NODE_ENV=production` en el `.env`. Verifica el header tras desplegar con `curl -I https://tudominio.com/ | grep -i csp` (debe incluir `upgrade-insecure-requests`).
 
 ### 8.3 Rate limiting y protección contra fuerza bruta
 
@@ -700,7 +702,7 @@ Aplicación
 [ ] NODE_ENV=production
 [ ] npm install --omit=dev (sin devDependencies)
 [x] Helmet instalado y configurado en app.js (CSP + X-Frame-Options + HSTS)
-[ ] Reactivar `upgrade-insecure-requests` en CSP de Helmet (borrar `upgradeInsecureRequests: null` en app.js) — ver §8.2
+[x] `upgrade-insecure-requests` automático por entorno (se activa solo con NODE_ENV=production) — ver §8.2
 [x] Rate limiting configurado en app.js (auth: 20/15min, general: 300/min)
 [x] Índices de BD creados (id_restaurante + fecha en ordenes y reservas)
 [ ] Usuario admin creado en la BD

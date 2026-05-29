@@ -15,7 +15,7 @@
 **Infraestructura:** ⏳ Pendiente (lado del operador, no del código)
 - VPS, dominio, SSL, PM2, Nginx, backups → ver `deploy.md` §1-9
 - `.env` de producción con `JWT_SECRET` fuerte + VAPID keys nuevas → ver `deploy.md` §5
-- **Importante para el deploy:** quitar `upgradeInsecureRequests: null` de `app.js` cuando ya haya HTTPS real (ver `deploy.md` §8.2 y checklist §14)
+- ✅ **CSP `upgrade-insecure-requests` ahora automático por entorno** — se activa solo con `NODE_ENV=production`, ya no hay que editar `app.js` en el deploy (ver `deploy.md` §8.2). Verificado: prod emite la directiva, dev no.
 
 **Checklist completo de launch:** `deploy.md` §14 — todo lo que toca al servidor está pendiente; todo lo que toca a la app está ✅.
 
