@@ -1,0 +1,278 @@
+# Estado del Proyecto — Menú Pro
+
+---
+
+## 🎨 SESIÓN OPUS 4.8 — Rediseño premium (carpeta `RestSaasPro`) — 2026-05-28
+
+> Esta carpeta `RestSaasPro` es un clon de `RestSaas` (la original queda intacta como respaldo)
+> destinado a una versión "nivel Opus 4.8": mejores gráficos, mejor flujo, sin romper el backend.
+
+**Decisiones de la sesión:**
+- Stack idéntico (vanilla JS + ES Modules, sin build). Backend Express/SQLite sin cambios de lógica.
+- Identidad visual: **elevar la actual (terracota/azul peruana) + dark mode**, ejecutada a nivel premium.
+- Mobile-first sigue siendo no negociable (44px touch, 16px inputs, 360px sin overflow).
+
+**Plan por fases:**
+| Fase | Qué | Estado |
+|------|-----|--------|
+| 0 | Clonar RestSaas→RestSaasPro, `npm install`, baseline tests | ✅ 197/197 tests OK |
+| 1 | Sistema de diseño Opus: tokens + dark mode + skeletons + componentes repulidos (`owner.css`) | ✅ Reescrito, sirviendo OK |
+| 2 | Owner panel: transiciones, bottom-nav móvil, micro-interacciones, toggle dark mode | 🔄 Toggle + anti-flash listos; bottom-nav HTML pendiente |
+| 3 | Gráficos premium (Chart.js degradados) + analíticas A1 ticket promedio / A2 hora pico / A3 tasa cancelación | ✅ Endpoints en vivo + charts repulidos |
+| 4 | Rediseño premium de `menu.html` (cara del comensal) | ⏳ |
+| 5 | Tests + verificación móvil 360px + docs | ⏳ |
+
+**Registro de cambios (RestSaasPro):**
+- 2026-05-28 — Fase 0: clon creado (`RestSaasPro`, 213 archivos sin node_modules), deps instaladas, baseline **197/197 tests verde**.
+- 2026-05-28 — Fase 1: `public/css/owner.css` reescrito como sistema premium (tokens completos, dark mode con `data-theme` + `prefers-color-scheme`, sombras en capas, micro-interacciones, skeleton loaders, bottom-nav listo). Cero ruptura: todos los selectores originales preservados. Definidos `--surface`/`--accent-dim`/`--accent-glow` que el CSS original referenciaba sin declarar.
+- 2026-05-28 — Fase 2 (parcial): toggle de tema 🌙/☀️ en topbar de `owner.html` + script anti-flash en `<head>` (lee `localStorage['mp-theme']`, respeta preferencia del sistema, actualiza `theme-color`).
+- 2026-05-28 — Verificado en vivo (PORT 3210): `/health` 200; `owner.html` y `owner.css` sirven 200 con toggle + dark mode + skeletons presentes.
+- 2026-05-28 — Fase 3 (gráficos premium):
+  - Nuevo `public/js/modules/charts-theme.js`: tema global de Chart.js (fuente Lato, tooltips redondeados, leyendas con punto, colores que se adaptan a claro/oscuro vía tokens CSS) + helper `mpGradient()`. Cargado en `owner.html` tras Chart.js.
+  - `reportes.js`: rellenos con **degradado** en curva de demanda y ganancias; barras con esquinas redondeadas; `pointHoverRadius`.
+  - **A1 Ticket promedio** + **A3 Tasa de cancelación**: nuevo endpoint `GET /api/reportes/kpis` (backend) + 2 stat-cards en Reportes.
+  - **A2 Hora pico**: nuevo endpoint `GET /api/reportes/hora-pico` (demanda por hora, hora Lima UTC-5) + nuevo card con gráfico de barras apiladas (órdenes/reservas) en Reportes.
+  - El toggle de tema re-aplica el tema de los charts y los recarga si estás en Reportes.
+  - **Verificado en vivo con login real** (owner@bot.com): `/api/reportes/kpis` 200 → ticket S/15.27, cancelación 24.1% (7/29); `/api/reportes/hora-pico` 200 → pico a las 11h. **197/197 tests verde.**
+
+---
+
+## Stack
+- **Backend:** Node.js + Express + better-sqlite3
+- **Auth:** JWT (cookies httpOnly)
+- **Frontend:** HTML/CSS/JS vanilla + ES Modules (sin framework)
+- **CSS:** custom puro en todo el proyecto → extraído a `public/css/owner.css`. Tailwind adopción progresiva en producción (post-lanzamiento, módulo por módulo)
+- **BD:** SQLite (PostgreSQL — migración futura)
+- **Mobile:** PWA instalable (pendiente ARCH-002)
+
+## Decisiones arquitectónicas — 2026-05-21
+
+| Decisión | Descripción |
+|----------|-------------|
+| Mobile-first obligatorio | El sistema vive en celulares de gama media. No hay tablets ni laptops en el punto de venta. Todo el frontend debe cumplir requisitos mobile (touch targets, font-size, overflow, PWA). |
+| ES Modules | `owner.html` se divide en módulos JS separados en `public/js/modules/`. Ver ARCH-001 en features.md. |
+| CSS custom puro | Todo el proyecto en CSS custom (no Tailwind). Solo kitchen.html usaba Tailwind — eliminado. Migración a Tailwind: progresiva en producción, post-lanzamiento. |
+| kitchen.html | **ELIMINADO** — reemplazado por panel "Cocina" en owner.html via `cocina.js` (ARCH-001 paso 1.6 ✅) |
+| Vista unificada "Cola del día" | Nuevo panel en owner.html mostrando órdenes + reservas activas juntas, ordenadas por urgencia. |
+| Columna `modalidad` en reservas | Agregar antes de implementar flujo completo de estados (ARCH-004). |
+| PWA | manifest.json + service worker básico — instalable en home screen sin Play Store. |
+
+---
+
+## Estado actual: `ACTIVO — EN DESARROLLO`
+
+Rama activa: `master`
+
+---
+
+## ✅ COMPLETADO — Bot de documentación (sesión 2026-05-27)
+
+**Todos los pasos del TODO de `landing/BOT.md` están completos. Bot corre, genera 34 screenshots y 4 manuales `.md`.**
+
+### Estado del TODO (ver `landing/BOT.md` para detalle completo)
+
+| Paso | Tarea | Estado |
+|------|-------|--------|
+| 1 | Instalar Playwright + Chromium | ✅ Completo |
+| 2 | Crear estructura `landing/bot/` | ✅ Completo |
+| 3 | `bot.js` — orquestador principal | ✅ Completo |
+| 4 | Flow: Login (owner/cocinero/mozo) | ✅ Completo (dentro de `flows/owner.js`) |
+| 5 | Flows owner.html — 19 secciones | ✅ Completo |
+| 6 | Flow cocinero | ✅ Completo (3 screenshots) |
+| 7 | Flow mozo | ✅ Completo (4 screenshots) |
+| 8 | Flow cliente consumidor (`menu.html`) | ✅ Completo (8 screenshots) |
+| **9** | **Generar ~12 imágenes de platos peruanos para `landing/bot/assets/`** | **✅ Completo** |
+| 10 | Generar 4 manuales `.md` con screenshots | ✅ Completo (en `landing/bot/output/`) |
+| 11 | Generar `errors-report.md` con errores de consola | ✅ Completo (7 falsos positivos detectados) |
+
+### Notas Paso 9 — imágenes de platos
+- Wikipedia `upload.wikimedia.org` retornó HTTP 429 (rate limiting) en múltiples intentos
+- Solución: `generate-placeholder-images.js` usa Playwright/Chromium para renderizar HTML estilizado con emoji + nombre + color único por plato y capturar como JPEG 640×480
+- 12/12 imágenes disponibles en `landing/bot/assets/` (papa-huancaina.jpg descargada de Wikipedia, resto generadas)
+- Script: `npm run bot:assets`
+
+### Pendiente
+- Reruns del bot (`npm run bot:run`) para que el flow de carta (`06-carta-platos`) use imágenes reales en screenshots
+
+---
+
+## ✅ COMPLETADO — Landing page + Manuales web (sesión 2026-05-28)
+
+**`public/landing.html` construida con 7 secciones. `/manuales` renderiza los 4 manuales con marked.js.**
+
+### Cambios realizados
+
+| Archivo | Cambio |
+|---------|--------|
+| `public/landing.html` | Landing completa — Hero, Problema, Tutorial, Features, Quién lo hace, FAQ, CTA final |
+| `public/manuales.html` | Página `/manuales` con 4 tabs (Dueño, Cocinero, Mozo, Cliente) — renderiza `.md` con marked.js |
+| `public/landing/screenshots/` | 7 screenshots copiados del bot para la landing |
+| `app.js` | Ruta `/` → `landing.html`; `/manuales` → `manuales.html`; `/bot-screenshots` estático; `/api/manuales/:rol`; Tailwind CDN en CSP |
+| `landing/bot/output/manual-*.md` | Corrección de voseo → tuteo peruano (15 ocurrencias en 4 archivos) |
+
+### Decisiones
+- Screenshots de la landing: reutilizados del bot (no fue necesario tomar nuevas capturas)
+- Precio: no mencionado — CTA de WhatsApp con mensaje predeterminado
+- WhatsApp: `51921340185`
+- Manuales: renderizado client-side con `marked.js` CDN; imágenes servidas en `/bot-screenshots/`
+
+### Para correr el bot en laptop nueva
+```bash
+npm install
+npx playwright install chromium
+npm run bot:setup     # crea usuarios bot en BD local
+npm run bot:assets    # genera imágenes de platos (sin internet externo)
+npm run bot:run       # genera screenshots + manuales
+```
+
+### Archivos clave del bot
+| Archivo | Propósito |
+|---------|-----------|
+| `landing/bot/bot.js` | Orquestador — punto de entrada |
+| `landing/bot/flows/{owner,cocina,mozo,cliente}.js` | Flows por rol |
+| `landing/bot/setup-bot-users.js` | Crea owner@bot.com / cocina@bot.com / mozo@bot.com (pass: `BotMenuPro2026!`) |
+| `landing/bot/output/manual-*.md` | Manuales generados (commiteados, reproducibles con `bot:run`) |
+| `landing/bot/generate-placeholder-images.js` | Genera 11 imágenes de platos con Playwright (sin internet) — `npm run bot:assets` |
+| `landing/bot/assets/` | 12/12 imágenes disponibles (papa-huancaina real, resto placeholder Playwright) |
+| `landing/bot/errors/errors-report.md` | Log de errores (en .gitignore, se regenera) |
+
+---
+
+## Decisiones de sesión 2026-05-21 (arquitectura frontend)
+
+| Decisión | Detalle |
+|----------|---------|
+| kitchen.html → eliminado | Cocinero sin permisos redirige a owner.html. JS detecta rol y muestra solo panel Cocina |
+| CSS custom puro | Todo el proyecto. Tailwind: adopción progresiva en producción post-lanzamiento |
+| Zonas Kanban | Vista de pedidos activos en columnas/tabs por estado: Pendientes→Cocina→Listos→Cobrar |
+| ARCH-004 ✅ | `modalidad TEXT DEFAULT 'en_local'` en tabla `reservas` — `config/database.js` |
+| ARCH-001 paso 1.1 ✅ | CSS extraído de `owner.html` → `public/css/owner.css`. `<link rel="stylesheet">` en su lugar |
+| ISS-004 ✅ | BOM UTF-8 por PowerShell corrompía caracteres. Re-guardado con `UTF8Encoding($false)`. Regla agregada a CLAUDE.md |
+| "Cliente" del producto | Engloba todos los usuarios: owner, mozo, cocinero y comensales |
+| Analytics de UX | Feature futura: medir comportamiento de todos los usuarios en producción |
+
+---
+
+## Módulos implementados
+
+| Módulo | Estado | Notas |
+|--------|--------|-------|
+| Auth (login/logout) | ✅ Completo | JWT en cookie, roles: admin / owner / cocinero / mozo |
+| Menú del día | ✅ Completo | Secciones, platos, menús del día con componentes |
+| Carta | ✅ Completo | Categorías y platos a la carta con toggle activo/inactivo |
+| Órdenes activas | ✅ Completo | Vista en tiempo real, flujo de estatus |
+| Historial de órdenes | ✅ Completo | Filtros por fecha y estatus |
+| Descarga Excel (formato_1) | ✅ Completo | Ver sección Formatos |
+| Reservas | ✅ Completo | Flujo completo: Confirmar → Cocina → Listo → Cliente llegó → Completar. Historial + descarga Excel. (ISS-006 resuelto 2026-05-23) |
+| Usuarios | ✅ Completo | Owner puede crear cocinero/mozo y asignar permisos granulares. Cambio de contraseña propio disponible para todos los roles desde sidebar. |
+| Reportes | ✅ Completo | Métricas y gráficas de barras |
+| Panel Admin | ✅ Completo | Gestión global de restaurantes y usuarios. Panel de estadísticas por restaurante (drawer lateral con tabs Resumen/Demanda/Ganancias, Chart.js). |
+| Vista Cocina | ✅ Completo | Panel Cocina en `owner.html` via `cocina.js`. `kitchen.html` reemplazado con redirect. Muestra órdenes + reservas en preparación (ISS-008 resuelto 2026-05-23). |
+| Polling automático + alerta de sonido | ✅ Completo | Auto-refresh 15s, 3 endpoints REST, detección de órdenes nuevas, audio via Web Audio API, toggle mute persistido en localStorage |
+| Cola del día — Kanban (Gap 2) | ✅ Completo 2026-05-23 | `pedidos.js` — 4 tabs Kanban (Pendientes/En Cocina/Listos/Por cobrar), badges, botones de acción rápida, flag `es_entregado`, polling 15s. |
+| Auto-preparación de reservas + Push (Gap 3) | ✅ Completo 2026-05-25 | Job en servidor cada 60s. Reservas `es_confirmada` con `hora_llegada` pasan a `es_en_cocina` automáticamente X min antes. Web Push al celular aunque la app esté cerrada. `minutos_preparacion` configurable por restaurante (default 20 min). 29 tests. |
+| Modalidades de pedido (Gap 4) | ✅ Completo 2026-05-25 | `en_local`/`para_llevar` en órdenes; `en_local`/`para_llevar`/`delivery` en reservas. Flujo de estados diferenciado por modalidad. Badges visuales. Selectores en menu.html. Config owner. 22 tests. |
+| Auto-merge cuenta por mesa (Gap 8) | ✅ Completo 2026-05-25 | Al marcar `es_cliente_llego`, copia ítems carta+menú de la reserva a la orden activa de la misma mesa. `auto_merge_activo` configurable por restaurante (default: activo). Toggle en panel Configuración del owner. 17 tests. |
+| Precio por modalidad (Gap 5) | ✅ Completo 2026-05-25 | `costo_tapper`/`tarifa_delivery` en `restaurantes`; `cargo_modalidad` en `ordenes` y `reservas`; total incluye cargo; desglose visual en menu.html (+S/ X al seleccionar para llevar/delivery); config en owner. 21 tests. |
+| Mobile-first (ARCH-003) | ✅ Completo 2026-05-23 | Touch targets 44px, font-size 14-16px, type en inputs, sin overflow 360px |
+| PWA instalable (ARCH-002) | ✅ Completo 2026-05-22 | manifest.json + service worker + íconos |
+| ES Modules (ARCH-001) | ✅ Completo 2026-05-23 | owner.html modularizado en 9 módulos JS separados |
+| Menú cliente (QR) | ✅ Completo | `menu.html` — carta + menú del día |
+| Plano de mesas visual | ✅ Completo | Tabla `mesas`, chips color-coded, polling 10s |
+| Pagos Fase 1 | ✅ Completo | Yape/Plin/Efectivo, comprobante foto, confirmación manual |
+| Flags semánticos en estatus (REFACTOR-001) | ✅ Completo 2026-05-21 | Elimina hardcodes de nombres; sistema funciona aunque admin renombre estatus |
+| Código de reserva + estado para el cliente (Gap 6) | ✅ Completo 2026-05-21 | `codigo` único en `reservas`; pantalla de confirmación con código grande; consulta de estado pública; código visible en tarjetas de owner |
+
+---
+
+## Formatos descargables
+
+| # | Nombre | Módulo > Submódulo | Filtros | Estado |
+|---|--------|--------------------|---------|--------|
+| 1 | `historial_ordenes_DESDE_HASTA.xlsx` | Órdenes > Historial | fecha_desde, fecha_hasta | ✅ Implementado |
+| 2 | `historialReservas_DESDE_HASTA.xlsx` | Reservas > Historial | fecha_desde, fecha_hasta | ✅ Implementado |
+| 3 | `demanda_clientes_{intervalo}.xlsx` | Reportes > Análisis de demanda | intervalo (dia/semana/mes) | ✅ Implementado |
+| 4 | `pedidos_{tipo}_{filtro}.xlsx` | Reportes > Análisis de pedidos | tipo (menu/carta), filtro (sección/categoría) | ✅ Implementado |
+| 5 | `ganancias_{intervalo}.xlsx` | Reportes > Ganancias | intervalo (dia/semana/mes) | ✅ Implementado |
+
+### Diseño de formatos
+- Fila 1: nombre del restaurante — fondo oscuro `#1a1612`, texto blanco
+- Fila 2: título + rango de fechas — fondo accent `#c8692a`, texto blanco
+- Fila 3: encabezados — fondo `#fdf0e8`, texto `#a0521e` en negrita
+- Filas **N** (carta): fondo blanco
+- Filas **Y** (menú): fondo azul claro `#edf4fb`
+- Fila **T** (total): fondo `#fdf0e8`, negrita, precio en `#c8692a`
+
+---
+
+## Archivos de referencia clave
+
+| Archivo | Propósito |
+|---------|-----------|
+| `vision_negocio.md` | Brújula del proyecto: target, flujos, roles, gaps. **Leer siempre al inicio de sesión.** |
+| `features.md` | Backlog priorizado de features pendientes |
+| `issues/ISSUES.md` | Bugs e issues abiertos |
+| `issues/REFACTOR-001-estatus-dinamicos.md` | Refactor estatus dinámicos por flags — ✅ COMPLETO 2026-05-21 |
+| `issues/ISSUES.md` | Bugs abiertos — ISS-002 (botón "Ya pagué con Plin" deshabilitado en menu.html) · ISS-003 resuelto (flag 500) |
+
+---
+
+## Historial de prompts
+
+| Fecha | Prompt | Cambios |
+|-------|--------|---------|
+| 2026-05-09 | Configuración inicial del proyecto | Estructura base, auth, BD SQLite |
+| 2026-05-09 | Cambios en models | Ajustes en modelos de datos |
+| 2026-05-09 | Rango de fechas en historial de órdenes | Filtros `fecha_desde` / `fecha_hasta` en `GET /api/orders` y en el frontend |
+| 2026-05-09 | Formato_1: descarga Excel historial de órdenes | Instalación de `exceljs`, endpoint `GET /api/orders/export`, botón en historial, función `descargarFormato1()` |
+| 2026-05-09 | Precio de componentes en reservas | Query de `menuItems` en `GET /api/reservations` ahora incluye `precio_menu` y `total_componentes`; se calcula `precio_unitario` por componente y se suma al total. 27 pruebas en `scripts/test-menu-pricing.js`. **Oportunidad de mejora:** revisar la función de suma del precio de los componentes en la reserva — actualmente divide el precio del menú entre el total de componentes registrados en BD, pero podría no reflejar correctamente escenarios donde el cliente elige sólo algunas secciones. |
+| 2026-05-09 | Fix divisor precio menú en reservas | Corregido subquery de `total_componentes`: se usa `menu_secciones` (una fila por sección por menú) en lugar de `componentes_menu_dia` (que tiene N filas por sección en menús elegibles). 35 pruebas actualizadas en `scripts/test-menu-pricing.js`. |
+| 2026-05-09 | Formato_2: descarga Excel historial de reservas | Endpoint `GET /api/reservations/export` (`authorize owner`), botón "⬇ Descargar Excel" en Reservas > Historial, función `descargarFormatoReservas()`. Columnas: ID Reserva, Mesa, Fecha, Cliente, Teléfono, Menú, Sección/Categoría, Plato, Cantidad, Precio. Archivo: `historialReservas_DESDE_HASTA.xlsx`. |
+| 2026-05-11 | Setup en laptop nueva | `npm install`, creación de `.env`, generación de `database.sqlite` y usuario admin inicial. Proyecto listo para desarrollo. |
+| 2026-05-11 | Fix columna `activo` en platos_carta | Columna `activo INTEGER DEFAULT 1` faltaba en `CREATE TABLE` de `config/database.js`. Agregada a la definición y migración idempotente para bases existentes. Resuelve error 500 en `GET /api/menu/platos-carta`. |
+| 2026-05-11 | Fix scroll horizontal en tablas móvil | Todas las tablas dinámicas de `owner.html` (secciones, platos-menu, categorías, platos-carta, usuarios) envueltas en `<div class="table-wrap">` para habilitar scroll horizontal en pantallas pequeñas. |
+| 2026-05-11 | Submódulo análisis de demanda — Curva de clientes | Nuevo `routes/reportes.js` con `GET /api/reportes/clientes-timeline?intervalo=dia|semana|mes`. Agrega en SQL con `strftime`. Frontend: gráfica de línea con Chart.js (CDN), botones Día/Semana/Mes en panel-reportes de `owner.html`. Propuesta de columnas para Excel formato_3 escrita en `formatos.md`. |
+| 2026-05-11 | Submódulo análisis de pedidos — card unificada + Excel | 3 cards separadas reemplazadas por 1 card con drill-down: tipo (Menú/Carta) → sección/categoría → bar chart platos más pedidos (órdenes + reservas). Endpoints: `GET /api/reportes/pedidos/filtros`, `/pedidos`, `/pedidos/export`. `loadReportes()` simplificada. Chart agrupado naranja/azul. |
+| 2026-05-11 | Formato_3: Excel curva de clientes (Reportes > Análisis de demanda) | Endpoint `GET /api/reportes/clientes-timeline/export?intervalo=dia|semana|mes` en `routes/reportes.js`. Genera histórico completo agrupado por período: columnas Período, Órdenes, Reservas, Total clientes, fila de totales al final. Diseño con colores del sistema (fila restaurante `#1a1612`, título `#c8692a`, encabezados `#fdf0e8`/`#a0521e`, filas alternas blanco/`#edf4fb`). Frontend: botón "⬇ Excel" en la card de Curva de clientes, función `descargarFormatoDemanda()` que usa el `intervaloActual` activo. Archivo: `demanda_clientes_{intervalo}.xlsx`. |
+| 2026-05-13 | Upgrade arquitectura: columna `total` en órdenes y reservas | Nuevo `utils/totales.js` con `calcularTotalOrden(db, id)` y `calcularTotalReserva(db, id)`. Migraciones idempotentes en `config/database.js` (columna `total REAL DEFAULT NULL` en `ordenes` y `reservas`). Backfill automático al inicio: calcula y guarda el total de todas las órdenes `completado` y reservas `completada` existentes sin total. `routes/orders.js`: al pasar a `completado`, calcula y persiste `total`. `routes/reservations.js`: al pasar a `completada` (es_full=1), ídem. Elimina el problema de N+1 queries en reportes de ganancias. |
+| 2026-05-13 | Submódulo de ganancias (Reportes) | 4 cards (Ganancias totales, del mes, de la semana, de hoy) + gráfica de líneas con 3 series (Total, Órdenes, Reservas) + descarga Excel. Endpoints: `GET /api/reportes/ganancias/resumen`, `/ganancias/timeline?intervalo=dia\|semana\|mes`, `/ganancias/export`. Fuente de datos: `SUM(total)` directamente desde la BD (sin N+1). `formatos.md`: formato_5 documentado. |
+| 2026-05-13 | Mejora reportes — serie Total en chart-demanda y chart-pedidos | `owner.html`: `loadDemanda()` agrega 3er dataset "Total" (verde `#2e7d52`) usando el campo `total` que ya devolvía el backend. `loadPedidos()` agrega 3er dataset "Total" (verde `#2e7d52`) ídem. Sin cambios en backend. |
+| 2026-05-14 | Panel de Configuración — foto de portada + colores + brand sidebar | Migraciones `foto_portada`, `color_primario`, `color_secundario` en `restaurantes`. Multer configurado en `routes/menu.js` (4 endpoints: GET/PATCH config, POST/DELETE foto). `routes/public.js` extendido. `owner.html`: sidebar muestra nombre real y foto/emoji del restaurante; panel Configuración con preview, input file y color pickers. `menu.html`: hero banner y colores dinámicos vía CSS variables. |
+| 2026-05-14 | Eliminar sección de un menú del día | `owner.html`: botón ✕ en cada sección dentro de `renderMenuCard()` + función `eliminarSeccionDeMenu()` que llama al endpoint `DELETE /api/menu/menus-dia/:id/secciones/:seccionId` ya existente. Sin cambios en backend. |
+| 2026-05-14 | Fotos en platos de menú y carta | `routes/menu.js`: función factory `makeUploadPlato` + helper `subirFotoPlato`/`eliminarFotoPlato` → 4 endpoints POST/DELETE para `platos-menu` y `platos-carta`. Carpetas `public/uploads/platos-menu/` y `public/uploads/platos-carta/`. `owner.html`: tablas de platos con columna de miniatura (40×40) y botones 📷/🗑 por fila. `menu.html`: fotos en platos elegibles (`.plato-thumb` 52×52 a la derecha), platos fijos (ídem) y platos de carta (`.plato-carta-img` 64×64 a la izquierda). |
+| 2026-05-14 | Sistema de permisos granulares | `config/database.js`: columna `permisos TEXT DEFAULT NULL` en `usuarios`. `middleware/authenticate.js`: `authorizePermiso()`. `routes/auth.js`: permisos en JWT y respuesta. `routes/usuarios.js`: GET devuelve permisos; nuevo PATCH /:id/permisos. Todos los `authorize('owner')` en 4 routes reemplazados por `authorizePermiso()`. `login.html`: guarda permisos en sessionStorage; redirige a owner.html si tiene permisos delegados. `owner.html`: guard acepta usuarios con permisos; filtra nav/paneles; oculta sub-tabs; matriz de 8 checkboxes por usuario en panel Usuarios. |
+| 2026-05-18 | Polling automático + alerta de sonido en kitchen.html | `utils/orderStatus.js`: utilidad de mapeo inglés↔español para estatus de cocina. `routes/orders.js`: `GET /api/orders/queue` (cola de cocina con campos en inglés), `PUT /api/orders/:id` y `PUT /api/orders/combo/:id` (alias) para actualizar status desde cocina. `kitchen.html`: función `detectAndAlertNewOrders()` compara set de IDs pending prev vs actual; `playAlertSound()` vía Web Audio API (dos tonos, fade-out 450ms); botón 🔔/🔕 en header con preferencia persistida en localStorage. Tests: `tests/order-status.test.js` (15 casos) + `tests/kitchen-polling.test.js` (15 casos) = 30 tests, todos pasan. |
+| 2026-05-18 | Inhabilitar menú del día | Migración idempotente `activo INTEGER DEFAULT 1` en `menus_dia`. Endpoint `PATCH /api/menu/menus-dia/:id/activo` en `routes/menu.js`. `GET /api/menu/menus-dia` incluye campo `activo` en SELECT. `GET /api/public/menu` filtra `AND activo = 1`. `owner.html`: botón "● Visible / ○ Oculto" en cada card de menú + función `toggleActivoMenu()`; cards inactivas con `opacity:0.55`. Tests: `tests/menu-activo.test.js` (11 casos), todos pasan. |
+| 2026-05-18 | Platos agotados en menú del día | Migración idempotente `agotado INTEGER DEFAULT 0` en `componentes_menu_dia`. Endpoint `PATCH /api/menu/menus-dia/:id/secciones/:seccionId/platos/:componenteId/agotado`. `GET /api/menu/menus-dia` incluye `cmd.agotado` por plato. `GET /api/public/menu` filtra `AND cmd.agotado = 0`. `owner.html`: botón "Disponible / Agotado" por plato + función `toggleAgotadoPlato()`; platos agotados con texto tachado y opacidad 0.5. Tests: `tests/platos-agotados.test.js` (12 casos), todos pasan. |
+| 2026-05-18 | Generador de QR del menú | CDN `qrcode@1.5.3` en `<head>`. Card nueva en panel Configuración: QR 180×180 con colores del sistema, input con link copiable, botón "Descargar PNG" via `canvas.toDataURL()`. Se regenera cada vez que se abre el panel (`loadConfiguracion` llama `generarQR()`). Sin cambios en backend. |
+| 2026-05-18 | Plano de mesas visual | Tabla `mesas` con migración idempotente. `routes/mesas.js`: GET lista, GET /estado (libre/ocupada/reservada), POST, PATCH/:id, DELETE/:id. Registrado en app.js. `owner.html`: tab "Plano" como primera tab del panel Órdenes con chips color-coded (verde/rojo/amarillo), detalle inline de orden/reserva en mesa. Panel Configuración: sección mesas con form agregar + lista con botón eliminar. Polling 10s actualiza el plano si está activo. Tests: `tests/plano-mesas.test.js` (13 casos), todos pasan. |
+| 2026-05-18 | Fix horas UTC → hora Lima | `owner.html`: helper `toUTC(d)` normaliza strings SQLite (`"2026-05-19 02:20:00"` → `"2026-05-19T02:20:00Z"`) evitando duplicar `Z` si ya está presente; `fDT` usa `timeZone:'America/Lima'`. `routes/orders.js`: mismo fix en Excel export (`horaExcel`). Tests: `tests/timezone.test.js` (11 casos), todos pasan. |
+| 2026-05-21 | Sesión de análisis de visión del negocio | Creado `vision_negocio.md` con target, flujos completos (reserva dine-in/takeout/delivery, walk-in, cocina, pago), roles, principios de diseño, 15 gaps identificados. Sesión 0 de REFACTOR-001 completada: flags semánticos en BD + 8 endpoints admin. |
+| 2026-05-21 | ISS-003 fix — PATCH estatus con flag retornaba 500 | `AND id_restaurante IS NULL` inválido eliminado de 3 queries en `routes/orders.js` (×2) y `routes/reservations.js` (×1). Las tablas `estatus_orden` y `estatus_reserva` no tienen esa columna. |
+| 2026-05-21 | Gap 6 — Código de reserva aleatorio + estado para el cliente | **5 sesiones.** `utils/codigoReserva.js`: generador de 7 chars alfanumérico sin ambigüedad (sin 0/O/1/l/I), verifica unicidad. `config/database.js`: columna `codigo TEXT` + índice único parcial en `reservas`, backfill idempotente. `routes/public.js`: `POST /api/public/reservations` asigna código en la transacción y lo devuelve; nuevo `GET /api/public/reserva/:codigo` público devuelve estado + flags + items. `routes/reservations.js`: `GET /api/reservations` incluye `r.codigo`. `menu.html`: pantalla de confirmación muestra código en grande con instrucción de screenshot; botón "Ver estado" → pantalla fullscreen con búsqueda por código y polling 30s; pill "📋 Consultar mi reserva" en header. `owner.html`: código visible bajo el nombre del cliente en tarjetas de reserva (`🔑 kDVvemB`). |
+| 2026-05-22 | ARCH-002 completo — PWA instalable. `manifest.json` (nombre "RestApp", colores sistema), íconos 192×192 y 512×512, `sw.js` con cache de assets estáticos + fallback a red. Registrado en `owner.html` y `menu.html`. |
+| 2026-05-22 | ISS-004 incidente 2 — Doble codificación en owner.html | `owner.html` tenía caracteres doble-codificados (UTF-8 leído como Windows-1252 y re-guardado como UTF-8). Fix: script Python que revierte la transformación caracter a caracter. 51 `ú` y 40 `ó` corregidas. Sin BOM. Archivo: 130KB → 119KB. |
+| 2026-05-22 | ARCH-001 trozado en 10 pasos + pasos 1.2–1.8 completos. Pasos completados hoy: 1.2 (utils.js), 1.3 (config.js), 1.4 (usuarios.js), 1.5 (mesas.js), 1.6 (cocina.js + panel Cocina en owner.html + kitchen.html reemplazado), 1.7 (reservas.js), 1.8 (ordenes.js + badgePago). Paso 1.9 (reportes.js): archivo creado y `<script src>` en head ✅, falta eliminar bloque inline en owner.html (2 edits pendientes: 1.9b y 1.9c). Paso 1.10 (pedidos.js): pendiente. |
+| 2026-05-23 | ISS-006 + ISS-007 resueltos. ISS-007: login.html redirige cocinero a owner.html; kitchen.html reemplazado con redirect; permiso `cocina` agregado a PERMISOS_DEF; guard owner.html extendido para rol cocinero (ve solo Cocina + Cola del día). ISS-006: GET /api/reservations devuelve flags intermedios; loadReservasActivas fetcha 5 estados activos; tarjetas con flujo completo: Confirmar → A cocina → Listo → Cliente llegó → Completar. |
+| 2026-05-23 | ARCH-001 completo. 1.9b: eliminado MÓDULO 5 inline (descargarFormatoDemanda, loadDemanda, loadReportes, loadGanancias y helpers). 1.9c: eliminado análisis de pedidos inline (loadPedidosFiltros, setPedidosTipo, loadPedidos, descargarFormatoPedidos, sc, renderBarChart). 1.10a+1.10b: creado pedidos.js con loadColaDia, initPedidosPoll/stopPedidosPoll, cards con ítems, badge nav, integración detectNuevasOrdenes/Reservas. Panel "Cola del día" en owner.html (nav + panel HTML + PANELS/TITLES). CSS cola-card en owner.css. ARCH-001 ✅ completo. |
+| 2026-05-23 | Gap 2 (Kanban Cola del día) — paso B: nuevo flag `es_entregado` en `estatus_orden`. Migración en `database.js` (columna + fila 'entregado' + backfill). `routes/orders.js`: SELECT incluye `es_entregado`, agregado a `VALID_ORDER_FLAGS`. `pedidos.js`: Listos = `es_listo` (botón "🍽 Entregar" → `es_entregado`); Por cobrar = `es_entregado` (botón "💰 Cobrar") + reservas `es_cliente_llego`. |
+| 2026-05-23 | Gap 2 (Kanban Cola del día) — **COMPLETO**. `reservas.js`: botón "👤 Cliente llegó" renombrado a "🍽 Entregado" (semántica: cliente llegó + sentó + plato entregado en un solo paso). G2.5 pruebas manuales: 15/15 OK. G2.6 documentación actualizada: `features.md`, `status.md`, `vision_negocio.md`. |
+| 2026-05-23 | ISS-009 resuelto — `api()` en `utils.js` redirige a `/login.html` ante 401. Aplica a todos los módulos. ISS-010 resuelto — orden de render en `cocina.js` cambiado a: En preparación → Reservas en prep → Pendientes. ISS-011 registrado como abierto (CSP eval + 27 no-label). |
+| 2026-05-23 | ISS-008 resuelto — Reserva no aparecía en cola de cocina. Fix en `cocina.js`: `Promise.all` fetcha órdenes y reservas en paralelo; nueva sección "Reservas en preparación" con `renderCocinaReserva()` y `marcarReservaListaCocina()`; badge cuenta ambos tipos. |
+| 2026-05-25 | ISS-011 resuelto — 27 "No label" en owner.html y menu.html: añadido `for="id"` a todos los `<label>` sin asociación; `aria-label` en inputs sin label. eval() de QRCode.js CDN: documentado en deploy.md con solución CSP via Helmet. Creado `deploy.md` con guía completa de producción: VPS, dominio, SSL, Nginx, PM2, backups, seguridad (Helmet, rate limiting), monitoreo, costos (~$8 USD/mes), checklist de launch. |
+| 2026-05-25 | ISS-012 resuelto — Usuarios con permisos delegados recibían 403 al cambiar estatus de reservas/órdenes. Causa: 7 endpoints en `routes/reservations.js` y `routes/orders.js` usaban `authorize('owner','mozo')` (chequeo por rol) en lugar de `authorizePermiso()` (chequeo por rol o permisos). Fix: reemplazados los 7 `authorize(...)` por `authorizePermiso()`. Afectaba: PATCH /:id/estatus, PATCH /:id/mesa, PATCH /:id/confirmar-pago (reservas); PATCH /:id/estatus, PATCH /:id/confirmar-pago, GET /queue, PUT /combo/:id y PUT /:id (órdenes). |
+| 2026-05-25 | Panel Admin — Estadísticas por restaurante. Nuevos endpoints en `routes/admin.js`: `GET /restaurantes/:id/reportes/resumen`, `/clientes-timeline?intervalo=`, `/ganancias/resumen`, `/ganancias/timeline?intervalo=`. Helpers `sumarGanancias`, `gananciasTimeline`, `clientesTimeline` exportados desde `routes/reportes.js` y re-usados desde admin. `app.js` actualizado con import por destructuring. `public/admin/dashboard.html`: CSS del drawer lateral (`.stats-drawer`, `.stats-drawer-backdrop`, tabs), HTML del panel con 3 tabs (Resumen/Demanda/Ganancias), botón 📊 Stats en tabla de restaurantes, JS completo (`abrirStatsDrawer`, `cerrarStatsDrawer`, `switchDrawerTab`, `cargarResumen`, `cargarDemanda`, `cargarGanancias`) con Chart.js. Sin tests adicionales (lógica en helpers ya testeados). |
+| 2026-05-26 | Admin: descargas Excel por restaurante. 3 endpoints en `routes/admin.js` (`/resumen/export`, `/clientes-timeline/export`, `/ganancias/export`). Helper `EXCEL_STYLE` + `excelHeader()` reutilizables. Botones "⬇ Excel" en cada tab del drawer (Resumen/Demanda/Ganancias). Funciones JS `descargarResumenAdmin/DemandaAdmin/GananciasAdmin()`. Archivo con nombre del restaurante en el filename. Roadmap de features A1-C5 documentado en `features.md`. |
+| 2026-05-26 | Cambio de contraseña propio — `PATCH /api/auth/me/password` en `routes/auth.js` (verifica contraseña actual con bcrypt antes de cambiar). Botón "🔑 Cambiar contraseña" en sidebar footer de `owner.html` (encima de Cerrar sesión). Modal con 3 campos: contraseña actual, nueva, confirmar. Validaciones client-side (coincidencia, mínimo 8 chars) + server-side. Aplica a owners, mozos y cocineros — cualquier usuario autenticado. |
+| 2026-05-26 | ISS-012-admin resuelto — Admin: revenue S/0.00 en tabla + gráficas Demanda/Ganancias vacías. 3 bugs: (1) Chart.js no estaba incluido en `dashboard.html` → gráficas no renderizaban; (2) revenue en tabla usaba solo `orden_carta_items` (omitía menú del día y reservas) → inconsistente con `sumarGanancias()`; (3) mismo error en stats globales del Overview. Fix: `<script>` de Chart.js 4.4.0 agregado; revenue en `GET /restaurantes` y `GET /stats` ahora usa `SUM(ordenes.total) + SUM(reservas.total)`. |
+| 2026-05-27 | ISS-002 resuelto — Botón "Ya pagué" deshabilitado en segunda transacción de la misma sesión. Causa raíz: `showPagoStep()` reseteaba `display:none` pero dejaba `btn.disabled=true` del pago anterior. Fix en `menu.html`: `btnPague.disabled = false` en `showPagoStep()` al limpiar el estado + `btn.disabled = false` explícito en las 3 ramas de `seleccionarMetodoPago()` (Yape, Plin, Efectivo) como defensa adicional. Aplica a todos los métodos de pago, no solo Plin. |
+| 2026-05-27 | Hardening 9/10 — health endpoint, graceful shutdown, npm audit fix, multer iOS. `GET /health` (sin auth, devuelve uptime). Graceful shutdown: `SIGTERM`/`SIGINT` cierran server + BD antes de salir; fuerza `exit(1)` a los 10s. `npm audit fix`: 5 vulnerabilidades cerradas (ip-address, qs, tmp, ws); queda 1 moderate uuid/exceljs (downgrade breaking — aceptado). Multer fileFilter en 3 lugares (`routes/public.js`, `routes/menu.js` ×2): cambiado de lista blanca de extensiones/mimetypes a `file.mimetype.startsWith('image/')` — acepta HEIC/HEIF de iOS y Android modernos. Puntuación: 8.5 → 9/10. |
+| 2026-05-26 | Revisión de producción + hardening. Auditoría completa del proyecto: puntuación 7.2/10 → 8.5/10 tras cerrar los gaps. **Cambios:** (1) `helmet` instalado y configurado en `app.js` con CSP completa (incluye CDN Chart.js, QRCode, Fonts). (2) Rate limiting global: `/api/auth/*` 20 req/15min; `/api/*` 300 req/min. (3) 4 índices de BD en `database.js`: `idx_ordenes_restaurante`, `idx_ordenes_fecha`, `idx_reservas_restaurante`, `idx_reservas_fecha`. (4) Bug crítico resuelto: `login.html` redirigía al mozo a `/waiter.html` (inexistente) — corregido a `/owner.html`. (5) Ruta `/waiter → waiter.html` eliminada de `app.js`. 197/197 tests pasan. |
+| 2026-05-25 | Gap 10 — Cerrado por diseño. Descartables = ítem de carta configurable por el owner. No requiere feature dedicada. |
+| 2026-05-25 | Gap 8 — Auto-merge cuenta por mesa. `auto_merge_activo INTEGER DEFAULT 1` en `restaurantes`. `PATCH /api/reservations/:id/estatus` llama `autoMergeReservaEnOrden()` al detectar flag `es_cliente_llego`. Copia `reserva_carta_items` y `reserva_menu_items` a `orden_carta_items` y `orden_menu_items`. Suma `cargo_modalidad` de la reserva a la orden. Solo actúa si hay orden activa (no pagada ni cancelada) en la misma mesa. `PATCH /api/menu/config/auto-merge` para configurarlo. Toggle en owner.html. 17 tests. |
+| 2026-05-25 | Gap 5 — Precio por modalidad. Columnas `costo_tapper` y `tarifa_delivery` en `restaurantes`. Columna `cargo_modalidad` en `ordenes` y `reservas`. `POST /orders` y `POST /reservations` calculan y persisten el cargo según modalidad. `utils/totales.js` suma `cargo_modalidad` al total final. `menu.html`: desglose visual del cargo en tiempo real al cambiar radio de modalidad (drawer orden + resumen reserva). Panel Configuración del owner: inputs para configurar tapper y tarifa. 21 tests en `tests/precio-modalidad.test.js`, todos pasan. |
+| 2026-05-25 | Gap 4 — Modalidades de pedido. Columna `modalidad` en `ordenes` y `reservas`. Columnas `para_llevar_activo`/`delivery_activo` en `restaurantes`. Validación backend: órdenes solo `en_local`/`para_llevar`; reservas admiten `delivery` si el restaurante lo tiene activo. Flujo de estados diferenciado: `para_llevar`/`delivery` saltan `es_entregado` (órdenes) y `es_cliente_llego` (reservas). Badges en Kanban y tarjetas. Selectores de modalidad en `menu.html` (radio buttons según URL con/sin `mesa`). Config en panel Configuración. 22 tests en `tests/modalidades.test.js`, todos pasan. |
+| 2026-05-25 | Gap 3 — Auto-preparación de reservas + Web Push. Job en Node.js (setInterval 60s) detecta reservas confirmadas cuya `hora_llegada` entra en la ventana configurable (`minutos_preparacion`) y las mueve a `es_en_cocina`. Web Push API envía notificación al celular aunque la app esté cerrada. Tabla `push_subscriptions` en BD. `routes/push.js` (vapid-key, subscribe, unsubscribe). `utils/autoPreparacion.js`. `sw.js` maneja evento `push` + `notificationclick`. `config.js` + UI en owner.html para configurar minutos. 29 tests (17 auto-preparacion + 12 push-routes). |
+| 2026-05-23 | ARCH-003 completo — Mobile CSS audit en owner.html. 3.1: `.btn`, `.btn-sm`, `.btn-danger/success/warn`, `.btn-logout` → `min-height:44px`. 3.2: `.nav-item`, `.tab`, `.hamburger` → `min-height/width:44px`. 3.3: todos los inputs/selects/textareas a 16px (CSS global + 8 inline en HTML + 2 en templates JS + pago-yape/plin tel). 3.4: `.card-title`, `.tab`, `.nav-item`, `.btn-sm`, `.btn-danger/success/warn`, `.order-meta`, `.order-items`, `.empty-text`, `.loading-text` → 14px. 3.5: 5 botones pill inline en menú (`font-size:10px;padding:1px`) → `font-size:14px;min-height:44px;display:inline-flex;align-items:center`. 3.6: `type="text"` agregado a 8 inputs sin tipo. ARCH-003 ✅ completo. |
+| 2026-05-21 | REFACTOR-001 completo — estatus dinámicos con flags semánticos | **10 sesiones.** Elimina todos los hardcodes de nombres de estatus del sistema. Ahora el admin puede renombrar cualquier estatus y todo sigue funcionando. **BD:** columnas `es_inicial, es_pagado, es_cancelado, es_en_cocina, es_listo` en `estatus_orden`; `es_inicial, es_confirmada, es_cancelado, es_en_cocina, es_listo, es_cliente_llego, es_full` en `estatus_reserva`. **Backend:** `routes/orders.js` — `/activas` retorna flags; `PATCH /:id/estatus` acepta `{ flag }` además de `{ estatus }`; `GET /queue` usa flags; `PUT /:id` (cocina) usa `KITCHEN_FLAG_MAP` por flags. `routes/reservations.js` — `GET /` retorna flags, acepta `?flag=`; `PATCH /:id/estatus` acepta `{ flag }`. `routes/admin.js` — revenue queries usan `es_pagado=1`. `routes/reportes.js` — filtros cancelados usan `es_cancelado=0`. `routes/mesas.js`, `routes/public.js` — todos los filtros por flag. **Frontend `owner.html`:** `renderOrdenCard` y `renderReservaCard` usan flags para botones de acción; nuevas funciones `cambiarEstatusOrdenFlag()` y `cambiarEstatusReservaFlag()`; `loadReservasActivas` usa `?flag=`; `detectNuevasOrdenes/Reservas` y revenue calc usan flags. Eliminadas `confirmarPago()` y `confirmarPagoReserva()` (dead code). **Eliminados:** `utils/orderStatus.js` y `tests/order-status.test.js` (ya obsoletos). |
+| 2026-05-18 | hora_llegada en reservas + asignación de mesa | Migración `hora_llegada TEXT DEFAULT NULL` en `reservas`. `routes/reservations.js`: campo en GET/POST + nuevo endpoint `PATCH /:id/mesa` (owner/mozo). `routes/public.js`: `hora_llegada` en POST /reservations. `routes/mesas.js`: función `esInminente()` filtra reservas confirmadas de hoy por ventana [-30min, +120min]. `menu.html`: input `<input type="time">` opcional en formulario de reserva. `owner.html`: muestra hora en tarjetas de reserva; selector de mesa inline para asignar desde el plano. Tests: `tests/hora-llegada.test.js` (18 casos), todos pasan. Suite completa: 127/127. |

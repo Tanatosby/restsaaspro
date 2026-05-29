@@ -1,0 +1,199 @@
+
+<div id="erd" style="padding: 1rem 0"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+  },
+});
+const diagram = `erDiagram
+  restaurants {
+    int id PK
+    text name
+    int active
+    datetime created_at
+  }
+  roles {
+    int id PK
+    text name
+  }
+  users {
+    int id PK
+    text name
+    text email
+    text password_hash
+    int role_id FK
+    int restaurant_id FK
+    datetime created_at
+  }
+  sections {
+    int id PK
+    text name
+    int restaurant_id FK
+  }
+  categories {
+    int id PK
+    text name
+    int restaurant_id FK
+  }
+  menu_items {
+    int id PK
+    text name
+    text description
+    real price
+    text photo_url
+    int category_id FK
+    int restaurant_id FK
+    datetime created_at
+  }
+  order_statuses {
+    int id PK
+    text name
+  }
+  orders {
+    int id PK
+    text customer_name
+    int table_number
+    int restaurant_id FK
+    int status_id FK
+    datetime created_at
+  }
+  order_items {
+    int id PK
+    int order_id FK
+    int menu_item_id FK
+    int quantity
+    real unit_price
+  }
+  reservations {
+    int id PK
+    text customer_name
+    text customer_phone
+    text date
+    int quantity
+    int status_id FK
+    int restaurant_id FK
+    datetime created_at
+  }
+  reservation_items {
+    int id PK
+    int reservation_id FK
+    int menu_item_id FK
+    int quantity
+  }
+  menu_combos {
+    int id PK
+    int restaurant_id FK
+    text name
+    real price
+    text date
+    int combo_type
+    int active
+    datetime created_at
+  }
+  combo_slots {
+    int id PK
+    int combo_id FK
+    text slot_type
+    int required
+  }
+  combo_options {
+    int id PK
+    int slot_id FK
+    int menu_item_id FK
+  }
+  combo_orders {
+    int id PK
+    text customer_name
+    int table_number
+    int combo_id FK
+    int restaurant_id FK
+    int status_id FK
+    datetime created_at
+  }
+  combo_order_selections {
+    int id PK
+    int combo_order_id FK
+    int slot_id FK
+    int menu_item_id FK
+  }
+  combo_reservations {
+    int id PK
+    text customer_name
+    text customer_phone
+    int combo_id FK
+    text date
+    int quantity
+    int status_id FK
+    int restaurant_id FK
+    datetime created_at
+  }
+  carta_schedule {
+    int id PK
+    int menu_item_id FK
+    text date
+    int available
+  }
+
+  restaurants ||--o{ users : "tiene"
+  restaurants ||--o{ sections : "tiene"
+  restaurants ||--o{ categories : "tiene"
+  restaurants ||--o{ menu_items : "tiene"
+  restaurants ||--o{ orders : "tiene"
+  restaurants ||--o{ reservations : "tiene"
+  restaurants ||--o{ menu_combos : "tiene"
+  restaurants ||--o{ combo_orders : "tiene"
+  restaurants ||--o{ combo_reservations : "tiene"
+  roles ||--o{ users : "asigna"
+  categories ||--o{ menu_items : "agrupa"
+  order_statuses ||--o{ orders : "define"
+  order_statuses ||--o{ reservations : "define"
+  order_statuses ||--o{ combo_orders : "define"
+  order_statuses ||--o{ combo_reservations : "define"
+  orders ||--o{ order_items : "contiene"
+  menu_items ||--o{ order_items : "referencia"
+  reservations ||--o{ reservation_items : "contiene"
+  menu_items ||--o{ reservation_items : "referencia"
+  menu_combos ||--o{ combo_slots : "tiene"
+  combo_slots ||--o{ combo_options : "tiene"
+  menu_items ||--o{ combo_options : "es opcion"
+  combo_orders ||--o{ combo_order_selections : "contiene"
+  combo_slots ||--o{ combo_order_selections : "slot"
+  menu_items ||--o{ combo_order_selections : "elegido"
+  menu_combos ||--o{ combo_orders : "genera"
+  menu_combos ||--o{ combo_reservations : "genera"
+  menu_items ||--o{ carta_schedule : "controla"
+`;
+const { svg } = await mermaid.render('erd-svg', diagram);
+document.getElementById('erd').innerHTML = svg;
+
+document.querySelectorAll('#erd svg .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+</script>

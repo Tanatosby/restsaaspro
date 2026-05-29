@@ -1,0 +1,22 @@
+{
+  "name": "Menú Pro",
+  "short_name": "MenuPro",
+  "description": "Sistema de gestión para restaurantes",
+  "start_url": "/owner.html",
+  "display": "standalone",
+  "background_color": "#1a1612",
+  "theme_color": "#c8692a",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "archivo": "lomo-saltado.jpg",
+    "descripcion": "Lomo Saltado",
+    "disponible": true
+  },
+  {
+    "archivo": "aji-de-gallina.jpg",
+    "descripcion": "Ají de Gallina",
+    "disponible": true
+  },
+  {
+    "archivo": "ceviche.jpg",
+    "descripcion": "Ceviche",
+    "disponible": true
+  },
+  {
+    "archivo": "causa-rellena.jpg",
+    "descripcion": "Causa Rellena",
+    "disponible": true
+  },
+  {
+    "archivo": "arroz-con-leche.jpg",
+    "descripcion": "Arroz con Leche",
+    "disponible": true
+  },
+  {
+    "archivo": "chicha-morada.jpg",
+    "descripcion": "Chicha Morada",
+    "disponible": true
+  },
+  {
+    "archivo": "pollo-brasa.jpg",
+    "descripcion": "Pollo a la Brasa",
+    "disponible": true
+  },
+  {
+    "archivo": "seco-pollo.jpg",
+    "descripcion": "Seco de Pollo",
+    "disponible": true
+  },
+  {
+    "archivo": "tacu-tacu.jpg",
+    "descripcion": "Tacu Tacu",
+    "disponible": true
+  },
+  {
+    "archivo": "mazamorra-morada.jpg",
+    "descripcion": "Mazamorra Morada",
+    "disponible": true
+  },
+  {
+    "archivo": "chicharron.jpg",
+    "descripcion": "Chicharrón",
+    "disponible": true
+  },
+  {
+    "archivo": "papa-huancaina.jpg",
+    "descripcion": "Papa a la Huancaína",
+    "disponible": true
+  }
+]

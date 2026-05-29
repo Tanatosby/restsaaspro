@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manuales — Menupro</title>
+  <meta name="description" content="Guías de uso del sistema Menupro para dueños, cocineros, mozos y clientes.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#f97316', dark: '#ea580c' },
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          typography: {
+            DEFAULT: {
+              css: {
+                maxWidth: '100%',
+              }
+            }
+          }
+        }
+      },
+      plugins: []
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    /* Prose styles para el contenido markdown */
+    .prose h1 { font-size: 1.5rem; font-weight: 800; color: #111827; margin-bottom: 0.5rem; margin-top: 2rem; }
+    .prose h2 { font-size: 1.15rem; font-weight: 700; color: #1f2937; margin-top: 2rem; margin-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; }
+    .prose h3 { font-size: 1rem; font-weight: 600; color: #374151; margin-top: 1.5rem; margin-bottom: 0.25rem; }
+    .prose p { color: #4b5563; line-height: 1.75; margin-bottom: 0.75rem; font-size: 0.9375rem; }
+    .prose strong { color: #1f2937; font-weight: 600; }
+    .prose em { color: #6b7280; font-size: 0.875rem; }
+    .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .prose li { color: #4b5563; line-height: 1.75; margin-bottom: 0.25rem; font-size: 0.9375rem; }
+    .prose blockquote { border-left: 3px solid #f97316; background: #fff7ed; padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 1rem 0; }
+    .prose blockquote p { color: #92400e; margin: 0; font-size: 0.875rem; }
+    .prose hr { border-color: #f3f4f6; margin: 1.5rem 0; }
+    .prose code { background: #f3f4f6; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.875em; color: #374151; }
+    .prose img {
+      border-radius: 12px;
+      box-shadow: 0 0 0 2px #374151, 0 8px 30px rgba(0,0,0,0.3);
+      max-width: 280px;
+      width: 100%;
+      display: block;
+      margin: 1rem auto;
+    }
+    .prose a { color: #f97316; text-decoration: underline; }
+
+    /* Tabs activos */
+    .tab-btn.active {
+      background-color: #f97316;
+      color: white;
+      border-color: #f97316;
+    }
+    .tab-btn:not(.active) {
+      background-color: white;
+      color: #374151;
+      border-color: #e5e7eb;
+    }
+
+    #loading-indicator { display: flex; }
+    #manual-content.loaded + #loading-indicator,
+    #manual-content:not(:empty) ~ #loading-indicator { display: none; }
+  </style>
+</head>
+<body class="font-sans bg-gray-50 text-gray-900 antialiased min-h-screen">
+
+  <!-- NAV -->
+  <nav class="sticky top-0 z-50 bg-gray-900/95 backdrop-blur border-b border-gray-800">
+    <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/" class="text-white font-bold text-lg tracking-tight">
+        menu<span class="text-brand">pro</span>
+      </a>
+      <a href="/"
+         class="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al inicio
+      </a>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <div class="bg-gray-900 text-white py-10 px-4">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-2xl sm:text-3xl font-extrabold mb-2">Manuales de uso</h1>
+      <p class="text-gray-400">Guías paso a paso para cada rol del sistema.</p>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="bg-white border-b border-gray-200 sticky top-14 z-40">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="flex gap-2 overflow-x-auto py-3 scrollbar-hide" id="tabs-container">
+        <button class="tab-btn active flex-shrink-0 border rounded-lg px-4 py-2 text-sm font-semibold transition-colors min-h-[44px]"
+                data-rol="owner">
+          👑 Dueño
+        </button>
+        <button class="tab-btn flex-shrink-0 border rounded-lg px-4 py-2 text-sm font-semibold transition-colors min-h-[44px]"
+                data-rol="cocina">
+          👨‍🍳 Cocinero
+        </button>
+        <button class="tab-btn flex-shrink-0 border rounded-lg px-4 py-2 text-sm font-semibold transition-colors min-h-[44px]"
+                data-rol="mozo">
+          🛎 Mozo
+        </button>
+        <button class="tab-btn flex-shrink-0 border rounded-lg px-4 py-2 text-sm font-semibold transition-colors min-h-[44px]"
+                data-rol="cliente">
+          📱 Cliente
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENIDO -->
+  <main class="max-w-4xl mx-auto px-4 py-8">
+
+    <!-- Estado de carga -->
+    <div id="loading-indicator" class="flex items-center justify-center py-20 gap-3 text-gray-400">
+      <svg class="animate-spin w-5 h-5 text-brand" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+      <span class="text-sm">Cargando manual...</span>
+    </div>
+
+    <!-- Error -->
+    <div id="error-indicator" class="hidden py-20 text-center">
+      <p class="text-gray-400 text-sm">No se pudo cargar el manual. Intenta de nuevo.</p>
+      <button onclick="cargarManual(rolActual)"
+              class="mt-4 bg-brand text-white px-4 py-2 rounded-lg text-sm font-semibold min-h-[44px]">
+        Reintentar
+      </button>
+    </div>
+
+    <!-- Markdown renderizado -->
+    <div id="manual-content" class="prose max-w-none"></div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-900 text-gray-500 py-6 px-4 mt-12">
+    <div class="max-w-4xl mx-auto text-sm text-center">
+      <span>menu<span class="text-brand font-semibold">pro</span> · Sistema de pedidos para restaurantes</span>
+    </div>
+  </footer>
+
+  <script>
+    let rolActual = 'owner';
+
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+    });
+
+    // Reescribir las rutas de imágenes del markdown (.md usa rutas relativas del bot)
+    // Los archivos viven en landing/bot/output/screenshots/ y se sirven en /bot-screenshots/
+    function reescribirRutasImagenes(md) {
+      return md.replace(/\(\.\/screenshots\//g, '(/bot-screenshots/');
+    }
+
+    async function cargarManual(rol) {
+      rolActual = rol;
+      const contenedor = document.getElementById('manual-content');
+      const loading    = document.getElementById('loading-indicator');
+      const error      = document.getElementById('error-indicator');
+
+      contenedor.innerHTML = '';
+      error.classList.add('hidden');
+      loading.style.display = 'flex';
+
+      try {
+        const res = await fetch(`/api/manuales/${rol}`);
+        if (!res.ok) throw new Error('No encontrado');
+        const md   = await res.text();
+        const mdFix = reescribirRutasImagenes(md);
+        contenedor.innerHTML = marked.parse(mdFix);
+        loading.style.display = 'none';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch {
+        loading.style.display = 'none';
+        error.classList.remove('hidden');
+      }
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        cargarManual(btn.dataset.rol);
+      });
+    });
+
+    // Leer ?rol= de la URL al cargar
+    const params = new URLSearchParams(location.search);
+    const rolParam = params.get('rol');
+    if (rolParam && ['owner','cocina','mozo','cliente'].includes(rolParam)) {
+      const btn = document.querySelector(`[data-rol="${rolParam}"]`);
+      if (btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        rolActual = rolParam;
+      }
+    }
+
+    cargarManual(rolActual);
+  </script>
+
+</body>
+</html>

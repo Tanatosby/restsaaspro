@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — Menú Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0a0a0f;
+      --surface:     #16161f;
+      --surface-2:   #1e1e2a;
+      --border:      #2a2a3a;
+      --border-hi:   #3a3a52;
+      --accent:      #f0c040;
+      --accent-dim:  #7a6010;
+      --accent-glow: rgba(240,192,64,0.12);
+      --text:        #f0f0ff;
+      --text-2:      #c0c0d8;
+      --muted:       #7070a0;
+      --danger:      #ff6b6b;
+      --danger-bg:   #2a1010;
+      --success:     #5edda0;
+      --success-bg:  #0a1e14;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    .app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 230px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      position: sticky; top: 0; height: 100vh;
+      transition: transform 0.25s ease;
+      z-index: 50;
+    }
+
+    .sidebar-brand {
+      padding: 1.5rem 1.25rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+    .brand-title span { color: var(--accent); }
+    .brand-sub { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; margin-top: 3px; }
+
+    .sidebar-nav { padding: 1rem 0; flex: 1; }
+
+    .nav-section { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); padding: 0.5rem 1.25rem 0.25rem; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0.7rem 1.25rem; cursor: pointer;
+      color: var(--text-2); font-size: 12px; letter-spacing: 0.04em;
+      transition: color 0.15s, background 0.15s;
+      border-left: 2px solid transparent; user-select: none;
+    }
+    .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-glow); }
+    .nav-icon { font-size: 14px; width: 18px; text-align: center; }
+
+    .sidebar-footer { padding: 1rem 1.25rem; border-top: 1px solid var(--border); }
+    .admin-chip { display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem; }
+    .admin-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--accent-glow); border: 1px solid var(--accent-dim);
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .admin-info { flex: 1; overflow: hidden; }
+    .admin-name { font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role { font-size: 9px; color: var(--accent); letter-spacing: 0.1em; }
+
+    .btn-logout {
+      width: 100%; background: none; border: 1px solid var(--border);
+      border-radius: 3px; padding: 7px; font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 0.1em; color: var(--muted);
+      cursor: pointer; text-transform: uppercase; transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Mobile sidebar ── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(3px);
+      z-index: 40;
+    }
+    .sidebar-overlay.open { display: block; }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+    .topbar {
+      padding: 0.875rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--surface);
+      position: sticky; top: 0; z-index: 30;
+    }
+
+    .hamburger {
+      display: none; flex-direction: column; gap: 5px;
+      background: none; border: none; cursor: pointer; padding: 4px; flex-shrink: 0;
+    }
+    .hamburger span {
+      display: block; width: 20px; height: 2px;
+      background: var(--text-2); border-radius: 2px; transition: all 0.25s ease;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .page-title { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; flex: 1; }
+    .topbar-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+    .content { flex: 1; overflow-y: auto; padding: 1.75rem; }
+
+    /* ── Panels ── */
+    .panel { display: none; }
+    .panel.active { display: block; animation: fadeUp 0.3s ease; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Stats ── */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 1rem; margin-bottom: 1.75rem;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 1.25rem 1.1rem;
+      animation: fadeUp 0.4s ease both; transition: border-color 0.2s;
+    }
+    .stat-card:hover { border-color: var(--border-hi); }
+    .stat-card:nth-child(1){animation-delay:.05s} .stat-card:nth-child(2){animation-delay:.10s}
+    .stat-card:nth-child(3){animation-delay:.15s} .stat-card:nth-child(4){animation-delay:.20s}
+    .stat-card:nth-child(5){animation-delay:.25s} .stat-card:nth-child(6){animation-delay:.30s}
+    .stat-card:nth-child(7){animation-delay:.35s}
+    .stat-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem; }
+    .stat-value { font-family: 'Syne', sans-serif; font-size: 1.65rem; font-weight: 700; color: var(--text); line-height: 1; }
+    .stat-value.accent { color: var(--accent); }
+    .stat-sub { font-size: 10px; color: var(--muted); margin-top: 5px; }
+
+    /* ── Section header ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap;
+    }
+    .section-title { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 4px;
+      font-family: 'DM Mono', monospace; font-size: 11px;
+      letter-spacing: 0.06em; cursor: pointer; border: none;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #0a0a0f; font-weight: 500; }
+    .btn-primary:hover { background: #f5d060; }
+    .btn-ghost { background: none; color: var(--text-2); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--border-hi); color: var(--text); }
+    .btn-danger-ghost { background: none; color: var(--danger); border: 1px solid rgba(255,107,107,0.25); font-size: 10px; padding: 5px 10px; }
+    .btn-danger-ghost:hover { background: var(--danger-bg); border-color: var(--danger); }
+    .btn-sm { padding: 5px 12px; font-size: 10px; }
+
+    /* ── Table ── */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 580px; }
+    thead tr { border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+    th { padding: 0.75rem 1rem; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); text-align: left; font-weight: 500; white-space: nowrap; }
+    td { padding: 0.85rem 1rem; font-size: 12px; color: var(--text-2); border-bottom: 1px solid var(--border); vertical-align: middle; }
+    td strong { color: var(--text); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.025); }
+
+    .badge { display: inline-block; font-size: 9px; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 3px; text-transform: uppercase; font-weight: 500; }
+    .badge-on    { background: var(--success-bg); color: var(--success); border: 1px solid rgba(94,221,160,0.25); }
+    .badge-off   { background: var(--danger-bg);  color: var(--danger);  border: 1px solid rgba(255,107,107,0.25); }
+    .badge-owner { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(240,192,64,0.25); }
+    .badge-staff { background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border); }
+    .badge-admin { background: rgba(94,221,160,0.1); color: var(--success); border: 1px solid rgba(94,221,160,0.25); }
+
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .state-msg { padding: 3rem; text-align: center; color: var(--muted); font-size: 12px; letter-spacing: 0.05em; }
+
+    /* ── Panel lateral de estadísticas ── */
+    .stats-drawer-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 200;
+    }
+    .stats-drawer-backdrop.open { display: block; }
+    .stats-drawer {
+      position: fixed; top: 0; right: -100%; width: 100%; max-width: 480px; height: 100%;
+      background: var(--surface); border-left: 1px solid var(--border-hi);
+      z-index: 201; overflow-y: auto; transition: right 0.3s ease;
+      display: flex; flex-direction: column;
+    }
+    .stats-drawer.open { right: 0; }
+    .stats-drawer-header {
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0;
+      background: var(--surface); z-index: 1;
+    }
+    .stats-drawer-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
+    .stats-drawer-body { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; gap: 1.25rem; }
+    .drawer-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+    .drawer-tab {
+      padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 20px;
+      border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; transition: all 0.15s;
+    }
+    .drawer-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .drawer-panel { display: none; flex-direction: column; gap: 1rem; }
+    .drawer-panel.active { display: flex; }
+    .mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .mini-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; }
+    .mini-stat-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .mini-stat-value { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+    .mini-stat-value.accent { color: var(--accent); }
+    .drawer-section-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0; }
+    .intervalo-btns { display: flex; gap: 6px; }
+    .intervalo-btn {
+      padding: 4px 12px; font-size: 11px; font-weight: 600; border-radius: 20px;
+      border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; transition: all 0.15s;
+    }
+    .intervalo-btn.active { background: var(--accent-dim); border-color: var(--accent-dim); color: var(--text); }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+      z-index: 100; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border-hi); border-radius: 6px; width: 100%; max-width: 430px; animation: fadeUp 0.25s ease; }
+    .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text); }
+    .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; transition: color 0.15s; line-height: 1; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+    .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* ── Fields ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+    .field input, .field select {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+      padding: 10px 12px; font-family: 'DM Mono', monospace; font-size: 12px;
+      color: var(--text); outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 100%;
+    }
+    .field select option { background: var(--surface); }
+    .field input:focus, .field select:focus { border-color: var(--accent-dim); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .field input::placeholder { color: #282840; }
+
+    .form-error { display: none; background: var(--danger-bg); border: 1px solid rgba(255,107,107,0.25); border-radius: 4px; padding: 9px 12px; color: var(--danger); font-size: 11px; line-height: 1.5; }
+    .form-error.visible { display: block; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: var(--surface-2); border: 1px solid var(--border-hi);
+      border-radius: 5px; padding: 0.75rem 1rem;
+      font-size: 12px; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+      z-index: 200; transform: translateY(80px);
+      transition: transform 0.3s ease; pointer-events: none; max-width: 320px;
+    }
+    #toast.show { transform: translateY(0); }
+    #toast.ok  { border-left: 3px solid var(--success); }
+    #toast.err { border-left: 3px solid var(--danger); }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.5); }
+      .hamburger { display: flex; }
+      .topbar-meta { display: none; }
+      .content { padding: 1.25rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-title">Restaurant <span>SaaS</span></div>
+      <div class="brand-sub">// admin console</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Platform</div>
+      <div class="nav-item active" onclick="showPanel('stats')">
+        <span class="nav-icon">◈</span> Overview
+      </div>
+      <div class="nav-item" onclick="showPanel('restaurantes')">
+        <span class="nav-icon">⊞</span> Restaurantes
+      </div>
+      <div class="nav-item" onclick="showPanel('usuarios')">
+        <span class="nav-icon">⊙</span> Usuarios
+      </div>
+      <div class="nav-section">Configuraciones</div>
+      <div class="nav-item" onclick="showPanel('cat-reserva')">
+        <span class="nav-icon">◧</span> Categorías de reserva
+      </div>
+      <div class="nav-item" onclick="showPanel('cat-orden')">
+        <span class="nav-icon">◨</span> Categorías de orden
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-chip">
+        <div class="admin-avatar">★</div>
+        <div class="admin-info">
+          <div class="admin-name" id="admin-name">—</div>
+          <div class="admin-role">superadmin</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">↩ Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menú">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="page-title" id="page-title">Overview</div>
+      <div class="topbar-meta" id="topbar-date">—</div>
+    </div>
+
+    <div class="content">
+
+      <!-- PANEL: Stats -->
+      <div class="panel active" id="panel-stats">
+        <div class="stats-grid" id="stats-grid">
+          <div class="state-msg">Cargando estadísticas…</div>
+        </div>
+      </div>
+
+      <!-- PANEL: Restaurantes -->
+      <div class="panel" id="panel-restaurantes">
+        <div class="section-header">
+          <span class="section-title">Restaurantes registrados</span>
+          <button class="btn btn-primary" onclick="openModalNuevoRestaurante()">+ Nuevo restaurante</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Nombre</th><th>Owner</th><th>Usuarios</th><th>Órdenes</th><th>Revenue</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tbody-restaurantes"><tr><td colspan="8" class="state-msg">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANEL: Categorías de orden -->
+      <div class="panel" id="panel-cat-orden">
+        <div class="section-header">
+          <span class="section-title">Categorías de orden</span>
+          <button class="btn btn-primary" onclick="openModalNuevaCatOrden()">+ Nueva categoría</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Nombre</th><th>Flag semántico</th><th>Órdenes</th><th>Acciones</th></tr></thead>
+            <tbody id="tbody-cat-orden"><tr><td colspan="5" class="state-msg">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANEL: Categorías de reserva -->
+      <div class="panel" id="panel-cat-reserva">
+        <div class="section-header">
+          <span class="section-title">Categorías de reserva</span>
+          <button class="btn btn-primary" onclick="openModalNuevaCatReserva()">+ Nueva categoría</button>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:1rem">Cada flag define el rol semántico del estatus en el flujo. Solo puede haber un estatus por flag. <span style="color:var(--accent)">FULL</span> = cobrado y cerrado.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Nombre</th><th>Flag semántico</th><th>Reservas</th><th>Acciones</th></tr></thead>
+            <tbody id="tbody-cat-reserva"><tr><td colspan="5" class="state-msg">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANEL: Usuarios -->
+      <div class="panel" id="panel-usuarios">
+        <div class="section-header">
+          <span class="section-title">Usuarios de la plataforma</span>
+          <button class="btn btn-primary" onclick="openModalNuevoUsuario()">+ Nuevo usuario</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Restaurante</th><th>Creado</th><th>Acciones</th></tr></thead>
+            <tbody id="tbody-usuarios"><tr><td colspan="7" class="state-msg">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Panel lateral: Estadísticas por restaurante -->
+<div class="stats-drawer-backdrop" id="stats-backdrop" onclick="cerrarStatsDrawer()"></div>
+<div class="stats-drawer" id="stats-drawer">
+  <div class="stats-drawer-header">
+    <span class="stats-drawer-title" id="stats-drawer-nombre">—</span>
+    <button class="modal-close" onclick="cerrarStatsDrawer()">✕</button>
+  </div>
+  <div class="stats-drawer-body">
+    <div class="drawer-tabs">
+      <button class="drawer-tab active" onclick="switchDrawerTab('resumen')">Resumen</button>
+      <button class="drawer-tab" onclick="switchDrawerTab('demanda')">Demanda</button>
+      <button class="drawer-tab" onclick="switchDrawerTab('ganancias')">Ganancias</button>
+    </div>
+
+    <!-- Tab: Resumen -->
+    <div class="drawer-panel active" id="drawer-resumen">
+      <div class="mini-stats" id="drawer-mini-stats">
+        <div class="mini-stat"><div class="mini-stat-label">Cargando…</div></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn btn-ghost btn-sm" onclick="descargarResumenAdmin()">⬇ Excel</button>
+      </div>
+    </div>
+
+    <!-- Tab: Demanda -->
+    <div class="drawer-panel" id="drawer-demanda">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">
+        <span class="drawer-section-title">Curva de clientes</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="intervalo-btns" id="demanda-intervalo-btns">
+            <button class="intervalo-btn active" onclick="cambiarIntervaloDemanda('dia')">Día</button>
+            <button class="intervalo-btn" onclick="cambiarIntervaloDemanda('semana')">Semana</button>
+            <button class="intervalo-btn" onclick="cambiarIntervaloDemanda('mes')">Mes</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="descargarDemandaAdmin()">⬇ Excel</button>
+        </div>
+      </div>
+      <canvas id="chart-demanda-admin" height="200"></canvas>
+    </div>
+
+    <!-- Tab: Ganancias -->
+    <div class="drawer-panel" id="drawer-ganancias">
+      <div class="mini-stats" id="drawer-ganancias-stats">
+        <div class="mini-stat"><div class="mini-stat-label">Cargando…</div></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">
+        <span class="drawer-section-title">Evolución de ganancias</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="intervalo-btns" id="ganancias-intervalo-btns">
+            <button class="intervalo-btn active" onclick="cambiarIntervaloGanancias('dia')">Día</button>
+            <button class="intervalo-btn" onclick="cambiarIntervaloGanancias('semana')">Semana</button>
+            <button class="intervalo-btn" onclick="cambiarIntervaloGanancias('mes')">Mes</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="descargarGananciasAdmin()">⬇ Excel</button>
+        </div>
+      </div>
+      <canvas id="chart-ganancias-admin" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo restaurante -->
+<div class="modal-backdrop" id="modal-restaurante">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nuevo restaurante</span>
+      <button class="modal-close" onclick="closeModal('modal-restaurante')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre del restaurante</label><input id="f-restaurant-name" placeholder="El Buen Sabor" /></div>
+      <div class="field"><label>Nombre del owner</label><input id="f-owner-name" placeholder="Juan Pérez" /></div>
+      <div class="field"><label>Email del owner</label><input id="f-owner-email" type="email" placeholder="juan@restaurante.com" /></div>
+      <div class="field"><label>Contraseña inicial</label><input id="f-owner-password" type="password" placeholder="mín. 8 caracteres" /></div>
+      <div class="form-error" id="err-restaurante"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-restaurante')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearRestaurante()">Crear restaurante</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo usuario -->
+<div class="modal-backdrop" id="modal-nuevo-usuario">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nuevo usuario</span>
+      <button class="modal-close" onclick="closeModal('modal-nuevo-usuario')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre completo</label><input id="f-u-nombre" placeholder="María García" /></div>
+      <div class="field"><label>Email</label><input id="f-u-email" type="email" placeholder="maria@restaurante.com" /></div>
+      <div class="field"><label>Contraseña inicial</label><input id="f-u-password" type="password" placeholder="mín. 8 caracteres" /></div>
+      <div class="field">
+        <label>Rol</label>
+        <select id="f-u-rol" onchange="onRolChange()">
+          <option value="owner">owner</option>
+          <option value="cocinero">cocinero</option>
+          <option value="mozo">mozo</option>
+        </select>
+      </div>
+      <div class="field" id="field-restaurante">
+        <label>Restaurante</label>
+        <select id="f-u-restaurante">
+          <option value="">— selecciona un restaurante —</option>
+        </select>
+      </div>
+      <div class="form-error" id="err-nuevo-usuario"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-nuevo-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearUsuario()">Crear usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Reset password -->
+<div class="modal-backdrop" id="modal-password">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Reset contraseña</span>
+      <button class="modal-close" onclick="closeModal('modal-password')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:11px;color:var(--muted)">Usuario: <span id="pw-usuario-nombre" style="color:var(--text)"></span></p>
+      <div class="field"><label>Nueva contraseña</label><input id="f-new-password" type="password" placeholder="mín. 8 caracteres" /></div>
+      <div class="form-error" id="err-password"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-password')">Cancelar</button>
+      <button class="btn btn-primary" onclick="resetPassword()">Actualizar contraseña</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva categoría de orden -->
+<div class="modal-backdrop" id="modal-cat-orden">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nueva categoría de orden</span>
+      <button class="modal-close" onclick="closeModal('modal-cat-orden')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre del estatus</label><input id="f-cat-orden-nombre" placeholder="ej: en revisión" /></div>
+      <div class="form-error" id="err-cat-orden"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cat-orden')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearCatOrden()">Crear categoría</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva categoría de reserva -->
+<div class="modal-backdrop" id="modal-cat-reserva">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nueva categoría de reserva</span>
+      <button class="modal-close" onclick="closeModal('modal-cat-reserva')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre del estatus</label><input id="f-cat-nombre" placeholder="ej: en espera" /></div>
+      <div class="form-error" id="err-cat-reserva"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cat-reserva')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearCatReserva()">Crear categoría</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: QR del menú -->
+<div class="modal-backdrop" id="modal-qr">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-qr-title">QR del menú</span>
+      <button class="modal-close" onclick="closeModal('modal-qr')">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;align-items:center;gap:1.25rem">
+      <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;justify-content:center">
+        <div id="admin-qr-wrap" style="background:#fff;padding:14px;border-radius:10px;border:1px solid #e2e8f0;display:inline-block"></div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;justify-content:center">
+          <div style="width:100%">
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#94a3b8;display:block;margin-bottom:6px">Link del menú</label>
+            <div style="display:flex;gap:6px">
+              <input id="admin-qr-link" readonly style="flex:1;border:1px solid #e2e8f0;border-radius:6px;padding:7px 10px;font-size:12px;background:#f8fafc;min-width:200px" />
+              <button class="btn btn-ghost btn-sm" onclick="copiarLinkQRAdmin()">Copiar</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="align-self:flex-start" onclick="descargarQRAdmin()">⬇ Descargar PNG</button>
+        </div>
+      </div>
+      <!-- QRs por mesa -->
+      <div style="width:100%;border-top:1px solid #e2e8f0;padding-top:1rem">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#94a3b8;display:block;margin-bottom:8px">QR por mesa</label>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:0.75rem">
+          <span style="font-size:13px">Número de mesas:</span>
+          <input type="number" id="admin-qr-num-mesas" value="10" min="1" max="100" style="width:70px;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;font-size:13px" />
+          <button class="btn btn-ghost btn-sm" onclick="generarQRsMesasAdmin()">Generar</button>
+        </div>
+        <div id="admin-qr-mesas-grid" style="display:flex;flex-wrap:wrap;gap:1rem;max-height:280px;overflow-y:auto"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-qr')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span id="toast-icon"></span><span id="toast-text"></span></div>
+
+<script>
+  // ── Auth guard ──
+  const session = (() => { try { return JSON.parse(sessionStorage.getItem('session') || 'null'); } catch { return null; } })();
+  if (!session || session.role !== 'admin') window.location.replace('/admin/login.html');
+
+  document.getElementById('admin-name').textContent = session?.name || 'Admin';
+  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('es-PE', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  let selectedUserId    = null;
+  let restaurantesCache = [];
+
+  // ── Hamburger ──
+  function toggleSidebar() {
+    const open = document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open', open);
+    document.getElementById('hamburger').classList.toggle('open', open);
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+    document.getElementById('hamburger').classList.remove('open');
+  }
+
+  // ── Panels ──
+  const TITLES = {
+    stats:       'Overview',
+    restaurantes:'Restaurantes',
+    usuarios:    'Usuarios',
+    'cat-reserva': 'Categorías de reserva',
+    'cat-orden':   'Categorías de orden'
+  };
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => {
+      const txt = n.textContent.trim().toLowerCase();
+      const key = name === 'stats' ? 'overview'
+        : name === 'cat-reserva' ? 'categorías de reserva'
+        : name === 'cat-orden'   ? 'categorías de orden'
+        : name;
+      if (txt.includes(key)) n.classList.add('active');
+    });
+    document.getElementById('page-title').textContent = TITLES[name];
+    closeSidebar();
+    if (name === 'stats')        loadStats();
+    if (name === 'restaurantes') loadRestaurantes();
+    if (name === 'usuarios')     loadUsuarios();
+    if (name === 'cat-reserva')  loadCatReserva();
+    if (name === 'cat-orden')    loadCatOrden();
+  }
+
+  // ── API ──
+  async function api(method, path, body) {
+    const opts = { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch('/api/admin' + path, opts);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error desconocido');
+    return data;
+  }
+
+  // ── Stats ──
+  async function loadStats() {
+    const grid = document.getElementById('stats-grid');
+    grid.innerHTML = '<div class="state-msg">Cargando estadísticas…</div>';
+    try {
+      const d = await api('GET', '/stats');
+      grid.innerHTML = `
+        ${sc('Restaurantes',    d.totalRestaurantes, '')}
+        ${sc('Usuarios',        d.totalUsuarios, '')}
+        ${sc('Órdenes totales', d.totalOrdenes, '')}
+        ${sc('Reservas totales',d.totalReservas, '')}
+        ${sc('Revenue total',   'S/ ' + n2(d.totalRevenue), 'accent')}
+        ${sc('Órdenes hoy',     d.ordenesHoy, '', 'del día')}
+        ${sc('Revenue hoy',     'S/ ' + n2(d.revenueHoy), 'accent', 'del día')}
+      `;
+    } catch (e) { grid.innerHTML = `<div class="state-msg">⚠ ${e.message}</div>`; }
+  }
+  const sc = (label, value, cls, sub) =>
+    `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value ${cls}">${value}</div>${sub ? `<div class="stat-sub">${sub}</div>` : ''}</div>`;
+
+  // ── Restaurantes ──
+  async function loadRestaurantes() {
+    const tbody = document.getElementById('tbody-restaurantes');
+    tbody.innerHTML = '<tr><td colspan="8" class="state-msg">Cargando…</td></tr>';
+    try {
+      const list = await api('GET', '/restaurantes');
+      restaurantesCache = list;
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" class="state-msg">Sin restaurantes registrados</td></tr>'; return; }
+      tbody.innerHTML = list.map(r => `<tr>
+        <td style="color:var(--muted)">${r.id}</td>
+        <td><strong>${r.nombre}</strong></td>
+        <td><div style="color:var(--text)">${r.owner_nombre || '—'}</div><div style="color:var(--muted);font-size:10px">${r.owner_email || ''}</div></td>
+        <td>${r.total_usuarios}</td>
+        <td>${r.total_ordenes}</td>
+        <td style="color:var(--accent);font-weight:500">S/ ${n2(r.revenue)}</td>
+        <td><span class="badge ${r.activo ? 'badge-on' : 'badge-off'}">${r.activo ? 'activo' : 'inactivo'}</span></td>
+        <td><div class="actions">
+          <button class="btn btn-ghost btn-sm" onclick="abrirStatsDrawer(${r.id}, '${esc(r.nombre)}')">📊 Stats</button>
+          <button class="btn btn-ghost btn-sm" onclick="verQR(${r.id}, '${esc(r.nombre)}')">QR</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleRestaurante(${r.id})">${r.activo ? 'Desactivar' : 'Activar'}</button>
+          <button class="btn btn-danger-ghost" onclick="eliminarRestaurante(${r.id}, '${esc(r.nombre)}')">Eliminar</button>
+        </div></td>
+      </tr>`).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="8" class="state-msg">⚠ ${e.message}</td></tr>`; }
+  }
+
+  async function toggleRestaurante(id) {
+    try { const d = await api('PATCH', `/restaurantes/${id}/toggle`); toast(d.message, 'ok'); loadRestaurantes(); }
+    catch (e) { toast(e.message, 'err'); }
+  }
+
+  async function eliminarRestaurante(id, nombre) {
+    if (!confirm(`¿Eliminar "${nombre}" y TODOS sus datos? Esta acción es irreversible.`)) return;
+    try { const d = await api('DELETE', `/restaurantes/${id}`); toast(d.message, 'ok'); loadRestaurantes(); }
+    catch (e) { toast(e.message, 'err'); }
+  }
+
+  function openModalNuevoRestaurante() {
+    ['f-restaurant-name','f-owner-name','f-owner-email','f-owner-password'].forEach(id => document.getElementById(id).value = '');
+    setErr('err-restaurante', '');
+    openModal('modal-restaurante');
+  }
+
+  async function crearRestaurante() {
+    const restaurantName = document.getElementById('f-restaurant-name').value.trim();
+    const ownerName      = document.getElementById('f-owner-name').value.trim();
+    const email          = document.getElementById('f-owner-email').value.trim();
+    const password       = document.getElementById('f-owner-password').value;
+    if (!restaurantName || !ownerName || !email || !password) return setErr('err-restaurante', 'Todos los campos son requeridos');
+    if (password.length < 8) return setErr('err-restaurante', 'La contraseña debe tener al menos 8 caracteres');
+    try {
+      const d = await api('POST', '/restaurantes', { restaurantName, ownerName, email, password });
+      toast(d.message, 'ok'); closeModal('modal-restaurante'); loadRestaurantes();
+    } catch (e) { setErr('err-restaurante', e.message); }
+  }
+
+  // ── Usuarios ──
+  async function loadUsuarios() {
+    const tbody = document.getElementById('tbody-usuarios');
+    tbody.innerHTML = '<tr><td colspan="7" class="state-msg">Cargando…</td></tr>';
+    try {
+      const list = await api('GET', '/usuarios');
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="state-msg">Sin usuarios registrados</td></tr>'; return; }
+      tbody.innerHTML = list.map(u => `<tr>
+        <td style="color:var(--muted)">${u.id}</td>
+        <td><strong>${u.nombre}</strong></td>
+        <td style="color:var(--muted)">${u.email}</td>
+        <td><span class="badge ${badgeRol(u.rol)}">${u.rol}</span></td>
+        <td>${u.restaurante || '<span style="color:var(--muted)">—</span>'}</td>
+        <td style="color:var(--muted)">${fDate(u.created_at)}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="openModalPassword(${u.id}, '${esc(u.nombre)}')">Reset pwd</button></td>
+      </tr>`).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="7" class="state-msg">⚠ ${e.message}</td></tr>`; }
+  }
+
+  const badgeRol = r => r === 'admin' ? 'badge-admin' : r === 'owner' ? 'badge-owner' : 'badge-staff';
+
+  // ── Modal: Nuevo usuario ──
+  async function openModalNuevoUsuario() {
+    ['f-u-nombre','f-u-email','f-u-password'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-u-rol').value = 'owner';
+    setErr('err-nuevo-usuario', '');
+
+    const sel = document.getElementById('f-u-restaurante');
+    sel.innerHTML = '<option value="">— selecciona un restaurante —</option>';
+    let rests = restaurantesCache;
+    if (!rests.length) { try { rests = await api('GET', '/restaurantes'); restaurantesCache = rests; } catch {} }
+    rests.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r.id; o.textContent = r.nombre; sel.appendChild(o);
+    });
+
+    document.getElementById('field-restaurante').style.display = 'flex';
+    openModal('modal-nuevo-usuario');
+  }
+
+  function onRolChange() {
+    // Todos los roles no-admin requieren restaurante en este sistema
+    document.getElementById('field-restaurante').style.display = 'flex';
+  }
+
+  async function crearUsuario() {
+    const nombre      = document.getElementById('f-u-nombre').value.trim();
+    const email       = document.getElementById('f-u-email').value.trim();
+    const password    = document.getElementById('f-u-password').value;
+    const rol         = document.getElementById('f-u-rol').value;
+    const restaurante = document.getElementById('f-u-restaurante').value;
+    if (!nombre || !email || !password) return setErr('err-nuevo-usuario', 'Nombre, email y contraseña son requeridos');
+    if (password.length < 8) return setErr('err-nuevo-usuario', 'La contraseña debe tener al menos 8 caracteres');
+    if (!restaurante) return setErr('err-nuevo-usuario', 'Selecciona un restaurante para este usuario');
+    try {
+      const d = await api('POST', '/usuarios', { nombre, email, password, rol, id_restaurante: restaurante });
+      toast(d.message, 'ok'); closeModal('modal-nuevo-usuario'); loadUsuarios();
+    } catch (e) { setErr('err-nuevo-usuario', e.message); }
+  }
+
+  // ── Modal: Reset password ──
+  function openModalPassword(id, nombre) {
+    selectedUserId = id;
+    document.getElementById('pw-usuario-nombre').textContent = nombre;
+    document.getElementById('f-new-password').value = '';
+    setErr('err-password', '');
+    openModal('modal-password');
+  }
+
+  async function resetPassword() {
+    const password = document.getElementById('f-new-password').value;
+    if (!password || password.length < 8) return setErr('err-password', 'La contraseña debe tener al menos 8 caracteres');
+    try {
+      const d = await api('PATCH', `/usuarios/${selectedUserId}/password`, { password });
+      toast(d.message, 'ok'); closeModal('modal-password');
+    } catch (e) { setErr('err-password', e.message); }
+  }
+
+  // ── Helpers de flags ──
+  const FLAGS_ORDEN = [
+    { key: 'inicial',   label: 'INICIAL',    color: '#2e7d52', prop: 'es_inicial'   },
+    { key: 'en-cocina', label: 'EN COCINA',  color: '#c8692a', prop: 'es_en_cocina' },
+    { key: 'listo',     label: 'LISTO',      color: '#1a6090', prop: 'es_listo'     },
+    { key: 'pagado',    label: 'PAGADO',     color: '#7c3aed', prop: 'es_pagado'    },
+    { key: 'cancelado', label: 'CANCELADO',  color: '#dc2626', prop: 'es_cancelado' },
+  ];
+  const FLAGS_RESERVA = [
+    { key: 'inicial',        label: 'INICIAL',       color: '#2e7d52', prop: 'es_inicial'       },
+    { key: 'confirmada',     label: 'CONFIRMADA',    color: '#1a6090', prop: 'es_confirmada'     },
+    { key: 'en-cocina',      label: 'EN COCINA',     color: '#c8692a', prop: 'es_en_cocina'      },
+    { key: 'listo',          label: 'LISTO',         color: '#0891b2', prop: 'es_listo'          },
+    { key: 'cliente-llego',  label: 'CLIENTE LLEGÓ', color: '#7c3aed', prop: 'es_cliente_llego'  },
+    { key: 'full',           label: 'FULL/COBRADO',  color: '#d97706', prop: 'es_full'           },
+    { key: 'cancelado',      label: 'CANCELADO',     color: '#dc2626', prop: 'es_cancelado'      },
+  ];
+
+  function flagBadge(e, flags) {
+    const activo = flags.find(f => e[f.prop]);
+    if (!activo) return `<span style="color:var(--muted)">—</span>`;
+    return `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.06em;color:#fff;background:${activo.color}">${activo.label}</span>`;
+  }
+
+  function flagSelect(e, flags, fnName) {
+    const activo = flags.find(f => e[f.prop]);
+    const opts = flags.map(f =>
+      `<option value="${f.key}" ${activo && activo.key === f.key ? 'selected' : ''}>${f.label}</option>`
+    ).join('');
+    return `<select style="font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text)"
+      onchange="${fnName}(${e.id}, '${esc(e.nombre)}', this.value); this.blur()">
+      ${!activo ? `<option value="" selected disabled>Asignar flag…</option>` : ''}
+      ${opts}
+    </select>`;
+  }
+
+  // ── Categorías de orden ──
+  async function loadCatOrden() {
+    const tbody = document.getElementById('tbody-cat-orden');
+    tbody.innerHTML = '<tr><td colspan="5" class="state-msg">Cargando…</td></tr>';
+    try {
+      const list = await api('GET', '/estatus-orden');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="state-msg">Sin categorías registradas</td></tr>';
+        return;
+      }
+      const tieneFlag = e => FLAGS_ORDEN.some(f => e[f.prop]);
+      tbody.innerHTML = list.map(e => `<tr>
+        <td style="color:var(--muted)">${e.id}</td>
+        <td><strong>${esc(e.nombre)}</strong></td>
+        <td>${flagBadge(e, FLAGS_ORDEN)}</td>
+        <td>${e.total_ordenes > 0
+          ? `<span class="badge badge-on">${e.total_ordenes}</span>`
+          : `<span style="color:var(--muted)">0</span>`}
+        </td>
+        <td><div class="actions">
+          ${flagSelect(e, FLAGS_ORDEN, 'setFlagOrden')}
+          <button class="btn btn-danger-ghost btn-sm"
+            onclick="eliminarCatOrden(${e.id}, '${esc(e.nombre)}', ${e.total_ordenes}, ${tieneFlag(e)})"
+            ${e.total_ordenes > 0 || tieneFlag(e) ? 'style="opacity:.45;cursor:not-allowed"' : ''}>
+            Eliminar
+          </button>
+        </div></td>
+      </tr>`).join('');
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="5" class="state-msg">⚠ ${e.message}</td></tr>`;
+    }
+  }
+
+  async function setFlagOrden(id, nombre, flag) {
+    if (!flag) return;
+    if (!confirm(`¿Asignar flag "${flag}" a "${nombre}"? Se quitará del estatus que lo tenga actualmente.`)) {
+      loadCatOrden(); return;
+    }
+    try {
+      const d = await api('PATCH', `/estatus-orden/${id}/set-${flag}`);
+      toast(d.message, 'ok');
+      loadCatOrden();
+    } catch (e) { toast(e.message, 'err'); loadCatOrden(); }
+  }
+
+  function openModalNuevaCatOrden() {
+    document.getElementById('f-cat-orden-nombre').value = '';
+    setErr('err-cat-orden', '');
+    openModal('modal-cat-orden');
+  }
+
+  async function crearCatOrden() {
+    const nombre = document.getElementById('f-cat-orden-nombre').value.trim();
+    if (!nombre) return setErr('err-cat-orden', 'El nombre es requerido');
+    try {
+      const d = await api('POST', '/estatus-orden', { nombre });
+      toast(d.message, 'ok');
+      closeModal('modal-cat-orden');
+      loadCatOrden();
+    } catch (e) { setErr('err-cat-orden', e.message); }
+  }
+
+  async function eliminarCatOrden(id, nombre, total, tieneFlag) {
+    if (tieneFlag) return toast(`"${nombre}" tiene un flag semántico activo. Reasigna el flag a otro estatus primero.`, 'err');
+    if (total > 0) return toast(`"${nombre}" tiene ${total} orden(es) asignada(s) y no puede eliminarse`, 'err');
+    if (!confirm(`¿Eliminar el estatus "${nombre}"?`)) return;
+    try {
+      const d = await api('DELETE', `/estatus-orden/${id}`);
+      toast(d.message, 'ok');
+      loadCatOrden();
+    } catch (e) { toast(e.message, 'err'); }
+  }
+
+  // ── Categorías de reserva ──
+  async function loadCatReserva() {
+    const tbody = document.getElementById('tbody-cat-reserva');
+    tbody.innerHTML = '<tr><td colspan="5" class="state-msg">Cargando…</td></tr>';
+    try {
+      const list = await api('GET', '/estatus-reserva');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="state-msg">Sin categorías registradas</td></tr>';
+        return;
+      }
+      const tieneFlag = e => FLAGS_RESERVA.some(f => e[f.prop]);
+      tbody.innerHTML = list.map(e => `<tr>
+        <td style="color:var(--muted)">${e.id}</td>
+        <td><strong>${esc(e.nombre)}</strong></td>
+        <td>${flagBadge(e, FLAGS_RESERVA)}</td>
+        <td>${e.total_reservas > 0
+          ? `<span class="badge badge-on">${e.total_reservas}</span>`
+          : `<span style="color:var(--muted)">0</span>`}
+        </td>
+        <td><div class="actions">
+          ${flagSelect(e, FLAGS_RESERVA, 'setFlagReserva')}
+          <button class="btn btn-danger-ghost btn-sm"
+            onclick="eliminarCatReserva(${e.id}, '${esc(e.nombre)}', ${e.total_reservas}, ${tieneFlag(e)})"
+            ${e.total_reservas > 0 || tieneFlag(e) ? 'style="opacity:.45;cursor:not-allowed"' : ''}>
+            Eliminar
+          </button>
+        </div></td>
+      </tr>`).join('');
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="5" class="state-msg">⚠ ${e.message}</td></tr>`;
+    }
+  }
+
+  async function setFlagReserva(id, nombre, flag) {
+    if (!flag) return;
+    if (!confirm(`¿Asignar flag "${flag}" a "${nombre}"? Se quitará del estatus que lo tenga actualmente.`)) {
+      loadCatReserva(); return;
+    }
+    try {
+      const d = await api('PATCH', `/estatus-reserva/${id}/set-${flag}`);
+      toast(d.message, 'ok');
+      loadCatReserva();
+    } catch (e) { toast(e.message, 'err'); loadCatReserva(); }
+  }
+
+  function openModalNuevaCatReserva() {
+    document.getElementById('f-cat-nombre').value = '';
+    setErr('err-cat-reserva', '');
+    openModal('modal-cat-reserva');
+  }
+
+  async function crearCatReserva() {
+    const nombre = document.getElementById('f-cat-nombre').value.trim();
+    if (!nombre) return setErr('err-cat-reserva', 'El nombre es requerido');
+    try {
+      const d = await api('POST', '/estatus-reserva', { nombre });
+      toast(d.message, 'ok');
+      closeModal('modal-cat-reserva');
+      loadCatReserva();
+    } catch (e) { setErr('err-cat-reserva', e.message); }
+  }
+
+  async function eliminarCatReserva(id, nombre, total, tieneFlag) {
+    if (tieneFlag) return toast(`"${nombre}" tiene un flag semántico activo. Reasigna el flag a otro estatus primero.`, 'err');
+    if (total > 0) return toast(`"${nombre}" tiene ${total} reserva(s) asignada(s) y no puede eliminarse`, 'err');
+    if (!confirm(`¿Eliminar el estatus "${nombre}"?`)) return;
+    try {
+      const d = await api('DELETE', `/estatus-reserva/${id}`);
+      toast(d.message, 'ok');
+      loadCatReserva();
+    } catch (e) { toast(e.message, 'err'); }
+  }
+
+  // ── Logout ──
+  async function logout() {
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); }
+    finally { sessionStorage.removeItem('session'); window.location.replace('/admin/login.html'); }
+  }
+
+  // ── Modal helpers ──
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-backdrop').forEach(b =>
+    b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); })
+  );
+
+  // ── Utils ──
+  function setErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.toggle('visible', !!msg); }
+  const n2    = v => Number(v).toFixed(2);
+  const fDate = r => r ? (r.split('T')[0] || r.split(' ')[0]) : '—';
+  const esc   = s => String(s).replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  let toastTimer;
+  function toast(msg, type) {
+    const el = document.getElementById('toast');
+    el.className = `show ${type}`;
+    document.getElementById('toast-icon').textContent = type === 'ok' ? '✓' : '⚠';
+    document.getElementById('toast-text').textContent = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  loadStats();
+
+  // ── Panel lateral de estadísticas ───────────────────────────────────────────
+
+  let _statsRestId    = null;
+  let _statsNombre    = null;
+  let _drawerTabActivo = 'resumen';
+  let _demandaIntervalo  = 'dia';
+  let _gananciasIntervalo = 'dia';
+  let _chartDemanda    = null;
+  let _chartGanancias  = null;
+
+  function abrirStatsDrawer(id, nombre) {
+    _statsRestId  = id;
+    _statsNombre  = nombre;
+    _drawerTabActivo = 'resumen';
+    document.getElementById('stats-drawer-nombre').textContent = nombre;
+    document.getElementById('stats-backdrop').classList.add('open');
+    document.getElementById('stats-drawer').classList.add('open');
+    // Resetear tabs
+    document.querySelectorAll('.drawer-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+    document.querySelectorAll('.drawer-panel').forEach((p, i) => p.classList.toggle('active', i === 0));
+    cargarResumen();
+  }
+
+  function cerrarStatsDrawer() {
+    document.getElementById('stats-backdrop').classList.remove('open');
+    document.getElementById('stats-drawer').classList.remove('open');
+  }
+
+  function switchDrawerTab(tab) {
+    _drawerTabActivo = tab;
+    const tabs   = ['resumen', 'demanda', 'ganancias'];
+    document.querySelectorAll('.drawer-tab').forEach((t, i) => t.classList.toggle('active', tabs[i] === tab));
+    document.querySelectorAll('.drawer-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`drawer-${tab}`).classList.add('active');
+    if (tab === 'resumen')   cargarResumen();
+    if (tab === 'demanda')   cargarDemanda(_demandaIntervalo);
+    if (tab === 'ganancias') cargarGanancias(_gananciasIntervalo);
+  }
+
+  async function cargarResumen() {
+    const el = document.getElementById('drawer-mini-stats');
+    el.innerHTML = '<div class="mini-stat"><div class="mini-stat-label">Cargando…</div></div>';
+    try {
+      const d = await api('GET', `/restaurantes/${_statsRestId}/reportes/resumen`);
+      el.innerHTML = `
+        <div class="mini-stat">
+          <div class="mini-stat-label">Órdenes totales</div>
+          <div class="mini-stat-value">${d.ordenes}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Reservas totales</div>
+          <div class="mini-stat-value">${d.reservas}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Órdenes hoy</div>
+          <div class="mini-stat-value">${d.ordenesHoy}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Reservas hoy</div>
+          <div class="mini-stat-value">${d.reservasHoy}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Ganancias totales</div>
+          <div class="mini-stat-value accent">S/ ${n2(d.ganancias.total)}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Ganancias este mes</div>
+          <div class="mini-stat-value accent">S/ ${n2(d.ganancias.mes)}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Ganancias esta semana</div>
+          <div class="mini-stat-value">S/ ${n2(d.ganancias.semana)}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Ganancias hoy</div>
+          <div class="mini-stat-value">S/ ${n2(d.ganancias.dia)}</div>
+        </div>`;
+    } catch(e) { el.innerHTML = `<div class="mini-stat"><div class="mini-stat-label">⚠ ${e.message}</div></div>`; }
+  }
+
+  function cambiarIntervaloDemanda(intervalo) {
+    _demandaIntervalo = intervalo;
+    document.querySelectorAll('#demanda-intervalo-btns .intervalo-btn').forEach(b =>
+      b.classList.toggle('active', b.textContent.toLowerCase().startsWith(intervalo.slice(0,3)))
+    );
+    cargarDemanda(intervalo);
+  }
+
+  async function cargarDemanda(intervalo) {
+    try {
+      const data = await api('GET', `/restaurantes/${_statsRestId}/reportes/clientes-timeline?intervalo=${intervalo}`);
+      const labels  = data.map(r => r.periodo);
+      const ordenes = data.map(r => r.ordenes);
+      const reservas = data.map(r => r.reservas);
+      const total   = data.map(r => r.total);
+      const ctx = document.getElementById('chart-demanda-admin').getContext('2d');
+      if (_chartDemanda) _chartDemanda.destroy();
+      _chartDemanda = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Órdenes',  data: ordenes,  borderColor: '#c8692a', backgroundColor: 'rgba(200,105,42,0.08)', tension: 0.3, fill: true },
+            { label: 'Reservas', data: reservas, borderColor: '#1a6090', backgroundColor: 'rgba(26,96,144,0.08)',  tension: 0.3, fill: true },
+            { label: 'Total',    data: total,    borderColor: '#2e7d52', backgroundColor: 'rgba(46,125,82,0.06)',  tension: 0.3, fill: false },
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { labels: { font: { size: 11 } } } }, scales: { y: { beginAtZero: true } } }
+      });
+    } catch(e) { console.error(e); }
+  }
+
+  function cambiarIntervaloGanancias(intervalo) {
+    _gananciasIntervalo = intervalo;
+    document.querySelectorAll('#ganancias-intervalo-btns .intervalo-btn').forEach(b =>
+      b.classList.toggle('active', b.textContent.toLowerCase().startsWith(intervalo.slice(0,3)))
+    );
+    cargarGanancias(intervalo);
+  }
+
+  async function cargarGanancias(intervalo) {
+    const elStats = document.getElementById('drawer-ganancias-stats');
+    try {
+      const [resumen, timeline] = await Promise.all([
+        api('GET', `/restaurantes/${_statsRestId}/reportes/ganancias/resumen`),
+        api('GET', `/restaurantes/${_statsRestId}/reportes/ganancias/timeline?intervalo=${intervalo}`),
+      ]);
+      elStats.innerHTML = `
+        <div class="mini-stat">
+          <div class="mini-stat-label">Total histórico</div>
+          <div class="mini-stat-value accent">S/ ${n2(resumen.total)}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Este mes</div>
+          <div class="mini-stat-value accent">S/ ${n2(resumen.mes)}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Esta semana</div>
+          <div class="mini-stat-value">S/ ${n2(resumen.semana)}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Hoy</div>
+          <div class="mini-stat-value">S/ ${n2(resumen.dia)}</div>
+        </div>`;
+      const labels   = timeline.map(r => r.periodo);
+      const ganOrd   = timeline.map(r => r.ordenes);
+      const ganRes   = timeline.map(r => r.reservas);
+      const ganTotal = timeline.map(r => r.total);
+      const ctx = document.getElementById('chart-ganancias-admin').getContext('2d');
+      if (_chartGanancias) _chartGanancias.destroy();
+      _chartGanancias = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Órdenes',  data: ganOrd,   borderColor: '#c8692a', backgroundColor: 'rgba(200,105,42,0.08)', tension: 0.3, fill: true },
+            { label: 'Reservas', data: ganRes,    borderColor: '#1a6090', backgroundColor: 'rgba(26,96,144,0.08)',  tension: 0.3, fill: true },
+            { label: 'Total',    data: ganTotal,  borderColor: '#2e7d52', backgroundColor: 'rgba(46,125,82,0.06)',  tension: 0.3, fill: false },
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { labels: { font: { size: 11 } } } }, scales: { y: { beginAtZero: true } } }
+      });
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Descargas Excel admin ────────────────────────────────
+  function descargarResumenAdmin() {
+    window.location.href = `/api/admin/restaurantes/${_statsRestId}/reportes/resumen/export`;
+  }
+  function descargarDemandaAdmin() {
+    window.location.href = `/api/admin/restaurantes/${_statsRestId}/reportes/clientes-timeline/export?intervalo=${_demandaIntervalo}`;
+  }
+  function descargarGananciasAdmin() {
+    window.location.href = `/api/admin/restaurantes/${_statsRestId}/reportes/ganancias/export?intervalo=${_gananciasIntervalo}`;
+  }
+
+  // ── QR del menú (admin) ──────────────────────────────────
+  let _adminQRRestId = null;
+
+  function verQR(restauranteId, nombre) {
+    _adminQRRestId = restauranteId;
+    document.getElementById('modal-qr-title').textContent = `QR — ${nombre}`;
+    const wrap = document.getElementById('admin-qr-wrap');
+    const linkInput = document.getElementById('admin-qr-link');
+    const url = `${window.location.origin}/menu.html?restaurante=${restauranteId}`;
+    linkInput.value = url;
+    wrap.innerHTML = '';
+    document.getElementById('admin-qr-mesas-grid').innerHTML = '';
+    new QRCode(wrap, {
+      text:         url,
+      width:        180,
+      height:       180,
+      colorDark:    '#1a1612',
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    openModal('modal-qr');
+  }
+
+  function generarQRsMesasAdmin() {
+    const n = parseInt(document.getElementById('admin-qr-num-mesas').value) || 10;
+    const grid = document.getElementById('admin-qr-mesas-grid');
+    grid.innerHTML = '';
+    for (let i = 1; i <= n; i++) {
+      const url = `${window.location.origin}/menu.html?restaurante=${_adminQRRestId}&mesa=${i}`;
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px';
+
+      const canvasWrap = document.createElement('div');
+      canvasWrap.style.cssText = 'background:#fff;padding:7px;border-radius:7px;border:1px solid #e2e8f0';
+
+      new QRCode(canvasWrap, { text: url, width: 100, height: 100, colorDark: '#1a1612', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+
+      const label = document.createElement('span');
+      label.style.cssText = 'font-size:11px;font-weight:700';
+      label.textContent = `Mesa ${i}`;
+
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-ghost btn-sm';
+      btn.textContent = '⬇ PNG';
+      btn.onclick = () => {
+        const c = canvasWrap.querySelector('canvas');
+        if (!c) return;
+        const a = document.createElement('a');
+        a.href = c.toDataURL('image/png');
+        a.download = `qr-mesa-${i}.png`;
+        a.click();
+      };
+
+      wrap.appendChild(canvasWrap);
+      wrap.appendChild(label);
+      wrap.appendChild(btn);
+      grid.appendChild(wrap);
+    }
+  }
+
+  function copiarLinkQRAdmin() {
+    const val = document.getElementById('admin-qr-link').value;
+    if (!val) return;
+    navigator.clipboard.writeText(val).then(() => toast('Link copiado', 'ok'));
+  }
+
+  function descargarQRAdmin() {
+    const canvas = document.querySelector('#admin-qr-wrap canvas');
+    if (!canvas) return;
+    const nombre = document.getElementById('modal-qr-title').textContent.replace('QR — ', '').replace(/\s+/g, '-').toLowerCase();
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `menu-qr-${nombre}.png`;
+    a.click();
+  }
+</script>
+</body>
+</html>

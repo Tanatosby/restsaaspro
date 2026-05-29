@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel del Restaurante</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/js/modules/charts-theme.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="/css/owner.css">
+  <script src="/js/modules/utils.js"></script>
+  <script src="/js/modules/config.js"></script>
+  <script src="/js/modules/usuarios.js"></script>
+  <script src="/js/modules/mesas.js"></script>
+  <script src="/js/modules/cocina.js"></script>
+  <script src="/js/modules/ordenes.js"></script>
+  <script src="/js/modules/reservas.js"></script>
+  <script src="/js/modules/reportes.js"></script>
+  <script src="/js/modules/pedidos.js"></script>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c8692a">
+
+  <!-- ── Tema (claro/oscuro) — aplicado antes del paint para evitar flash ── -->
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem('mp-theme');
+      if (t !== 'light' && t !== 'dark') {
+        t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+    window.toggleTheme = function () {
+      var cur  = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      var next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('mp-theme', next); } catch (e) {}
+      var b = document.getElementById('theme-toggle');
+      if (b) b.textContent = next === 'dark' ? '☀️' : '🌙';
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', next === 'dark' ? '#201b15' : '#c8692a');
+      if (window.mpApplyChartTheme) window.mpApplyChartTheme();
+      try { if (activePanel === 'reportes') { loadGanancias(); loadDemanda(); loadHoraPico(); } } catch (e) {}
+    };
+    document.addEventListener('DOMContentLoaded', function () {
+      var b = document.getElementById('theme-toggle');
+      if (b) b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+    });
+  })();
+  </script>
+</head>
+<body>
+<div class="app">
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon" id="brand-icon">🍽️</div>
+      <div class="brand-title" id="sidebar-restaurant">Cargando…</div>
+      <div class="brand-sub">Panel del propietario</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Gestión</div>
+      <button class="nav-item active" id="nav-menu-dia" onclick="showPanel('menu-dia')">
+        <span class="nav-icon">📋</span> Menú del día
+      </button>
+      <button class="nav-item" id="nav-carta" onclick="showPanel('carta')">
+        <span class="nav-icon">🍴</span> Carta
+      </button>
+      <div class="nav-label" style="margin-top:0.5rem">Operaciones</div>
+      <button class="nav-item" id="nav-ordenes" onclick="showPanel('ordenes')">
+        <span class="nav-icon">🧾</span> Órdenes
+        <span class="nav-badge" id="badge-ordenes">0</span>
+      </button>
+      <button class="nav-item" id="nav-reservas" onclick="showPanel('reservas')">
+        <span class="nav-icon">📅</span> Reservas
+        <span class="nav-badge" id="badge-reservas">0</span>
+      </button>
+      <button class="nav-item" id="nav-cocina" onclick="showPanel('cocina')">
+        <span class="nav-icon">🍳</span> Cocina
+        <span class="nav-badge" id="badge-cocina">0</span>
+      </button>
+      <button class="nav-item" id="nav-pedidos" onclick="showPanel('pedidos')">
+        <span class="nav-icon">📋</span> Cola del día
+        <span class="nav-badge" id="badge-pedidos">0</span>
+      </button>
+      <button class="nav-item" id="nav-usuarios" onclick="showPanel('usuarios')">
+        <span class="nav-icon">👥</span> Usuarios
+      </button>
+      <div class="nav-label" style="margin-top:0.5rem">Análisis</div>
+      <button class="nav-item" id="nav-reportes" onclick="showPanel('reportes')">
+        <span class="nav-icon">📊</span> Reportes
+      </button>
+      <div class="nav-label" style="margin-top:0.5rem">Sistema</div>
+      <button class="nav-item" id="nav-configuracion" onclick="showPanel('configuracion')">
+        <span class="nav-icon">⚙️</span> Configuración
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="owner-chip">
+        <div class="owner-avatar" id="owner-initials">O</div>
+        <div>
+          <div class="owner-name" id="owner-name">—</div>
+          <div class="owner-role">Propietario</div>
+        </div>
+      </div>
+      <button class="btn-change-pwd" onclick="abrirModalCambiarPassword()">🔑 Cambiar contraseña</button>
+      <button class="btn-logout" onclick="logout()">↩ Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="page-title" id="page-title">Menú del día</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">🌙</button>
+        <button id="sound-toggle" onclick="toggleSound()"
+          style="background:none;border:none;cursor:pointer;font-size:1.25rem;line-height:1;padding:4px 6px;border-radius:8px;transition:background .15s"
+          onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'"
+          title="Alertas de sonido">🔔</button>
+        <div class="topbar-date" id="topbar-date"></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══════════════════════════════════════
+           PANEL: MENÚ DEL DÍA
+      ══════════════════════════════════════ -->
+      <div class="panel active" id="panel-menu-dia">
+        <div class="tabs">
+          <button class="tab active" id="tab-md-secciones"  onclick="switchTab('md','secciones')">Secciones</button>
+          <button class="tab"        id="tab-md-platos"     onclick="switchTab('md','platos')">Platos de menú</button>
+          <button class="tab"        id="tab-md-menus"      onclick="switchTab('md','menus')">Menús del día</button>
+        </div>
+
+        <!-- Sub-panel: Secciones -->
+        <div id="subpanel-md-secciones">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Nueva sección</span></div>
+            <div class="card-body">
+              <div class="inline-form">
+                <div class="field"><label for="sec-nombre">Nombre</label>
+                  <input type="text" id="sec-nombre" placeholder="Ej: Entrada, Fondo, Postre…" /></div>
+                <button class="btn btn-primary" onclick="crearSeccion()">+ Crear</button>
+              </div>
+              <div class="form-error" id="err-sec"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Secciones del restaurante</span>
+              <button class="btn btn-ghost btn-sm" onclick="loadSecciones()">↻ Actualizar</button>
+            </div>
+            <div id="list-secciones"><div class="loading-text">Cargando…</div></div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Platos de menú -->
+        <div id="subpanel-md-platos" class="hidden">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Nuevo plato de menú</span></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="field span-2"><label for="pm-nombre">Nombre *</label><input type="text" id="pm-nombre" placeholder="Ej: Arroz con pollo" /></div>
+                <div class="field span-2"><label for="pm-desc">Descripción</label><input type="text" id="pm-desc" placeholder="Opcional" /></div>
+              </div>
+              <div class="form-error" id="err-pm"></div>
+              <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
+                <button class="btn btn-primary" onclick="crearPlatoMenu()">+ Agregar plato</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Catálogo de platos de menú</span>
+              <button class="btn btn-ghost btn-sm" onclick="loadPlatosMenu()">↻ Actualizar</button>
+            </div>
+            <div id="list-platos-menu"><div class="loading-text">Cargando…</div></div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Menús del día -->
+        <div id="subpanel-md-menus" class="hidden">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Crear menú del día</span></div>
+            <div class="card-body">
+              <div class="form-grid cols-3">
+                <div class="field span-2"><label for="md-nombre">Nombre</label><input type="text" id="md-nombre" placeholder="Menú del día" /></div>
+                <div class="field"><label for="md-precio">Precio S/ *</label><input id="md-precio" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+                <div class="field"><label for="md-fecha">Fecha *</label><input id="md-fecha" type="date" /></div>
+                <div class="field" style="justify-content:flex-end;padding-top:1.4rem">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;text-transform:none;letter-spacing:0">
+                    <input type="checkbox" id="md-elegible" style="width:auto" />
+                    Cliente elige por sección
+                  </label>
+                </div>
+              </div>
+              <div class="form-error" id="err-md"></div>
+              <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
+                <button class="btn btn-primary" onclick="crearMenuDia()">+ Crear menú</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Menús configurados</span>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="date" id="filter-md-fecha" aria-label="Filtrar por fecha" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:16px;background:var(--bg)" onchange="loadMenusDia()" />
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('filter-md-fecha').value='';loadMenusDia()">Ver todos</button>
+              </div>
+            </div>
+            <div id="list-menus-dia"><div class="loading-text">Cargando…</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           PANEL: CARTA
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-carta">
+        <div class="tabs">
+          <button class="tab active" id="tab-carta-categorias" onclick="switchTab('carta','categorias')">Categorías</button>
+          <button class="tab"        id="tab-carta-platos"     onclick="switchTab('carta','platos')">Platos a la carta</button>
+        </div>
+
+        <!-- Sub-panel: Categorías -->
+        <div id="subpanel-carta-categorias">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Nueva categoría</span></div>
+            <div class="card-body">
+              <div class="inline-form">
+                <div class="field"><label for="cat-nombre">Nombre</label>
+                  <input type="text" id="cat-nombre" placeholder="Ej: Entradas, Carnes, Postres…" /></div>
+                <button class="btn btn-primary" onclick="crearCategoria()">+ Crear</button>
+              </div>
+              <div class="form-error" id="err-cat"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Categorías de carta</span>
+              <button class="btn btn-ghost btn-sm" onclick="loadCategorias()">↻ Actualizar</button>
+            </div>
+            <div id="list-categorias"><div class="loading-text">Cargando…</div></div>
+          </div>
+        </div>
+
+        <!-- Sub-panel: Platos a la carta -->
+        <div id="subpanel-carta-platos" class="hidden">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Nuevo plato a la carta</span></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="field"><label for="pc-nombre">Nombre *</label><input type="text" id="pc-nombre" placeholder="Ej: Lomo saltado" /></div>
+                <div class="field"><label for="pc-categoria">Categoría *</label>
+                  <select id="pc-categoria"><option value="">— selecciona —</option></select>
+                </div>
+                <div class="field"><label for="pc-precio">Precio S/ *</label><input id="pc-precio" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+                <div class="field"><label for="pc-desc">Descripción</label><input type="text" id="pc-desc" placeholder="Opcional" /></div>
+              </div>
+              <div class="form-error" id="err-pc"></div>
+              <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
+                <button class="btn btn-primary" onclick="crearPlatoCarta()">+ Agregar plato</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Platos a la carta</span>
+              <button class="btn btn-ghost btn-sm" onclick="loadPlatosCarta()">↻ Actualizar</button>
+            </div>
+            <div id="list-platos-carta"><div class="loading-text">Cargando…</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           PANEL: ÓRDENES
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-ordenes">
+        <div class="tabs">
+          <button class="tab active" id="tab-ord-plano"    onclick="switchTab('ord','plano')">Plano</button>
+          <button class="tab"        id="tab-ord-activas"  onclick="switchTab('ord','activas')">Activas</button>
+          <button class="tab"        id="tab-ord-historial" onclick="switchTab('ord','historial')">Historial</button>
+        </div>
+
+        <!-- Sub-panel: Plano de mesas -->
+        <div id="subpanel-ord-plano">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+            <button class="btn btn-ghost btn-sm" onclick="loadPlanoMesas()">↻ Actualizar</button>
+          </div>
+          <div id="plano-leyenda" style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:#d1fae5;border:1px solid #6ee7b7;display:inline-block"></span>Libre</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:#fee2e2;border:1px solid #fca5a5;display:inline-block"></span>Ocupada</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:#fef3c7;border:1px solid #fcd34d;display:inline-block"></span>Reservada</span>
+          </div>
+          <div id="plano-mesas-grid" style="display:flex;flex-wrap:wrap;gap:1rem"></div>
+        </div>
+
+        <!-- Sub-panel: Activas -->
+        <div id="subpanel-ord-activas" class="hidden">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+            <button class="btn btn-ghost btn-sm" onclick="loadOrdenesActivas()">↻ Actualizar</button>
+          </div>
+          <div id="list-ordenes-activas"><div class="loading-text">Cargando órdenes activas…</div></div>
+        </div>
+
+        <!-- Sub-panel: Historial -->
+        <div id="subpanel-ord-historial" class="hidden">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Filtros</span>
+              <button class="btn btn-ghost btn-sm" id="btn-descargar-formato1" onclick="descargarFormato1()" style="display:none">⬇ Descargar Excel</button>
+            </div>
+            <div class="card-body">
+              <div class="inline-form">
+                <div class="field"><label for="hist-fecha-desde">Desde</label><input type="date" id="hist-fecha-desde" /></div>
+                <div class="field"><label for="hist-fecha-hasta">Hasta</label><input type="date" id="hist-fecha-hasta" /></div>
+                <div class="field"><label for="hist-estatus">Estatus</label>
+                  <select id="hist-estatus">
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" onclick="loadHistorialOrdenes()" style="margin-top:1.4rem">Buscar</button>
+              </div>
+            </div>
+          </div>
+          <div id="list-ordenes-historial"><div class="empty-state"><div class="empty-icon">🧾</div><div class="empty-text">Usa los filtros para buscar órdenes</div></div></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           PANEL: RESERVAS
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-reservas">
+        <div class="tabs">
+          <button class="tab active" id="tab-res-activas"   onclick="switchTab('res','activas')">Pendientes / Confirmadas</button>
+          <button class="tab"        id="tab-res-historial" onclick="switchTab('res','historial')">Historial</button>
+        </div>
+
+        <!-- Sub-panel: Activas -->
+        <div id="subpanel-res-activas">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+            <button class="btn btn-ghost btn-sm" onclick="loadReservasActivas()">↻ Actualizar</button>
+          </div>
+          <div id="list-reservas-activas"><div class="loading-text">Cargando reservas…</div></div>
+        </div>
+
+        <!-- Sub-panel: Historial -->
+        <div id="subpanel-res-historial" class="hidden">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Filtros</span>
+              <button class="btn btn-ghost btn-sm" id="btn-descargar-formato-reservas" onclick="descargarFormatoReservas()" style="display:none">⬇ Descargar Excel</button>
+            </div>
+            <div class="card-body">
+              <div class="inline-form">
+                <div class="field"><label for="hist-res-fecha-desde">Desde</label><input type="date" id="hist-res-fecha-desde" /></div>
+                <div class="field"><label for="hist-res-fecha-hasta">Hasta</label><input type="date" id="hist-res-fecha-hasta" /></div>
+                <div class="field"><label for="hist-res-estatus">Estatus</label>
+                  <select id="hist-res-estatus">
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" onclick="loadHistorialReservas()" style="margin-top:1.4rem">Buscar</button>
+              </div>
+            </div>
+          </div>
+          <div id="list-reservas-historial"><div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Usa los filtros para buscar reservas</div></div></div>
+        </div>
+      </div>
+
+      
+      <!-- ══════════════════════════════════════
+      PANEL: USUARIOS
+        ══════════════════════════════════════ -->
+    <div class="panel" id="panel-usuarios">
+    
+      <div class="card">
+        <div class="card-header"><span class="card-title">Agregar usuario</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field"><label for="u-nombre">Nombre *</label>
+              <input type="text" id="u-nombre" placeholder="Ej: Ana García" /></div>
+            <div class="field"><label for="u-email">Email *</label>
+              <input id="u-email" type="email" placeholder="ana@restaurante.com" /></div>
+            <div class="field"><label for="u-password">Contraseña *</label>
+              <input id="u-password" type="password" placeholder="mín. 8 caracteres" /></div>
+            <div class="field"><label for="u-rol">Rol *</label>
+              <select id="u-rol">
+                <option value="cocinero">Cocinero</option>
+                <option value="mozo">Mozo</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-error" id="err-usuario"></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
+            <button class="btn btn-primary" onclick="crearUsuario()">+ Crear usuario</button>
+          </div>
+        </div>
+      </div>
+    
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Equipo del restaurante</span>
+          <button class="btn btn-ghost btn-sm" onclick="loadUsuarios()">↻ Actualizar</button>
+        </div>
+        <div id="list-usuarios"><div class="loading-text">Cargando…</div></div>
+      </div>
+    
+    </div>
+      
+      
+      <!-- ══════════════════════════════════════
+           PANEL: REPORTES
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-reportes">
+        <div class="sec-header">
+          <div><div class="sec-title">Reportes</div><div class="sec-sub">Métricas del restaurante</div></div>
+          <button class="btn btn-ghost btn-sm" onclick="loadReportes();loadGanancias();loadDemanda();loadPedidosFiltros();loadHoraPico()">↻ Actualizar</button>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="stats-grid" id="stats-reportes">
+          <div class="loading-text" style="grid-column:1/-1">Cargando métricas…</div>
+        </div>
+
+        <!-- Ganancias -->
+        <div class="card" style="margin-top:1rem" id="card-ganancias">
+          <div class="card-header">
+            <span class="card-title">💰 Ganancias</span>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" id="btn-gan-dia"    onclick="setIntervaloGanancias('dia')">Día</button>
+              <button class="btn btn-ghost   btn-sm" id="btn-gan-semana" onclick="setIntervaloGanancias('semana')">Semana</button>
+              <button class="btn btn-ghost   btn-sm" id="btn-gan-mes"    onclick="setIntervaloGanancias('mes')">Mes</button>
+              <button class="btn btn-ghost btn-sm" onclick="descargarFormatoGanancias()" style="margin-left:0.5rem" title="Descargar Excel">⬇ Excel</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="stats-grid" id="stats-ganancias" style="margin-bottom:0.75rem">
+              <div class="loading-text" style="grid-column:1/-1">Cargando…</div>
+            </div>
+            <div id="chart-ganancias-wrap" style="position:relative;height:260px">
+              <canvas id="chart-ganancias"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Análisis de pedidos -->
+        <div class="card" style="margin-top:1rem" id="card-pedidos">
+          <div class="card-header">
+            <span class="card-title">📊 Análisis de pedidos</span>
+            <button class="btn btn-ghost btn-sm" onclick="descargarFormatoPedidos()" title="Descargar Excel">⬇ Excel</button>
+          </div>
+          <div class="card-body" style="padding-bottom:0.5rem">
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem">
+              <button class="btn btn-primary btn-sm" id="btn-pedidos-menu"  onclick="setPedidosTipo('menu')">Menú</button>
+              <button class="btn btn-ghost   btn-sm" id="btn-pedidos-carta" onclick="setPedidosTipo('carta')">Carta</button>
+            </div>
+            <div id="pedidos-filtros" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem">
+              <div class="loading-text">Cargando filtros…</div>
+            </div>
+          </div>
+          <div class="card-body" id="chart-pedidos-wrap" style="padding-top:0;min-height:220px">
+            <div class="loading-text">Cargando…</div>
+          </div>
+        </div>
+
+        <!-- Curva de clientes -->
+        <div class="card" style="margin-top:1.25rem">
+          <div class="card-header">
+            <span class="card-title">📈 Curva de clientes</span>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" id="btn-intervalo-dia"    onclick="setIntervalo('dia')">Día</button>
+              <button class="btn btn-ghost   btn-sm" id="btn-intervalo-semana" onclick="setIntervalo('semana')">Semana</button>
+              <button class="btn btn-ghost   btn-sm" id="btn-intervalo-mes"    onclick="setIntervalo('mes')">Mes</button>
+              <button class="btn btn-ghost btn-sm" onclick="descargarFormatoDemanda()" style="margin-left:0.5rem" title="Descargar Excel">⬇ Excel</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding-top:0.75rem">
+            <div id="chart-demanda-wrap" style="position:relative;height:280px">
+              <canvas id="chart-demanda"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hora pico de demanda (A2) -->
+        <div class="card" style="margin-top:1.25rem">
+          <div class="card-header">
+            <span class="card-title">🕐 Hora pico de demanda</span>
+            <button class="btn btn-ghost btn-sm" onclick="loadHoraPico()">↻ Actualizar</button>
+          </div>
+          <div class="card-body" style="padding-top:0.75rem">
+            <div id="chart-hora-pico-wrap" style="position:relative;height:260px">
+              <canvas id="chart-hora-pico"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══════════════════════════════════════
+           PANEL: COCINA
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-cocina">
+        <div class="sec-header">
+          <div>
+            <div class="sec-title">🍳 Cola de Cocina</div>
+            <div class="sec-sub">Órdenes pendientes y en preparación — se actualiza cada 15 s</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadColaCocina()">↻ Actualizar</button>
+        </div>
+        <div id="cocina-cola"><div class="loading-text">Cargando…</div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           PANEL: COLA DEL DÍA
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-pedidos">
+        <div class="sec-header">
+          <div>
+            <div class="sec-title">📋 Cola del día</div>
+            <div class="sec-sub">Órdenes y reservas activas por etapa — se actualiza cada 15 s</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadColaDia()">↻ Actualizar</button>
+        </div>
+        <!-- Tabs de zona -->
+        <div class="tabs kanban-tabs" id="kanban-tabs">
+          <button class="tab active" data-zona="pendientes" onclick="switchZona('pendientes')">
+            Pendientes <span class="kanban-badge" id="kb-pendientes">0</span>
+          </button>
+          <button class="tab" data-zona="cocina" onclick="switchZona('cocina')">
+            En cocina <span class="kanban-badge" id="kb-cocina">0</span>
+          </button>
+          <button class="tab" data-zona="listos" onclick="switchZona('listos')">
+            Listos <span class="kanban-badge" id="kb-listos">0</span>
+          </button>
+          <button class="tab" data-zona="cobrar" onclick="switchZona('cobrar')">
+            Por cobrar <span class="kanban-badge" id="kb-cobrar">0</span>
+          </button>
+        </div>
+        <!-- Contenedores por zona -->
+        <div id="zona-pendientes" class="zona-pedidos"><div class="loading-text">Cargando…</div></div>
+        <div id="zona-cocina"     class="zona-pedidos" style="display:none"></div>
+        <div id="zona-listos"     class="zona-pedidos" style="display:none"></div>
+        <div id="zona-cobrar"     class="zona-pedidos" style="display:none"></div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           PANEL: CONFIGURACIÓN
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-configuracion">
+        <div class="sec-header">
+          <div><div class="sec-title">Configuración</div><div class="sec-sub">Personalización visual del restaurante</div></div>
+        </div>
+
+        <!-- Mesas -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header">
+            <span class="card-title">Mesas del restaurante</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+              <div>
+                <label for="cfg-mesa-numero" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">N° mesa</label>
+                <input type="number" id="cfg-mesa-numero" min="1" placeholder="ej: 5" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:16px;background:var(--bg)" />
+              </div>
+              <div>
+                <label for="cfg-mesa-capacidad" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Capacidad</label>
+                <input type="number" id="cfg-mesa-capacidad" min="1" value="4" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:16px;background:var(--bg)" />
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="crearMesa()">+ Agregar mesa</button>
+            </div>
+            <div id="cfg-mesas-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+          </div>
+        </div>
+
+        <!-- Métodos de pago -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">Métodos de pago</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1.25rem">
+            <p style="font-size:12px;color:var(--muted)">Los métodos activos aparecerán en el menú del cliente al momento de confirmar su pedido.</p>
+
+            <!-- Yape -->
+            <div style="display:flex;flex-direction:column;gap:0.5rem">
+              <div style="display:flex;align-items:center;gap:0.75rem">
+                <label class="toggle-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                  <input type="checkbox" id="pago-yape-activo" style="width:18px;height:18px;accent-color:var(--accent)">
+                  <span style="font-weight:600;font-size:14px">💚 Yape</span>
+                </label>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding-left:26px">
+                <span style="font-size:13px;color:var(--muted);white-space:nowrap">Número:</span>
+                <input type="tel" id="pago-yape-telefono" aria-label="Número de Yape" placeholder="9XXXXXXXX" maxlength="9"
+                  style="flex:1;max-width:180px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:16px;background:var(--bg);color:var(--text)">
+              </div>
+            </div>
+
+            <!-- Plin -->
+            <div style="display:flex;flex-direction:column;gap:0.5rem">
+              <div style="display:flex;align-items:center;gap:0.75rem">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                  <input type="checkbox" id="pago-plin-activo" style="width:18px;height:18px;accent-color:var(--accent)">
+                  <span style="font-weight:600;font-size:14px">🔵 Plin</span>
+                </label>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding-left:26px">
+                <span style="font-size:13px;color:var(--muted);white-space:nowrap">Número:</span>
+                <input type="tel" id="pago-plin-telefono" aria-label="Número de Plin" placeholder="9XXXXXXXX" maxlength="9"
+                  style="flex:1;max-width:180px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:16px;background:var(--bg);color:var(--text)">
+              </div>
+            </div>
+
+            <!-- Efectivo -->
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="pago-efectivo-activo" style="width:18px;height:18px;accent-color:var(--accent)">
+                <span style="font-weight:600;font-size:14px">💵 Efectivo</span>
+              </label>
+            </div>
+
+            <button class="btn btn-primary btn-sm" onclick="guardarConfigPagos()" style="align-self:flex-start">💾 Guardar métodos de pago</button>
+          </div>
+        </div>
+
+        <!-- Modalidades de pedido (Gap 4) -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">🛵 Modalidades de pedido</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:14px;color:var(--muted)">Las modalidades activas estarán disponibles para los clientes al hacer su pedido o reserva desde el menú QR.</p>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+              <input type="checkbox" id="cfg-para-llevar-activo" style="width:18px;height:18px;accent-color:var(--accent)">
+              <span><strong>🥡 Para llevar</strong> — el cliente recoge en el local</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:10px;padding-left:28px">
+              <label for="cfg-costo-tapper" style="font-size:13px;color:var(--muted);white-space:nowrap">Costo tapper (S/):</label>
+              <input type="number" id="cfg-costo-tapper" min="0" step="0.10" placeholder="0.00"
+                style="width:90px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:14px;background:var(--bg)">
+            </div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+              <input type="checkbox" id="cfg-delivery-activo" style="width:18px;height:18px;accent-color:var(--accent)">
+              <span><strong>🛵 Delivery</strong> — el restaurante lleva el pedido a domicilio</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:10px;padding-left:28px">
+              <label for="cfg-tarifa-delivery" style="font-size:13px;color:var(--muted);white-space:nowrap">Tarifa delivery (S/):</label>
+              <input type="number" id="cfg-tarifa-delivery" min="0" step="0.50" placeholder="0.00"
+                style="width:90px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:14px;background:var(--bg)">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="guardarModalidades()" style="align-self:flex-start">💾 Guardar modalidades</button>
+          </div>
+        </div>
+
+        <!-- Auto-merge cuenta por mesa (Gap 8) -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">🔀 Auto-merge cuenta por mesa</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:14px;color:var(--muted)">Al marcar que el cliente llegó, el sistema fusiona automáticamente los ítems de la reserva en la orden activa de esa mesa.</p>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+              <input type="checkbox" id="cfg-auto-merge-activo" style="width:18px;height:18px;accent-color:var(--accent)">
+              <span><strong>Activar auto-merge</strong> — unir reserva + orden de la mesa automáticamente</span>
+            </label>
+            <button class="btn btn-primary btn-sm" onclick="guardarAutoMerge()" style="align-self:flex-start">💾 Guardar</button>
+          </div>
+        </div>
+
+        <!-- Auto-preparación de reservas (Gap 3) -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">⏱ Auto-preparación de reservas</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:14px;color:var(--muted)">El sistema enviará automáticamente las reservas confirmadas a cocina con esta anticipación antes de la hora de llegada del cliente.</p>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+              <label style="font-size:14px;font-weight:600" for="cfg-minutos-preparacion">Preparar con</label>
+              <input type="number" id="cfg-minutos-preparacion" min="1" max="180" value="20"
+                style="width:80px;font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <span style="font-size:14px">minutos de anticipación</span>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="guardarMinutosPreparacion()" style="align-self:flex-start">💾 Guardar</button>
+          </div>
+        </div>
+
+        <!-- Foto de portada -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">Foto de portada</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <div id="config-foto-preview" style="width:100%;height:160px;border-radius:10px;overflow:hidden;background:var(--bg);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:2.5rem">🍽️</div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+              <label class="btn btn-primary btn-sm" style="cursor:pointer">
+                📷 Subir foto
+                <input type="file" id="config-foto-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="subirFotoRestaurante(this)">
+              </label>
+              <button class="btn btn-ghost btn-sm" id="btn-eliminar-foto" onclick="eliminarFotoRestaurante()" style="display:none">🗑 Eliminar foto</button>
+            </div>
+            <p style="font-size:12px;color:var(--muted)">Aparecerá como banner en la página del menú del cliente. Máx. 2 MB — jpg, png o webp.</p>
+          </div>
+        </div>
+
+        <!-- QR del menú -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">Código QR del menú</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:12px;color:var(--muted)">Escanea este QR para ver el menú como lo ve el cliente, o descárgalo para imprimirlo.</p>
+            <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap">
+              <div id="qr-canvas-wrap" style="background:#fff;padding:12px;border-radius:10px;border:1px solid var(--border);display:inline-block"></div>
+              <div style="display:flex;flex-direction:column;gap:0.75rem;justify-content:center">
+                <div>
+                  <label for="qr-link-input" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Link del menú</label>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <input id="qr-link-input" readonly aria-label="Link del menú" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:16px;background:var(--bg);color:var(--text);min-width:0" />
+                    <button class="btn btn-ghost btn-sm" onclick="copiarLinkQR()">Copiar</button>
+                  </div>
+                </div>
+                <button class="btn btn-primary btn-sm" style="align-self:flex-start" onclick="descargarQR()">⬇ Descargar PNG</button>
+              </div>
+            </div>
+            <!-- QRs por mesa -->
+            <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.25rem">
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">QR por mesa</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:0.75rem">
+                <span style="font-size:13px">Número de mesas:</span>
+                <input type="number" id="qr-num-mesas" aria-label="Número de mesas" value="10" min="1" max="100" style="width:70px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:16px;background:var(--bg)" />
+                <button class="btn btn-ghost btn-sm" onclick="generarQRsMesas()">Generar</button>
+              </div>
+              <div id="qr-mesas-grid" style="display:flex;flex-wrap:wrap;gap:1rem"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Colores -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Colores del tema</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1.25rem">
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+              <div style="flex:1;min-width:180px">
+                <label for="config-color-primario" style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Color primario</label>
+                <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Botones, etiquetas, acento principal</p>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="color" id="config-color-primario" value="#c8692a" style="width:40px;height:36px;border:none;border-radius:8px;cursor:pointer;padding:2px">
+                  <span id="config-color-primario-hex" style="font-size:13px;font-family:monospace;color:var(--text)">#c8692a</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:180px">
+                <label for="config-color-secundario" style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Color secundario</label>
+<p style="font-size:11px;color:var(--muted);margin-bottom:8px">Gráficas, detalles secundarios</p>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="color" id="config-color-secundario" value="#1a6090" style="width:40px;height:36px;border:none;border-radius:8px;cursor:pointer;padding:2px">
+                  <span id="config-color-secundario-hex" style="font-size:13px;font-family:monospace;color:var(--text)">#1a6090</span>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="guardarConfigColores()" style="align-self:flex-start">💾 Guardar colores</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Modal: Cambiar contraseña -->
+<div id="modal-cambiar-pwd" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;width:100%;max-width:380px;box-shadow:var(--shadow)">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:16px;font-weight:700;color:var(--text)">Cambiar contraseña</span>
+      <button onclick="cerrarModalCambiarPassword()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1;padding:2px 6px">✕</button>
+    </div>
+    <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label for="pwd-actual" style="font-size:12px;font-weight:600;color:var(--text-2)">Contraseña actual</label>
+        <input id="pwd-actual" type="password" placeholder="Tu contraseña actual" style="border:1px solid var(--border-2);border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label for="pwd-nueva" style="font-size:12px;font-weight:600;color:var(--text-2)">Contraseña nueva</label>
+        <input id="pwd-nueva" type="password" placeholder="Mínimo 8 caracteres" style="border:1px solid var(--border-2);border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label for="pwd-confirmar" style="font-size:12px;font-weight:600;color:var(--text-2)">Confirmar contraseña nueva</label>
+        <input id="pwd-confirmar" type="password" placeholder="Repite la contraseña nueva" style="border:1px solid var(--border-2);border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%">
+      </div>
+      <div id="pwd-error" style="display:none;background:var(--danger-bg);border:1px solid rgba(192,57,43,0.25);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--danger)"></div>
+    </div>
+    <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="cerrarModalCambiarPassword()" style="background:none;border:1px solid var(--border-2);border-radius:8px;padding:10px 18px;font-size:14px;font-family:inherit;color:var(--text-2);cursor:pointer;min-height:44px">Cancelar</button>
+      <button onclick="guardarNuevaPassword()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;font-family:inherit;color:#fff;cursor:pointer;min-height:44px">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Auth guard ──────────────────────────────────────────
+const session = (() => { try { return JSON.parse(sessionStorage.getItem('session') || 'null'); } catch { return null; } })();
+if (!session || (!['owner','admin','cocinero'].includes(session.role) && !Array.isArray(session.permisos))) window.location.replace('/login.html');
+
+document.getElementById('owner-name').textContent    = session.name || '—';
+document.getElementById('owner-initials').textContent = (session.name || 'O').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+document.getElementById('topbar-date').textContent   = new Date().toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+// ── Sidebar ─────────────────────────────────────────────
+function toggleSidebar() {
+  const open = document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open', open);
+  document.getElementById('hamburger').classList.toggle('open', open);
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+  document.getElementById('hamburger').classList.remove('open');
+}
+
+// ── Panel navigation ─────────────────────────────────────
+let PANELS = ['menu-dia','carta','ordenes','reservas','cocina','pedidos','usuarios','reportes','configuracion'];
+const TITLES  = { 'menu-dia':'Menú del día', carta:'Carta', ordenes:'Órdenes', reservas:'Reservas', cocina:'Cocina', pedidos:'Cola del día', usuarios:'Usuarios', reportes:'Reportes', configuracion:'Configuración' };
+let activePanel = 'menu-dia';
+
+// ── Permisos: filtrar paneles para usuarios delegados ─────
+const PERM_REQUIRED = {
+  'menu-dia':      ['menu_dia'],
+  'carta':         ['carta'],
+  'ordenes':       ['ordenes_activas', 'ordenes_historial'],
+  'reservas':      ['reservas_activas', 'reservas_historial'],
+  'reportes':      ['reportes'],
+  'configuracion': ['configuracion'],
+};
+const isOwnerOrAdmin = ['owner', 'admin'].includes(session.role);
+
+// ── Cocinero sin permisos delegados: solo Cocina y Cola del día ──
+if (session.role === 'cocinero' && !Array.isArray(session.permisos)) {
+  const SOLO_COCINA = ['cocina', 'pedidos'];
+  PANELS = PANELS.filter(p => SOLO_COCINA.includes(p));
+  ['menu-dia','carta','ordenes','reservas','usuarios','reportes','configuracion'].forEach(id => {
+    document.getElementById(`nav-${id}`).classList.add('hidden');
+  });
+  document.querySelector('.brand-sub').textContent = 'Panel del cocinero';
+  document.getElementById('panel-menu-dia').classList.remove('active');
+  document.getElementById('nav-menu-dia').classList.remove('active');
+  document.getElementById('panel-cocina').classList.add('active');
+  document.getElementById('nav-cocina').classList.add('active');
+  document.getElementById('page-title').textContent = TITLES['cocina'];
+  activePanel = 'cocina';
+}
+
+if (!isOwnerOrAdmin && Array.isArray(session.permisos)) {
+  const permisos = session.permisos;
+
+  // Usuarios delegados nunca gestionan otros usuarios
+  document.getElementById('nav-usuarios').classList.add('hidden');
+  PANELS = PANELS.filter(p => p !== 'usuarios');
+
+  // Cocina: visible para cocinero siempre (no requiere permiso especial)
+  document.getElementById('nav-cocina').classList.remove('hidden');
+
+  // Ocultar paneles sin ningún permiso asociado
+  ['menu-dia','carta','ordenes','reservas','reportes','configuracion'].forEach(panel => {
+    const tienePermiso = PERM_REQUIRED[panel].some(r => permisos.includes(r));
+    if (!tienePermiso) {
+      document.getElementById(`nav-${panel}`).classList.add('hidden');
+      document.getElementById(`panel-${panel}`).classList.remove('active');
+      PANELS = PANELS.filter(p => p !== panel);
+    }
+  });
+
+  // Ocultar sub-tabs de órdenes sin permiso
+  if (PANELS.includes('ordenes')) {
+    if (!permisos.includes('ordenes_activas'))   document.getElementById('tab-ord-activas').classList.add('hidden');
+    if (!permisos.includes('ordenes_historial'))  document.getElementById('tab-ord-historial').classList.add('hidden');
+  }
+
+  // Ocultar sub-tabs de reservas sin permiso
+  if (PANELS.includes('reservas')) {
+    if (!permisos.includes('reservas_activas'))   document.getElementById('tab-res-activas').classList.add('hidden');
+    if (!permisos.includes('reservas_historial'))  document.getElementById('tab-res-historial').classList.add('hidden');
+  }
+
+  document.querySelector('.brand-sub').textContent = 'Panel del equipo';
+
+  // Navegar al primer panel disponible
+  const primerPanel = PANELS[0];
+  if (primerPanel && primerPanel !== 'menu-dia') {
+    document.getElementById('panel-menu-dia').classList.remove('active');
+    document.getElementById('nav-menu-dia').classList.remove('active');
+    document.getElementById(`panel-${primerPanel}`).classList.add('active');
+    document.getElementById(`nav-${primerPanel}`).classList.add('active');
+    document.getElementById('page-title').textContent = TITLES[primerPanel];
+    activePanel = primerPanel;
+  } else if (!primerPanel) {
+    document.getElementById('panel-menu-dia').classList.remove('active');
+    document.getElementById('nav-menu-dia').classList.remove('active');
+  }
+}
+
+function showPanel(name) {
+  PANELS.forEach(p => {
+    document.getElementById(`panel-${p}`).classList.toggle('active', p === name);
+    document.getElementById(`nav-${p}`).classList.toggle('active', p === name);
+  });
+  document.getElementById('page-title').textContent = TITLES[name];
+  activePanel = name;
+  closeSidebar();
+  if (name === 'menu-dia')  { loadSecciones(); loadPlatosMenu(); loadMenusDia(); }
+  if (name === 'carta')     { loadCategorias(); loadPlatosCarta(); }
+  if (name === 'ordenes')   { loadPlanoMesas(); }
+  if (name === 'usuarios') {loadUsuarios();}
+  if (name === 'reservas')  { loadReservasActivas(); }
+  if (name === 'cocina')    { initCocinaPoll(); } else { stopCocinaPoll(); }
+  if (name === 'pedidos')   { initPedidosPoll(); } else { stopPedidosPoll(); }
+  if (name === 'reportes')      { loadReportes(); loadGanancias(); loadDemanda(); loadPedidosFiltros(); loadHoraPico(); }
+  if (name === 'configuracion') { loadConfiguracion(); }
+}
+
+// ── Tab switching ────────────────────────────────────────
+function switchTab(group, tab) {
+  const prefix = group === 'md' ? 'md' : group === 'carta' ? 'carta' : group === 'ord' ? 'ord' : 'res';
+  const panel  = group === 'md' ? 'menu-dia' : group === 'carta' ? 'carta' : group === 'ord' ? 'ordenes' : 'reservas';
+  document.querySelectorAll(`#panel-${panel} .tab`).forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${prefix}-${tab}`).classList.add('active');
+  document.querySelectorAll(`[id^="subpanel-${prefix}-"]`).forEach(sp => sp.classList.add('hidden'));
+  document.getElementById(`subpanel-${prefix}-${tab}`).classList.remove('hidden');
+  if (group === 'ord' && tab === 'plano')      loadPlanoMesas();
+  if (group === 'ord' && tab === 'activas')    loadOrdenesActivas();
+  if (group === 'res' && tab === 'activas')    loadReservasActivas();
+}
+
+// utils.js cargado como <script src> antes de este bloque
+
+// ════════════════════════════════════════════════════════
+// MÓDULO 1 — MENÚ DEL DÍA
+// ════════════════════════════════════════════════════════
+let seccionesCache = [];
+let platoMenuCache = [];
+
+// ── Secciones ────────────────────────────────────────────
+async function loadSecciones() {
+  const el = document.getElementById('list-secciones');
+  el.innerHTML = '<div class="loading-text">Cargando…</div>';
+  try {
+    seccionesCache = await api('GET', '/api/menu/secciones');
+    if (!seccionesCache.length) { el.innerHTML = emptyState('🗂️','Sin secciones aún'); return; }
+    el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Nombre</th><th></th></tr></thead><tbody>` +
+      seccionesCache.map(s => `<tr>
+        <td><strong>${esc(s.nombre)}</strong></td>
+        <td style="text-align:right"><button class="btn btn-danger" onclick="eliminarSeccion(${s.id},'${esc(s.nombre)}')">Eliminar</button></td>
+      </tr>`).join('') + `</tbody></table></div>`;
+  } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
+}
+
+async function crearSeccion() {
+  const nombre = document.getElementById('sec-nombre').value.trim();
+  setErr('err-sec', '');
+  if (!nombre) return setErr('err-sec', 'El nombre es requerido');
+  try {
+    await api('POST', '/api/menu/secciones', { nombre });
+    toast('Sección creada'); document.getElementById('sec-nombre').value = '';
+    loadSecciones();
+  } catch(e) { setErr('err-sec', e.message); }
+}
+
+async function eliminarSeccion(id, nombre) {
+  if (!confirm(`¿Eliminar la sección "${nombre}"?`)) return;
+  try { await api('DELETE', `/api/menu/secciones/${id}`); toast('Sección eliminada'); loadSecciones(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+// ── Platos de menú ───────────────────────────────────────
+async function loadPlatosMenu() {
+  const el = document.getElementById('list-platos-menu');
+  el.innerHTML = '<div class="loading-text">Cargando…</div>';
+  try {
+    platoMenuCache = await api('GET', '/api/menu/platos-menu');
+    if (!platoMenuCache.length) { el.innerHTML = emptyState('🍽️','Sin platos en el catálogo aún'); return; }
+    el.innerHTML = `<div class="table-wrap"><table><thead><tr><th style="width:48px"></th><th>Nombre</th><th>Descripción</th><th></th></tr></thead><tbody>` +
+      platoMenuCache.map(p => `<tr>
+        <td>
+          ${p.url_foto
+            ? `<img src="${p.url_foto}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;display:block">`
+            : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">🍽️</div>`}
+        </td>
+        <td><strong>${esc(p.nombre)}</strong></td>
+        <td>${esc(p.descripcion || '—')}</td>
+        <td style="text-align:right;white-space:nowrap;display:flex;gap:4px;justify-content:flex-end;align-items:center">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer" title="${p.url_foto ? 'Cambiar foto' : 'Subir foto'}">
+            📷
+            <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="subirFotoPlatoMenu(${p.id},this)">
+          </label>
+          ${p.url_foto ? `<button class="btn btn-ghost btn-sm" onclick="eliminarFotoPlatoMenu(${p.id})" title="Eliminar foto">🗑</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="eliminarPlatoMenu(${p.id},'${esc(p.nombre)}')">Eliminar</button>
+        </td>
+      </tr>`).join('') + `</tbody></table></div>`;
+  } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
+}
+
+async function crearPlatoMenu() {
+  const nombre = document.getElementById('pm-nombre').value.trim();
+  const descripcion = document.getElementById('pm-desc').value.trim();
+  setErr('err-pm', '');
+  if (!nombre) return setErr('err-pm', 'El nombre es requerido');
+  try {
+    await api('POST', '/api/menu/platos-menu', { nombre, descripcion });
+    toast('Plato agregado'); document.getElementById('pm-nombre').value = ''; document.getElementById('pm-desc').value = '';
+    loadPlatosMenu();
+  } catch(e) { setErr('err-pm', e.message); }
+}
+
+async function eliminarPlatoMenu(id, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}" del catálogo?`)) return;
+  try { await api('DELETE', `/api/menu/platos-menu/${id}`); toast('Plato eliminado'); loadPlatosMenu(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+async function subirFotoPlatoMenu(id, input) {
+  if (!input.files.length) return;
+  const fd = new FormData();
+  fd.append('foto', input.files[0]);
+  try {
+    const res = await fetch(`/api/menu/platos-menu/${id}/foto`, { method: 'POST', credentials: 'same-origin', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al subir foto');
+    toast('Foto actualizada'); loadPlatosMenu();
+  } catch(e) { toast(e.message, 'err'); }
+  input.value = '';
+}
+
+async function eliminarFotoPlatoMenu(id) {
+  try { await api('DELETE', `/api/menu/platos-menu/${id}/foto`); toast('Foto eliminada'); loadPlatosMenu(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+// ── Menús del día ─────────────────────────────────────────
+function getOpenSecciones() {
+  const open = [];
+  document.querySelectorAll('[id^="menu-secciones-"]').forEach(el => {
+    if (el.style.display !== 'none') open.push(el.id.replace('menu-secciones-', ''));
+  });
+  return open;
+}
+
+function restoreOpenSecciones(ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(`menu-secciones-${id}`);
+    if (el) el.style.display = 'block';
+  });
+}
+
+async function loadMenusDia() {
+  const el = document.getElementById('list-menus-dia');
+  const openIds = getOpenSecciones();
+  el.innerHTML = '<div class="loading-text">Cargando…</div>';
+  const fecha = document.getElementById('filter-md-fecha').value;
+  try {
+    const menus = await api('GET', `/api/menu/menus-dia${fecha ? `?dia=${fecha}` : ''}`);
+    if (!menus.length) { el.innerHTML = emptyState('📋','Sin menús configurados'); return; }
+    el.innerHTML = menus.map(m => renderMenuCard(m)).join('');
+    restoreOpenSecciones(openIds);
+  } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
+}
+
+function renderMenuCard(m) {
+  const secRows = m.secciones.map(s => `
+    <div style="margin-bottom:0.75rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem">
+        <span style="font-size:12px;font-weight:700;color:var(--text)">${esc(s.nombre_seccion)}</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button
+            onclick="toggleRequeridoSeccion(${m.id}, ${s.id_seccion}, ${s.requerido ? 1 : 0})"
+            title="Click para cambiar"
+            style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;min-height:44px;display:inline-flex;align-items:center;${s.requerido ? 'color:var(--primary);border-color:var(--primary)' : 'color:var(--muted);border-color:var(--border)'}"
+          >${s.requerido ? 'Obligatoria' : 'Opcional'}</button>
+          <button
+            onclick="eliminarSeccionDeMenu(${m.id}, ${s.id_seccion}, '${esc(s.nombre_seccion)}')"
+            title="Quitar sección de este menú"
+            style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;color:var(--danger);border-color:var(--danger);min-height:44px;display:inline-flex;align-items:center;"
+          >✕</button>
+        </div>
+      </div>
+      ${s.platos.length
+        ? s.platos.map(p => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--bg);border-radius:5px;margin-bottom:3px;font-size:12px;${p.agotado ? 'opacity:0.5' : ''}">
+            <span style="${p.agotado ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(p.nombre)}</span>
+            <div style="display:flex;gap:4px">
+              <button
+                onclick="toggleAgotadoPlato(${m.id},${s.id_seccion},${p.id_componente},${p.agotado ? 1 : 0})"
+                style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;min-height:44px;display:inline-flex;align-items:center;${p.agotado ? 'color:var(--danger);border-color:var(--danger)' : 'color:var(--success);border-color:var(--success)'}"
+              >${p.agotado ? 'Agotado' : 'Disponible'}</button>
+              <button class="btn btn-danger" style="padding:0 10px;font-size:14px" onclick="eliminarComponente(${m.id},${s.id_seccion},${p.id_componente})">✕</button>
+            </div>
+          </div>`).join('')
+        : '<div style="font-size:11px;color:var(--muted);padding:4px 8px">Sin platos asignados</div>'
+      }
+      <!-- Agregar plato a esta sección -->
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <select id="sel-plato-${m.id}-${s.id_seccion}" style="flex:1;border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:16px;background:var(--bg)">
+          <option value="">+ Plato…</option>
+          ${platoMenuCache.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="agregarComponente(${m.id},${s.id_seccion})">Agregar</button>
+      </div>
+    </div>`).join('');
+
+  const activo = m.activo !== 0;
+  return `
+    <div class="card" style="margin-bottom:1rem;${activo ? '' : 'opacity:0.55'}" id="menu-card-${m.id}">
+      <div class="card-header">
+        <div>
+          <span class="card-title">${esc(m.nombre)}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">${fDate(m.dia)} · S/ ${Number(m.precio).toFixed(2)}</span>
+          <button
+            onclick="toggleElegibleMenu(${m.id}, ${m.elegible ? 1 : 0})"
+            title="Click para cambiar"
+            style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;margin-left:6px;min-height:44px;display:inline-flex;align-items:center;${m.elegible ? 'color:var(--primary);border-color:var(--primary)' : 'color:var(--muted);border-color:var(--border)'}"
+          >${m.elegible ? 'Cliente elige' : 'Fijo'}</button>
+          <button
+            onclick="toggleActivoMenu(${m.id}, ${activo ? 1 : 0})"
+            title="${activo ? 'Ocultar del QR' : 'Mostrar en QR'}"
+            style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;margin-left:6px;min-height:44px;display:inline-flex;align-items:center;${activo ? 'color:var(--success);border-color:var(--success)' : 'color:var(--danger);border-color:var(--danger)'}"
+          >${activo ? '● Visible' : '○ Oculto'}</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="toggleMenuSecciones(${m.id})">Configurar secciones</button>
+          <button class="btn btn-danger" onclick="eliminarMenuDia(${m.id})">Eliminar</button>
+        </div>
+      </div>
+      <!-- Secciones (expandible) -->
+      <div id="menu-secciones-${m.id}" style="display:none;padding:1rem 1.25rem;border-top:1px solid var(--border)">
+        ${secRows || '<div style="font-size:12px;color:var(--muted)">Sin secciones configuradas</div>'}
+        <!-- Agregar sección al menú -->
+        <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px dashed var(--border)">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Agregar sección</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <select id="sel-sec-${m.id}" style="flex:1;border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:16px;background:var(--bg)">
+              <option value="">Selecciona una sección…</option>
+              ${seccionesCache.map(s => `<option value="${s.id}">${esc(s.nombre)}</option>`).join('')}
+            </select>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+              <input type="checkbox" id="req-sec-${m.id}" /> Obligatoria
+            </label>
+            <button class="btn btn-primary btn-sm" onclick="agregarSeccionMenu(${m.id})">Agregar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleMenuSecciones(id) {
+  const el = document.getElementById(`menu-secciones-${id}`);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function crearMenuDia() {
+  const nombre   = document.getElementById('md-nombre').value.trim();
+  const precio   = document.getElementById('md-precio').value;
+  const dia      = document.getElementById('md-fecha').value;
+  const elegible = document.getElementById('md-elegible').checked;
+  setErr('err-md', '');
+  if (!dia)    return setErr('err-md', 'La fecha es requerida');
+  if (!precio) return setErr('err-md', 'El precio es requerido');
+  try {
+    await api('POST', '/api/menu/menus-dia', { nombre, precio, dia, elegible });
+    toast('Menú creado');
+    document.getElementById('md-nombre').value = '';
+    document.getElementById('md-precio').value = '';
+    document.getElementById('md-fecha').value  = '';
+    document.getElementById('md-elegible').checked = false;
+    loadMenusDia();
+  } catch(e) { setErr('err-md', e.message); }
+}
+
+async function eliminarMenuDia(id) {
+  if (!confirm('¿Eliminar este menú del día y toda su configuración?')) return;
+  try { await api('DELETE', `/api/menu/menus-dia/${id}`); toast('Menú eliminado'); loadMenusDia(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+async function agregarSeccionMenu(menuId) {
+  const id_seccion_menu = document.getElementById(`sel-sec-${menuId}`).value;
+  const requerido       = document.getElementById(`req-sec-${menuId}`).checked;
+  if (!id_seccion_menu) return toast('Selecciona una sección', 'err');
+  try {
+    await api('POST', `/api/menu/menus-dia/${menuId}/secciones`, { id_seccion_menu, requerido });
+    toast('Sección agregada'); loadMenusDia();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function agregarComponente(menuId, seccionId) {
+  const id_plato_menu = document.getElementById(`sel-plato-${menuId}-${seccionId}`).value;
+  if (!id_plato_menu) return toast('Selecciona un plato', 'err');
+  try {
+    await api('POST', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos`, { id_plato_menu });
+    toast('Plato agregado'); loadMenusDia();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function eliminarSeccionDeMenu(menuId, seccionId, nombreSeccion) {
+  if (!confirm(`¿Quitar la sección "${nombreSeccion}" de este menú?\nSe eliminarán también los platos asignados a ella en este menú.`)) return;
+  try {
+    await api('DELETE', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}`);
+    toast(`Sección "${nombreSeccion}" eliminada del menú`);
+    loadMenusDia();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function eliminarComponente(menuId, seccionId, componenteId) {
+  try {
+    await api('DELETE', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}`);
+    toast('Plato eliminado'); loadMenusDia();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function toggleRequeridoSeccion(menuId, seccionId, requeridoActual) {
+  const nuevoRequerido = requeridoActual ? 0 : 1;
+  try {
+    await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}`, { requerido: nuevoRequerido });
+    toast(nuevoRequerido ? 'Sección marcada como obligatoria' : 'Sección marcada como opcional');
+    loadMenusDia();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function toggleElegibleMenu(menuId, elegibleActual) {
+  const nuevoElegible = elegibleActual ? 0 : 1;
+  try {
+    await api('PATCH', `/api/menu/menus-dia/${menuId}/elegible`, { elegible: nuevoElegible });
+    toast(nuevoElegible ? 'Menú cambiado a: Cliente elige' : 'Menú cambiado a: Fijo');
+    loadMenusDia();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function toggleActivoMenu(menuId, activoActual) {
+  const nuevoActivo = activoActual ? 0 : 1;
+  try {
+    await api('PATCH', `/api/menu/menus-dia/${menuId}/activo`, { activo: nuevoActivo });
+    toast(nuevoActivo ? 'Menú visible en QR' : 'Menú oculto del QR');
+    loadMenusDia();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function toggleAgotadoPlato(menuId, seccionId, componenteId, agotadoActual) {
+  const nuevoAgotado = agotadoActual ? 0 : 1;
+  try {
+    await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/agotado`, { agotado: nuevoAgotado });
+    toast(nuevoAgotado ? 'Plato marcado como agotado' : 'Plato disponible nuevamente');
+    loadMenusDia();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ════════════════════════════════════════════════════════
+// MÓDULO 2 — CARTA
+// ════════════════════════════════════════════════════════
+let categoriasCache = [];
+
+async function loadCategorias() {
+  const el = document.getElementById('list-categorias');
+  el.innerHTML = '<div class="loading-text">Cargando…</div>';
+  try {
+    categoriasCache = await api('GET', '/api/menu/categorias');
+    // Sync select en formulario de platos
+    const sel = document.getElementById('pc-categoria');
+    sel.innerHTML = '<option value="">— selecciona —</option>' +
+      categoriasCache.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    if (!categoriasCache.length) { el.innerHTML = emptyState('🗂️','Sin categorías aún'); return; }
+    el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Nombre</th><th></th></tr></thead><tbody>` +
+      categoriasCache.map(c => `<tr>
+        <td><strong>${esc(c.nombre)}</strong></td>
+        <td style="text-align:right"><button class="btn btn-danger" onclick="eliminarCategoria(${c.id},'${esc(c.nombre)}')">Eliminar</button></td>
+      </tr>`).join('') + `</tbody></table></div>`;
+  } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
+}
+
+async function crearCategoria() {
+  const nombre = document.getElementById('cat-nombre').value.trim();
+  setErr('err-cat', '');
+  if (!nombre) return setErr('err-cat', 'El nombre es requerido');
+  try {
+    await api('POST', '/api/menu/categorias', { nombre });
+    toast('Categoría creada'); document.getElementById('cat-nombre').value = '';
+    loadCategorias();
+  } catch(e) { setErr('err-cat', e.message); }
+}
+
+async function eliminarCategoria(id, nombre) {
+  if (!confirm(`¿Eliminar la categoría "${nombre}"? Solo si no tiene platos.`)) return;
+  try { await api('DELETE', `/api/menu/categorias/${id}`); toast('Categoría eliminada'); loadCategorias(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+async function loadPlatosCarta() {
+  const el = document.getElementById('list-platos-carta');
+  el.innerHTML = '<div class="loading-text">Cargando…</div>';
+  try {
+    const platos = await api('GET', '/api/menu/platos-carta');
+    if (!platos.length) { el.innerHTML = emptyState('🍽️','Sin platos a la carta aún'); return; }
+    el.innerHTML = `<div class="table-wrap"><table><thead><tr><th style="width:48px"></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Estado</th><th></th></tr></thead><tbody>` +
+      platos.map(p => `<tr>
+        <td>
+          ${p.url_foto
+            ? `<img src="${p.url_foto}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;display:block">`
+            : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">🍴</div>`}
+        </td>
+        <td><strong>${esc(p.nombre)}</strong>${p.descripcion ? `<br><span style="font-size:11px;color:var(--muted)">${esc(p.descripcion)}</span>` : ''}</td>
+        <td>${esc(p.categoria)}</td>
+        <td>S/ ${Number(p.precio).toFixed(2)}</td>
+        <td>
+          <label class="toggle" title="${p.activo ? 'Desactivar' : 'Activar'}">
+            <input type="checkbox" ${p.activo ? 'checked' : ''} onchange="togglePlatoCarta(${p.id})" />
+            <span class="toggle-slider"></span>
+          </label>
+        </td>
+        <td style="text-align:right;white-space:nowrap;display:flex;gap:4px;justify-content:flex-end;align-items:center">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer" title="${p.url_foto ? 'Cambiar foto' : 'Subir foto'}">
+            📷
+            <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="subirFotoPlatoCarta(${p.id},this)">
+          </label>
+          ${p.url_foto ? `<button class="btn btn-ghost btn-sm" onclick="eliminarFotoPlatoCarta(${p.id})" title="Eliminar foto">🗑</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="eliminarPlatoCarta(${p.id},'${esc(p.nombre)}')">Eliminar</button>
+        </td>
+      </tr>`).join('') + `</tbody></table></div>`;
+  } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
+}
+
+async function crearPlatoCarta() {
+  const nombre      = document.getElementById('pc-nombre').value.trim();
+  const precio      = document.getElementById('pc-precio').value;
+  const descripcion = document.getElementById('pc-desc').value.trim();
+  const id_categoria = document.getElementById('pc-categoria').value;
+  setErr('err-pc', '');
+  if (!nombre)      return setErr('err-pc', 'El nombre es requerido');
+  if (!precio)      return setErr('err-pc', 'El precio es requerido');
+  if (!id_categoria) return setErr('err-pc', 'Selecciona una categoría');
+  try {
+    await api('POST', '/api/menu/platos-carta', { nombre, precio, descripcion, id_categoria });
+    toast('Plato agregado');
+    ['pc-nombre','pc-precio','pc-desc'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pc-categoria').value = '';
+    loadPlatosCarta();
+  } catch(e) { setErr('err-pc', e.message); }
+}
+
+async function togglePlatoCarta(id) {
+  try {
+    const d = await api('PATCH', `/api/menu/platos-carta/${id}/toggle`);
+    toast(d.message);
+  } catch(e) { toast(e.message, 'err'); loadPlatosCarta(); }
+}
+
+async function eliminarPlatoCarta(id, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}"?`)) return;
+  try { await api('DELETE', `/api/menu/platos-carta/${id}`); toast('Plato eliminado'); loadPlatosCarta(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+async function subirFotoPlatoCarta(id, input) {
+  if (!input.files.length) return;
+  const fd = new FormData();
+  fd.append('foto', input.files[0]);
+  try {
+    const res = await fetch(`/api/menu/platos-carta/${id}/foto`, { method: 'POST', credentials: 'same-origin', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al subir foto');
+    toast('Foto actualizada'); loadPlatosCarta();
+  } catch(e) { toast(e.message, 'err'); }
+  input.value = '';
+}
+
+async function eliminarFotoPlatoCarta(id) {
+  try { await api('DELETE', `/api/menu/platos-carta/${id}/foto`); toast('Foto eliminada'); loadPlatosCarta(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+// ordenes.js + reservas.js + usuarios.js cargados como <script src> (pasos 1.8, 1.7, 1.4)
+// reportes.js cargado como <script src> (paso 1.9a)
+
+
+// ════════════════════════════════════════════════════════
+// ESTATUS DINÁMICOS
+// ════════════════════════════════════════════════════════
+async function loadEstatusOrden() {
+  try {
+    const lista = await api('GET', '/api/orders/estatus');
+    const sel = document.getElementById('hist-estatus');
+    lista.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.nombre;
+      opt.textContent = e.nombre.charAt(0).toUpperCase() + e.nombre.slice(1);
+      sel.appendChild(opt);
+    });
+  } catch(e) { /* silencioso: el select queda con "Todos" */ }
+}
+
+async function loadEstatusReserva() {
+  try {
+    const lista = await api('GET', '/api/reservations/estatus');
+    const sel = document.getElementById('hist-res-estatus');
+    lista.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.nombre;
+      opt.textContent = e.nombre.charAt(0).toUpperCase() + e.nombre.slice(1);
+      sel.appendChild(opt);
+    });
+  } catch(e) { /* silencioso */ }
+}
+
+// ── Sound alert ──────────────────────────────────────────
+// El AudioContext debe crearse dentro de un gesto del usuario
+// (click en el botón 🔔) para cumplir la Autoplay Policy del navegador.
+let soundEnabled  = localStorage.getItem('ownerSound') !== 'false';
+let audioCtx      = null;
+let prevOrdenIds  = null;
+let prevReservaIds = null;
+
+function updateSoundButton() {
+  const btn = document.getElementById('sound-toggle');
+  if (!btn) return;
+  btn.textContent = soundEnabled ? '🔔' : '🔕';
+  btn.title = soundEnabled ? 'Silenciar alertas' : 'Activar alertas de sonido';
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('ownerSound', soundEnabled);
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (_) {}
+  updateSoundButton();
+  toast(soundEnabled ? 'Alertas activadas' : 'Alertas silenciadas');
+}
+
+function _dispararSonido() {
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+  osc.frequency.setValueAtTime(660, audioCtx.currentTime + 0.12);
+  gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.45);
+}
+
+function playAlertSound() {
+  if (!soundEnabled || !audioCtx) return;
+  try {
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().then(_dispararSonido).catch(() => {});
+    } else {
+      _dispararSonido();
+    }
+  } catch (_) {}
+}
+
+function detectNuevasOrdenes(ordenes) {
+  const pendingIds = ordenes.filter(o => o.es_inicial).map(o => o.id);
+  if (prevOrdenIds !== null) {
+    const hasNew = pendingIds.some(id => !prevOrdenIds.has(id));
+    if (hasNew) playAlertSound();
+  }
+  prevOrdenIds = new Set(pendingIds);
+}
+
+function detectNuevasReservas(reservas) {
+  const pendingIds = reservas.filter(r => r.es_inicial).map(r => r.id);
+  if (prevReservaIds !== null) {
+    const hasNew = pendingIds.some(id => !prevReservaIds.has(id));
+    if (hasNew) playAlertSound();
+  }
+  prevReservaIds = new Set(pendingIds);
+}
+
+// ── Auto-refresh órdenes activas ─────────────────────────
+setInterval(() => {
+  if (activePanel === 'ordenes') {
+    const tabActiva = document.querySelector('#panel-ordenes .tab.active')?.id;
+    if (tabActiva === 'tab-ord-plano')   loadPlanoMesas();
+    if (tabActiva === 'tab-ord-activas') loadOrdenesActivas();
+  }
+  if (activePanel === 'reservas') loadReservasActivas();
+}, 10000);
+
+// ── Logout ───────────────────────────────────────────────
+async function logout() {
+  try { await fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }); }
+  finally { sessionStorage.removeItem('session'); window.location.replace('/login.html'); }
+}
+
+// ── Cambiar contraseña ───────────────────────────────────
+function abrirModalCambiarPassword() {
+  document.getElementById('pwd-actual').value    = '';
+  document.getElementById('pwd-nueva').value     = '';
+  document.getElementById('pwd-confirmar').value = '';
+  const err = document.getElementById('pwd-error');
+  err.style.display = 'none'; err.textContent = '';
+  const modal = document.getElementById('modal-cambiar-pwd');
+  modal.style.display = 'flex';
+  closeSidebar();
+}
+function cerrarModalCambiarPassword() {
+  document.getElementById('modal-cambiar-pwd').style.display = 'none';
+}
+document.getElementById('modal-cambiar-pwd').addEventListener('click', e => {
+  if (e.target === e.currentTarget) cerrarModalCambiarPassword();
+});
+async function guardarNuevaPassword() {
+  const passwordActual  = document.getElementById('pwd-actual').value;
+  const passwordNueva   = document.getElementById('pwd-nueva').value;
+  const passwordConfirm = document.getElementById('pwd-confirmar').value;
+  const err = document.getElementById('pwd-error');
+  const mostrarError = msg => { err.textContent = msg; err.style.display = 'block'; };
+  err.style.display = 'none';
+
+  if (!passwordActual || !passwordNueva || !passwordConfirm)
+    return mostrarError('Todos los campos son requeridos');
+  if (passwordNueva.length < 8)
+    return mostrarError('La contraseña nueva debe tener al menos 8 caracteres');
+  if (passwordNueva !== passwordConfirm)
+    return mostrarError('Las contraseñas nuevas no coinciden');
+
+  try {
+    const res  = await fetch('/api/auth/me/password', {
+      method: 'PATCH', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passwordActual, passwordNueva })
+    });
+    const data = await res.json();
+    if (!res.ok) return mostrarError(data.error || 'Error al cambiar contraseña');
+    cerrarModalCambiarPassword();
+    toast(data.message, 'success');
+  } catch { mostrarError('Error de red. Intenta de nuevo.'); }
+}
+
+// ── Init ─────────────────────────────────────────────────
+
+const hoy = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Lima"
+      }).format(new Date());
+document.getElementById('md-fecha').value = hoy;
+updateSoundButton();
+loadEstatusOrden(); loadEstatusReserva();
+if (activePanel === 'menu-dia')        { loadSecciones(); loadPlatosMenu(); loadMenusDia(); }
+else if (activePanel === 'carta')      { loadCategorias(); loadPlatosCarta(); }
+else if (activePanel === 'ordenes')    { loadOrdenesActivas(); }
+else if (activePanel === 'reservas')   { loadReservasActivas(); }
+else if (activePanel === 'cocina')     { initCocinaPoll(); }
+else if (activePanel === 'reportes')   { loadReportes(); loadGanancias(); loadDemanda(); loadPedidosFiltros(); loadHoraPico(); }
+else if (activePanel === 'configuracion') { loadConfiguracion(); }
+
+// config.js cargado como <script src>
+loadRestauranteBrand();
+
+// ── Configuración y brand (funciones en config.js) ───────
+initConfigListeners();
+
+// mesas.js cargado como <script src> (paso 1.5)
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      suscribirPush(reg);
+    });
+  }
+
+  async function suscribirPush(reg) {
+    if (!('PushManager' in window)) return;
+    if (Notification.permission === 'denied') return;
+
+    try {
+      const { publicKey } = await (await fetch('/api/push/vapid-key')).json();
+      if (!publicKey) return;
+
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly:      true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+
+      await fetch('/api/push/subscribe', {
+        method:      'POST',
+        credentials: 'same-origin',
+        headers:     { 'Content-Type': 'application/json' },
+        body:        JSON.stringify({ subscription: sub }),
+      });
+    } catch (_) { /* permiso denegado o VAPID no configurado */ }
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw     = atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
+</script>
+</body>
+</html>

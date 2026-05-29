@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment (secretos — NO subir)
+.env
+
+# Database (se genera al iniciar)
+*.sqlite
+*.sqlite3
+
+# Uploads generados por usuarios (opcional; descomentar para excluir)
+
+public/uploads/
+
+# Logs
+*.log
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+

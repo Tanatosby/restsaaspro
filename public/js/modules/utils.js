@@ -1,0 +1,34 @@
+// ── API helper ───────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res  = await fetch(path, opts);
+  if (res.status === 401) {
+    window.location.replace('/login.html');
+    return;
+  }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error desconocido');
+  return data;
+}
+
+// ── Toast ────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3000);
+}
+
+// ── Helpers ──────────────────────────────────────────────
+const esc      = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fDate    = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('es-PE', { weekday:'short', day:'numeric', month:'short' }) : '—';
+const toUTC    = d => d.endsWith('Z') || d.includes('+') ? d : d.replace(' ', 'T') + 'Z';
+const fDT      = d => d ? new Date(toUTC(d)).toLocaleString('es-PE', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZone:'America/Lima' }) : '—';
+const badgeEst = e => `<span class="badge badge-${e}">${e}</span>`;
+const setErr   = (id, msg) => { const el = document.getElementById(id); el.textContent = msg; el.classList.toggle('show', !!msg); };
+
+function emptyState(icon, text) {
+  return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div></div>`;
+}

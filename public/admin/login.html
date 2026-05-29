@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Menú Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #111118;
+      --border:    #1e1e2e;
+      --border-hi: #2e2e4e;
+      --accent:    #f0c040;
+      --accent-dim:#a07c1a;
+      --text:      #e8e8f0;
+      --muted:     #6060808;
+      --danger:    #e05555;
+      --danger-bg: #2a1010;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+    }
+
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Grid lines ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(240,192,64,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(240,192,64,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--accent-dim);
+      color: var(--accent);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 2px;
+      margin-bottom: 2rem;
+      animation: fadeDown 0.4s ease both;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ── Card ── */
+    .card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      animation: fadeUp 0.5s ease both 0.1s;
+    }
+
+    .card-header {
+      padding: 1.5rem 1.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .card-title span {
+      color: var(--accent);
+    }
+
+    .card-sub {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #505070;
+      letter-spacing: 0.05em;
+    }
+
+    .card-body {
+      padding: 1.5rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* ── Fields ── */
+    .field label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #606080;
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 10px 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .field input::placeholder { color: #303050; }
+
+    .field input:focus {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 0 3px rgba(240,192,64,0.08);
+    }
+
+    /* password wrapper */
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 38px; }
+    .pw-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #404060;
+      cursor: pointer;
+      font-size: 14px;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+    .pw-toggle:hover { color: var(--accent); }
+
+    /* ── Error ── */
+    #error-msg {
+      display: none;
+      align-items: flex-start;
+      gap: 8px;
+      background: var(--danger-bg);
+      border: 1px solid #3a1515;
+      border-radius: 3px;
+      padding: 10px 12px;
+      color: var(--danger);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    #error-msg.visible { display: flex; }
+
+    /* ── Submit ── */
+    .btn-submit {
+      width: 100%;
+      background: var(--accent);
+      color: #0a0a0f;
+      border: none;
+      border-radius: 3px;
+      padding: 11px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      margin-top: 4px;
+    }
+    .btn-submit:hover   { background: #f5d060; }
+    .btn-submit:active  { background: #c09830; }
+    .btn-submit:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ── Footer ── */
+    .card-footer {
+      padding: 0.875rem 1.75rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-tag {
+      font-size: 10px;
+      color: #303050;
+      letter-spacing: 0.08em;
+    }
+
+    .footer-link {
+      font-size: 10px;
+      color: #404060;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: color 0.2s;
+    }
+    .footer-link:hover { color: var(--accent); }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+
+    <div class="badge">
+      <span class="badge-dot"></span>
+      Superadmin access
+    </div>
+
+    <div class="card">
+
+      <div class="card-header">
+        <div class="card-title">Restaurant <span>SaaS</span></div>
+        <div class="card-sub">// admin console — restricted area</div>
+      </div>
+
+      <div class="card-body">
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email"
+            placeholder="admin@yourdomain.com" required />
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw-wrap">
+            <input id="password" type="password" autocomplete="current-password"
+              placeholder="••••••••••••" required />
+            <button type="button" class="pw-toggle" onclick="togglePassword()" aria-label="Toggle password">👁</button>
+          </div>
+        </div>
+
+        <div id="error-msg" role="alert">
+          <span>⚠</span>
+          <span id="error-text"></span>
+        </div>
+
+        <button class="btn-submit" id="submit-btn" onclick="handleLogin()">
+          Authenticate
+        </button>
+
+      </div>
+
+      <div class="card-footer">
+        <span class="footer-tag">v1.0 · admin only</span>
+        <a href="/login.html" class="footer-link">← user login</a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // Admin is the only valid role here
+    const ADMIN_REDIRECT = '/admin/dashboard.html';
+
+    // Guard: if already logged in as admin, skip
+    (function guard() {
+      try {
+        const session = JSON.parse(sessionStorage.getItem('session') || 'null');
+        if (session?.role === 'admin') {
+          window.location.replace(ADMIN_REDIRECT);
+        }
+      } catch { sessionStorage.removeItem('session'); }
+    })();
+
+    async function handleLogin() {
+      hideError();
+
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        return showError('Both fields are required.');
+      }
+
+      setLoading(true);
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method:      'POST',
+          headers:     { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body:        JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          return showError(data.error || 'Authentication failed.');
+        }
+
+        // Only admin role is accepted here
+        if (data.user.role !== 'admin') {
+          return showError('Access denied. This console is restricted to administrators.');
+        }
+
+        // Store only non-sensitive UI data — JWT lives in HttpOnly cookie
+        sessionStorage.setItem('session', JSON.stringify({
+          name:          data.user.name,
+          role:          data.user.role,
+          restaurant_id: data.user.restaurant_id
+        }));
+
+        window.location.replace(ADMIN_REDIRECT);
+
+      } catch {
+        showError('Network error. Check your connection and try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function setLoading(on) {
+      const btn = document.getElementById('submit-btn');
+      btn.disabled    = on;
+      btn.textContent = on ? 'Authenticating…' : 'Authenticate';
+    }
+
+    function showError(msg) {
+      document.getElementById('error-text').textContent = msg;
+      document.getElementById('error-msg').classList.add('visible');
+    }
+
+    function hideError() {
+      document.getElementById('error-msg').classList.remove('visible');
+    }
+
+    function togglePassword() {
+      const input = document.getElementById('password');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    // Clear error on input
+    ['email', 'password'].forEach(id =>
+      document.getElementById(id).addEventListener('input', hideError)
+    );
+
+    // Allow Enter key to submit
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleLogin();
+    });
+  </script>
+</body>
+</html>

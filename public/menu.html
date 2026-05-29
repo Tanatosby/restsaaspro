@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Menú</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c8692a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #faf8f5;
+      --white:        #ffffff;
+      --border:       #ede8e0;
+      --text:         #1c1712;
+      --text-2:       #6b5f52;
+      --muted:        #a89880;
+      --accent:       #c8692a;
+      --accent-light: #fdf0e8;
+      --accent-dark:  #a0521e;
+      --green:        #2d7a4a;
+      --green-bg:     #edf7f1;
+      --shadow:       0 2px 12px rgba(28,23,18,0.08);
+      --shadow-lg:    0 8px 32px rgba(28,23,18,0.14);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 15px;
+      min-height: 100vh; padding-bottom: 120px;
+    }
+
+    /* ── Hero portada ── */
+    .hero-portada {
+      width: 100%; height: 180px; overflow: hidden;
+      background: var(--border);
+      display: none;
+    }
+    .hero-portada img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* ── Header ── */
+    .header {
+      background: var(--white); border-bottom: 1px solid var(--border);
+      padding: 1.25rem 1.25rem 1rem;
+      position: sticky; top: 0; z-index: 40;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+    }
+    .header-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .restaurant-name {
+      font-family: 'Fraunces', serif;
+      font-size: 1.35rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em;
+    }
+    .mesa-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--accent-light); color: var(--accent);
+      font-size: 12px; font-weight: 600; padding: 4px 10px;
+      border-radius: 20px; border: 1px solid rgba(200,105,42,0.2);
+    }
+
+    /* ── Mode tabs (Pedir ahora / Reservar) ── */
+    .mode-tabs { display: flex; gap: 6px; margin-bottom: 0.75rem; }
+    .mode-tab {
+      flex: 1; padding: 8px 10px; border-radius: 10px; text-align: center;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--white);
+      color: var(--text-2); transition: all 0.15s;
+    }
+    .mode-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* ── Category nav pills ── */
+    .cat-nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+    .cat-nav::-webkit-scrollbar { display: none; }
+    .cat-pill {
+      flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--white);
+      color: var(--text-2); transition: all 0.2s; white-space: nowrap;
+    }
+    .cat-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* ── Content ── */
+    .content { padding: 1.25rem; max-width: 600px; margin: 0 auto; }
+    .hidden { display: none !important; }
+
+    /* ── Section title ── */
+    .section-title {
+      font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700;
+      color: var(--text); margin-bottom: 0.875rem; padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--accent); display: inline-block;
+    }
+    .section-block { margin-bottom: 2.5rem; }
+
+    /* ── Menú del día card ── */
+    .menu-dia-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); margin-bottom: 1rem;
+    }
+    .menu-dia-header {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .menu-dia-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 700; color: white; }
+    .menu-dia-price { font-size: 1.1rem; font-weight: 700; color: white; }
+    .menu-tipo { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-top: 2px; }
+    .menu-secciones { padding: 1rem 1.25rem; }
+    .seccion-block { margin-bottom: 1rem; }
+    .seccion-block:last-child { margin-bottom: 0; }
+    .seccion-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 6px;
+    }
+    .seccion-req { font-size: 9px; background: rgba(200,105,42,0.12); color: var(--accent); padding: 1px 6px; border-radius: 10px; }
+    .plato-option {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      border-radius: 8px; border: 1.5px solid var(--border); margin-bottom: 6px;
+      cursor: pointer; transition: all 0.15s; background: var(--bg);
+    }
+    .plato-option:hover { border-color: var(--accent); background: var(--accent-light); }
+    .plato-option input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
+    .plato-option-name { font-size: 14px; font-weight: 500; color: var(--text); }
+    .plato-option-desc { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+    .plato-fijo { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 14px; }
+    .plato-fijo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .plato-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+    .plato-carta-img { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+    .btn-add-menu {
+      width: 100%; margin-top: 1rem; background: var(--accent); color: white;
+      border: none; border-radius: 10px; padding: 12px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-add-menu:hover { background: var(--accent-dark); }
+    .btn-add-menu:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Carta cards ── */
+    .plato-carta-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.75rem;
+      box-shadow: var(--shadow); display: flex; align-items: center; gap: 1rem;
+      transition: box-shadow 0.15s;
+    }
+    .plato-carta-card:hover { box-shadow: var(--shadow-lg); }
+    .plato-carta-info { flex: 1; min-width: 0; }
+    .plato-carta-name { font-size: 15px; font-weight: 600; color: var(--text); }
+    .plato-carta-desc { font-size: 12px; color: var(--text-2); margin-top: 3px; line-height: 1.4; }
+    .plato-carta-price { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 700; color: var(--accent); white-space: nowrap; margin-top: 6px; }
+    .qty-control { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .qty-btn {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1.5px solid var(--border); background: var(--bg);
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-2); transition: all 0.15s; line-height: 1;
+    }
+    .qty-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .qty-btn.add { background: var(--accent); color: white; border-color: var(--accent); }
+    .qty-btn.add:hover { background: var(--accent-dark); }
+    .qty-num { font-size: 15px; font-weight: 700; min-width: 20px; text-align: center; }
+
+    /* ── Sticky cart bar ── */
+    .cart-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+      padding: 0.875rem 1.25rem; background: var(--white);
+      border-top: 1px solid var(--border); box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+      display: none;
+    }
+    .cart-bar.show { display: block; }
+    .cart-btn {
+      width: 100%; max-width: 600px; margin: 0 auto; display: flex;
+      align-items: center; justify-content: space-between;
+      background: var(--accent); color: white; border: none; border-radius: 12px;
+      padding: 14px 20px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    }
+    .cart-btn:hover { background: var(--accent-dark); }
+    .cart-btn-left { display: flex; align-items: center; gap: 10px; }
+    .cart-count {
+      background: white; color: var(--accent); font-size: 12px; font-weight: 700;
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Cart drawer ── */
+    .drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 60; }
+    .drawer-backdrop.open { display: block; }
+    .drawer {
+      position: fixed; bottom: 0; left: 0; right: 0; background: var(--white);
+      border-radius: 20px 20px 0 0; z-index: 70; max-height: 85vh; overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+    .drawer.open { transform: translateY(0); }
+    .drawer-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+    .drawer-header {
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .drawer-title { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700; }
+    .drawer-close {
+      background: var(--bg); border: none; border-radius: 50%; width: 30px; height: 30px;
+      cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-2);
+    }
+    .drawer-body { padding: 1rem 1.25rem; }
+    .cart-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 1rem;
+    }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item-info { flex: 1; min-width: 0; }
+    .cart-item-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .cart-item-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .cart-item-price { font-size: 14px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+    .cart-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; transition: color 0.15s; flex-shrink: 0; }
+    .cart-remove:hover { color: #c0392b; }
+    .nombre-field { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    .nombre-field label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+    .nombre-field input {
+      width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+      outline: none; transition: border-color 0.2s;
+    }
+    .nombre-field input:focus { border-color: var(--accent); }
+    .cart-total { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0 0.5rem; font-size: 15px; font-weight: 700; }
+    .cart-total-price { font-family: 'Fraunces', serif; font-size: 1.3rem; color: var(--accent); }
+    .btn-confirmar {
+      width: 100%; background: var(--accent); color: white; border: none;
+      border-radius: 12px; padding: 14px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; margin-top: 0.5rem;
+    }
+    .btn-confirmar:hover { background: var(--accent-dark); }
+    .btn-confirmar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Reservation panel ── */
+    .res-panel { padding: 1.25rem; max-width: 600px; margin: 0 auto; }
+    .res-form-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.25rem; box-shadow: var(--shadow); margin-bottom: 1.25rem;
+    }
+    .res-form-title { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 1rem; }
+    .res-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 0.875rem; }
+    .res-field label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .res-field input {
+      background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: var(--text); outline: none; transition: border-color 0.2s; width: 100%;
+    }
+    .res-field input:focus { border-color: var(--accent); }
+    .res-field input::placeholder { color: #c8c0b8; }
+    .res-info-box {
+      background: #edf4fb; border: 1px solid #c0d8ee; border-radius: 8px;
+      padding: 10px 12px; font-size: 12px; color: #1a5070;
+      margin-bottom: 1rem; display: flex; gap: 8px; align-items: flex-start; line-height: 1.5;
+    }
+    .res-cart-summary {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;
+    }
+    .res-cart-summary-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.5rem; }
+    .res-cart-item { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+    .res-cart-item:last-child { border-bottom: none; }
+    .btn-reservar {
+      width: 100%; background: var(--green); color: white; border: none;
+      border-radius: 12px; padding: 14px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; margin-top: 0.5rem;
+    }
+    .btn-reservar:hover { background: #236040; }
+    .btn-reservar:disabled { opacity: 0.5; cursor: not-allowed; }
+    .res-total { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0 0.5rem; font-size: 15px; font-weight: 700; }
+    .res-total-price { font-family: 'Fraunces', serif; font-size: 1.2rem; color: var(--green); }
+
+    /* ── Confirmation screen ── */
+    .confirm-screen {
+      display: none; position: fixed; inset: 0; background: var(--bg); z-index: 100;
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: 2rem; text-align: center;
+    }
+    .confirm-screen.show { display: flex; animation: fadeUp 0.4s ease; }
+    .confirm-icon { font-size: 4rem; margin-bottom: 1rem; animation: bounce 0.5s ease 0.2s both; }
+    @keyframes bounce { 0%{transform:scale(0.5);opacity:0} 60%{transform:scale(1.2)} 100%{transform:scale(1);opacity:1} }
+    .confirm-title { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
+    .confirm-sub { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 2rem; }
+    .confirm-num { font-size: 1.5rem; font-weight: 700; }
+    .btn-nuevo {
+      background: none; border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 12px 24px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+      font-weight: 600; color: var(--text-2); cursor: pointer; transition: all 0.15s; margin-top: 1rem;
+    }
+    .btn-nuevo:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Loading / Empty ── */
+    .loading-screen { min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--muted); }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-msg { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 13px; }
+    .empty-msg .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+
+  <!-- ── Hero portada ── -->
+  <div class="hero-portada" id="hero-portada">
+    <img id="hero-img" src="" alt="Portada del restaurante">
+  </div>
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="header-top">
+      <div class="restaurant-name" id="restaurant-name">Cargando…</div>
+      <div class="mesa-chip" id="mesa-chip">Mesa —</div>
+    </div>
+    <!-- Mode label — sin opción de cambiar, fijo según URL -->
+    <div id="mode-label" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.25rem"></div>
+    <!-- Consultar reserva (siempre visible) -->
+    <div style="text-align:right;margin-bottom:0.5rem">
+      <button onclick="showEstadoReserva(null)"
+        style="display:inline-flex;align-items:center;gap:5px;
+               background:#fff8f0;border:1.5px solid var(--accent);border-radius:20px;
+               padding:5px 12px;font-size:12px;font-weight:600;color:var(--accent);
+               cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s"
+        onmousedown="this.style.opacity='.7'" onmouseup="this.style.opacity='1'"
+        ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+        📋 Consultar mi reserva
+      </button>
+    </div>
+    <!-- Category pills (only in pedir mode) -->
+    <div class="cat-nav" id="cat-nav"></div>
+  </div>
+
+  <!-- ── Pedir: menu content ── -->
+  <div class="content" id="main-content">
+    <div class="loading-screen"><div class="spinner"></div><span>Cargando menú…</span></div>
+  </div>
+
+  <!-- ── Reservar: reservation panel ── -->
+  <div class="res-panel hidden" id="res-panel">
+
+    <div class="res-form-card">
+      <div class="res-form-title">📅 Datos de la reserva</div>
+      <!-- Modalidad de reserva -->
+      <div id="reserva-modalidad-wrap" style="margin-bottom:1rem">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem">¿Cómo quieres tu pedido?</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+          <label style="flex:1;min-width:120px;display:flex;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
+            <input type="radio" name="reserva-modalidad" value="en_local" checked style="accent-color:var(--accent)"> 🪑 Comer aquí
+          </label>
+          <label id="res-mod-llevar-lbl" style="display:none;flex:1;min-width:120px;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
+            <input type="radio" name="reserva-modalidad" value="para_llevar" style="accent-color:var(--accent)"> 🥡 Para llevar
+          </label>
+          <label id="res-mod-delivery-lbl" style="display:none;flex:1;min-width:120px;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
+            <input type="radio" name="reserva-modalidad" value="delivery" style="accent-color:var(--accent)"> 🛵 Delivery
+          </label>
+        </div>
+      </div>
+
+      <div class="res-info-box">
+        ℹ️ Elige la fecha, completa tus datos y selecciona lo que deseas reservar del menú o la carta.
+      </div>
+
+      <div class="res-field">
+        <label for="res-fecha">Fecha de la reserva *</label>
+        <input id="res-fecha" type="date" onchange="renderReservarContent()" />
+      </div>
+      <div class="res-field">
+        <label for="res-hora">Hora de llegada (opcional)</label>
+        <input id="res-hora" type="time" placeholder="Ej: 20:00" />
+        <span style="font-size:11px;color:var(--muted)">Ayuda al restaurante a preparar tu mesa</span>
+      </div>
+      <div class="res-field">
+        <label for="res-nombre">Tu nombre *</label>
+        <input id="res-nombre" type="text" placeholder="Ej: María García" maxlength="80" />
+      </div>
+      <div class="res-field">
+        <label for="res-telefono">Teléfono (opcional)</label>
+        <input id="res-telefono" type="tel" placeholder="Ej: 987654321" maxlength="20" />
+      </div>
+    </div>
+
+    <!-- Reservation menu selection (same content as pedir) -->
+    <div id="res-menu-content">
+      <div class="loading-screen"><div class="spinner"></div><span>Cargando menú…</span></div>
+    </div>
+
+    <!-- Reservation cart summary + confirm -->
+    <div class="res-form-card" id="res-cart-section" style="display:none">
+      <div class="res-form-title">Tu selección</div>
+      <div class="res-cart-summary">
+        <div class="res-cart-summary-title">Ítems seleccionados</div>
+        <div id="res-cart-items"></div>
+      </div>
+      <div id="cargo-res-line" style="display:none;justify-content:space-between;font-size:13px;color:var(--muted);padding:0.25rem 0">
+        <span id="cargo-res-label">🥡 Tapper</span>
+        <span id="cargo-res-monto">+S/ 0.00</span>
+      </div>
+      <div class="res-total">
+        <span>Total estimado</span>
+        <span class="res-total-price" id="res-total-price">S/ 0.00</span>
+      </div>
+      <button class="btn-reservar" id="btn-reservar" onclick="confirmarReserva()">
+        ✓ Confirmar reserva
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── Sticky cart bar (pedir mode) ── -->
+  <div class="cart-bar" id="cart-bar">
+    <button class="cart-btn" onclick="openDrawer()">
+      <div class="cart-btn-left">
+        <span class="cart-count" id="cart-count">0</span>
+        <span>Ver pedido</span>
+      </div>
+      <span id="cart-total-bar">S/ 0.00</span>
+    </button>
+  </div>
+
+  <!-- ── Drawer backdrop ── -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+
+  <!-- ── Cart drawer ── -->
+  <div class="drawer" id="cart-drawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-header">
+      <span class="drawer-title">Tu pedido</span>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div id="drawer-items"></div>
+      <div class="nombre-field">
+        <label for="nombre-cliente">Tu nombre (opcional)</label>
+        <input id="nombre-cliente" type="text" placeholder="Ej: Juan" maxlength="50" />
+      </div>
+      <!-- Modalidad de orden (solo si para_llevar está activo) -->
+      <div id="orden-modalidad-wrap" style="display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem">¿Cómo lo quieres?</div>
+        <div style="display:flex;gap:0.5rem">
+          <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
+            <input type="radio" name="orden-modalidad" value="en_local" checked style="accent-color:var(--accent)"> 🪑 En local
+          </label>
+          <label id="orden-mod-llevar-lbl" style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
+            <input type="radio" name="orden-modalidad" value="para_llevar" style="accent-color:var(--accent)"> 🥡 Para llevar
+          </label>
+        </div>
+      </div>
+      <div id="cargo-orden-line" style="display:none;justify-content:space-between;font-size:13px;color:var(--muted);padding:0.25rem 0">
+        <span>🥡 Tapper</span>
+        <span id="cargo-orden-monto">+S/ 0.00</span>
+      </div>
+      <div class="cart-total">
+        <span>Total</span>
+        <span class="cart-total-price" id="cart-total-drawer">S/ 0.00</span>
+      </div>
+      <button class="btn-confirmar" id="btn-confirmar" onclick="confirmarPedido()">
+        Confirmar pedido
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Confirmation screen ── -->
+  <div class="confirm-screen" id="confirm-screen">
+    <div class="confirm-icon" id="confirm-icon">🎉</div>
+    <div class="confirm-title" id="confirm-title">¡Pedido enviado!</div>
+    <div class="confirm-sub" id="confirm-sub">
+      Tu pedido fue recibido. En breve el equipo comenzará a prepararlo.
+      <br><br>
+      <span style="font-weight:600;color:var(--text)">Número:</span><br>
+      <span class="confirm-num" id="confirm-num" style="color:var(--accent)">#—</span>
+    </div>
+    <div id="confirm-actions" style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:0.75rem;margin-top:0.5rem">
+      <button id="btn-ver-estado" class="btn-confirmar" style="display:none" onclick="verEstadoReserva()">📋 Ver estado de mi reserva</button>
+      <button class="btn-nuevo" onclick="resetTodo()">Volver al menú</button>
+    </div>
+  </div>
+
+  <!-- ── Payment screen ── -->
+  <div class="confirm-screen" id="pago-screen">
+    <div style="width:100%;max-width:400px;padding:0 1rem">
+      <div class="confirm-title" style="font-size:1.4rem">💳 ¿Cómo vas a pagar?</div>
+      <div id="pago-orden-ref" style="font-size:13px;color:var(--muted);margin-bottom:1.25rem"></div>
+
+      <!-- Botones de método -->
+      <div id="pago-metodos" style="display:flex;flex-direction:column;gap:0.6rem"></div>
+
+      <!-- Detalle del método seleccionado -->
+      <div id="pago-metodo-detalle"></div>
+
+      <!-- Upload comprobante -->
+      <div id="pago-comprobante-wrap" style="display:none;margin-top:1rem;text-align:left">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">📎 Foto del comprobante (opcional)</label>
+        <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted)">
+          📷 Seleccionar imagen
+          <input type="file" id="pago-foto" accept="image/*" style="display:none">
+        </label>
+        <div id="pago-foto-preview"></div>
+      </div>
+
+      <!-- Acciones -->
+      <div style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1.5rem">
+        <button id="btn-ya-pague" class="btn-confirmar" onclick="enviarPago()" style="display:none">✓ Ya pagué</button>
+        <button class="btn-nuevo" onclick="skipPago()" style="background:transparent;color:var(--muted);font-size:13px;border:none;padding:0.5rem;cursor:pointer">Pagar más tarde</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Estado de reserva screen ── -->
+  <div class="confirm-screen" id="estado-screen" style="justify-content:flex-start;padding:0;overflow-y:auto">
+    <div style="width:100%;max-width:420px;padding-bottom:2rem">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:0.5rem;padding:1.25rem 1rem 0.75rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:1">
+        <button onclick="cerrarEstadoReserva()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:0 0.25rem;color:var(--text)">←</button>
+        <span style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;color:var(--text)">Estado de mi reserva</span>
+      </div>
+      <!-- Buscador de código -->
+      <div style="padding:1rem 1rem 0.5rem">
+        <div style="display:flex;gap:0.5rem">
+          <input id="estado-codigo-input" type="text" maxlength="10" aria-label="Código de reserva"
+            placeholder="Tu código (ej: r7Xk2mQ)"
+            style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:monospace;background:var(--bg);color:var(--text);outline:none"
+            onkeydown="if(event.key==='Enter') buscarReserva()" />
+          <button onclick="buscarReserva()" class="btn-confirmar" style="padding:10px 14px;font-size:14px;white-space:nowrap">Buscar</button>
+        </div>
+      </div>
+      <!-- Resultado -->
+      <div id="estado-result" style="padding:0 1rem"></div>
+    </div>
+  </div>
+
+<script>
+  // ── URL params ──────────────────────────────────────
+  const params        = new URLSearchParams(window.location.search);
+  const restauranteId = params.get('restaurante');
+  const mesa          = params.get('mesa');
+
+  // Si no hay mesa, mostrar tab reservar por defecto
+  let activeMode = mesa ? 'pedir' : 'reservar';
+
+  if (!restauranteId) {
+    document.getElementById('main-content').innerHTML =
+      `<div class="loading-screen"><div class="empty-msg"><div class="icon">⚠️</div>QR inválido — falta el parámetro restaurante</div></div>`;
+  }
+
+  document.getElementById('mesa-chip').textContent = mesa ? `Mesa ${mesa}` : 'Sin mesa';
+
+  // ── State ───────────────────────────────────────────
+  let menusDia  = [];
+  let cartaCats = [];
+
+  // Pedir state
+  let cart           = [];
+  let cartaQty       = {};
+  let menuSelections = {};
+
+  // Reservar state
+  let resCart           = [];
+  let resCartaQty       = {};
+  let resMenuSelections = {};
+  let resMenusDia       = []; // menús cargados para la fecha de reserva seleccionada
+
+  // Pago state
+  let modalidades          = { para_llevar: true, delivery: false }; // activas del restaurante
+  let pagoInfo             = null; // { yape, plin, efectivo } del restaurante
+  let pagoOrdenId          = null;
+  let pagoTipo             = null; // 'orden' | 'reserva'
+  let pagoMetodo           = null;
+  let pagoCodigoReserva    = null; // código de la reserva en curso
+  let codigoReservaActual  = null; // código pre-llenado en la pantalla de estado
+  let estadoPollInterval   = null; // polling de la pantalla de estado
+
+  // ── Init ────────────────────────────────────────────
+  async function init() {
+    try {
+      const hoyLima = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date());
+      const [restData, menuData, cartaData] = await Promise.all([
+        fetch(`/api/public/restaurante/${restauranteId}`).then(r => r.json()),
+        fetch(`/api/public/menu?restaurante=${restauranteId}&dia=${hoyLima}`).then(r => r.json()),
+        fetch(`/api/public/carta?restaurante=${restauranteId}`).then(r => r.json()),
+      ]);
+      if (restData.error) throw new Error(restData.error);
+      document.getElementById('restaurant-name').textContent = restData.nombre;
+      document.title = restData.nombre;
+      pagoInfo    = restData.pagos       || null;
+      modalidades = restData.modalidades || { para_llevar: true, delivery: false };
+      initModalidadSelectors();
+
+      // Aplicar colores del restaurante
+      if (restData.color_primario) {
+        document.documentElement.style.setProperty('--accent', restData.color_primario);
+        document.documentElement.style.setProperty('--accent-dark', restData.color_primario);
+      }
+      if (restData.color_secundario) {
+        document.documentElement.style.setProperty('--green', restData.color_secundario);
+      }
+
+      // Hero de portada
+      if (restData.foto_portada) {
+        const hero = document.getElementById('hero-portada');
+        document.getElementById('hero-img').src = restData.foto_portada;
+        hero.style.display = 'block';
+      }
+      menusDia  = Array.isArray(menuData)  ? menuData  : [];
+      cartaCats = Array.isArray(cartaData) ? cartaData : [];
+
+      // Set min date for reservation to today (Lima)
+      document.getElementById('res-fecha').min   = hoyLima;
+      document.getElementById('res-fecha').value = hoyLima;
+
+      renderPedirContent();
+      await renderReservarContent();
+      switchMode(activeMode);
+    } catch(e) {
+      document.getElementById('main-content').innerHTML =
+        `<div class="loading-screen"><div class="empty-msg"><div class="icon">⚠️</div>${e.message}</div></div>`;
+    }
+  }
+
+  // ── Mode switch ─────────────────────────────────────
+  // El modo es fijo según la URL — no hay toggle entre tabs
+  function switchMode(mode) {
+    activeMode = mode;
+    const isPedir    = mode === 'pedir';
+    const isReservar = mode === 'reservar';
+
+    // Mostrar label del modo activo
+    const label = document.getElementById('mode-label');
+    if (label) label.textContent = isPedir ? '🍽️ Ordenando en mesa' : '📅 Reservar una mesa';
+
+    // Chip de mesa: solo en modo pedir
+    document.getElementById('mesa-chip').style.display = isPedir ? 'inline-flex' : 'none';
+
+    // Mostrar solo el panel correspondiente
+    document.getElementById('main-content').classList.toggle('hidden', !isPedir);
+    document.getElementById('cat-nav').classList.toggle('hidden', !isPedir);
+    document.getElementById('cart-bar').style.display = (isPedir && cart.length) ? 'block' : 'none';
+    document.getElementById('res-panel').classList.toggle('hidden', !isReservar);
+  }
+
+  // ════════════════════════════════════════════════
+  // PEDIR AHORA
+  // ════════════════════════════════════════════════
+  function renderPedirContent() {
+    const content = document.getElementById('main-content');
+    const catNav  = document.getElementById('cat-nav');
+    const hasMenus = menusDia.length > 0;
+    const hasCarta = cartaCats.some(c => c.platos?.length > 0);
+
+    if (!hasMenus && !hasCarta) {
+      content.innerHTML = `<div class="empty-msg"><div class="icon">🍽️</div>El menú de hoy aún no está disponible.</div>`;
+      return;
+    }
+
+    // Nav pills
+    const pills = [];
+    if (hasMenus) pills.push({ id: 'sec-menu-dia', label: '📋 Menú del día' });
+    cartaCats.forEach(c => { if (c.platos?.length) pills.push({ id: `sec-cat-${c.id}`, label: c.nombre }); });
+    catNav.innerHTML = pills.map((p, i) =>
+      `<button class="cat-pill ${i===0?'active':''}" onclick="scrollToSection('${p.id}', this)">${p.label}</button>`
+    ).join('');
+
+    // Content
+    let html = '';
+    if (hasMenus) {
+      html += `<div class="section-block" id="sec-menu-dia"><div class="section-title">Menú del día</div>`;
+      menusDia.forEach(m => { html += renderMenuDiaCard(m, 'pedir'); });
+      html += `</div>`;
+    }
+    cartaCats.forEach(cat => {
+      if (!cat.platos?.length) return;
+      html += `<div class="section-block" id="sec-cat-${cat.id}"><div class="section-title">${esc(cat.nombre)}</div>`;
+      cat.platos.forEach(p => { html += renderPlatoCarta(p, 'pedir'); });
+      html += `</div>`;
+    });
+    content.innerHTML = html;
+    cartaCats.forEach(cat => cat.platos?.forEach(p => updateQtyDisplay(p.id, 'pedir')));
+  }
+
+  // ════════════════════════════════════════════════
+  // RESERVAR
+  // ════════════════════════════════════════════════
+async function renderReservarContent() {
+  const el    = document.getElementById('res-menu-content');
+  const fecha = document.getElementById('res-fecha').value;
+
+  if (!fecha) {
+    el.innerHTML = `<div class="empty-msg"><div class="icon">🍽️</div>Selecciona una fecha para ver el menú disponible.</div>`;
+    return;
+  }
+
+  // Limpiar selecciones de menú al cambiar de fecha (los ítems de carta se mantienen)
+  resMenuSelections = {};
+  resCart = resCart.filter(i => i.type !== 'menu');
+  updateResCartSummary();
+
+  // Cargar menús para la fecha de reserva seleccionada
+  try {
+    const data = await fetch(`/api/public/menu?restaurante=${restauranteId}&dia=${fecha}`).then(r => r.json());
+    resMenusDia = Array.isArray(data) ? data : [];
+  } catch (_) {
+    resMenusDia = [];
+    el.innerHTML = `<div class="empty-msg"><div class="icon">⚠️</div>Error al cargar el menú para esta fecha.</div>`;
+    return;
+  }
+
+  const hasMenus = resMenusDia.length > 0;
+  const hasCarta = cartaCats.some(c => c.platos?.length > 0);
+
+  if (!hasMenus && !hasCarta) {
+    el.innerHTML = `<div class="empty-msg"><div class="icon">🍽️</div>No hay menú disponible para esta fecha.</div>`;
+    return;
+  }
+
+  let html = '';
+  if (hasMenus) {
+    html += `<div class="section-block"><div class="section-title">Menú del día</div>`;
+    resMenusDia.forEach(m => { html += renderMenuDiaCard(m, 'reservar'); });
+    html += `</div>`;
+  }
+
+  // La carta siempre se muestra — no depende del día
+  cartaCats.forEach(cat => {
+    if (!cat.platos?.length) return;
+    html += `<div class="section-block"><div class="section-title">${esc(cat.nombre)}</div>`;
+    cat.platos.forEach(p => { html += renderPlatoCarta(p, 'reservar'); });
+    html += `</div>`;
+  });
+
+  el.innerHTML = html;
+  cartaCats.forEach(cat => cat.platos?.forEach(p => updateQtyDisplay(p.id, 'reservar')));
+}
+
+
+  // ── Shared renderers ─────────────────────────────
+  function renderMenuDiaCard(m, mode) {
+    const prefix = mode === 'pedir' ? 'p' : 'r';
+    const seccionesHtml = m.secciones.map(s => {
+      const platosHtml = s.platos.map(p => {
+        if (m.elegible) {
+          return `<label class="plato-option">
+            <input type="radio" name="${prefix}-sec-${m.id}-${s.id_seccion}" value="${p.id_componente}"
+              onchange="selectMenuPlato('${mode}',${m.id},${s.id_seccion},${p.id_componente},'${esc(p.nombre)}','${esc(s.nombre_seccion)}',${m.precio},${m.id})" />
+            <div style="flex:1;min-width:0">
+              <div class="plato-option-name">${esc(p.nombre)}</div>
+              ${p.descripcion ? `<div class="plato-option-desc">${esc(p.descripcion)}</div>` : ''}
+            </div>
+            ${p.url_foto ? `<img src="${p.url_foto}" class="plato-thumb" alt="${esc(p.nombre)}">` : ''}
+          </label>`;
+        } else {
+          return `<div class="plato-fijo">
+            <span class="plato-fijo-dot"></span>
+            <span style="flex:1">${esc(p.nombre)}</span>
+            ${p.url_foto ? `<img src="${p.url_foto}" class="plato-thumb" alt="${esc(p.nombre)}">` : ''}
+          </div>`;
+        }
+      }).join('');
+      return `<div class="seccion-block">
+        <div class="seccion-label">${esc(s.nombre_seccion)}${s.requerido ? '<span class="seccion-req">obligatorio</span>' : ''}</div>
+        ${platosHtml}
+      </div>`;
+    }).join('');
+
+    const btnLabel = m.elegible ? 'Agregar al pedido' : `Agregar menú — S/ ${Number(m.precio).toFixed(2)}`;
+    const btnFn = `agregarMenu('${mode}',${m.id},${m.elegible ? 1 : 0},${m.precio},'${esc(m.nombre)}')`;
+
+    return `<div class="menu-dia-card">
+      <div class="menu-dia-header">
+        <div>
+          <div class="menu-dia-name">${esc(m.nombre)}</div>
+          <div class="menu-tipo">${m.elegible ? 'Elige tus platos' : 'Menú fijo'}</div>
+        </div>
+        <div class="menu-dia-price">S/ ${Number(m.precio).toFixed(2)}</div>
+      </div>
+      <div class="menu-secciones">
+        ${seccionesHtml}
+        <button class="btn-add-menu" onclick="${btnFn}">🛒 ${btnLabel}</button>
+      </div>
+    </div>`;
+  }
+
+  function renderPlatoCarta(p, mode) {
+    const fn = `changeQty('${mode}',${p.id},${p.precio},'${esc(p.nombre)}',`;
+    return `<div class="plato-carta-card">
+      ${p.url_foto ? `<img src="${p.url_foto}" class="plato-carta-img" alt="${esc(p.nombre)}">` : ''}
+      <div class="plato-carta-info">
+        <div class="plato-carta-name">${esc(p.nombre)}</div>
+        ${p.descripcion ? `<div class="plato-carta-desc">${esc(p.descripcion)}</div>` : ''}
+        <div class="plato-carta-price">S/ ${Number(p.precio).toFixed(2)}</div>
+      </div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="${fn}-1)">−</button>
+        <span class="qty-num" id="qty-${mode}-${p.id}">0</span>
+        <button class="qty-btn add" onclick="${fn}1)">+</button>
+      </div>
+    </div>`;
+  }
+
+  // ── Menu selection ───────────────────────────────
+  function selectMenuPlato(mode, menuId, seccionId, componenteId, nombrePlato, nombreSeccion, precio, idMenuDia) {
+    const sel = mode === 'pedir' ? menuSelections : resMenuSelections;
+    if (!sel[menuId]) sel[menuId] = {};
+    sel[menuId][seccionId] = { id_componente: componenteId, id_menu_dia: idMenuDia, nombre: nombrePlato, seccion: nombreSeccion };
+    if (mode === 'reservar') updateResCartSummary();
+  }
+
+  function agregarMenu(mode, menuId, elegible, precio, nombreMenu) {
+    const source = mode === 'pedir' ? menusDia : resMenusDia;
+    const menu = source.find(m => m.id === menuId);
+    if (!menu) return;
+    const sel = mode === 'pedir' ? menuSelections : resMenuSelections;
+    const cartArr = mode === 'pedir' ? cart : resCart;
+    const prefix  = mode === 'pedir' ? 'p' : 'r';
+
+    if (elegible) {
+      const requeridas = menu.secciones.filter(s => s.requerido);
+      for (const s of requeridas) {
+        if (!sel[menuId]?.[s.id_seccion]) {
+          showMsg(`Selecciona: ${s.nombre_seccion}`, true); return;
+        }
+      }
+    }
+
+    const selections = sel[menuId] || {};
+    const subs     = Object.values(selections).map(v => v.nombre).join(', ');
+    const menuItems = Object.values(selections).map(v => ({
+      id_componente: v.id_componente, id_menu_dia: v.id_menu_dia, cantidad: 1
+    }));
+    const allItems = menu.secciones.flatMap(s =>
+      s.platos.map(p => ({ id_componente: p.id_componente, id_menu_dia: menuId, cantidad: 1 }))
+    );
+
+    cartArr.push({
+      type: 'menu', label: nombreMenu,
+      subLabel: subs || 'Menú fijo',
+      precio: parseFloat(precio),
+      payload: { menuItems: elegible ? menuItems : allItems }
+    });
+
+    sel[menuId] = {};
+    document.querySelectorAll(`input[name^="${prefix}-sec-${menuId}-"]`).forEach(r => r.checked = false);
+
+    if (mode === 'pedir') { updateCart(); showMsg('¡Menú agregado!'); }
+    else { updateResCartSummary(); showMsg('¡Menú agregado a la reserva!'); }
+  }
+
+  // ── Carta qty ────────────────────────────────────
+  function changeQty(mode, platoId, precio, nombre, delta) {
+    const qtyMap  = mode === 'pedir' ? cartaQty : resCartaQty;
+    const cartArr = mode === 'pedir' ? cart      : resCart;
+    const next    = Math.max(0, (qtyMap[platoId] || 0) + delta);
+    qtyMap[platoId] = next;
+    updateQtyDisplay(platoId, mode);
+
+    // Sync cart array
+    const idx = cartArr.findIndex(i => i.type === 'carta' && i.platoId === platoId);
+    if (idx > -1) cartArr.splice(idx, 1);
+    if (next > 0) cartArr.push({
+      type: 'carta', platoId, label: nombre,
+      subLabel: `x${next}`, precio: precio * next,
+      unitPrice: precio, cantidad: next,
+      payload: { id_plato_carta: platoId, cantidad: next }
+    });
+
+    if (mode === 'pedir') updateCart();
+    else updateResCartSummary();
+  }
+
+  function updateQtyDisplay(platoId, mode) {
+    const qtyMap = mode === 'pedir' ? cartaQty : resCartaQty;
+    const el = document.getElementById(`qty-${mode}-${platoId}`);
+    if (el) el.textContent = qtyMap[platoId] || 0;
+  }
+
+  // ── Pedir cart ───────────────────────────────────
+  function updateCart() {
+    const itemsTotal = cart.reduce((s, i) => s + i.precio, 0);
+    const cargo      = getModalidadOrden() === 'para_llevar' ? (modalidades.costo_tapper || 0) : 0;
+    const total      = itemsTotal + cargo;
+    const count = cart.length;
+    document.getElementById('cart-count').textContent        = count;
+    document.getElementById('cart-total-bar').textContent    = `S/ ${total.toFixed(2)}`;
+    document.getElementById('cart-total-drawer').textContent = `S/ ${total.toFixed(2)}`;
+    const cargoLine = document.getElementById('cargo-orden-line');
+    if (cargoLine) {
+      cargoLine.style.display = cargo > 0 ? 'flex' : 'none';
+      document.getElementById('cargo-orden-monto').textContent = `+S/ ${cargo.toFixed(2)}`;
+    }
+    if (activeMode === 'pedir')
+      document.getElementById('cart-bar').style.display = count > 0 ? 'block' : 'none';
+
+    if (!count) {
+      document.getElementById('drawer-items').innerHTML =
+        `<div class="empty-msg"><div class="icon">🛒</div>Tu pedido está vacío</div>`;
+      return;
+    }
+    document.getElementById('drawer-items').innerHTML = cart.map((item, idx) => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${esc(item.label)}</div>
+          <div class="cart-item-sub">${esc(item.subLabel)}</div>
+        </div>
+        <span class="cart-item-price">S/ ${item.precio.toFixed(2)}</span>
+        <button class="cart-remove" onclick="removeCartItem(${idx})">×</button>
+      </div>`).join('');
+  }
+
+  function removeCartItem(idx) {
+    const item = cart[idx];
+    if (item.type === 'carta') { cartaQty[item.platoId] = 0; updateQtyDisplay(item.platoId, 'pedir'); }
+    cart.splice(idx, 1);
+    updateCart();
+  }
+
+  function openDrawer() {
+    document.getElementById('cart-drawer').classList.add('open');
+    document.getElementById('drawer-backdrop').classList.add('open');
+    updateCart();
+  }
+  function closeDrawer() {
+    document.getElementById('cart-drawer').classList.remove('open');
+    document.getElementById('drawer-backdrop').classList.remove('open');
+  }
+
+  // ── Modalidad helpers ────────────────────────────
+  function initModalidadSelectors() {
+    // Drawer de orden (solo si hay mesa y para_llevar está activo)
+    const ordenWrap = document.getElementById('orden-modalidad-wrap');
+    if (ordenWrap && mesa && modalidades.para_llevar) {
+      ordenWrap.style.display = 'block';
+    }
+
+    // Formulario de reserva
+    const resLlevar   = document.getElementById('res-mod-llevar-lbl');
+    const resDelivery = document.getElementById('res-mod-delivery-lbl');
+    if (resLlevar   && modalidades.para_llevar) resLlevar.style.display   = 'flex';
+    if (resDelivery && modalidades.delivery)    resDelivery.style.display = 'flex';
+
+    // Actualizar totales al cambiar modalidad
+    document.querySelectorAll('input[name="orden-modalidad"]').forEach(r =>
+      r.addEventListener('change', updateCart)
+    );
+    document.querySelectorAll('input[name="reserva-modalidad"]').forEach(r =>
+      r.addEventListener('change', updateResCartSummary)
+    );
+  }
+
+  function getModalidadOrden() {
+    const sel = document.querySelector('input[name="orden-modalidad"]:checked');
+    return sel ? sel.value : 'en_local';
+  }
+
+  function getModalidadReserva() {
+    const sel = document.querySelector('input[name="reserva-modalidad"]:checked');
+    return sel ? sel.value : 'en_local';
+  }
+
+  async function confirmarPedido() {
+    if (!cart.length) return;
+    const btn = document.getElementById('btn-confirmar');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+
+    const cartaItems = cart.filter(i => i.type === 'carta').map(i => ({ id_plato_carta: i.platoId, cantidad: i.cantidad }));
+    const menuItems  = cart.filter(i => i.type === 'menu').flatMap(i => i.payload.menuItems);
+
+    try {
+      const res = await fetch('/api/public/orders', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_restaurante: parseInt(restauranteId),
+          mesa:           mesa ? parseInt(mesa) : null,
+          nombre_cliente: document.getElementById('nombre-cliente').value.trim() || null,
+          modalidad:      getModalidadOrden(),
+          carta_items: cartaItems, menu_items: menuItems
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al enviar');
+      closeDrawer();
+      const tienePagos = pagoInfo && (pagoInfo.yape || pagoInfo.plin || pagoInfo.efectivo);
+      if (tienePagos) showPagoStep(data.id_orden);
+      else            showConfirm('pedir', data.id_orden);
+    } catch(e) {
+      showMsg(e.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Confirmar pedido';
+    }
+  }
+
+  // ── Reservation cart summary ─────────────────────
+  function updateResCartSummary() {
+    const itemsTotal = resCart.reduce((s, i) => s + i.precio, 0);
+    const mod = getModalidadReserva();
+    let cargo = 0;
+    if (mod === 'para_llevar') cargo = modalidades.costo_tapper    || 0;
+    if (mod === 'delivery')    cargo = (modalidades.costo_tapper || 0) + (modalidades.tarifa_delivery || 0);
+    const total = itemsTotal + cargo;
+    const section = document.getElementById('res-cart-section');
+    section.style.display = resCart.length ? 'block' : 'none';
+    document.getElementById('res-total-price').textContent = `S/ ${total.toFixed(2)}`;
+    const cargoLine = document.getElementById('cargo-res-line');
+    if (cargoLine) {
+      cargoLine.style.display = cargo > 0 ? 'flex' : 'none';
+      document.getElementById('cargo-res-label').textContent  = mod === 'delivery' ? '🛵 Delivery' : '🥡 Tapper';
+      document.getElementById('cargo-res-monto').textContent  = `+S/ ${cargo.toFixed(2)}`;
+    }
+    document.getElementById('res-cart-items').innerHTML = resCart.map((item, idx) => `
+      <div class="res-cart-item">
+        <span>${esc(item.label)} <span style="color:var(--muted);font-size:12px">${esc(item.subLabel)}</span></span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <span style="font-weight:700">S/ ${item.precio.toFixed(2)}</span>
+          <button onclick="removeResItem(${idx})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1">×</button>
+        </span>
+      </div>`).join('');
+  }
+
+  function removeResItem(idx) {
+    const item = resCart[idx];
+    if (item.type === 'carta') { resCartaQty[item.platoId] = 0; updateQtyDisplay(item.platoId, 'reservar'); }
+    resCart.splice(idx, 1);
+    updateResCartSummary();
+  }
+
+  async function confirmarReserva() {
+    const nombre   = document.getElementById('res-nombre').value.trim();
+    const telefono = document.getElementById('res-telefono').value.trim();
+    const fecha    = document.getElementById('res-fecha').value;
+    const hora     = document.getElementById('res-hora').value.trim();
+
+    if (!nombre)  return showMsg('Tu nombre es requerido', true);
+    if (!fecha)   return showMsg('La fecha es requerida', true);
+    if (!resCart.length) return showMsg('Agrega al menos un ítem a la reserva', true);
+
+    const btn = document.getElementById('btn-reservar');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+
+    const cartaItems = resCart.filter(i => i.type === 'carta').map(i => ({ id_plato_carta: i.platoId, cantidad: i.cantidad }));
+    const menuItems  = resCart.filter(i => i.type === 'menu').flatMap(i => i.payload.menuItems);
+
+    try {
+      const res = await fetch('/api/public/reservations', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_restaurante:   parseInt(restauranteId),
+          nombre_cliente:   nombre,
+          telefono_cliente: telefono || null,
+          fecha,
+          hora_llegada:     hora || null,
+          modalidad:        getModalidadReserva(),
+          carta_items: cartaItems,
+          menu_items:  menuItems
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al reservar');
+      const tienePagos = pagoInfo && (pagoInfo.yape || pagoInfo.plin || pagoInfo.efectivo);
+      if (tienePagos) showPagoStep(data.id_reserva, 'reserva', data.codigo);
+      else            showConfirm('reservar', data.id_reserva, data.codigo);
+    } catch(e) {
+      showMsg(e.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = '✓ Confirmar reserva';
+    }
+  }
+
+  // ── Payment step ─────────────────────────────────
+  function showPagoStep(id, tipo = 'orden', codigoReserva = null) {
+    pagoOrdenId       = id;
+    pagoTipo          = tipo;
+    pagoMetodo        = null;
+    pagoCodigoReserva = codigoReserva;
+    document.getElementById('pago-orden-ref').textContent = tipo === 'reserva' ? `Reserva #${id}` : `Orden #${id}`;
+    document.getElementById('pago-metodo-detalle').innerHTML = '';
+    document.getElementById('pago-comprobante-wrap').style.display = 'none';
+    const btnPague = document.getElementById('btn-ya-pague');
+    btnPague.style.display = 'none';
+    btnPague.disabled = false;
+    document.getElementById('pago-foto-preview').innerHTML = '';
+    document.getElementById('pago-foto').value = '';
+
+    const wrap = document.getElementById('pago-metodos');
+    wrap.innerHTML = '';
+    const btnStyle = 'width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:700;border:2px solid transparent;cursor:pointer;transition:opacity .2s';
+
+    if (pagoInfo.yape)
+      wrap.innerHTML += `<button id="btn-met-yape" style="${btnStyle};background:#d1fae5;color:#065f46;border-color:#6ee7b7" onclick="seleccionarMetodoPago('yape')">💚 Pagar con Yape</button>`;
+    if (pagoInfo.plin)
+      wrap.innerHTML += `<button id="btn-met-plin" style="${btnStyle};background:#dbeafe;color:#1e40af;border-color:#93c5fd" onclick="seleccionarMetodoPago('plin')">🔵 Pagar con Plin</button>`;
+    if (pagoInfo.efectivo)
+      wrap.innerHTML += `<button id="btn-met-efectivo" style="${btnStyle};background:#fef3c7;color:#92400e;border-color:#fcd34d" onclick="seleccionarMetodoPago('efectivo')">💵 Pagaré en efectivo</button>`;
+
+    document.getElementById('pago-screen').classList.add('show');
+  }
+
+  function seleccionarMetodoPago(metodo) {
+    pagoMetodo = metodo;
+    ['yape','plin','efectivo'].forEach(m => {
+      const b = document.getElementById(`btn-met-${m}`);
+      if (b) b.style.opacity = m === metodo ? '1' : '0.35';
+    });
+
+    const detalle = document.getElementById('pago-metodo-detalle');
+    if (metodo === 'yape') {
+      const tel = pagoInfo.yape.telefono || '';
+      detalle.innerHTML = `
+        <div style="text-align:center;padding:1rem;background:#f0fdf4;border-radius:12px;margin-top:0.75rem">
+          <div style="font-size:12px;color:#065f46;margin-bottom:4px">Yapea a este número:</div>
+          <div style="font-size:1.6rem;font-weight:800;letter-spacing:3px;color:#065f46">${tel}</div>
+          <a href="https://yape.com.pe/cobrar?phone=${encodeURIComponent(tel)}" target="_blank"
+             style="display:inline-block;margin-top:0.75rem;padding:10px 22px;background:#00c46a;color:#fff;border-radius:10px;font-weight:700;text-decoration:none;font-size:14px">
+            Abrir Yape 💚
+          </a>
+          <div style="font-size:11px;color:#6b7280;margin-top:6px">Abre Yape, paga y luego sube la foto del comprobante.</div>
+        </div>`;
+      document.getElementById('pago-comprobante-wrap').style.display = 'block';
+      const btnYape = document.getElementById('btn-ya-pague');
+      btnYape.style.display = 'block'; btnYape.disabled = false;
+      btnYape.textContent = '✓ Ya pagué con Yape';
+    } else if (metodo === 'plin') {
+      const tel = pagoInfo.plin.telefono || '';
+      detalle.innerHTML = `
+        <div style="text-align:center;padding:1rem;background:#eff6ff;border-radius:12px;margin-top:0.75rem">
+          <div style="font-size:12px;color:#1e40af;margin-bottom:4px">Plínea a este número:</div>
+          <div style="font-size:1.6rem;font-weight:800;letter-spacing:3px;color:#1e40af">${tel}</div>
+          <button onclick="navigator.clipboard.writeText('${tel}').then(()=>this.textContent='¡Copiado!')"
+             style="margin-top:0.75rem;padding:10px 22px;background:#2563eb;color:#fff;border-radius:10px;font-weight:700;border:none;cursor:pointer;font-size:14px">
+            Copiar número 📋
+          </button>
+          <div style="font-size:11px;color:#6b7280;margin-top:6px">Abre tu app bancaria (BBVA, Scotiabank, Interbank) y transfiere con Plin.</div>
+        </div>`;
+      document.getElementById('pago-comprobante-wrap').style.display = 'block';
+      const btnPlin = document.getElementById('btn-ya-pague');
+      btnPlin.style.display = 'block'; btnPlin.disabled = false;
+      btnPlin.textContent = '✓ Ya pagué con Plin';
+    } else if (metodo === 'efectivo') {
+      detalle.innerHTML = `
+        <div style="text-align:center;padding:1rem;background:#fffbeb;border-radius:12px;margin-top:0.75rem">
+          <div style="font-size:2rem;margin-bottom:6px">💵</div>
+          <div style="font-size:13px;color:#92400e">Pagarás en efectivo cuando el pedido llegue o al retirarlo.</div>
+        </div>`;
+      document.getElementById('pago-comprobante-wrap').style.display = 'none';
+      const btnEfectivo = document.getElementById('btn-ya-pague');
+      btnEfectivo.style.display = 'block'; btnEfectivo.disabled = false;
+      btnEfectivo.textContent = '✓ Confirmar — pagaré en efectivo';
+    }
+  }
+
+  document.getElementById('pago-foto').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('pago-foto-preview').innerHTML =
+        `<img src="${e.target.result}" style="max-height:80px;border-radius:8px;margin-top:8px;border:1px solid var(--border)">`;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  async function enviarPago() {
+    if (!pagoMetodo || !pagoOrdenId) return;
+    const btn = document.getElementById('btn-ya-pague');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+
+    const formData = new FormData();
+    formData.append('metodo_pago', pagoMetodo);
+    const foto = document.getElementById('pago-foto').files[0];
+    if (foto) formData.append('foto', foto);
+
+    try {
+      const endpoint = pagoTipo === 'reserva'
+        ? `/api/public/pago/reserva/${pagoOrdenId}`
+        : `/api/public/pago/orden/${pagoOrdenId}`;
+      const res = await fetch(endpoint, { method: 'PATCH', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al registrar pago');
+      document.getElementById('pago-screen').classList.remove('show');
+      showConfirm(pagoTipo === 'reserva' ? 'reservar' : 'pedir', pagoOrdenId, pagoTipo === 'reserva' ? pagoCodigoReserva : null);
+    } catch(e) {
+      alert(e.message);
+      btn.disabled = false;
+      btn.textContent = pagoMetodo === 'efectivo' ? '✓ Confirmar — pagaré en efectivo' : `✓ Ya pagué con ${pagoMetodo === 'yape' ? 'Yape' : 'Plin'}`;
+    }
+  }
+
+  function skipPago() {
+    document.getElementById('pago-screen').classList.remove('show');
+    showConfirm(pagoTipo === 'reserva' ? 'reservar' : 'pedir', pagoOrdenId, pagoTipo === 'reserva' ? pagoCodigoReserva : null);
+  }
+
+  // ── Confirmation ─────────────────────────────────
+  function showConfirm(mode, id, codigo = null) {
+    const isReserva = mode === 'reservar';
+    document.getElementById('confirm-icon').textContent  = isReserva ? '📅' : '🎉';
+    document.getElementById('confirm-title').textContent = isReserva ? '¡Reserva enviada!' : '¡Pedido enviado!';
+
+    const btnVerEstado = document.getElementById('btn-ver-estado');
+
+    if (isReserva && codigo) {
+      codigoReservaActual = codigo;
+      document.getElementById('confirm-sub').innerHTML = `
+        <div style="color:var(--muted);font-size:14px;margin-bottom:1.25rem">
+          Tu reserva fue recibida.<br>El restaurante la confirmará pronto.
+        </div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">GUARDA TU CÓDIGO</div>
+        <div style="background:#fff8f0;border:2px solid var(--accent);border-radius:14px;padding:1rem 1.5rem;margin-bottom:1rem">
+          <div style="font-size:2rem;font-weight:800;letter-spacing:.18em;color:var(--accent);font-family:monospace">${codigo}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">
+          📸 Haz una captura de pantalla de esta pantalla.<br>
+          Con este código te identificarás al llegar al restaurante.
+        </div>
+      `;
+      btnVerEstado.style.display = 'block';
+    } else {
+      document.getElementById('confirm-sub').innerHTML = isReserva
+        ? `Tu reserva fue recibida. El restaurante la confirmará pronto.<br><br><span style="font-weight:600;color:var(--text)">Número de reserva:</span><br><span class="confirm-num" style="color:var(--green)">#${id}</span>`
+        : `Tu pedido fue recibido. En breve comenzarán a prepararlo.<br><br><span style="font-weight:600;color:var(--text)">Número de orden:</span><br><span class="confirm-num" style="color:var(--accent)">#${id}</span>`;
+      btnVerEstado.style.display = 'none';
+    }
+
+    document.getElementById('confirm-screen').classList.add('show');
+  }
+
+  // ── Ver estado de reserva (stub — sesión 4 implementa showEstadoReserva) ──
+  function verEstadoReserva() {
+    document.getElementById('confirm-screen').classList.remove('show');
+    showEstadoReserva(codigoReservaActual);
+  }
+
+  const STATUS_MAP = {
+    es_inicial:       { label: 'Pendiente de confirmación', color: '#92400e', bg: '#fef3c7', icon: '⏳' },
+    es_confirmada:    { label: 'Confirmada — te esperamos', color: '#065f46', bg: '#d1fae5', icon: '✅' },
+    es_en_cocina:     { label: 'En preparación',            color: '#5b21b6', bg: '#ede9fe', icon: '👨‍🍳' },
+    es_listo:         { label: '¡Tu pedido está listo!',    color: '#065f46', bg: '#bbf7d0', icon: '🍽️' },
+    es_cliente_llego: { label: 'Has llegado — te atendemos',color: '#1e40af', bg: '#dbeafe', icon: '👋' },
+    es_full:          { label: 'Completada',                color: '#6b7280', bg: '#f3f4f6', icon: '✓'  },
+    es_cancelado:     { label: 'Cancelada',                 color: '#dc2626', bg: '#fee2e2', icon: '❌' },
+  };
+
+  function showEstadoReserva(codigo) {
+    document.getElementById('estado-screen').classList.add('show');
+    if (codigo) {
+      document.getElementById('estado-codigo-input').value = codigo;
+      cargarEstadoReserva(codigo);
+    } else {
+      document.getElementById('estado-result').innerHTML = '';
+    }
+    clearInterval(estadoPollInterval);
+    estadoPollInterval = setInterval(() => {
+      const cod = document.getElementById('estado-codigo-input').value.trim();
+      if (cod) cargarEstadoReserva(cod);
+    }, 30000);
+  }
+
+  function cerrarEstadoReserva() {
+    document.getElementById('estado-screen').classList.remove('show');
+    clearInterval(estadoPollInterval);
+    estadoPollInterval = null;
+  }
+
+  async function buscarReserva() {
+    const cod = document.getElementById('estado-codigo-input').value.trim();
+    if (!cod) return showMsg('Ingresa tu código de reserva', true);
+    await cargarEstadoReserva(cod);
+  }
+
+  async function cargarEstadoReserva(codigo) {
+    const el = document.getElementById('estado-result');
+    el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted)">Buscando…</div>';
+    try {
+      const res  = await fetch(`/api/public/reserva/${encodeURIComponent(codigo)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        el.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#dc2626;font-size:14px">${data.error}</div>`;
+        return;
+      }
+      el.innerHTML = renderEstadoReserva(data);
+    } catch(_) {
+      el.innerHTML = '<div style="padding:1.5rem;text-align:center;color:#dc2626;font-size:14px">Error de conexión. Intenta de nuevo.</div>';
+    }
+  }
+
+  function renderEstadoReserva(data) {
+    const flags = ['es_inicial','es_confirmada','es_en_cocina','es_listo','es_cliente_llego','es_full','es_cancelado'];
+    const activeFlag = flags.find(f => data[f] === 1);
+    const s = STATUS_MAP[activeFlag] || { label: data.estatus, color: '#6b7280', bg: '#f3f4f6', icon: '•' };
+
+    const menuRows = (data.menu_items || []).map(i => `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:12px;flex-shrink:0;margin-right:8px">${i.seccion}</span>
+        <span style="font-size:14px;text-align:right">${i.plato} <span style="color:var(--muted)">×${i.cantidad}</span></span>
+      </div>`).join('');
+
+    const cartaRows = (data.carta_items || []).map(i => `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:12px;flex-shrink:0;margin-right:8px">Carta</span>
+        <span style="font-size:14px;text-align:right">${i.nombre} <span style="color:var(--muted)">×${i.cantidad}</span></span>
+      </div>`).join('');
+
+    const pagoHtml = data.metodo_pago ? `
+      <div style="margin-top:0.75rem;font-size:12px;color:var(--muted)">
+        💳 Pago: ${data.metodo_pago.charAt(0).toUpperCase() + data.metodo_pago.slice(1)} —
+        ${data.estado_pago === 'enviado' ? 'en revisión' : data.estado_pago === 'pagado' ? 'confirmado ✓' : data.estado_pago || '—'}
+      </div>` : '';
+
+    const horaHtml = data.hora_llegada
+      ? `<div style="font-size:13px;color:var(--muted)">🕐 Llegada: <strong>${data.hora_llegada}</strong></div>` : '';
+
+    const now = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+
+    return `
+      <div style="background:${s.bg};border-radius:12px;padding:1rem;margin:0.75rem 0;text-align:center">
+        <div style="font-size:2rem;margin-bottom:4px">${s.icon}</div>
+        <div style="font-weight:700;font-size:15px;color:${s.color}">${s.label}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:1rem;font-size:13px">
+        <div>📅 Fecha: <strong>${data.fecha}</strong></div>
+        ${horaHtml}
+        <div style="color:var(--muted)">Código: <span style="font-family:monospace;font-weight:700">${data.codigo}</span></div>
+      </div>
+      ${menuRows || cartaRows ? `
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:6px">TU PEDIDO</div>
+        <div style="margin-bottom:0.75rem">${menuRows}${cartaRows}</div>
+      ` : ''}
+      ${pagoHtml}
+      <div style="margin-top:1.5rem;font-size:11px;color:var(--muted);text-align:center">
+        Actualizado ${now} ·
+        <button onclick="buscarReserva()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:0;text-decoration:underline">Actualizar</button>
+      </div>
+    `;
+  }
+
+  // ── Reset ────────────────────────────────────────
+  function resetTodo() {
+    cart = []; cartaQty = {}; menuSelections = {};
+    resCart = []; resCartaQty = {}; resMenuSelections = {};
+    pagoOrdenId = null; pagoMetodo = null; pagoCodigoReserva = null;
+    document.getElementById('btn-ver-estado').style.display = 'none';
+    document.getElementById('estado-screen').classList.remove('show');
+    clearInterval(estadoPollInterval); estadoPollInterval = null;
+    document.getElementById('confirm-screen').classList.remove('show');
+    document.getElementById('pago-screen').classList.remove('show');
+    document.getElementById('nombre-cliente').value = '';
+    document.getElementById('res-nombre').value     = '';
+    document.getElementById('res-telefono').value   = '';
+    document.getElementById('res-hora').value       = '';
+    updateCart();
+    updateResCartSummary();
+    renderPedirContent();
+    renderReservarContent();
+    switchMode(mesa ? 'pedir' : 'reservar');
+  }
+
+  // ── Nav scroll ───────────────────────────────────
+  function scrollToSection(id, btn) {
+    document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── Toast ────────────────────────────────────────
+  let msgTimer;
+  function showMsg(text, isErr = false) {
+    let el = document.getElementById('msg-toast');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'msg-toast';
+      el.style.cssText = `position:fixed;bottom:110px;left:50%;transform:translateX(-50%);
+        padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;
+        z-index:200;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.15);
+        transition:opacity 0.3s;pointer-events:none`;
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.style.background = isErr ? '#c0392b' : '#1c1712';
+    el.style.color = 'white'; el.style.opacity = '1';
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(() => el.style.opacity = '0', 2500);
+  }
+
+  // ── Escape HTML ──────────────────────────────────
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+  // ── Start ────────────────────────────────────────
+  if (restauranteId) init();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
+</body>
+</html>
