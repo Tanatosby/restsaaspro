@@ -45,6 +45,9 @@ app.use(helmet({
       imgSrc:        ["'self'", "data:", "blob:"],
       connectSrc:    ["'self'", "https://cdn.jsdelivr.net"],
       scriptSrcAttr: ["'unsafe-inline'"],
+      // Desactivar el upgrade automático a HTTPS — rompe el login en LAN/celular
+      // mientras el server no tenga TLS. En producción con HTTPS real, reactivar.
+      upgradeInsecureRequests: null,
     },
   },
 }));

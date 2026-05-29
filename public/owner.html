@@ -799,6 +799,33 @@
 
 <div id="toast"></div>
 
+<!-- ── Bottom nav móvil (Fase 2) ── -->
+<nav class="bottom-nav" id="bottom-nav" aria-label="Navegación principal móvil">
+  <button type="button" class="bottom-nav-item" id="bn-pedidos"  data-target="pedidos"
+          onclick="showPanel('pedidos')" aria-label="Cola del día">
+    <span class="bn-ico" aria-hidden="true">🔥</span><span>Cola</span>
+    <span class="kanban-badge bn-badge" id="bn-badge-pedidos" hidden>0</span>
+  </button>
+  <button type="button" class="bottom-nav-item" id="bn-cocina"   data-target="cocina"
+          onclick="showPanel('cocina')" aria-label="Cocina">
+    <span class="bn-ico" aria-hidden="true">🍳</span><span>Cocina</span>
+    <span class="kanban-badge bn-badge" id="bn-badge-cocina" hidden>0</span>
+  </button>
+  <button type="button" class="bottom-nav-item" id="bn-reservas" data-target="reservas"
+          onclick="showPanel('reservas')" aria-label="Reservas">
+    <span class="bn-ico" aria-hidden="true">📅</span><span>Reservas</span>
+    <span class="kanban-badge bn-badge" id="bn-badge-reservas" hidden>0</span>
+  </button>
+  <button type="button" class="bottom-nav-item" id="bn-menu-dia" data-target="menu-dia"
+          onclick="showPanel('menu-dia')" aria-label="Menú del día">
+    <span class="bn-ico" aria-hidden="true">🍽</span><span>Menú</span>
+  </button>
+  <button type="button" class="bottom-nav-item" id="bn-mas" data-target="__more__"
+          onclick="toggleSidebar()" aria-label="Más opciones">
+    <span class="bn-ico" aria-hidden="true">☰</span><span>Más</span>
+  </button>
+</nav>
+
 <script>
 // ── Auth guard ──────────────────────────────────────────
 const session = (() => { try { return JSON.parse(sessionStorage.getItem('session') || 'null'); } catch { return null; } })();
@@ -901,10 +928,47 @@ if (!isOwnerOrAdmin && Array.isArray(session.permisos)) {
   }
 }
 
+// ── Bottom-nav móvil: espejar permisos y estado inicial ───────────
+(function syncBottomNav() {
+  // Espejar hidden state del sidebar al bottom-nav (Más siempre visible)
+  ['menu-dia','reservas','cocina','pedidos'].forEach(p => {
+    const nav = document.getElementById(`nav-${p}`);
+    const bn  = document.getElementById(`bn-${p}`);
+    if (nav && bn && nav.classList.contains('hidden')) bn.classList.add('hidden');
+  });
+  // Estado activo inicial según activePanel
+  const initial = document.querySelector(`.bottom-nav-item[data-target="${activePanel}"]`);
+  if (initial) initial.classList.add('active');
+
+  // Sincronizar badges (las modules actualizan los del sidebar; replicamos)
+  const pairs = [
+    ['badge-pedidos',  'bn-badge-pedidos'],
+    ['badge-cocina',   'bn-badge-cocina'],
+    ['badge-reservas', 'bn-badge-reservas'],
+  ];
+  const mirror = (src, dst) => {
+    const s = document.getElementById(src);
+    const d = document.getElementById(dst);
+    if (!s || !d) return;
+    const n = parseInt(s.textContent, 10) || 0;
+    d.textContent = String(n);
+    if (n > 0) d.removeAttribute('hidden'); else d.setAttribute('hidden', '');
+  };
+  pairs.forEach(([s, d]) => {
+    mirror(s, d);
+    const el = document.getElementById(s);
+    if (el) new MutationObserver(() => mirror(s, d)).observe(el, { childList: true, characterData: true, subtree: true });
+  });
+})();
+
 function showPanel(name) {
   PANELS.forEach(p => {
     document.getElementById(`panel-${p}`).classList.toggle('active', p === name);
     document.getElementById(`nav-${p}`).classList.toggle('active', p === name);
+  });
+  // Sincroniza el bottom-nav móvil con el panel activo
+  document.querySelectorAll('.bottom-nav-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.target === name);
   });
   document.getElementById('page-title').textContent = TITLES[name];
   activePanel = name;

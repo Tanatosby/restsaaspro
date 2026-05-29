@@ -526,6 +526,20 @@ tbody tr:hover { background: var(--surface-2); }
 .bottom-nav-item .bn-ico { font-size: 19px; line-height: 1; }
 .bottom-nav-item.active { color: var(--accent); }
 .bottom-nav-item.active .bn-ico { transform: translateY(-1px); }
+.bottom-nav-item:active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.bottom-nav-item.hidden { display: none !important; }
+
+/* Badge sobre el ícono del bottom-nav */
+.bottom-nav-item { position: relative; }
+.bottom-nav-item .bn-badge {
+  position: absolute; top: 4px; left: 50%;
+  transform: translateX(4px);
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 9px; font-size: 10px; font-weight: 800;
+  background: var(--accent); color: #fff; margin-left: 0;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.bottom-nav-item .bn-badge[hidden] { display: none; }
 
 /* ──────────────────────────────────────────────────────────────
    RESPONSIVE
@@ -535,10 +549,11 @@ tbody tr:hover { background: var(--surface-2); }
   .sidebar.open { transform: translateX(0); }
   .hamburger { display: flex; }
   .topbar-date { display: none; }
-  .content { padding: 1.2rem 1.1rem; }
+  .content { padding: 1.2rem 1.1rem calc(76px + env(safe-area-inset-bottom)); }
   .form-grid, .form-grid.cols-3 { grid-template-columns: 1fr; }
   .span-2 { grid-column: span 1; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem; }
+  .bottom-nav { display: flex; }
 }
 
 .hidden { display: none !important; }

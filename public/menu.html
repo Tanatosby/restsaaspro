@@ -7,303 +7,21 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c8692a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/menu.css">
 
-    :root {
-      --bg:           #faf8f5;
-      --white:        #ffffff;
-      --border:       #ede8e0;
-      --text:         #1c1712;
-      --text-2:       #6b5f52;
-      --muted:        #a89880;
-      --accent:       #c8692a;
-      --accent-light: #fdf0e8;
-      --accent-dark:  #a0521e;
-      --green:        #2d7a4a;
-      --green-bg:     #edf7f1;
-      --shadow:       0 2px 12px rgba(28,23,18,0.08);
-      --shadow-lg:    0 8px 32px rgba(28,23,18,0.14);
-    }
-
-    html { scroll-behavior: smooth; }
-    body {
-      background: var(--bg); color: var(--text);
-      font-family: 'DM Sans', sans-serif; font-size: 15px;
-      min-height: 100vh; padding-bottom: 120px;
-    }
-
-    /* ── Hero portada ── */
-    .hero-portada {
-      width: 100%; height: 180px; overflow: hidden;
-      background: var(--border);
-      display: none;
-    }
-    .hero-portada img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    /* ── Header ── */
-    .header {
-      background: var(--white); border-bottom: 1px solid var(--border);
-      padding: 1.25rem 1.25rem 1rem;
-      position: sticky; top: 0; z-index: 40;
-      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
-    }
-    .header-top {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 0.75rem;
-    }
-    .restaurant-name {
-      font-family: 'Fraunces', serif;
-      font-size: 1.35rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em;
-    }
-    .mesa-chip {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: var(--accent-light); color: var(--accent);
-      font-size: 12px; font-weight: 600; padding: 4px 10px;
-      border-radius: 20px; border: 1px solid rgba(200,105,42,0.2);
-    }
-
-    /* ── Mode tabs (Pedir ahora / Reservar) ── */
-    .mode-tabs { display: flex; gap: 6px; margin-bottom: 0.75rem; }
-    .mode-tab {
-      flex: 1; padding: 8px 10px; border-radius: 10px; text-align: center;
-      font-size: 13px; font-weight: 600; cursor: pointer;
-      border: 1.5px solid var(--border); background: var(--white);
-      color: var(--text-2); transition: all 0.15s;
-    }
-    .mode-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
-
-    /* ── Category nav pills ── */
-    .cat-nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-    .cat-nav::-webkit-scrollbar { display: none; }
-    .cat-pill {
-      flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
-      font-size: 13px; font-weight: 500; cursor: pointer;
-      border: 1.5px solid var(--border); background: var(--white);
-      color: var(--text-2); transition: all 0.2s; white-space: nowrap;
-    }
-    .cat-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
-
-    /* ── Content ── */
-    .content { padding: 1.25rem; max-width: 600px; margin: 0 auto; }
-    .hidden { display: none !important; }
-
-    /* ── Section title ── */
-    .section-title {
-      font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700;
-      color: var(--text); margin-bottom: 0.875rem; padding-bottom: 0.5rem;
-      border-bottom: 2px solid var(--accent); display: inline-block;
-    }
-    .section-block { margin-bottom: 2.5rem; }
-
-    /* ── Menú del día card ── */
-    .menu-dia-card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); margin-bottom: 1rem;
-    }
-    .menu-dia-header {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-      padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between;
-    }
-    .menu-dia-name { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 700; color: white; }
-    .menu-dia-price { font-size: 1.1rem; font-weight: 700; color: white; }
-    .menu-tipo { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-top: 2px; }
-    .menu-secciones { padding: 1rem 1.25rem; }
-    .seccion-block { margin-bottom: 1rem; }
-    .seccion-block:last-child { margin-bottom: 0; }
-    .seccion-label {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 6px;
-    }
-    .seccion-req { font-size: 9px; background: rgba(200,105,42,0.12); color: var(--accent); padding: 1px 6px; border-radius: 10px; }
-    .plato-option {
-      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-      border-radius: 8px; border: 1.5px solid var(--border); margin-bottom: 6px;
-      cursor: pointer; transition: all 0.15s; background: var(--bg);
-    }
-    .plato-option:hover { border-color: var(--accent); background: var(--accent-light); }
-    .plato-option input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
-    .plato-option-name { font-size: 14px; font-weight: 500; color: var(--text); }
-    .plato-option-desc { font-size: 12px; color: var(--text-2); margin-top: 1px; }
-    .plato-fijo { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 14px; }
-    .plato-fijo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-    .plato-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
-    .plato-carta-img { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
-    .btn-add-menu {
-      width: 100%; margin-top: 1rem; background: var(--accent); color: white;
-      border: none; border-radius: 10px; padding: 12px;
-      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
-      cursor: pointer; transition: background 0.15s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .btn-add-menu:hover { background: var(--accent-dark); }
-    .btn-add-menu:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ── Carta cards ── */
-    .plato-carta-card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.75rem;
-      box-shadow: var(--shadow); display: flex; align-items: center; gap: 1rem;
-      transition: box-shadow 0.15s;
-    }
-    .plato-carta-card:hover { box-shadow: var(--shadow-lg); }
-    .plato-carta-info { flex: 1; min-width: 0; }
-    .plato-carta-name { font-size: 15px; font-weight: 600; color: var(--text); }
-    .plato-carta-desc { font-size: 12px; color: var(--text-2); margin-top: 3px; line-height: 1.4; }
-    .plato-carta-price { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 700; color: var(--accent); white-space: nowrap; margin-top: 6px; }
-    .qty-control { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .qty-btn {
-      width: 28px; height: 28px; border-radius: 50%;
-      border: 1.5px solid var(--border); background: var(--bg);
-      font-size: 16px; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--text-2); transition: all 0.15s; line-height: 1;
-    }
-    .qty-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
-    .qty-btn.add { background: var(--accent); color: white; border-color: var(--accent); }
-    .qty-btn.add:hover { background: var(--accent-dark); }
-    .qty-num { font-size: 15px; font-weight: 700; min-width: 20px; text-align: center; }
-
-    /* ── Sticky cart bar ── */
-    .cart-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-      padding: 0.875rem 1.25rem; background: var(--white);
-      border-top: 1px solid var(--border); box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-      display: none;
-    }
-    .cart-bar.show { display: block; }
-    .cart-btn {
-      width: 100%; max-width: 600px; margin: 0 auto; display: flex;
-      align-items: center; justify-content: space-between;
-      background: var(--accent); color: white; border: none; border-radius: 12px;
-      padding: 14px 20px; font-family: 'DM Sans', sans-serif;
-      font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s;
-    }
-    .cart-btn:hover { background: var(--accent-dark); }
-    .cart-btn-left { display: flex; align-items: center; gap: 10px; }
-    .cart-count {
-      background: white; color: var(--accent); font-size: 12px; font-weight: 700;
-      width: 22px; height: 22px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    /* ── Cart drawer ── */
-    .drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 60; }
-    .drawer-backdrop.open { display: block; }
-    .drawer {
-      position: fixed; bottom: 0; left: 0; right: 0; background: var(--white);
-      border-radius: 20px 20px 0 0; z-index: 70; max-height: 85vh; overflow-y: auto;
-      transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-      padding-bottom: env(safe-area-inset-bottom, 16px);
-    }
-    .drawer.open { transform: translateY(0); }
-    .drawer-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
-    .drawer-header {
-      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .drawer-title { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700; }
-    .drawer-close {
-      background: var(--bg); border: none; border-radius: 50%; width: 30px; height: 30px;
-      cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-2);
-    }
-    .drawer-body { padding: 1rem 1.25rem; }
-    .cart-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 1rem;
-    }
-    .cart-item:last-child { border-bottom: none; }
-    .cart-item-info { flex: 1; min-width: 0; }
-    .cart-item-name { font-size: 14px; font-weight: 600; color: var(--text); }
-    .cart-item-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .cart-item-price { font-size: 14px; font-weight: 700; color: var(--accent); white-space: nowrap; }
-    .cart-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; transition: color 0.15s; flex-shrink: 0; }
-    .cart-remove:hover { color: #c0392b; }
-    .nombre-field { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
-    .nombre-field label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
-    .nombre-field input {
-      width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px;
-      padding: 10px 12px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
-      outline: none; transition: border-color 0.2s;
-    }
-    .nombre-field input:focus { border-color: var(--accent); }
-    .cart-total { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0 0.5rem; font-size: 15px; font-weight: 700; }
-    .cart-total-price { font-family: 'Fraunces', serif; font-size: 1.3rem; color: var(--accent); }
-    .btn-confirmar {
-      width: 100%; background: var(--accent); color: white; border: none;
-      border-radius: 12px; padding: 14px; font-family: 'DM Sans', sans-serif;
-      font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; margin-top: 0.5rem;
-    }
-    .btn-confirmar:hover { background: var(--accent-dark); }
-    .btn-confirmar:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ── Reservation panel ── */
-    .res-panel { padding: 1.25rem; max-width: 600px; margin: 0 auto; }
-    .res-form-card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: 14px; padding: 1.25rem; box-shadow: var(--shadow); margin-bottom: 1.25rem;
-    }
-    .res-form-title { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 1rem; }
-    .res-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 0.875rem; }
-    .res-field label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-    .res-field input {
-      background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px;
-      padding: 10px 12px; font-family: 'DM Sans', sans-serif;
-      font-size: 14px; color: var(--text); outline: none; transition: border-color 0.2s; width: 100%;
-    }
-    .res-field input:focus { border-color: var(--accent); }
-    .res-field input::placeholder { color: #c8c0b8; }
-    .res-info-box {
-      background: #edf4fb; border: 1px solid #c0d8ee; border-radius: 8px;
-      padding: 10px 12px; font-size: 12px; color: #1a5070;
-      margin-bottom: 1rem; display: flex; gap: 8px; align-items: flex-start; line-height: 1.5;
-    }
-    .res-cart-summary {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;
-    }
-    .res-cart-summary-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.5rem; }
-    .res-cart-item { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
-    .res-cart-item:last-child { border-bottom: none; }
-    .btn-reservar {
-      width: 100%; background: var(--green); color: white; border: none;
-      border-radius: 12px; padding: 14px; font-family: 'DM Sans', sans-serif;
-      font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; margin-top: 0.5rem;
-    }
-    .btn-reservar:hover { background: #236040; }
-    .btn-reservar:disabled { opacity: 0.5; cursor: not-allowed; }
-    .res-total { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0 0.5rem; font-size: 15px; font-weight: 700; }
-    .res-total-price { font-family: 'Fraunces', serif; font-size: 1.2rem; color: var(--green); }
-
-    /* ── Confirmation screen ── */
-    .confirm-screen {
-      display: none; position: fixed; inset: 0; background: var(--bg); z-index: 100;
-      flex-direction: column; align-items: center; justify-content: center;
-      padding: 2rem; text-align: center;
-    }
-    .confirm-screen.show { display: flex; animation: fadeUp 0.4s ease; }
-    .confirm-icon { font-size: 4rem; margin-bottom: 1rem; animation: bounce 0.5s ease 0.2s both; }
-    @keyframes bounce { 0%{transform:scale(0.5);opacity:0} 60%{transform:scale(1.2)} 100%{transform:scale(1);opacity:1} }
-    .confirm-title { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
-    .confirm-sub { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 2rem; }
-    .confirm-num { font-size: 1.5rem; font-weight: 700; }
-    .btn-nuevo {
-      background: none; border: 1.5px solid var(--border); border-radius: 10px;
-      padding: 12px 24px; font-family: 'DM Sans', sans-serif; font-size: 14px;
-      font-weight: 600; color: var(--text-2); cursor: pointer; transition: all 0.15s; margin-top: 1rem;
-    }
-    .btn-nuevo:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* ── Loading / Empty ── */
-    .loading-screen { min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--muted); }
-    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty-msg { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 13px; }
-    .empty-msg .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-  </style>
+  <!-- ── Dark mode auto (sin flash) ── -->
+  <script>
+  (function () {
+    try {
+      // Por defecto seguimos prefers-color-scheme del sistema, sin toggle visible
+      document.documentElement.setAttribute('data-theme', 'auto');
+      var dark = matchMedia('(prefers-color-scheme: dark)').matches;
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta && dark) meta.setAttribute('content', '#1a1410');
+    } catch (_) {}
+  })();
+  </script>
 </head>
 <body>
 
@@ -322,13 +40,7 @@
     <div id="mode-label" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.25rem"></div>
     <!-- Consultar reserva (siempre visible) -->
     <div style="text-align:right;margin-bottom:0.5rem">
-      <button onclick="showEstadoReserva(null)"
-        style="display:inline-flex;align-items:center;gap:5px;
-               background:#fff8f0;border:1.5px solid var(--accent);border-radius:20px;
-               padding:5px 12px;font-size:12px;font-weight:600;color:var(--accent);
-               cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s"
-        onmousedown="this.style.opacity='.7'" onmouseup="this.style.opacity='1'"
-        ontouchstart="this.style.opacity='.7'" ontouchend="this.style.opacity='1'">
+      <button class="btn-consultar" onclick="showEstadoReserva(null)">
         📋 Consultar mi reserva
       </button>
     </div>
@@ -338,7 +50,11 @@
 
   <!-- ── Pedir: menu content ── -->
   <div class="content" id="main-content">
-    <div class="loading-screen"><div class="spinner"></div><span>Cargando menú…</span></div>
+    <div class="skeleton-stack">
+      <div class="skel-card"><div class="skel skel-thumb"></div><div class="skel-lines"><div class="skel skel-line w-80"></div><div class="skel skel-line w-60"></div><div class="skel skel-line w-40"></div></div></div>
+      <div class="skel-card"><div class="skel skel-thumb"></div><div class="skel-lines"><div class="skel skel-line w-60"></div><div class="skel skel-line w-80"></div><div class="skel skel-line w-40"></div></div></div>
+      <div class="skel-card"><div class="skel skel-thumb"></div><div class="skel-lines"><div class="skel skel-line w-80"></div><div class="skel skel-line w-40"></div><div class="skel skel-line w-60"></div></div></div>
+    </div>
   </div>
 
   <!-- ── Reservar: reservation panel ── -->
@@ -387,7 +103,10 @@
 
     <!-- Reservation menu selection (same content as pedir) -->
     <div id="res-menu-content">
-      <div class="loading-screen"><div class="spinner"></div><span>Cargando menú…</span></div>
+      <div class="skeleton-stack">
+        <div class="skel-card"><div class="skel skel-thumb"></div><div class="skel-lines"><div class="skel skel-line w-80"></div><div class="skel skel-line w-60"></div><div class="skel skel-line w-40"></div></div></div>
+        <div class="skel-card"><div class="skel skel-thumb"></div><div class="skel-lines"><div class="skel skel-line w-60"></div><div class="skel skel-line w-80"></div><div class="skel skel-line w-40"></div></div></div>
+      </div>
     </div>
 
     <!-- Reservation cart summary + confirm -->
@@ -511,6 +230,16 @@
     </div>
   </div>
 
+  <!-- ── Modal de foto del plato ── -->
+  <div class="photo-modal" id="photo-modal" role="dialog" aria-modal="true" aria-labelledby="photo-modal-name" onclick="closePhotoModal(event)">
+    <button class="photo-modal-close" onclick="closePhotoModal()" aria-label="Cerrar">✕</button>
+    <div class="photo-modal-inner" onclick="event.stopPropagation()">
+      <img class="photo-modal-img" id="photo-modal-img" src="" alt="">
+      <div class="photo-modal-name" id="photo-modal-name"></div>
+      <div class="photo-modal-desc" id="photo-modal-desc"></div>
+    </div>
+  </div>
+
   <!-- ── Estado de reserva screen ── -->
   <div class="confirm-screen" id="estado-screen" style="justify-content:flex-start;padding:0;overflow-y:auto">
     <div style="width:100%;max-width:420px;padding-bottom:2rem">
@@ -575,6 +304,44 @@
   let codigoReservaActual  = null; // código pre-llenado en la pantalla de estado
   let estadoPollInterval   = null; // polling de la pantalla de estado
 
+  // ── Modal de foto del plato ─────────────────────────
+  function openPhotoModal(url, nombre, descripcion) {
+    const modal = document.getElementById('photo-modal');
+    document.getElementById('photo-modal-img').src  = url;
+    document.getElementById('photo-modal-img').alt  = nombre || '';
+    document.getElementById('photo-modal-name').textContent = nombre || '';
+    document.getElementById('photo-modal-desc').textContent = descripcion || '';
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePhotoModal(event) {
+    // si vino del backdrop, solo cerrar; si vino del inner, ignorar
+    if (event && event.currentTarget && event.target !== event.currentTarget && !event.target.classList.contains('photo-modal-close')) {
+      return;
+    }
+    document.getElementById('photo-modal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      const m = document.getElementById('photo-modal');
+      if (m && m.classList.contains('open')) closePhotoModal();
+    }
+  });
+
+  // ── Header shrink al hacer scroll ──────────────────
+  (function setupHeaderShrink() {
+    let ticking = false;
+    const update = () => {
+      const header = document.querySelector('.header');
+      if (header) header.classList.toggle('shrunk', window.scrollY > 60);
+      ticking = false;
+    };
+    window.addEventListener('scroll', () => {
+      if (!ticking) { requestAnimationFrame(update); ticking = true; }
+    }, { passive: true });
+  })();
+
   // ── Init ────────────────────────────────────────────
   async function init() {
     try {
@@ -603,7 +370,9 @@
       // Hero de portada
       if (restData.foto_portada) {
         const hero = document.getElementById('hero-portada');
-        document.getElementById('hero-img').src = restData.foto_portada;
+        const img  = document.getElementById('hero-img');
+        img.onload = () => hero.classList.add('loaded');
+        img.src = restData.foto_portada;
         hero.style.display = 'block';
       }
       menusDia  = Array.isArray(menuData)  ? menuData  : [];
@@ -750,13 +519,13 @@ async function renderReservarContent() {
               <div class="plato-option-name">${esc(p.nombre)}</div>
               ${p.descripcion ? `<div class="plato-option-desc">${esc(p.descripcion)}</div>` : ''}
             </div>
-            ${p.url_foto ? `<img src="${p.url_foto}" class="plato-thumb" alt="${esc(p.nombre)}">` : ''}
+            ${p.url_foto ? `<img src="${p.url_foto}" class="plato-thumb" alt="${esc(p.nombre)}" onclick="event.preventDefault();event.stopPropagation();openPhotoModal('${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">` : ''}
           </label>`;
         } else {
           return `<div class="plato-fijo">
             <span class="plato-fijo-dot"></span>
             <span style="flex:1">${esc(p.nombre)}</span>
-            ${p.url_foto ? `<img src="${p.url_foto}" class="plato-thumb" alt="${esc(p.nombre)}">` : ''}
+            ${p.url_foto ? `<img src="${p.url_foto}" class="plato-thumb" alt="${esc(p.nombre)}" onclick="openPhotoModal('${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">` : ''}
           </div>`;
         }
       }).join('');
@@ -787,7 +556,7 @@ async function renderReservarContent() {
   function renderPlatoCarta(p, mode) {
     const fn = `changeQty('${mode}',${p.id},${p.precio},'${esc(p.nombre)}',`;
     return `<div class="plato-carta-card">
-      ${p.url_foto ? `<img src="${p.url_foto}" class="plato-carta-img" alt="${esc(p.nombre)}">` : ''}
+      ${p.url_foto ? `<img src="${p.url_foto}" class="plato-carta-img" alt="${esc(p.nombre)}" onclick="openPhotoModal('${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">` : ''}
       <div class="plato-carta-info">
         <div class="plato-carta-name">${esc(p.nombre)}</div>
         ${p.descripcion ? `<div class="plato-carta-desc">${esc(p.descripcion)}</div>` : ''}
@@ -1206,9 +975,9 @@ async function renderReservarContent() {
         <div style="color:var(--muted);font-size:14px;margin-bottom:1.25rem">
           Tu reserva fue recibida.<br>El restaurante la confirmará pronto.
         </div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">GUARDA TU CÓDIGO</div>
-        <div style="background:#fff8f0;border:2px solid var(--accent);border-radius:14px;padding:1rem 1.5rem;margin-bottom:1rem">
-          <div style="font-size:2rem;font-weight:800;letter-spacing:.18em;color:var(--accent);font-family:monospace">${codigo}</div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--muted);margin-bottom:8px">GUARDA TU CÓDIGO</div>
+        <div class="codigo-box">
+          <div class="codigo-text">${codigo}</div>
         </div>
         <div style="font-size:12px;color:var(--muted);line-height:1.6">
           📸 Haz una captura de pantalla de esta pantalla.<br>
