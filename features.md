@@ -119,8 +119,7 @@ Panel Kanban en `owner.html` con 4 tabs: **Pendientes / En Cocina / Listos / Por
 - Reservas: "🍽 Entregado" = cliente llegó + sentó + plato entregado (un solo paso, evita olvido en hora pico)
 - 15/15 casos de prueba manual aprobados
 
-#### Agregar para delivery / recoger / comer ahí en reservas
-(Equivalente a Gap 4 — unificado con modalidades.)
+#### ~~Agregar para delivery / recoger / comer ahí en reservas~~ ✅ Cubierto por Gap 4 (modalidades) — 2026-05-25
 
 #### ~~Bug: reservas con roles de usuario~~ ✅ Resuelto 2026-05-25
 7 endpoints usaban `authorize('owner','mozo')` en vez de `authorizePermiso()`. Un cocinero con permiso `reservas_activas` recibía 403 al intentar confirmar/cambiar estatus. Ver ISS-012.
@@ -158,6 +157,31 @@ Panel lateral deslizable en `admin/dashboard.html` con 3 tabs: **Resumen / Deman
 - **Ganancias:** gráfica de línea Chart.js (ganancias en el tiempo), selector Día/Semana/Mes
 - Helpers `sumarGanancias`, `gananciasTimeline`, `clientesTimeline` exportados desde `routes/reportes.js` y reutilizados en `routes/admin.js`
 - 4 nuevos endpoints: `/restaurantes/:id/reportes/resumen`, `/clientes-timeline`, `/ganancias/resumen`, `/ganancias/timeline`
+
+---
+
+#### ~~Rediseño premium Opus 4.8 (carpeta `RestSaasPro`)~~ ✅ Completado 2026-05-29
+
+Clon de `RestSaas` elevado a nivel "Opus 4.8": mejores gráficos, dark mode, micro-interacciones, sin cambios en backend.
+
+| Fase | Qué | Resultado |
+|------|-----|-----------|
+| 0 | Clonar repo + `npm install` + baseline tests | 197/197 verde |
+| 1 | Sistema de diseño en `public/css/owner.css`: tokens completos, dark mode `data-theme` + `prefers-color-scheme`, sombras en capas, skeletons, bottom-nav CSS listo | ✅ Cero ruptura — todos los selectores originales preservados |
+| 2 | Owner panel: toggle 🌙/☀️ + anti-flash + bottom-nav móvil con 5 destinos (Cola/Cocina/Reservas/Menú/Más), espejo de permisos sidebar→bottom-nav, badges via `MutationObserver` | ✅ |
+| 3 | Gráficos premium: `charts-theme.js` (degradados, fuente Lato, tooltips redondeados); endpoints **A1** `GET /api/reportes/kpis` (ticket promedio + tasa cancelación), **A2** `GET /api/reportes/hora-pico`, **A3** ya cubierto por A1 | ✅ Verificado en vivo |
+| 4 | `menu.html` (cara del comensal): CSS extraído a `public/css/menu.css` (~736 líneas con tokens compartidos), dark mode auto sin toggle, hero con efecto ken-burns, header sticky con shrink al scroll, skeleton loaders, modal de foto al tap (`role="dialog"` + `aria-modal`), drawer del carrito repulido, código de reserva con animación `pulse-glow`, touch targets ≥44px garantizados, `prefers-reduced-motion` respetado | ✅ |
+| 5 | Auditoría 360px (cero overflow, cero font-sizes problemáticos, 0 inputs sin type, 0 imgs sin alt) + accesibilidad mínima (modal con role/aria) + smoke test E2E (login → menú público → orden → reserva con código → consulta) + docs (`status.md`, `features.md`, `deploy.md`) | ✅ |
+| 6 | Rediseño **"Pro Console"** del super admin (`admin/dashboard.html` + `admin/login.html`): nueva identidad **slate + índigo-violeta** distinta de la del owner; Inter + JetBrains Mono + Syne; sidebar con backdrop-blur y brand-dot animado; stat cards con gradient text + hover lift; tablas con datos mono tabular-nums; bottom-nav móvil de 5 destinos sin "Más"; skeletons en grid y tablas; charts con paleta nueva (`charts-theme-admin.js`); modales con `modalPop` + glow del accent; copy "Menú Pro" en lugar de "Restaurant SaaS" | ✅ |
+
+**Fix paralelo durante Fase 5:** desactivado `upgrade-insecure-requests` en CSP de Helmet (`app.js`) — Chrome trataba IP de LAN como insegura y rompía POSTs en HTTP. Localhost no se veía afectado porque es secure context. Documentado en `deploy.md §8.2` con nota para reactivar en producción HTTPS.
+
+**Setup desde laptop nueva (post-clone):**
+1. `npm install` + `npx playwright install chromium` (si vas a correr el bot)
+2. Generar `.env` con VAPID keys: `node -e "const w=require('web-push');console.log(w.generateVAPIDKeys())"` + `JWT_SECRET` aleatorio
+3. Bootstrap inicial: script inline que crea `restaurantes id=1` (Crisolito) + admin `admin@local / Admin2026!`
+4. `npm run bot:setup` → usuarios `owner@bot.com / cocina@bot.com / mozo@bot.com` (pass `BotMenuPro2026!`)
+5. `node scripts/seed-demo-data.js` → menú del día + carta + mesas + 6 reservas y 5 órdenes en todos los flags del kanban (idempotente para el día actual)
 
 ---
 
@@ -443,22 +467,14 @@ Permite aplicar descuentos porcentuales o fijos a una orden antes de cerrarla (h
 
 ### Tier A — Alto impacto, bajo esfuerzo
 
-#### A1 — Ticket promedio por restaurante
-Stat card adicional en el Overview del admin y en el drawer por restaurante: `SUM(total) / COUNT(*)` separado para órdenes y reservas. Métrica clave para benchmarking y detectar si el restaurante está vendiendo bien o mal en relación a sus visitas.
-- **Backend:** `AVG(total)` en `GET /api/admin/stats` y en `GET /api/admin/restaurantes/:id/reportes/resumen`
-- **Frontend:** nueva mini-stat en drawer Resumen; nueva stat-card en Overview
-- **Complejidad:** baja (2 queries, 2 cards)
+#### ~~A1 — Ticket promedio por restaurante~~ ✅ Completado 2026-05-29 (Fase 3 Opus 4.8)
+Implementado en `GET /api/reportes/kpis` (panel owner). Stat-card "Ticket promedio" en Reportes muestra `SUM(total) / COUNT(*)` combinado de órdenes + reservas pagadas/completas del mes corriente. Pendiente: replicar también en el drawer admin por restaurante (queda como mejora menor).
 
-#### A2 — Hora pico de demanda
-Gráfica de barras por hora del día: cuántas órdenes y reservas se reciben en cada franja horaria. Sirve para planificar cuándo poner más personal. Agrupando `strftime('%H', created_at)` en órdenes y reservas.
-- **Backend:** nuevo endpoint `GET /api/admin/restaurantes/:id/reportes/hora-pico` + endpoint equivalente para owner en `reportes.js`
-- **Frontend:** nueva tab "Hora pico" en drawer admin; nueva card en panel Reportes del owner
-- **Complejidad:** baja (1 query, 1 gráfica Chart.js bar)
+#### ~~A2 — Hora pico de demanda~~ ✅ Completado 2026-05-29 (Fase 3 Opus 4.8)
+Implementado en `GET /api/reportes/hora-pico` (panel owner). Gráfico de barras apiladas por hora del día (zona Lima UTC-5), órdenes + reservas, agrupado con `strftime('%H', created_at, '-5 hours')`. Card "Hora pico" en panel Reportes. Pendiente: replicar también en el drawer admin (mejora menor).
 
-#### A3 — Tasa de cancelación
-Porcentaje de órdenes y reservas canceladas vs totales, por período. Cuando supera el 15% indica problemas operativos (cocina lenta, errores en pedidos, experiencia mala). Mostrar en drawer admin como stat card y en panel Reportes del owner.
-- **Backend:** `COUNT(es_cancelado=1) / COUNT(*) * 100` en endpoints existentes de resumen
-- **Complejidad:** muy baja (agregar campos al resumen existente)
+#### ~~A3 — Tasa de cancelación~~ ✅ Completado 2026-05-29 (Fase 3 Opus 4.8)
+Implementado en el mismo endpoint `GET /api/reportes/kpis`: devuelve `tasa_cancelacion` y `total_pedidos_mes`. Stat-card "Tasa de cancelación" en Reportes con código de color (rojo > 15%, amarillo 8-15%, verde < 8%). Pendiente: alerta visual en drawer admin si supera el 15% (mejora menor).
 
 #### A4 — Platos más vendidos en admin
 El owner ya tiene el análisis de pedidos por plato. El admin debería poder verlo por restaurante desde el drawer, para entender qué producto mueve a cada negocio.

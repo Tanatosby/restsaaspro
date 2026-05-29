@@ -1,7 +1,7 @@
 # Guía de Deploy — Menú Pro
 
 > Documento de referencia para desplegar el sistema en producción desde cero.
-> Última actualización: 2026-05-25
+> Última actualización: 2026-05-29
 
 ---
 
@@ -266,6 +266,13 @@ crontab -e
 
 > **Nota sobre eval():** El warning de CSP en Chrome DevTools viene de la librería `qrcodejs` (CDN) que usa `eval()` internamente. La directiva `'unsafe-eval'` lo permite de forma controlada. Si en el futuro se reemplaza `qrcodejs` por otra librería (ej: `qrcode` npm package), se puede eliminar `'unsafe-eval'`.
 
+> ⚠️ **`upgrade-insecure-requests` desactivado en desarrollo (2026-05-29).**
+> Helmet añade esta directiva por defecto. Cuando el frontend se sirve en HTTP por IP de LAN (ej: `http://10.147.11.131:3000` desde un celular en la misma WiFi), Chrome trata el origen como **inseguro** y, gracias a esa directiva, intenta convertir cada `fetch()` a HTTPS. Como el server de desarrollo no tiene TLS, la conexión se cae y el frontend muestra "Error de red" en todos los POST (login, crear orden, etc.). `localhost` no se ve afectado porque Chrome lo considera secure context.
+>
+> Por eso en `app.js` está seteado `upgradeInsecureRequests: null` dentro de las directivas CSP de Helmet.
+>
+> **En producción con HTTPS real (Nginx + Let's Encrypt):** recomendado **reactivar** la directiva — borra la línea `upgradeInsecureRequests: null` y Helmet la vuelve a emitir. Es una buena defensa contra mixed-content cuando ya todo viaja por HTTPS. Verifica el header con `curl -I https://tudominio.com/ | grep -i csp` después del cambio.
+
 ### 8.3 Rate limiting y protección contra fuerza bruta
 
 ✅ **Ya configurado en `app.js` y `routes/auth.js`** — no requiere acción adicional.
@@ -514,7 +521,153 @@ autocannon -c 30 -d 10 -m POST \
 
 ---
 
-## 14. Checklist de launch
+## 14. Hardening post-deploy: slugs de restaurante (mejora v1.1)
+
+> Esta sección documenta un cambio **no bloqueante** que vale la pena implementar
+> después del primer mes en producción, una vez que el flujo principal esté estable.
+
+### Problema
+
+Hoy las URLs públicas del menú usan el `id` numérico del restaurante:
+
+```
+http://menupro.tech/menu?restaurante=1&mesa=4
+http://menupro.tech/menu?restaurante=2&mesa=1
+...
+```
+
+Esto tiene dos efectos colaterales:
+
+1. **Revela el orden de adopción** — cualquiera ve `=1` y deduce que es el restaurante más antiguo de la plataforma, `=42` que ya son cuarenta y dos clientes, etc. Información competitiva que prefieres no regalar.
+2. **Permite enumeración** — un scraper puede iterar `restaurante=1..200` y sacar el menú del día, la carta y los precios de todos los clientes sin estar registrado. Hoy no hay PII expuesta (el menú está en la pared del local), pero es ruido innecesario en logs y un vector de scraping para competidores.
+
+### Solución propuesta
+
+Cambiar la identificación pública a un **slug textual inmutable**:
+
+```
+http://menupro.tech/menu?restaurante=crisolito&mesa=4
+http://menupro.tech/menu?restaurante=el-buen-sabor&mesa=1
+```
+
+El `id` numérico **sigue existiendo en la BD** (es la clave primaria), pero la URL pública usa el slug. Internamente todo el código sigue funcionando con `id`; solo cambia el "puente" en los 4 endpoints públicos y el generador de QR.
+
+### Por qué se difiere del MVP
+
+| Razón | Detalle |
+|-------|---------|
+| Sin PII expuesta hoy | El "leak" es el menú del día, que ya está en la pared del restaurante. Baja prioridad. |
+| Migración con superficie | 4 endpoints, generador de QR, JS de `menu.html`, validador, backfill, tests. ~4-6h de trabajo + ventana de pruebas. |
+| QRs ya impresos | Los primeros 8 clientes ya tienen QRs pegados con `?restaurante=N`. La migración tiene que aceptar **ambos** durante una ventana o re-imprimir. |
+| No es bloqueante | Se implementa después del launch sin afectar a los clientes existentes. |
+
+### Plan de implementación (cuando se decida hacerlo)
+
+#### Paso 1 — Schema y backfill
+
+```sql
+-- En config/database.js (migración idempotente)
+ALTER TABLE restaurantes ADD COLUMN slug TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_restaurantes_slug ON restaurantes(slug) WHERE slug IS NOT NULL;
+```
+
+Backfill al arranque (en `database.js`):
+
+```js
+// Genera slug a partir del nombre, con sufijo numérico si colisiona
+function slugify(name) {
+  return String(name).toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')  // sin acentos
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 32);
+}
+const sinSlug = db.prepare(`SELECT id, nombre FROM restaurantes WHERE slug IS NULL`).all();
+const upd = db.prepare(`UPDATE restaurantes SET slug = ? WHERE id = ?`);
+for (const r of sinSlug) {
+  let base = slugify(r.nombre) || `r${r.id}`;
+  let slug = base, n = 2;
+  while (db.prepare(`SELECT 1 FROM restaurantes WHERE slug = ?`).get(slug)) {
+    slug = `${base}-${n++}`;
+  }
+  upd.run(slug, r.id);
+}
+```
+
+#### Paso 2 — Resolver helper compartido
+
+Nuevo `utils/resolverRestaurante.js`:
+
+```js
+// Acepta slug O id numérico. Retorna { id, nombre, ... } o null.
+function resolverRestaurante(db, ref) {
+  if (!ref) return null;
+  if (/^\d+$/.test(ref)) {
+    return db.prepare(`SELECT * FROM restaurantes WHERE id = ?`).get(parseInt(ref, 10));
+  }
+  return db.prepare(`SELECT * FROM restaurantes WHERE slug = ?`).get(String(ref));
+}
+module.exports = { resolverRestaurante };
+```
+
+#### Paso 3 — Actualizar endpoints públicos
+
+| Endpoint | Cambio |
+|----------|--------|
+| `GET /api/public/restaurante/:id` | El `:id` ahora puede ser id o slug. Resolver con helper. Devolver `slug` en la respuesta. |
+| `GET /api/public/menu?restaurante=` | Igual: acepta ambos. |
+| `GET /api/public/carta?restaurante=` | Igual. |
+| `POST /api/public/orders` | Body `id_restaurante` sigue siendo numérico (interno); no se cambia. |
+| `POST /api/public/reservations` | Igual. |
+
+#### Paso 4 — Generador de QR
+
+En `public/js/modules/config.js`, función que arma el link del QR:
+
+```js
+// Antes:
+const link = `${origin}/menu?restaurante=${restauranteId}`;
+// Después:
+const link = `${origin}/menu?restaurante=${restauranteSlug || restauranteId}`;
+```
+
+El owner ve el nuevo link en su panel Configuración y puede re-imprimir los QRs cuando quiera. Los QRs viejos con `=ID` **siguen funcionando** porque el resolver acepta ambos.
+
+#### Paso 5 — Frontend `menu.html`
+
+`menu.html` lee `?restaurante=` directamente y lo pasa a los endpoints — como los endpoints ahora aceptan ambos, **no hay cambios en el JS del cliente**.
+
+#### Paso 6 — Panel admin
+
+En `admin/dashboard.html`, al crear/editar restaurante, agregar campo "slug" (auto-generado pero editable). Validar formato `^[a-z0-9-]{3,32}$` en frontend y backend.
+
+#### Paso 7 — Tests
+
+Nuevo `tests/restaurante-slug.test.js`:
+- Backfill genera slug único cuando dos restaurantes tienen nombre similar.
+- `GET /api/public/restaurante/crisolito` → 200 con el mismo cuerpo que `/api/public/restaurante/1`.
+- `GET /api/public/menu?restaurante=crisolito` → 200.
+- Slug inválido (con espacio, mayúscula, acento) → rechaza al crear.
+
+### Cuándo ejecutar
+
+Mes 2-3 post-launch, cuando:
+- Los primeros 8 clientes ya estén estables
+- Tengas decidido si los slugs los genera el owner al crear el restaurante o el admin
+- Hayas alineado con tus clientes para re-imprimir QRs cuando puedan (sin urgencia)
+
+### Alternativas consideradas y descartadas
+
+| Opción | Por qué no |
+|--------|-----------|
+| **UUID v4** en URL | Ruidoso (`?restaurante=8a3f2e0c-...`), no brandeable. |
+| **Hashids** (codifica id → string corto) | Reversible — un atacante con la salt puede revertir. No aporta sobre slug. |
+| **Nanoid opaco** (8 chars) | Anti-enumeración OK, pero no brandeable. Slug + nanoid sería over-engineering para MVP. |
+| **Mantener id numérico** | Lo que estamos haciendo hoy. OK para MVP, vale mejorar después. |
+
+---
+
+## 15. Checklist de launch
 
 ```
 Infraestructura
@@ -531,6 +684,7 @@ Aplicación
 [ ] NODE_ENV=production
 [ ] npm install --omit=dev (sin devDependencies)
 [x] Helmet instalado y configurado en app.js (CSP + X-Frame-Options + HSTS)
+[ ] Reactivar `upgrade-insecure-requests` en CSP de Helmet (borrar `upgradeInsecureRequests: null` en app.js) — ver §8.2
 [x] Rate limiting configurado en app.js (auth: 20/15min, general: 300/min)
 [x] Índices de BD creados (id_restaurante + fecha en ordenes y reservas)
 [ ] Usuario admin creado en la BD

@@ -2,6 +2,24 @@
 
 ---
 
+## 🏁 RESUMEN EJECUTIVO — Estado al 2026-05-29
+
+**Código:** ✅ Listo para deploy
+- 197/197 tests verde
+- 0 issues abiertos (`issues/ISSUES.md`)
+- 0 refactors pendientes
+- Todas las features de prioridad alta cerradas (gaps 1-8 + ARCH-001 a 004 + A1/A2/A3)
+- Rediseño Opus 4.8 completo: 6 fases (owner, menú cliente, super admin)
+
+**Infraestructura:** ⏳ Pendiente (lado del operador, no del código)
+- VPS, dominio, SSL, PM2, Nginx, backups → ver `deploy.md` §1-9
+- `.env` de producción con `JWT_SECRET` fuerte + VAPID keys nuevas → ver `deploy.md` §5
+- **Importante para el deploy:** quitar `upgradeInsecureRequests: null` de `app.js` cuando ya haya HTTPS real (ver `deploy.md` §8.2 y checklist §14)
+
+**Checklist completo de launch:** `deploy.md` §14 — todo lo que toca al servidor está pendiente; todo lo que toca a la app está ✅.
+
+---
+
 ## 🎨 SESIÓN OPUS 4.8 — Rediseño premium (carpeta `RestSaasPro`) — 2026-05-28
 
 > Esta carpeta `RestSaasPro` es un clon de `RestSaas` (la original queda intacta como respaldo)
@@ -12,21 +30,83 @@
 - Identidad visual: **elevar la actual (terracota/azul peruana) + dark mode**, ejecutada a nivel premium.
 - Mobile-first sigue siendo no negociable (44px touch, 16px inputs, 360px sin overflow).
 
-**Plan por fases:**
+**Plan por fases — TODAS COMPLETAS ✅:**
 | Fase | Qué | Estado |
 |------|-----|--------|
 | 0 | Clonar RestSaas→RestSaasPro, `npm install`, baseline tests | ✅ 197/197 tests OK |
-| 1 | Sistema de diseño Opus: tokens + dark mode + skeletons + componentes repulidos (`owner.css`) | ✅ Reescrito, sirviendo OK |
-| 2 | Owner panel: transiciones, bottom-nav móvil, micro-interacciones, toggle dark mode | 🔄 Toggle + anti-flash listos; bottom-nav HTML pendiente |
-| 3 | Gráficos premium (Chart.js degradados) + analíticas A1 ticket promedio / A2 hora pico / A3 tasa cancelación | ✅ Endpoints en vivo + charts repulidos |
-| 4 | Rediseño premium de `menu.html` (cara del comensal) | ⏳ |
-| 5 | Tests + verificación móvil 360px + docs | ⏳ |
+| 1 | Sistema de diseño Opus para `owner.css`: tokens + dark mode + skeletons + componentes repulidos | ✅ |
+| 2 | Owner panel: toggle 🌙/☀️ + anti-flash + bottom-nav móvil (5 destinos + permisos espejo + badges via MutationObserver) | ✅ |
+| 3 | Gráficos premium Chart.js (degradados) + analíticas A1 (ticket promedio) / A2 (hora pico Lima UTC-5) / A3 (tasa cancelación con código de color) | ✅ |
+| 4 | Rediseño premium de `menu.html` (cara del comensal): CSS extraído a `menu.css`, dark mode auto sin toggle, hero ken-burns, header sticky shrink, skeletons, modal de foto, código de reserva pulse-glow | ✅ |
+| 5 | Auditoría 360px + accesibilidad (modal con role/aria) + smoke E2E con curl + docs | ✅ |
+| 6 | Rediseño "Pro Console" del super admin: nueva identidad **slate + índigo-violeta**, Inter + JetBrains Mono + Syne, bottom-nav, skeletons, charts theme nuevo (`charts-theme-admin.js`), modales premium, copy "Menú Pro" | ✅ |
+
+**Fixes paralelos durante las fases:**
+- CSP `upgradeInsecureRequests: null` en `app.js` — Chrome rompía POSTs en LAN por HTTPS upgrade
+- PWA installable desde `login.html` (manifest + SW)
+- Bootstrap admin + restaurante para laptops nuevas
+- `scripts/seed-demo-data.js` (idempotente, 6 reservas + 5 órdenes en todos los flags del kanban)
+- Generación `.env` con VAPID + JWT_SECRET
 
 **Registro de cambios (RestSaasPro):**
 - 2026-05-28 — Fase 0: clon creado (`RestSaasPro`, 213 archivos sin node_modules), deps instaladas, baseline **197/197 tests verde**.
 - 2026-05-28 — Fase 1: `public/css/owner.css` reescrito como sistema premium (tokens completos, dark mode con `data-theme` + `prefers-color-scheme`, sombras en capas, micro-interacciones, skeleton loaders, bottom-nav listo). Cero ruptura: todos los selectores originales preservados. Definidos `--surface`/`--accent-dim`/`--accent-glow` que el CSS original referenciaba sin declarar.
 - 2026-05-28 — Fase 2 (parcial): toggle de tema 🌙/☀️ en topbar de `owner.html` + script anti-flash en `<head>` (lee `localStorage['mp-theme']`, respeta preferencia del sistema, actualiza `theme-color`).
 - 2026-05-28 — Verificado en vivo (PORT 3210): `/health` 200; `owner.html` y `owner.css` sirven 200 con toggle + dark mode + skeletons presentes.
+- 2026-05-29 — **Fase 6 (rediseño "Pro Console" del panel super admin):**
+  - **Nueva identidad visual** distinta tanto del owner (terracota cálido) como del menu (terracota auto-dark): paleta **slate quasi-black + acento índigo-violeta** (`#8b5cf6` → `#a78bfa`), con accents secundarios cyan (`#60a5fa`) y verde lima (`#4ade80`).
+  - **Tipografía actualizada** en `admin/dashboard.html` y `admin/login.html`: **Inter** (UI), **JetBrains Mono** (datos numéricos/labels) y **Syne** (display/títulos). Antes era DM Mono + Syne — ya no se usa DM Mono.
+  - **Tokens completos** (igual sistema que owner/menu): `--bg / --bg-2 / --surface / --surface-2 / --border / --border-hi / --accent / --accent-2 / --accent-dim / --accent-glow / --shadow-sm/-/-lg/-xl / --r-xs/-sm/-r/-lg/-pill / --t-fast/-/-slow / --font/-mono/-display`.
+  - **Sidebar premium**: `backdrop-filter: blur(20px)`, brand-title con dot animado `brand-pulse 2.4s` que destella el accent, nav-items con border-left animado que se escala al activarse, gradient sutil de izquierda a derecha en hover/active.
+  - **Topbar premium**: blur(18px), `topbar-meta` ahora es pill con monospace, hamburger min-44px con hover state.
+  - **Stat cards**: hover lift `translateY(-2px)` + glow del accent, gradient overlay aparece en hover, valor con **gradient text** (linear-gradient(accent → accent-2) clipped al texto). Anim de entrada escalonada `fadeUp` con delays.
+  - **Tablas**: header con gradient sutil, rows con hover en accent-glow-soft, datos numéricos con clase `.mono`/`.num` (font-variant-numeric: tabular-nums), badges con border-radius pill y border `color-mix`.
+  - **Bottom-nav móvil** con los 5 destinos del admin (Overview/Restos/Usuarios/Reservas/Órdenes) — el item activo muestra una barra superior con gradient + glow drop-shadow en el ícono. Sin botón "Más" (los 5 paneles caben sin colapsar).
+  - **Skeletons premium** reemplazan "Cargando…" tanto en `stats-grid` (4 skel-cards con líneas variables) como en `tbody-restaurantes` (3 skel-rows con celdas individuales). Animación `@keyframes shimmer`.
+  - **Modales premium**: backdrop con `blur(8px)`, animación de entrada `modalPop` con cubic-bezier elastic, sombra en capas + ring de accent-glow-soft, botón close circular con hover state.
+  - **Drawer de stats por restaurante**: backdrop-blur(24px), tabs en pill con gradient activo + box-shadow del accent, mini-stats con border que reacciona al hover, panel switching con `fadeUp`.
+  - **Charts theme nuevo** `public/js/modules/charts-theme-admin.js`: tema Chart.js con Inter + JetBrains Mono, tooltips con border, padding 12, border-radius 10, hoverRadius 6. Charts del drawer (demanda + ganancias) ahora usan paleta admin: Órdenes `#8b5cf6` (índigo), Reservas `#60a5fa` (cyan), Total `#4ade80` (verde dashed). Helper `mpGradientAdmin()` para rellenos en gradiente vertical de fondo del area chart.
+  - **Login admin**: aplicada misma identidad. Ambient glow + grid sutil con mask radial. Badge "Superadmin access" con pill border-radius y box-shadow accent-glow. Card con backdrop-blur(20px), ring de accent-dim, gradient overlay esquina-a-esquina. Card-title "Menú Pro" con dot animado y span con gradient text. Inputs ahora 16px (no zoom iOS) y min-height 44px. Botón submit con gradient + glow elevation.
+  - **Copy actualizado**: "Restaurant SaaS" → **"Menú Pro"** en login admin y en sidebar del dashboard (consistencia de marca).
+  - **Animaciones extras**: `fadeIn`, `fadeUp`, `modalPop`, `shimmer`, `brand-pulse`. `prefers-reduced-motion` respetado.
+  - **Verificado en vivo**: `/admin/login` 200, `/admin/dashboard` 200, `/js/modules/charts-theme-admin.js` 200. HTML dashboard contiene 27 referencias a nuevas clases y 12 al accent/font/helper. **197/197 tests verde.**
+- 2026-05-29 — **Fase 5 (cierre del rediseño Opus 4.8):**
+  - **Auditoría 360px** en `menu.html`, `owner.html`, `css/menu.css`, `css/owner.css`: 0 widths/min-widths fijos > 360px, 0 overflow horizontal, 0 inputs sin `type=`, 0 `<img>` sin `alt`. Inline `font-size: 11-13px` solo en labels/captions/meta (conforme con la regla: contenido ≥14px, inputs ≥16px).
+  - **Accesibilidad**: modal de foto del plato con `role="dialog"` + `aria-modal="true"` + `aria-labelledby="photo-modal-name"`. Botón de cierre con `aria-label="Cerrar"`. Soporte `Esc` para cerrar.
+  - **Smoke test E2E** con `curl` contra server real: login `owner@bot.com` 200 → `GET /api/public/restaurante/1` 200 → `GET /api/public/menu` 200 → `GET /api/public/carta` 200 → `POST /api/public/orders` con item (id_orden:6) 201 → `POST /api/public/reservations` (id_reserva:8, codigo `V5HBbm3`) 201 → `GET /api/public/reserva/V5HBbm3` 200 con todos los flags semánticos correctos. `/menu.html`, `/css/menu.css`, `/manifest.json` → 200.
+  - **Documentación**: `features.md` actualizado con tabla nueva "Rediseño premium Opus 4.8" mostrando las 5 fases ✅, fix de `upgrade-insecure-requests`, y receta de setup desde laptop nueva. `status.md` con Fase 5 ✅ y resumen final.
+  - **197/197 tests verde** (final).
+- 2026-05-29 — **Fase 4 (rediseño premium de `menu.html` — cara del comensal):**
+  - **Extraído CSS inline** (~280 líneas dentro de `<style>`) → nuevo `public/css/menu.css` (~736 líneas) con sistema de tokens completo compartido con `owner.css` (`--surface`, `--accent-glow`, `--shadow-xs/sm/lg/xl`, `--r/-sm/-lg/-pill`, `--t-fast/t/t-slow`, `--font/-display`).
+  - **Dark mode automático** vía `@media (prefers-color-scheme: dark)` + variante override `:root[data-theme="dark"]`. Anti-flash en `<head>` setea `data-theme="auto"` antes del primer paint y actualiza `theme-color` a `#1a1410` si el sistema está en dark. Sin toggle visible (es vista del cliente, minimizar UI).
+  - **Hero portada premium**: altura 220px, gradiente fallback color del restaurante, overlay `linear-gradient` superior→inferior para profundidad, `transform:scale(1.02)` con `transition 8s` que se reduce a `scale(1)` al cargar la imagen (efecto subtle ken-burns).
+  - **Header sticky con shrink**: backdrop-filter blur(14px), al pasar 60px de scroll el header se compacta (`.shrunk` reduce padding + tipografía + cat-nav margin), wiring vía `requestAnimationFrame` en `setupHeaderShrink()`.
+  - **Skeleton loaders** reemplazan el spinner inicial en pedido y reserva — 3 cards de 72px con líneas shimmer animadas vía `@keyframes shimmer`.
+  - **Modal de foto**: tap en cualquier `.plato-thumb` o `.plato-carta-img` abre `.photo-modal` (overlay backdrop-blur, foto contain max 70vh, nombre Fraunces 1.3rem, descripción). Cierra con tap fuera, botón ✕ o `Esc`. `openPhotoModal()` / `closePhotoModal()` agregados al script.
+  - **Tipografía**: Fraunces ital,wght cargado en serif display; DM Sans 300-800; títulos con `letter-spacing` ajustado, `-webkit-font-smoothing: antialiased`.
+  - **Cards y botones repulidos**: sombras en capas (`--shadow-sm/-lg`), bordes redondeados (`--r-sm/-r/-r-lg`), `accent-glow` en estados hover, `transform: scale(0.98)` en `:active`. Touch targets 44px+ garantizados en `.btn-add-menu`, `.qty-btn`, `.mode-tab`, `.cat-pill`, `.btn-confirmar`, `.btn-reservar`.
+  - **Drawer del carrito** con backdrop-filter blur, handle más visible (42×5 px), título Fraunces, `box-shadow: 0 -20px 60px`, animación de slide con cubic-bezier.
+  - **Pantalla de éxito**: ícono 4.5rem con `drop-shadow(0 8px 18px accent-glow)`, animación `pop` con cubic-bezier elastic, código de reserva en `.codigo-box` (border 2px accent, padding 1.1×1.6rem) con animación `pulse-glow` infinita de 2.5s.
+  - **Botón "Consultar mi reserva"** del header: clase nueva `.btn-consultar` con estado activo (`scale(0.96)` + fondo accent al tap).
+  - **prefers-reduced-motion** respetado: deshabilita todas las animaciones para usuarios con esa preferencia.
+  - **Verificado en vivo (PORT 3000)**: `/menu.html?restaurante=1` 200, `/css/menu.css` 200, HTML servido contiene 18 referencias a clases nuevas, APIs públicas (`/api/public/restaurante/1`, `/api/public/menu`) devuelven data del seeder. **197/197 tests verde.**
+- 2026-05-29 — Setup en laptop nueva + seeder de datos demo:
+  - Generado `.env` con VAPID keys de desarrollo + `JWT_SECRET` aleatorio (no se commitea).
+  - Bootstrap manual: restaurante `id=1` (Crisolito) + admin `admin@local / Admin2026!` creados con script inline; `npm run bot:setup` después crea owner/cocina/mozo @bot.com.
+  - Nuevo `scripts/seed-demo-data.js` — idempotente para el día actual. Crea 4 secciones, 11 platos de menú, 1 menú del día elegible (S/15), 3 categorías + 6 platos de carta, 6 mesas, 6 reservas distribuidas en todos los flags (`es_inicial`/`es_confirmada`/`es_en_cocina`/`es_listo×2`/`es_cliente_llego`) y 5 órdenes (`es_inicial`/`es_en_cocina×2`/`es_listo`/`es_entregado`). Usa `generarCodigoUnico()` para los códigos de reserva. Reentrante: borra reservas/órdenes del día antes de insertar.
+- 2026-05-29 — **Fix CSP `upgrade-insecure-requests`** (`app.js`):
+  - Síntoma: en celular (o en cualquier navegador entrando por IP de LAN `http://10.147.11.131:3000`), los `GET` cargaban bien pero **todo POST** (login incluido) fallaba con "Error de red" sin llegar al server. Localhost funcionaba.
+  - Causa: Helmet añade `upgrade-insecure-requests` al CSP por defecto. Chrome trata localhost como secure context e ignora la directiva, pero la IP de LAN como insegura → intenta convertir el `fetch` a HTTPS, el server de dev no tiene TLS, conexión rechazada.
+  - Fix: agregado `upgradeInsecureRequests: null` dentro de `helmet({ contentSecurityPolicy: { directives: { ... } } })`. Verificado con `curl -I http://10.147.11.131:3000/login.html | grep -i csp` — el header ya no incluye la directiva. **197/197 tests verde.**
+  - Documentado en `deploy.md` §8.2 con nota para **reactivarla en producción HTTPS** + checklist item nuevo.
+- 2026-05-29 — Fase 2 (bottom-nav móvil completa):
+  - `public/owner.html`: nuevo `<nav class="bottom-nav">` con 5 destinos (Cola del día, Cocina, Reservas, Menú, Más). El botón "Más" abre el sidebar (hamburguesa) para acceso a Carta, Órdenes, Usuarios, Reportes, Configuración.
+  - `showPanel()` extendido para sincronizar `.active` entre sidebar y bottom-nav vía `data-target`.
+  - Espejo de permisos: los `bn-item` se ocultan automáticamente si su `nav-item` del sidebar está oculto (mismo criterio que ya filtra cocinero / usuarios delegados).
+  - Badges duplicados con `MutationObserver` sobre `badge-pedidos|cocina|reservas` del sidebar → `bn-badge-*` del bottom-nav (sin tocar los módulos).
+  - `public/css/owner.css`: bottom-nav activa con `display:flex` solo en `@media (max-width: 768px)`; `.content` gana `padding-bottom: calc(76px + env(safe-area-inset-bottom))` en móvil para no tapar contenido; estilos de badge con anillo del color de surface.
+  - Generado `.env` con VAPID keys y JWT_SECRET de desarrollo (faltaba para arrancar el server).
+  - **Verificado en vivo (PORT 3210)**: `/health` 200, `/owner.html` 200, `/css/owner.css` 200, HTML servido contiene 10 referencias a `bottom-nav/bn-*`, CSS contiene 12. **197/197 tests verde.**
 - 2026-05-28 — Fase 3 (gráficos premium):
   - Nuevo `public/js/modules/charts-theme.js`: tema global de Chart.js (fuente Lato, tooltips redondeados, leyendas con punto, colores que se adaptan a claro/oscuro vía tokens CSS) + helper `mpGradient()`. Cargado en `owner.html` tras Chart.js.
   - `reportes.js`: rellenos con **degradado** en curva de demanda y ganancias; barras con esquinas redondeadas; `pointHoverRadius`.
