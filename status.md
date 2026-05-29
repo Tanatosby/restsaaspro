@@ -12,12 +12,27 @@
 - Rediseño Opus 4.8: **7 fases completas** (owner, menú cliente, super admin, landing + manuales)
 - **Fase 7 (landing + manuales)** ✅ completada 2026-05-29 — repaint terracota + hero premium + animaciones + FAQ semántico
 
-**Infraestructura:** ⏳ Pendiente (lado del operador, no del código)
-- VPS, dominio, SSL, PM2, Nginx, backups → ver `deploy.md` §1-9
-- `.env` de producción con `JWT_SECRET` fuerte + VAPID keys nuevas → ver `deploy.md` §5
-- ✅ **CSP `upgrade-insecure-requests` ahora automático por entorno** — se activa solo con `NODE_ENV=production`, ya no hay que editar `app.js` en el deploy (ver `deploy.md` §8.2). Verificado: prod emite la directiva, dev no.
+**Infraestructura:** ✅ **EN PRODUCCIÓN desde 2026-05-29**
+- VPS: DigitalOcean Droplet $6/mes — IP `147.182.135.252` — NYC1 — Ubuntu 22.04
+- Dominio: `menupro.tech` (Porkbun) — DNS apuntando al VPS
+- SSL: Let's Encrypt — HTTPS activo en `https://menupro.tech` — renovación automática
+- Stack servidor: Node.js 22 + PM2 7 + Nginx 1.18 + UFW (22/80/443)
+- BD: SQLite en `/var/www/menupro/database.sqlite`
+- Backups: cron diario 3am → `/var/www/menupro/backups/`
+- Admin: `pedro.gabriel.rotta@gmail.com` — creado en BD
+- Restaurante demo: id=1 (Crisolito) — seeder ejecutado — 11 platos, 6 mesas, 6 reservas, 5 órdenes
+- `NODE_ENV=production` activo — CSP `upgrade-insecure-requests` habilitado
 
-**Checklist completo de launch:** `deploy.md` §14 — todo lo que toca al servidor está pendiente; todo lo que toca a la app está ✅.
+**URLs de producción:**
+- Landing: `https://menupro.tech`
+- Admin: `https://menupro.tech/admin/login`
+- Login owner: `https://menupro.tech/login`
+- Demo menú: `https://menupro.tech/menu?restaurante=1&mesa=1`
+
+**Deploy futuro (desde laptop):**
+```bash
+cd /var/www/menupro && git pull origin main && pm2 restart menupro
+```
 
 ---
 

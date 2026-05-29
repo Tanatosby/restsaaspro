@@ -689,31 +689,83 @@ Mes 2-3 post-launch, cuando:
 
 ```
 Infraestructura
-[ ] VPS comprado y acceso SSH configurado
-[ ] Dominio comprado y DNS apuntando al VPS
-[ ] Node.js 20, PM2, Nginx instalados
-[ ] App corriendo con pm2 start
-[ ] HTTPS activo con Let's Encrypt
-[ ] Puerto 3000 cerrado externamente (ufw)
-[ ] Backups diarios configurados (cron)
+[x] VPS comprado y acceso SSH configurado — DigitalOcean NYC1 $6/mes, IP 147.182.135.252
+[x] Dominio comprado y DNS apuntando al VPS — menupro.tech (Porkbun)
+[x] Node.js 22, PM2 7, Nginx 1.18 instalados
+[x] App corriendo con pm2 start — pm2 startup + pm2 save configurados
+[x] HTTPS activo con Let's Encrypt — renovación automática cada 90 días
+[x] Puerto 3000 cerrado externamente (ufw) — solo 22/80/443 abiertos
+[x] Backups diarios configurados (cron) — 3am → /var/www/menupro/backups/
 
 Aplicación
-[ ] .env de producción creado (JWT_SECRET fuerte, VAPID keys nuevas)
-[ ] NODE_ENV=production
-[ ] npm install --omit=dev (sin devDependencies)
+[x] .env de producción creado (JWT_SECRET fuerte, VAPID keys nuevas)
+[x] NODE_ENV=production
+[x] npm install --omit=dev (sin devDependencies)
 [x] Helmet instalado y configurado en app.js (CSP + X-Frame-Options + HSTS)
 [x] `upgrade-insecure-requests` automático por entorno (se activa solo con NODE_ENV=production) — ver §8.2
 [x] Rate limiting configurado en app.js (auth: 20/15min, general: 300/min)
 [x] Índices de BD creados (id_restaurante + fecha en ordenes y reservas)
-[ ] Usuario admin creado en la BD
-[ ] Primer restaurante creado y configurado desde el panel admin
+[x] Usuario admin creado en la BD — pedro.gabriel.rotta@gmail.com
+[x] Primer restaurante creado y configurado desde el panel admin — id=1 Crisolito
 
 Pruebas antes de abrir
-[ ] Login funciona en /admin/login y /login
+[x] Login funciona en /admin/login y /login
 [ ] Un owner puede crear menú, carta, mesas
 [ ] Un cliente puede abrir el menú por QR y hacer una reserva
 [ ] La cocina recibe la notificación push
 [ ] El owner puede confirmar pago
 [ ] El backup corre correctamente (ejecutar el script manualmente una vez)
 [ ] Prueba de carga básica: k6 run --vus 30 --duration 30s scripts/k6-load-test.js (p95 < 300ms, errores < 1%)
+```
+
+---
+
+## 16. Deploys futuros
+
+### Flujo estándar (actualización de código)
+
+```bash
+# En el servidor via SSH
+cd /var/www/menupro
+git pull origin main
+npm install --omit=dev   # solo si cambiaron dependencias
+pm2 restart menupro
+```
+
+### Verificar que el deploy fue exitoso
+
+```bash
+pm2 status                        # debe mostrar status: online
+curl http://localhost:3000/health  # debe retornar {"status":"ok"}
+```
+
+### Si la app no levanta después del deploy
+
+```bash
+pm2 logs menupro --lines 50   # ver el error
+pm2 restart menupro           # reintentar
+```
+
+### Rollback rápido
+
+```bash
+git log --oneline -5          # ver commits recientes
+git checkout <commit-anterior> -- .
+pm2 restart menupro
+```
+
+### Consideraciones importantes
+
+- **Nunca editar archivos directamente en el servidor** — todo cambio va por git en la laptop y luego `git pull` en el servidor.
+- **El `.env` no está en git** — si cambias variables de entorno, hay que editarlo manualmente en el servidor con `nano /var/www/menupro/.env` y luego `pm2 restart menupro`.
+- **La BD SQLite no está en git** — los datos de producción solo existen en el servidor. Verificar backups antes de cualquier migración de esquema.
+- **Migraciones de BD** — `config/database.js` corre migraciones idempotentes al arrancar. Un `pm2 restart` después del `git pull` las aplica automáticamente.
+- **Las imágenes del bot** (`landing/bot/output/screenshots/`) están en `.gitignore`. Si se regeneran localmente, subirlas con `scp` manualmente.
+- **VAPID keys** — no cambiarlas en producción a menos que sea estrictamente necesario. Si cambian, todos los dispositivos con push activo pierden la suscripción.
+- **SSL** — se renueva automáticamente con certbot. Para verificar: `certbot renew --dry-run`.
+
+### Acceso SSH al servidor
+
+```bash
+ssh root@147.182.135.252
 ```
