@@ -7,6 +7,8 @@ node_modules/
 # Database (se genera al iniciar)
 *.sqlite
 *.sqlite3
+*.sqlite-shm
+*.sqlite-wal
 
 # Uploads generados por usuarios (opcional; descomentar para excluir)
 
