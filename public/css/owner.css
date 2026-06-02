@@ -312,6 +312,10 @@ html, body {
 .card-header {
   padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  /* Mobile-first: que el grupo de acciones baje de línea en 360px en vez de
+     cortarse fuera de la card (overflow:hidden). Antes el botón "Eliminar"
+     de los menús del día quedaba inaccesible. */
+  flex-wrap: wrap;
 }
 .card-title { font-weight: 700; font-size: 14px; color: var(--text); }
 .card-body { padding: 1.25rem; }
@@ -593,3 +597,15 @@ tbody tr:hover { background: var(--surface-2); }
 }
 .kanban-badge.kb-badge-active { background: var(--accent); color: #fff; }
 .zona-pedidos { display: flex; flex-direction: column; gap: 0.75rem; }
+
+/* Miniatura de foto clicable en las tablas de platos (menú/carta).
+   Con foto abre el widget PhotoEditor; sin foto dispara la subida. */
+.foto-cell {
+  width: 40px; height: 40px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform var(--t-fast), border-color var(--t-fast);
+}
+.foto-cell:active { transform: scale(0.93); }
+.foto-cell-img { object-fit: cover; }
+.foto-cell-empty { background: var(--bg); border: 1px dashed var(--border); font-size: 16px; }
+.foto-cell-empty:hover { border-color: var(--accent-dim); }

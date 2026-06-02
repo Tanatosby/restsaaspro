@@ -2,6 +2,44 @@
 
 ## Pendientes
 
+## Features para un plan Black o Premium
+1. Que al momento de elegir sus platos le aparezcan opciones
+
+2. Que en la sección para elegir los platos del menu de hoy (sección configurar menú, al momento que haga clic en el modal de selección de platos) no le aparezca lista de nombre, sino widgets del plato es decir nombre + foto del plato para seleccionar. 
+
+## Features para un plan Black o Premium
+1. Que al momento de elegir sus platos le aparezcan opciones de imágenes, es decir actualmente cuando se eligen los platos, no les aparecen opciones, sino que lo manda al navegador de su celular, sería posible que se le de búsqueda directa de imágenes? 
+
+2. Que en la sección para elegir los platos del menu de hoy (sección configurar menú, al momento que haga clic en el modal de selección de platos) no le aparezca lista de nombre, sino widgets del plato es decir nombre + foto del plato para seleccionar. 
+
+3. Panel para configurar el menú : Que cada menú creado se configure en un widget con su propio card con su título, una foto representativa del menú (opcional) y las acciones de configurar, eliminar o editar datos (Nombre y foto)
+y si se hace clic en configurar que sea otro widget de configuración (modal) que permita añadir sección y luego se añada un card que diga "entrada" o cualquier sección que añada con botones : +plato y las acciones de obligatoria/opcional y el x de eliminar, ahí agregar el botón de actualizar y al momento de elegir el plato, se aplica el widget del punto 1. 
+
+
+#### ~~Botón para descarga de PWA~~ ✅ Completado 2026-05-30 (owner + login)
+~~Debería haber un botón dentro de la APP reconocible facilmente para descargar APP para la versión de navegador (¿Se puede?)~~
+
+Sí se puede. Botón **"📲 Instalar app"** en el sidebar-footer de `owner.html` y bajo el formulario de `login.html`, vía el widget reutilizable `PwaInstall` (`public/js/widgets/pwa-install.js`): captura `beforeinstallprompt` (Android/Chrome/Edge) → diálogo nativo; en iOS/Safari abre instructivo "Añadir a pantalla de inicio"; se oculta si ya está instalada. Tests: `scripts/test-pwa-install.js` (E2E, ambos caminos). **La versión instalable del comensal queda como feature futura ↓.**
+
+#### Menú instalable por restaurante (comensal) — futura
+Que el comensal pueda instalar como app **el menú de su restaurante** y se actualice solo a diario (los datos se piden en vivo en cada apertura, así que el menú del día siempre está fresco). **Bloqueante:** el `manifest.json` es único y global con `start_url: /owner.html`; instalar desde `menu.html` abriría el panel del owner. Requiere un **manifest dinámico por restaurante** (endpoint que genere `start_url` al menú del local, `name: "Menú de [Restaurante]"`, colores del local) + botón "Instalar" en `menu.html`. Idealmente combinado con las URLs por slug ↓.
+
+#### URLs por slug del restaurante (`menupro.tech/karinamenu`) — futura
+Reemplazar `?restaurante=1&mesa=1` por una ruta bonita por restaurante. Alcance: columna `slug TEXT UNIQUE` en `restaurantes` (autogenerada del nombre, editable); ruta Express `GET /:slug` (registrada al final + lista de palabras reservadas: `login`/`admin`/`owner`/`menu`/`api`/`manuales`/`health`/`icons`/`css`/`js`/`uploads`…) que sirve `menu.html`; mesa en el path (`/karinamenu/5`); `menu.html` resuelve el restaurante con `/api/public/by-slug/:slug`. **Mantener compatibilidad** con los QR viejos (`?restaurante=ID`). Actualizar el generador de QR del owner, el link "Ver demo en vivo" de la landing y el seeder. Habilita el manifest dinámico del comensal ↑.
+
+
+#### ~~Editar platos~~ ✅ Completado 2026-05-30
+~~en owner.html, en platos de menú (verficar platos a la carta) que los nombres de los platos se puedan editar~~
+
+Botón ✏️ por fila en **Platos de menú** (edita nombre + descripción) y **Platos a la carta** (edita nombre + precio + descripción + categoría), usando el widget reutilizable `FormModal`. Backend: `PATCH /api/menu/platos-menu/:id` y `PATCH /api/menu/platos-carta/:id` (scope por restaurante, categoría validada). Tests: `tests/editar-platos.test.js` (10) + E2E `scripts/test-editar-platos.js`.
+
+#### ~~Scrolling en Menús del día~~ ✅ Resuelto 2026-05-30 (bug de layout, no de scroll)
+~~El scrolling en Menús configurados no funciona o no existe. No se puede hacer scroll a la derecha en Menús configurados y aparece vista parcial (no aparece el botón de eliminar completo, por ejemplo)~~
+
+Causa: `.card-header` era `display:flex` sin `flex-wrap` y `.card` tiene `overflow:hidden` → en 360px el grupo "Configurar secciones / Eliminar" se cortaba fuera de la card e inaccesible. Fix mobile-first: `flex-wrap: wrap` en `.card-header` (owner.css) + en las filas internas de sección/plato de `renderMenuCard`. Ahora los botones bajan de línea y quedan dentro de 360px (no se agrega scroll horizontal: la regla del proyecto es que todo entre sin overflow). Verificado a 390px en el E2E.
+
+
+
 ### Prioridad Alta — Arquitectura base (hacer ANTES de nuevas features)
 
 #### ARCH-001 — Modularizar owner.html en ES Modules
@@ -664,6 +702,9 @@ Exponer endpoints REST documentados (OpenAPI/Swagger) para que los restaurantes 
 
 | Feature | Fecha | Descripción |
 |---------|-------|-------------|
+| Botón Instalar PWA + widget `PwaInstall` | 2026-05-30 | Botón "📲 Instalar app" en `owner.html` (sidebar) y `login.html`. Widget `pwa-install.js`: captura `beforeinstallprompt`, instructivo iOS, se oculta si ya instalada. E2E `scripts/test-pwa-install.js`. Comensal-installable + URLs por slug quedan como features futuras. |
+| Editar platos + widget `FormModal` + fix scroll Menús del día | 2026-05-30 | Botón ✏️ por fila para editar platos de menú (nombre+desc) y carta (nombre+precio+desc+categoría) vía widget `FormModal` (modal de formulario genérico por esquema). Backend `PATCH /platos-menu/:id` y `/platos-carta/:id`. Fix de layout: `.card-header` con `flex-wrap` para que el botón "Eliminar" de los menús del día no se corte en 360px. Tests `editar-platos.test.js` (10) + E2E. 207/207 verde. |
+| Sistema de widgets + `PhotoEditor` | 2026-05-30 | Filosofía de **componentes de UI reutilizables autocontenidos** (ver `widgets.md`). Primer widget `public/js/widgets/photo-editor.js`: en `owner.html` (Platos de menú y Carta) la miniatura de cada plato es clicable → visor de imagen en grande con **recorte 1:1** + Cambiar + Eliminar; placeholder vacío → recortador directo. Recortador propio en canvas (arrastrar + zoom táctil, exporta JPEG 800×800), sin dependencias, no toca CSP. Prueba E2E `scripts/test-photo-editor.js` (8/8 verde). Siguiente: widget `PhotoViewer` solo-lectura para migrar el modal de `menu.html`. |
 | Auth + roles | 2026-05-09 | Login/logout con JWT en cookie httpOnly. Roles: admin, owner, cocinero, mozo |
 | Menú del día | 2026-05-09 | Secciones, platos, menús con componentes. Modos fijo y elegible por sección |
 | Carta | 2026-05-09 | Categorías y platos a la carta con toggle activo/inactivo |

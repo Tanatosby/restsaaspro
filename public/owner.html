@@ -19,6 +19,9 @@
   <script src="/js/modules/reservas.js"></script>
   <script src="/js/modules/reportes.js"></script>
   <script src="/js/modules/pedidos.js"></script>
+  <script src="/js/widgets/photo-editor.js"></script>
+  <script src="/js/widgets/form-modal.js"></script>
+  <script src="/js/widgets/pwa-install.js"></script>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c8692a">
 
@@ -110,6 +113,7 @@
           <div class="owner-role">Propietario</div>
         </div>
       </div>
+      <button class="btn-change-pwd" id="btn-instalar-app" hidden>📲 Instalar app</button>
       <button class="btn-change-pwd" onclick="abrirModalCambiarPassword()">🔑 Cambiar contraseña</button>
       <button class="btn-logout" onclick="logout()">↩ Cerrar sesión</button>
     </div>
@@ -1048,15 +1052,16 @@ async function loadPlatosMenu() {
       platoMenuCache.map(p => `<tr>
         <td>
           ${p.url_foto
-            ? `<img src="${p.url_foto}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;display:block">`
-            : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">🍽️</div>`}
+            ? `<img src="${p.url_foto}" alt="" title="Ver foto" class="foto-cell foto-cell-img" onclick="abrirFotoPlato('menu',${p.id},'${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">`
+            : `<label class="foto-cell foto-cell-empty" title="Subir foto">🍽️<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('menu',${p.id},this)"></label>`}
         </td>
         <td><strong>${esc(p.nombre)}</strong></td>
         <td>${esc(p.descripcion || '—')}</td>
         <td style="text-align:right;white-space:nowrap;display:flex;gap:4px;justify-content:flex-end;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="editarPlatoMenu(${p.id})" title="Editar nombre">✏️</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer" title="${p.url_foto ? 'Cambiar foto' : 'Subir foto'}">
             📷
-            <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="subirFotoPlatoMenu(${p.id},this)">
+            <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('menu',${p.id},this)">
           </label>
           ${p.url_foto ? `<button class="btn btn-ghost btn-sm" onclick="eliminarFotoPlatoMenu(${p.id})" title="Eliminar foto">🗑</button>` : ''}
           <button class="btn btn-danger btn-sm" onclick="eliminarPlatoMenu(${p.id},'${esc(p.nombre)}')">Eliminar</button>
@@ -1083,17 +1088,35 @@ async function eliminarPlatoMenu(id, nombre) {
   catch(e) { toast(e.message, 'err'); }
 }
 
-async function subirFotoPlatoMenu(id, input) {
-  if (!input.files.length) return;
+// Editar nombre y descripción de un plato de menú (widget FormModal)
+function editarPlatoMenu(id) {
+  const p = platoMenuCache.find(x => x.id === id);
+  if (!p) return;
+  FormModal.open({
+    title: 'Editar plato de menú',
+    fields: [
+      { name: 'nombre', label: 'Nombre', type: 'text', value: p.nombre, required: true, placeholder: 'Ej: Arroz con pollo' },
+      { name: 'descripcion', label: 'Descripción', type: 'textarea', value: p.descripcion || '', placeholder: 'Opcional' },
+    ],
+    submitLabel: 'Guardar',
+    onSubmit: async (v) => {
+      await api('PATCH', `/api/menu/platos-menu/${id}`, { nombre: v.nombre, descripcion: v.descripcion });
+      toast('Plato actualizado');
+      loadPlatosMenu();
+    },
+  });
+}
+
+// Sube un File ya recortado (lo usan el recortador del placeholder/📷 y el widget PhotoEditor)
+async function uploadFotoPlatoMenu(id, file) {
   const fd = new FormData();
-  fd.append('foto', input.files[0]);
+  fd.append('foto', file);
   try {
     const res = await fetch(`/api/menu/platos-menu/${id}/foto`, { method: 'POST', credentials: 'same-origin', body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Error al subir foto');
     toast('Foto actualizada'); loadPlatosMenu();
   } catch(e) { toast(e.message, 'err'); }
-  input.value = '';
 }
 
 async function eliminarFotoPlatoMenu(id) {
@@ -1133,7 +1156,7 @@ async function loadMenusDia() {
 function renderMenuCard(m) {
   const secRows = m.secciones.map(s => `
     <div style="margin-bottom:0.75rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:0.35rem">
         <span style="font-size:12px;font-weight:700;color:var(--text)">${esc(s.nombre_seccion)}</span>
         <div style="display:flex;align-items:center;gap:4px">
           <button
@@ -1150,7 +1173,7 @@ function renderMenuCard(m) {
       </div>
       ${s.platos.length
         ? s.platos.map(p => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--bg);border-radius:5px;margin-bottom:3px;font-size:12px;${p.agotado ? 'opacity:0.5' : ''}">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:4px 8px;background:var(--bg);border-radius:5px;margin-bottom:3px;font-size:12px;${p.agotado ? 'opacity:0.5' : ''}">
             <span style="${p.agotado ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(p.nombre)}</span>
             <div style="display:flex;gap:4px">
               <button
@@ -1357,18 +1380,20 @@ async function eliminarCategoria(id, nombre) {
   catch(e) { toast(e.message, 'err'); }
 }
 
+let platoCartaCache = [];
 async function loadPlatosCarta() {
   const el = document.getElementById('list-platos-carta');
   el.innerHTML = '<div class="loading-text">Cargando…</div>';
   try {
-    const platos = await api('GET', '/api/menu/platos-carta');
+    platoCartaCache = await api('GET', '/api/menu/platos-carta');
+    const platos = platoCartaCache;
     if (!platos.length) { el.innerHTML = emptyState('🍽️','Sin platos a la carta aún'); return; }
     el.innerHTML = `<div class="table-wrap"><table><thead><tr><th style="width:48px"></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Estado</th><th></th></tr></thead><tbody>` +
       platos.map(p => `<tr>
         <td>
           ${p.url_foto
-            ? `<img src="${p.url_foto}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;display:block">`
-            : `<div style="width:40px;height:40px;border-radius:6px;background:var(--bg);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px">🍴</div>`}
+            ? `<img src="${p.url_foto}" alt="" title="Ver foto" class="foto-cell foto-cell-img" onclick="abrirFotoPlato('carta',${p.id},'${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">`
+            : `<label class="foto-cell foto-cell-empty" title="Subir foto">🍴<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('carta',${p.id},this)"></label>`}
         </td>
         <td><strong>${esc(p.nombre)}</strong>${p.descripcion ? `<br><span style="font-size:11px;color:var(--muted)">${esc(p.descripcion)}</span>` : ''}</td>
         <td>${esc(p.categoria)}</td>
@@ -1380,9 +1405,10 @@ async function loadPlatosCarta() {
           </label>
         </td>
         <td style="text-align:right;white-space:nowrap;display:flex;gap:4px;justify-content:flex-end;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="editarPlatoCarta(${p.id})" title="Editar plato">✏️</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer" title="${p.url_foto ? 'Cambiar foto' : 'Subir foto'}">
             📷
-            <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="subirFotoPlatoCarta(${p.id},this)">
+            <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('carta',${p.id},this)">
           </label>
           ${p.url_foto ? `<button class="btn btn-ghost btn-sm" onclick="eliminarFotoPlatoCarta(${p.id})" title="Eliminar foto">🗑</button>` : ''}
           <button class="btn btn-danger btn-sm" onclick="eliminarPlatoCarta(${p.id},'${esc(p.nombre)}')">Eliminar</button>
@@ -1422,22 +1448,67 @@ async function eliminarPlatoCarta(id, nombre) {
   catch(e) { toast(e.message, 'err'); }
 }
 
-async function subirFotoPlatoCarta(id, input) {
-  if (!input.files.length) return;
+// Editar nombre, precio, descripción y categoría de un plato de carta (widget FormModal)
+function editarPlatoCarta(id) {
+  const p = platoCartaCache.find(x => x.id === id);
+  if (!p) return;
+  FormModal.open({
+    title: 'Editar plato de carta',
+    fields: [
+      { name: 'nombre', label: 'Nombre', type: 'text', value: p.nombre, required: true, placeholder: 'Ej: Lomo saltado' },
+      { name: 'precio', label: 'Precio S/', type: 'number', value: p.precio, step: '0.01', min: '0', required: true },
+      { name: 'descripcion', label: 'Descripción', type: 'textarea', value: p.descripcion || '', placeholder: 'Opcional' },
+      { name: 'id_categoria', label: 'Categoría', type: 'select', value: p.id_categoria, required: true,
+        options: categoriasCache.map(c => ({ value: c.id, label: c.nombre })) },
+    ],
+    submitLabel: 'Guardar',
+    onSubmit: async (v) => {
+      await api('PATCH', `/api/menu/platos-carta/${id}`, {
+        nombre: v.nombre, precio: v.precio, descripcion: v.descripcion, id_categoria: v.id_categoria,
+      });
+      toast('Plato actualizado');
+      loadPlatosCarta();
+    },
+  });
+}
+
+// Sube un File ya recortado (lo usan el recortador del placeholder/📷 y el widget PhotoEditor)
+async function uploadFotoPlatoCarta(id, file) {
   const fd = new FormData();
-  fd.append('foto', input.files[0]);
+  fd.append('foto', file);
   try {
     const res = await fetch(`/api/menu/platos-carta/${id}/foto`, { method: 'POST', credentials: 'same-origin', body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Error al subir foto');
     toast('Foto actualizada'); loadPlatosCarta();
   } catch(e) { toast(e.message, 'err'); }
-  input.value = '';
 }
 
 async function eliminarFotoPlatoCarta(id) {
   try { await api('DELETE', `/api/menu/platos-carta/${id}/foto`); toast('Foto eliminada'); loadPlatosCarta(); }
   catch(e) { toast(e.message, 'err'); }
+}
+
+// Foto recién elegida (placeholder vacío o botón 📷) → recortar 1:1 → subir.
+// tipo: 'menu' | 'carta'.
+function recortarYSubirPlato(tipo, id, input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  PhotoEditor.crop({
+    source: file,
+    onSave: (cropped) => (tipo === 'menu' ? uploadFotoPlatoMenu : uploadFotoPlatoCarta)(id, cropped),
+  });
+}
+
+// Miniatura con foto → visor PhotoEditor con Recortar / Cambiar / Eliminar.
+// tipo: 'menu' | 'carta'. Cablea las acciones al endpoint correcto.
+function abrirFotoPlato(tipo, id, url, nombre, desc) {
+  PhotoEditor.open({
+    url, title: nombre, desc,
+    onChange: (file) => (tipo === 'menu' ? uploadFotoPlatoMenu : uploadFotoPlatoCarta)(id, file),
+    onDelete: ()     => (tipo === 'menu' ? eliminarFotoPlatoMenu : eliminarFotoPlatoCarta)(id),
+  });
 }
 
 // ordenes.js + reservas.js + usuarios.js cargados como <script src> (pasos 1.8, 1.7, 1.4)
@@ -1632,6 +1703,9 @@ initConfigListeners();
       suscribirPush(reg);
     });
   }
+
+  // Botón "Instalar app" (widget PwaInstall) — se muestra solo si es instalable
+  if (window.PwaInstall) PwaInstall.attach(document.getElementById('btn-instalar-app'));
 
   async function suscribirPush(reg) {
     if (!('PushManager' in window)) return;

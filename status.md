@@ -66,6 +66,45 @@ cd /var/www/menupro && git pull origin main && pm2 restart menupro
 - Generación `.env` con VAPID + JWT_SECRET
 
 **Registro de cambios (RestSaasPro):**
+- 2026-05-30 — **Botón "Instalar app" (PWA) + 3er widget `PwaInstall`:**
+  - **`PwaInstall`** (`public/js/widgets/pwa-install.js`) — 3er widget: captura `beforeinstallprompt` (Android/Chrome/Edge)
+    y muestra un botón "📲 Instalar app" que dispara el diálogo nativo; en **iOS/Safari** abre un instructivo
+    "Compartir → Añadir a pantalla de inicio". Se oculta si ya está instalada (`display-mode: standalone`) o tras instalar.
+  - Botón en el **sidebar-footer de `owner.html`** (`#btn-instalar-app`) y bajo el formulario de **`login.html`** (`#btn-install`).
+  - **Decisión de alcance:** solo la app de gestión (owner + login). La PWA **instalable del comensal** queda como feature
+    futura porque el `manifest.json` es global (`start_url: /owner.html`) → requiere **manifest dinámico por restaurante**;
+    documentada junto con **URLs por slug** (`menupro.tech/karinamenu`) en `features.md`.
+  - **Tests:** `scripts/test-pwa-install.js` (E2E: camino Android con `beforeinstallprompt` simulado en login+owner,
+    y camino iOS con user-agent iPhone que abre el instructivo). **207/207 jest verde** (sin cambios de backend).
+- 2026-05-30 — **Editar platos + 2º widget `FormModal` + fix scroll Menús del día:**
+  - **`FormModal`** (`public/js/widgets/form-modal.js`) — 2º widget reutilizable: modal de formulario genérico
+    dirigido por esquema de campos (text/number/textarea/select), submit async con manejo de error, autocontenido,
+    mobile-first (inputs 16px, botones ≥44px, Esc/backdrop/Enter). Cargado en `owner.html`.
+  - **Editar platos:** botón ✏️ por fila en **Platos de menú** (nombre + descripción) y **Platos a la carta**
+    (nombre + precio + descripción + categoría), abriendo `FormModal`. Backend nuevo: `PATCH /api/menu/platos-menu/:id`
+    y `PATCH /api/menu/platos-carta/:id` (scope por restaurante, categoría validada contra el restaurante). Antes solo
+    se podía crear/borrar; ya no hace falta borrar y recrear para corregir. `GET /platos-carta` ahora incluye `id_categoria`.
+  - **Fix scroll Menús del día (bug de layout):** `.card-header` era flex sin `flex-wrap` + `.card` con `overflow:hidden`
+    → en 360px el botón "Eliminar" del menú quedaba cortado e inaccesible. Fix: `flex-wrap: wrap` en `.card-header`
+    (owner.css) y en las filas internas de `renderMenuCard`. No se agregó scroll horizontal (la regla es que todo entre en 360px).
+  - **Tests:** `tests/editar-platos.test.js` (10 unit, lógica SQL en memoria) + `scripts/test-editar-platos.js`
+    (E2E Playwright 390px: editar carta+menú, FormModal con 4/2 campos, botón Eliminar dentro de 390px). **207/207 verde.**
+- 2026-05-30 — **Sistema de componentes reutilizables (widgets) + 1er widget `PhotoEditor`:**
+  - **Nueva filosofía de desarrollo:** todo lo que se use en más de una pantalla se construye como
+    **widget autocontenido** (crea su DOM, inyecta sus estilos, hereda tokens de tema, API por callbacks),
+    en vez de copiar-pegar/portar markup entre páginas. Documentado en **`widgets.md`** (filosofía + reglas + catálogo).
+  - **`public/js/widgets/photo-editor.js`** — primer widget. Visor de imagen en grande + **recorte 1:1** +
+    **Cambiar** + **Eliminar**. Sin dependencias externas, no toca el CSP. Cargado en `owner.html` con un `<script src>`.
+  - **owner.html — Platos de menú y Carta:** la miniatura de cada plato ahora es clicable. **Con** foto abre el
+    visor (Recortar/Cambiar/Eliminar); **sin** foto (placeholder 🍽️/🍴) elige imagen y abre directo el recortador.
+    El botón 📷 de la derecha se mantiene y también pasa por el recortador. Toda subida de foto nueva pasa por
+    recorte 1:1 → resuelve los cortes automáticos feos de `object-fit:cover` en `menu.html`.
+  - **Recortador propio en canvas:** marco cuadrado fijo, arrastrar (pointer events: touch+mouse) + zoom con barra
+    (≥44px). Exporta JPEG 800×800 vía `<canvas>.drawImage` de la región visible. Mobile-first, `prefers-reduced-motion`.
+  - **`scripts/test-photo-editor.js`** — prueba E2E Playwright (viewport 390×844): subir→recortar→guardar→miniatura,
+    abrir visor con las 3 acciones, recortar desde el visor, eliminar (restaura placeholder). **8/8 asserts verde, 0 errores de consola.**
+  - **Pendiente (siguiente entrega):** widget `PhotoViewer` (solo lectura) y migrar el modal inline de `menu.html` a él.
+  - **197/197 tests backend verde** (cambios solo frontend).
 - 2026-05-29 — **Fase 7 (rediseño premium de `landing.html` + `manuales.html` — cara pública):**
   - **Repaint terracota** (7.1): Tailwind config `brand {light:#fdf0e8, DEFAULT:#c8692a, dark:#a0521e}` + var CSS `--brand-glow`. Eliminadas todas las referencias a naranja `#f97316` / `orange-*` (verificado: 0 residuales en HTML servido). `bg-orange-50` → `bg-brand-light`.
   - **Hero premium** (7.3): `.gradient-mesh` con 3 radiales (terracota + violeta `#7c5cff` + azul `#2563eb`) en `mix-blend-mode:screen` + blur 90-100px; `.hero-phone` con `rotate(-3deg)` + `@keyframes float 6s` y glow del producto detrás (`::before` blur 80px del color brand). Screenshot real del bot intacto dentro del frame.

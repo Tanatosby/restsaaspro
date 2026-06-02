@@ -105,6 +105,25 @@ router.delete('/platos-menu/:id', authorizePermiso(), (req, res) => {
   res.json({ message: `Plato "${plato.nombre}" eliminado` });
 });
 
+// PATCH /api/menu/platos-menu/:id  (editar nombre y descripción)
+router.patch('/platos-menu/:id', authorizePermiso(), (req, res) => {
+  const { nombre, descripcion } = req.body;
+  if (!nombre?.trim())
+    return res.status(400).json({ error: 'El nombre del plato es requerido' });
+
+  const plato = db.prepare(`
+    SELECT id FROM platos_menu WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, req.user.restaurant_id);
+  if (!plato)
+    return res.status(404).json({ error: 'Plato no encontrado' });
+
+  db.prepare(`
+    UPDATE platos_menu SET nombre = ?, descripcion = ? WHERE id = ?
+  `).run(nombre.trim(), descripcion?.trim() || null, req.params.id);
+
+  res.json({ id: Number(req.params.id), nombre: nombre.trim(), descripcion: descripcion?.trim() || null });
+});
+
 // ─────────────────────────────────────────────────────
 // MENÚS DEL DÍA
 // elegible=0 → menú fijo (cada sección tiene 1 plato)
@@ -515,6 +534,7 @@ router.get('/platos-carta', (req, res) => {
       pc.precio,
       pc.url_foto,
       pc.activo,
+      pc.id_categoria,
       cc.nombre AS categoria,
       COUNT(oci.id) AS veces_pedido
     FROM platos_carta pc
@@ -582,6 +602,36 @@ router.patch('/platos-carta/:id/toggle', authorizePermiso(), (req, res) => {
       : `"${plato.nombre}" desactivado`,
     activo: nuevoActivo
   });
+});
+
+// PATCH /api/menu/platos-carta/:id  (editar nombre, precio, descripción y categoría)
+router.patch('/platos-carta/:id', authorizePermiso(), (req, res) => {
+  const { nombre, descripcion, precio, id_categoria } = req.body;
+  if (!nombre?.trim())
+    return res.status(400).json({ error: 'El nombre del plato es requerido' });
+  if (!precio || isNaN(precio))
+    return res.status(400).json({ error: 'El precio es requerido' });
+  if (!id_categoria)
+    return res.status(400).json({ error: 'La categoría es requerida' });
+
+  const plato = db.prepare(`
+    SELECT id FROM platos_carta WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, req.user.restaurant_id);
+  if (!plato)
+    return res.status(404).json({ error: 'Plato no encontrado' });
+
+  // La categoría debe pertenecer al mismo restaurante
+  const categoria = db.prepare(`
+    SELECT id FROM categorias_carta WHERE id = ? AND id_restaurante = ?
+  `).get(id_categoria, req.user.restaurant_id);
+  if (!categoria)
+    return res.status(404).json({ error: 'Categoría no encontrada' });
+
+  db.prepare(`
+    UPDATE platos_carta SET nombre = ?, descripcion = ?, precio = ?, id_categoria = ? WHERE id = ?
+  `).run(nombre.trim(), descripcion?.trim() || null, parseFloat(precio), id_categoria, req.params.id);
+
+  res.json({ id: Number(req.params.id), nombre: nombre.trim() });
 });
 
 // DELETE /api/menu/platos-carta/:id
