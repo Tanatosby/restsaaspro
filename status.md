@@ -66,6 +66,11 @@ cd /var/www/menupro && git pull origin main && pm2 restart menupro
 - Generación `.env` con VAPID + JWT_SECRET
 
 **Registro de cambios (RestSaasPro):**
+- 2026-06-02 — **Landing (feature D del backlog priorizado): copy + navegación por secciones:**
+  - **Análisis y repriorización del backlog** de pendientes en `features.md`: fusionados duplicados, agrupados en A (selección visual de platos), B (config de menús como cards), C (vista del cliente con cards+modal) y D (landing). Orden recomendado **D → A → C → B** con costo/impacto/dependencias. A/B/C comparten un futuro widget `PlatoCard`. Decisión: B sin foto de menú ni cambios de BD.
+  - **Copy de `landing.html`:** headline → **"La aplicación que tu restaurante necesita: controla todo desde tu celular"**; CTA hero → **"Solicita un mes gratis de prueba sin compromiso"**; ambos **"Ver demo en vivo"** (hero + CTA final) → **"Ver cómo lo vería tu cliente"** (mismo link demo).
+  - **Navegación por secciones como chips sticky:** IDs `#problema`/`#tutorial`/`#features`/`#faq` + `scroll-margin-top: 7.5rem` para el header de 2 filas. Los 4 destinos (**¿Qué soluciona? · ¿Cómo se usa? · ¿Qué necesitas? · ¿Tienes más preguntas?**) van como **chips estilo pill en una 2ª fila dentro del nav `sticky`** → siempre visibles al scrollear (ahorra scrollear para navegar). Móvil: scroll horizontal (`overflow-x-auto` + `.no-scrollbar`, tab-bar); desktop: centrados. Iteración del usuario: descartado el menú hamburguesa → chips; luego chips sticky (en nav, no en hero, porque el hero tiene `overflow:hidden` que rompe sticky). **Badge "🎁 Primer mes gratis" eliminado del header** (redundante con "Probar gratis" + CTA).
+  - **Verificado** con Playwright a 360px y 1280px: chips sticky siguen visibles tras scroll, scroll horizontal interno en móvil, sin overflow horizontal de página, anclas alinean bajo el header, chips de 44px, sin badge en el nav, 0 errores de consola. Sin backend → suite de tests sin cambios.
 - 2026-05-30 — **Botón "Instalar app" (PWA) + 3er widget `PwaInstall`:**
   - **`PwaInstall`** (`public/js/widgets/pwa-install.js`) — 3er widget: captura `beforeinstallprompt` (Android/Chrome/Edge)
     y muestra un botón "📲 Instalar app" que dispara el diálogo nativo; en **iOS/Safari** abre un instructivo

@@ -2,18 +2,40 @@
 
 ## Pendientes
 
-## Features para un plan Black o Premium
-1. Que al momento de elegir sus platos le aparezcan opciones
+> **Priorizado por costo / impacto / dependencias (análisis 2026-06-02).** Orden recomendado: **D → A → C → B**.
+> A, B y C comparten el concepto "tarjeta de plato con foto": se construye **un solo widget `PlatoCard`** en A y se reutiliza en C y B (filosofía de widgets, ver `widgets.md`). Los puntos 1 y 2 originales pedían lo mismo → fusionados en **A**.
 
-2. Que en la sección para elegir los platos del menu de hoy (sección configurar menú, al momento que haga clic en el modal de selección de platos) no le aparezca lista de nombre, sino widgets del plato es decir nombre + foto del plato para seleccionar. 
+#### ~~D — Landing: copy + navegación por secciones~~ ✅ Completado 2026-06-02 · 🟢 costo bajo · impacto alto · sin backend
+Cambios de marketing en `landing.html`, cero riesgo, alto retorno de conversión:
+- **Headline:** ~~"Tu restaurante en el siglo XXI, sin volverte loco"~~ → **"La aplicación que tu restaurante necesita: controla todo desde tu celular"** (2ª parte en terracota).
+- **CTA "Ver demo en vivo"** (hero + CTA final) → **"Ver cómo lo vería tu cliente"**, mismo link `/menu?restaurante=1&mesa=1`.
+- **CTA "Quiero probarlo gratis"** (hero) → **"Solicita un mes gratis de prueba sin compromiso"**.
+- **Navegación por secciones como chips sticky** (estilo pill, en una 2ª fila dentro del nav `sticky`): **¿Qué soluciona?** → `#problema` · **¿Cómo se usa?** → `#tutorial` · **¿Qué necesitas?** → `#features` · **¿Tienes más preguntas?** → `#faq`. Siempre visibles al hacer scroll (ahorra scrollear para navegar). En móvil la fila hace scroll horizontal (tab-bar, `overflow-x-auto` + `.no-scrollbar`); en desktop se centran. Anclas con scroll suave + `scroll-margin-top: 7.5rem` para el header de 2 filas; chips ≥44px (mobile-first). Los chips se pusieron en el nav (no en el hero) porque el `<section>` del hero tiene `overflow:hidden`, que rompe `position:sticky` en sus hijos.
+- **Badge "🎁 Primer mes gratis" eliminado del header** (redundante con "Probar gratis" y el CTA "Solicita un mes gratis…"); el gancho del mes gratis sigue en el badge del CTA final.
+- **Verificado** con Playwright a 360px y 1280px: chips sticky siguen visibles tras scroll, scroll horizontal interno en móvil, sin overflow horizontal de página, anclas alinean bajo el header, chips de 44px, 0 errores de consola.
 
-## Features para un plan Black o Premium
-1. Que al momento de elegir sus platos le aparezcan opciones de imágenes, es decir actualmente cuando se eligen los platos, no les aparecen opciones, sino que lo manda al navegador de su celular, sería posible que se le de búsqueda directa de imágenes? 
+#### A — Selección visual de platos en el menú del día · 🟡 costo medio · impacto medio-alto · sin backend · **2º**
+En `owner.html`, elegir un plato para una sección del menú del día hoy es un **`<select>` de nombres** (`sel-plato-…`, `owner.html:1283`). Reemplazarlo por un **picker visual**: grid de **tarjetas con foto + nombre**; tap para seleccionar. Los platos ya tienen `url_foto` (gracias al widget `PhotoEditor`), así que **no requiere backend nuevo**.
+- Se construye como widget reutilizable **`PlatoCard`** (+ `PlatoPicker`) → base que reutilizan **C** y **B**.
 
-2. Que en la sección para elegir los platos del menu de hoy (sección configurar menú, al momento que haga clic en el modal de selección de platos) no le aparezca lista de nombre, sino widgets del plato es decir nombre + foto del plato para seleccionar. 
+#### C — Vista del cliente: cards + modal de selección · 🟠 costo medio-alto · impacto alto · **3º**
+En `menu.html` (cara del comensal), mostrar cada **menú del día y plato a la carta como card representativa** (foto si corresponde, título, descripción, llamada a la acción). Al tocar, abrir un **modal** para elegir entrada / segundo / refresco según la configuración del dueño. Reutiliza el widget `PlatoCard` de **A**. Alto impacto en ventas (lo ve quien paga); el riesgo es no romper el flujo del carrito existente.
 
-3. Panel para configurar el menú : Que cada menú creado se configure en un widget con su propio card con su título, una foto representativa del menú (opcional) y las acciones de configurar, eliminar o editar datos (Nombre y foto)
-y si se hace clic en configurar que sea otro widget de configuración (modal) que permita añadir sección y luego se añada un card que diga "entrada" o cualquier sección que añada con botones : +plato y las acciones de obligatoria/opcional y el x de eliminar, ahí agregar el botón de actualizar y al momento de elegir el plato, se aplica el widget del punto 1. 
+#### B — Panel de configuración de menús: cards + modal de secciones · 🟡 costo medio · impacto medio-alto · depende de A · **4º**
+Rediseñar en `owner.html` la gestión de menús del día (`renderMenuCard`) para que sea **más fácil de usar** que el diseño actual. **Decisión 2026-06-02: sin foto de menú y sin cambios de base de datos** — solo card con título.
+- Cada menú creado se muestra como **card propio con su título** y acciones: **Configurar · Editar (nombre) · Eliminar**.
+- **Configurar** abre un **modal**: **+ Añadir sección** (cada sección es un card: "Entrada", etc.) con **+ Plato**, acciones **obligatoria/opcional**, **✕ eliminar**, y botón **Actualizar**.
+- Al elegir un plato dentro del modal se usa el **picker visual de A** (`PlatoCard`).
+
+
+
+
+
+
+
+
+
+
 
 
 #### ~~Botón para descarga de PWA~~ ✅ Completado 2026-05-30 (owner + login)
