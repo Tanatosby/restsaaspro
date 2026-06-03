@@ -141,11 +141,12 @@ async function loadReportes() {
   document.getElementById('stats-reportes').innerHTML = '<div class="loading-text" style="grid-column:1/-1">Cargando métricas…</div>';
 
   try {
-    const [ordenes, reservas, menusDia, kpis] = await Promise.all([
+    const [ordenes, reservas, menusDia, kpis, resumen] = await Promise.all([
       api('GET', '/api/orders'),
       api('GET', '/api/reservations'),
       api('GET', '/api/menu/menus-dia'),
-      api('GET', '/api/reportes/kpis')
+      api('GET', '/api/reportes/kpis'),
+      api('GET', '/api/reportes/ganancias/resumen')
     ]);
 
     const seccionesPorMenu = new Map(menusDia.map(m => [m.id, m.secciones.length]));
@@ -165,7 +166,6 @@ async function loadReportes() {
     }, 0);
 
     const totalCartaOrd = ordenes.reduce((s, o) => s + o.carta_items.reduce((a, i) => a + i.cantidad, 0), 0);
-    const revenue       = ordenes.filter(o => o.es_pagado).reduce((s, o) => s + (o.total || 0), 0);
 
     const tasaCls = (kpis.tasa_cancelacion || 0) > 15 ? '' : 'success';
     document.getElementById('stats-reportes').innerHTML = `
@@ -174,7 +174,7 @@ async function loadReportes() {
       ${sc('Platos carta pedidos', totalCartaOrd, '')}
       ${sc('Ticket promedio',  'S/ ' + (kpis.ticket_promedio || 0).toFixed(2), 'accent')}
       ${sc('Tasa cancelación', (kpis.tasa_cancelacion || 0).toFixed(1) + '%', tasaCls)}
-      ${sc('Revenue total', 'S/ ' + revenue.toFixed(2), 'accent')}
+      ${sc('Revenue total', 'S/ ' + (resumen.total || 0).toFixed(2), 'accent')}
     `;
   } catch(e) {
     document.getElementById('stats-reportes').innerHTML = emptyState('⚠️', e.message);

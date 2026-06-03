@@ -131,6 +131,20 @@
 
   </div>
 
+  <!-- ── Sticky res bar (reservar mode) ── -->
+  <div class="res-bar" id="res-bar">
+    <button class="res-bar-btn" onclick="confirmarReserva()">
+      <div class="res-bar-left">
+        <span class="res-bar-count" id="res-bar-count">0</span>
+        <span>ítems seleccionados</span>
+      </div>
+      <div class="res-bar-right">
+        <span id="res-bar-total">S/ 0.00</span>
+        <span class="res-bar-cta">Confirmar reserva →</span>
+      </div>
+    </button>
+  </div>
+
   <!-- ── Sticky cart bar (pedir mode) ── -->
   <div class="cart-bar" id="cart-bar">
     <button class="cart-btn" onclick="openDrawer()">
@@ -410,6 +424,10 @@
     document.getElementById('cat-nav').classList.toggle('hidden', !isPedir);
     document.getElementById('cart-bar').style.display = (isPedir && cart.length) ? 'block' : 'none';
     document.getElementById('res-panel').classList.toggle('hidden', !isReservar);
+
+    // Barra sticky de reserva: solo visible en modo reservar con ítems
+    const resBar = document.getElementById('res-bar');
+    if (resBar) resBar.classList.toggle('show', isReservar && resCart.length > 0);
   }
 
   // ════════════════════════════════════════════════
@@ -508,47 +526,31 @@ async function renderReservarContent() {
 
   // ── Shared renderers ─────────────────────────────
   function renderMenuDiaCard(m, mode) {
-    const prefix = mode === 'pedir' ? 'p' : 'r';
-    const seccionesHtml = m.secciones.map(s => {
-      const platosHtml = s.platos.map(p => {
-        if (m.elegible) {
-          return `<label class="plato-option">
-            <input type="radio" name="${prefix}-sec-${m.id}-${s.id_seccion}" value="${p.id_componente}"
-              onchange="selectMenuPlato('${mode}',${m.id},${s.id_seccion},${p.id_componente},'${esc(p.nombre)}','${esc(s.nombre_seccion)}',${m.precio},${m.id})" />
-            <div style="flex:1;min-width:0">
-              <div class="plato-option-name">${esc(p.nombre)}</div>
-              ${p.descripcion ? `<div class="plato-option-desc">${esc(p.descripcion)}</div>` : ''}
-            </div>
-            ${p.url_foto ? `<img src="${p.url_foto}" class="plato-thumb" alt="${esc(p.nombre)}" onclick="event.preventDefault();event.stopPropagation();openPhotoModal('${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">` : ''}
-          </label>`;
-        } else {
-          return `<div class="plato-fijo">
-            <span class="plato-fijo-dot"></span>
-            <span style="flex:1">${esc(p.nombre)}</span>
-            ${p.url_foto ? `<img src="${p.url_foto}" class="plato-thumb" alt="${esc(p.nombre)}" onclick="openPhotoModal('${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">` : ''}
-          </div>`;
+    // Primera foto disponible entre todos los platos del menú
+    const primeraFoto = m.secciones.flatMap(s => s.platos).find(p => p.url_foto)?.url_foto;
+
+    // Pills de secciones como preview
+    const secPills = m.secciones.map(s =>
+      `<span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,0.18);color:#fff;white-space:nowrap">${esc(s.nombre_seccion)}</span>`
+    ).join('');
+
+    return `<div class="menu-dia-card" style="cursor:pointer" onclick="abrirMenuModal(${m.id},'${mode}')">
+      <div class="menu-dia-header" style="align-items:flex-start;gap:0.75rem">
+        ${primeraFoto
+          ? `<img src="${primeraFoto}" alt="${esc(m.nombre)}" style="width:72px;height:72px;object-fit:cover;border-radius:10px;flex-shrink:0;border:2px solid rgba(255,255,255,0.3)">`
+          : `<div style="width:72px;height:72px;border-radius:10px;flex-shrink:0;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:28px">🍽️</div>`
         }
-      }).join('');
-      return `<div class="seccion-block">
-        <div class="seccion-label">${esc(s.nombre_seccion)}${s.requerido ? '<span class="seccion-req">obligatorio</span>' : ''}</div>
-        ${platosHtml}
-      </div>`;
-    }).join('');
-
-    const btnLabel = m.elegible ? 'Agregar al pedido' : `Agregar menú — S/ ${Number(m.precio).toFixed(2)}`;
-    const btnFn = `agregarMenu('${mode}',${m.id},${m.elegible ? 1 : 0},${m.precio},'${esc(m.nombre)}')`;
-
-    return `<div class="menu-dia-card">
-      <div class="menu-dia-header">
-        <div>
+        <div style="flex:1;min-width:0">
           <div class="menu-dia-name">${esc(m.nombre)}</div>
-          <div class="menu-tipo">${m.elegible ? 'Elige tus platos' : 'Menú fijo'}</div>
+          <div class="menu-tipo" style="margin-bottom:6px">${m.elegible ? 'Elige tus platos' : 'Menú fijo'}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${secPills}</div>
         </div>
-        <div class="menu-dia-price">S/ ${Number(m.precio).toFixed(2)}</div>
+        <div class="menu-dia-price" style="flex-shrink:0">S/ ${Number(m.precio).toFixed(2)}</div>
       </div>
-      <div class="menu-secciones">
-        ${seccionesHtml}
-        <button class="btn-add-menu" onclick="${btnFn}">🛒 ${btnLabel}</button>
+      <div style="padding:0.6rem 1.25rem 0.9rem;display:flex;justify-content:flex-end">
+        <button class="btn-add-menu" style="width:auto;padding:0 1.25rem" onclick="event.stopPropagation();abrirMenuModal(${m.id},'${mode}')">
+          Ver opciones →
+        </button>
       </div>
     </div>`;
   }
@@ -616,6 +618,17 @@ async function renderReservarContent() {
 
     if (mode === 'pedir') { updateCart(); showMsg('¡Menú agregado!'); }
     else { updateResCartSummary(); showMsg('¡Menú agregado a la reserva!'); }
+    return true;
+  }
+
+  function abrirMenuModal(menuId, mode) {
+    const source = mode === 'pedir' ? menusDia : resMenusDia;
+    const menu = source.find(m => m.id === menuId);
+    if (!menu) return;
+    // Limpiar selecciones previas para este menú
+    if (mode === 'pedir') menuSelections[menuId] = {};
+    else resMenuSelections[menuId] = {};
+    MenuModal.open({ menu, mode });
   }
 
   // ── Carta qty ────────────────────────────────────
@@ -772,6 +785,14 @@ async function renderReservarContent() {
     const section = document.getElementById('res-cart-section');
     section.style.display = resCart.length ? 'block' : 'none';
     document.getElementById('res-total-price').textContent = `S/ ${total.toFixed(2)}`;
+
+    // Barra sticky de reserva
+    const resBar = document.getElementById('res-bar');
+    if (resBar) {
+      resBar.classList.toggle('show', resCart.length > 0 && activeMode === 'reservar');
+      document.getElementById('res-bar-count').textContent = resCart.length;
+      document.getElementById('res-bar-total').textContent = `S/ ${total.toFixed(2)}`;
+    }
     const cargoLine = document.getElementById('cargo-res-line');
     if (cargoLine) {
       cargoLine.style.display = cargo > 0 ? 'flex' : 'none';
@@ -1162,5 +1183,6 @@ async function renderReservarContent() {
     navigator.serviceWorker.register('/sw.js');
   }
 </script>
+<script src="/js/widgets/menu-modal.js"></script>
 </body>
 </html>

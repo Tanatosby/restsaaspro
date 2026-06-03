@@ -213,6 +213,25 @@ router.post('/menus-dia', authorizePermiso(), (req, res) => {
   });
 });
 
+// PATCH /api/menu/menus-dia/:id — editar nombre y/o precio
+router.patch('/menus-dia/:id', authorizePermiso(), (req, res) => {
+  const { nombre, precio } = req.body;
+  if (!nombre && precio === undefined)
+    return res.status(400).json({ error: 'Se requiere nombre o precio' });
+
+  const menu = db.prepare(`
+    SELECT id FROM menus_dia WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, req.user.restaurant_id);
+  if (!menu) return res.status(404).json({ error: 'Menú no encontrado' });
+
+  const sets = []; const params = [];
+  if (nombre !== undefined) { sets.push('nombre = ?'); params.push(nombre); }
+  if (precio !== undefined) { sets.push('precio = ?'); params.push(parseFloat(precio)); }
+  params.push(req.params.id);
+  db.prepare(`UPDATE menus_dia SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+  res.json({ message: 'Menú actualizado' });
+});
+
 // PATCH /api/menu/menus-dia/:id/activo
 router.patch('/menus-dia/:id/activo', authorizePermiso(), (req, res) => {
   const menu = db.prepare(`

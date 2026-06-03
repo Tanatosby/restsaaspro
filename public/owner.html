@@ -21,6 +21,7 @@
   <script src="/js/modules/pedidos.js"></script>
   <script src="/js/widgets/photo-editor.js"></script>
   <script src="/js/widgets/form-modal.js"></script>
+  <script src="/js/widgets/plato-picker.js"></script>
   <script src="/js/widgets/pwa-install.js"></script>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c8692a">
@@ -1125,123 +1126,152 @@ async function eliminarFotoPlatoMenu(id) {
 }
 
 // ── Menús del día ─────────────────────────────────────────
-function getOpenSecciones() {
-  const open = [];
-  document.querySelectorAll('[id^="menu-secciones-"]').forEach(el => {
-    if (el.style.display !== 'none') open.push(el.id.replace('menu-secciones-', ''));
-  });
-  return open;
-}
-
-function restoreOpenSecciones(ids) {
-  ids.forEach(id => {
-    const el = document.getElementById(`menu-secciones-${id}`);
-    if (el) el.style.display = 'block';
-  });
-}
+let configMenuId   = null; // ID del menú abierto en el modal de config
+let configMenuData = null; // objeto menú actual en el modal
 
 async function loadMenusDia() {
   const el = document.getElementById('list-menus-dia');
-  const openIds = getOpenSecciones();
   el.innerHTML = '<div class="loading-text">Cargando…</div>';
   const fecha = document.getElementById('filter-md-fecha').value;
   try {
     const menus = await api('GET', `/api/menu/menus-dia${fecha ? `?dia=${fecha}` : ''}`);
     if (!menus.length) { el.innerHTML = emptyState('📋','Sin menús configurados'); return; }
     el.innerHTML = menus.map(m => renderMenuCard(m)).join('');
-    restoreOpenSecciones(openIds);
   } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
 }
 
-function renderMenuCard(m) {
+function abrirConfigMenu(menuId) {
+  configMenuId = menuId;
+  document.getElementById('menu-config-overlay').classList.add('open');
+  document.addEventListener('keydown', _mcEsc);
+  recargarModalConfig();
+}
+
+function cerrarConfigMenu() {
+  document.getElementById('menu-config-overlay').classList.remove('open');
+  document.removeEventListener('keydown', _mcEsc);
+  configMenuId = null; configMenuData = null;
+  loadMenusDia();
+}
+
+function _mcEsc(e) { if (e.key === 'Escape') cerrarConfigMenu(); }
+
+async function recargarModalConfig() {
+  if (!configMenuId) return;
+  const fecha = document.getElementById('filter-md-fecha').value;
+  try {
+    const menus = await api('GET', `/api/menu/menus-dia${fecha ? `?dia=${fecha}` : ''}`);
+    const m = menus.find(x => x.id === configMenuId);
+    if (!m) return;
+    configMenuData = m;
+    document.getElementById('mc-title').textContent = m.nombre;
+    document.getElementById('mc-meta').textContent  =
+      `${fDate(m.dia)} · S/ ${Number(m.precio).toFixed(2)} · ${m.elegible ? 'Cliente elige' : 'Fijo'} · ${m.activo !== 0 ? 'Visible' : 'Oculto'}`;
+    renderConfigBody(m);
+  } catch(e) { toast('Error al cargar el menú', 'err'); }
+}
+
+function renderConfigBody(m) {
+  const body = document.getElementById('mc-body');
+
   const secRows = m.secciones.map(s => `
-    <div style="margin-bottom:0.75rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:0.35rem">
-        <span style="font-size:12px;font-weight:700;color:var(--text)">${esc(s.nombre_seccion)}</span>
-        <div style="display:flex;align-items:center;gap:4px">
-          <button
-            onclick="toggleRequeridoSeccion(${m.id}, ${s.id_seccion}, ${s.requerido ? 1 : 0})"
-            title="Click para cambiar"
-            style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;min-height:44px;display:inline-flex;align-items:center;${s.requerido ? 'color:var(--primary);border-color:var(--primary)' : 'color:var(--muted);border-color:var(--border)'}"
+    <div class="mc-sec-card">
+      <div class="mc-sec-header">
+        <span class="mc-sec-name">${esc(s.nombre_seccion)}</span>
+        <div style="display:flex;gap:4px">
+          <button onclick="toggleRequeridoSeccion(${m.id},${s.id_seccion},${s.requerido?1:0})"
+            style="font-size:13px;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${s.requerido?'color:var(--primary);border-color:var(--primary)':'color:var(--muted);border-color:var(--border)'}"
           >${s.requerido ? 'Obligatoria' : 'Opcional'}</button>
-          <button
-            onclick="eliminarSeccionDeMenu(${m.id}, ${s.id_seccion}, '${esc(s.nombre_seccion)}')"
-            title="Quitar sección de este menú"
-            style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;color:var(--danger);border-color:var(--danger);min-height:44px;display:inline-flex;align-items:center;"
+          <button onclick="eliminarSeccionDeMenu(${m.id},${s.id_seccion},'${esc(s.nombre_seccion)}')"
+            style="font-size:13px;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;color:var(--danger);border-color:var(--danger);min-height:36px"
           >✕</button>
         </div>
       </div>
       ${s.platos.length
         ? s.platos.map(p => `
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:4px 8px;background:var(--bg);border-radius:5px;margin-bottom:3px;font-size:12px;${p.agotado ? 'opacity:0.5' : ''}">
-            <span style="${p.agotado ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(p.nombre)}</span>
+          <div class="mc-plato-row" style="${p.agotado?'opacity:0.5':''}">
+            <span style="${p.agotado?'text-decoration:line-through;color:var(--muted)':''}">${esc(p.nombre)}</span>
             <div style="display:flex;gap:4px">
-              <button
-                onclick="toggleAgotadoPlato(${m.id},${s.id_seccion},${p.id_componente},${p.agotado ? 1 : 0})"
-                style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;min-height:44px;display:inline-flex;align-items:center;${p.agotado ? 'color:var(--danger);border-color:var(--danger)' : 'color:var(--success);border-color:var(--success)'}"
-              >${p.agotado ? 'Agotado' : 'Disponible'}</button>
-              <button class="btn btn-danger" style="padding:0 10px;font-size:14px" onclick="eliminarComponente(${m.id},${s.id_seccion},${p.id_componente})">✕</button>
+              <button onclick="toggleAgotadoPlato(${m.id},${s.id_seccion},${p.id_componente},${p.agotado?1:0})"
+                style="font-size:13px;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${p.agotado?'color:var(--danger);border-color:var(--danger)':'color:var(--success);border-color:var(--success)'}"
+              >${p.agotado?'Agotado':'Disponible'}</button>
+              <button onclick="eliminarComponente(${m.id},${s.id_seccion},${p.id_componente})"
+                class="btn btn-danger" style="padding:0 8px;font-size:13px">✕</button>
             </div>
           </div>`).join('')
-        : '<div style="font-size:11px;color:var(--muted);padding:4px 8px">Sin platos asignados</div>'
+        : '<div style="font-size:12px;color:var(--muted);padding:2px 0">Sin platos asignados</div>'
       }
-      <!-- Agregar plato a esta sección -->
-      <div style="display:flex;gap:6px;margin-top:6px">
-        <select id="sel-plato-${m.id}-${s.id_seccion}" style="flex:1;border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:16px;background:var(--bg)">
-          <option value="">+ Plato…</option>
-          ${platoMenuCache.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}
-        </select>
-        <button class="btn btn-ghost btn-sm" onclick="agregarComponente(${m.id},${s.id_seccion})">Agregar</button>
+      <div style="margin-top:6px">
+        <button class="btn btn-ghost btn-sm" style="width:100%" onclick="abrirPicker(${m.id},${s.id_seccion})">＋ Agregar plato</button>
       </div>
     </div>`).join('');
 
-  const activo = m.activo !== 0;
-  return `
-    <div class="card" style="margin-bottom:1rem;${activo ? '' : 'opacity:0.55'}" id="menu-card-${m.id}">
-      <div class="card-header">
-        <div>
-          <span class="card-title">${esc(m.nombre)}</span>
-          <span style="font-size:11px;color:var(--muted);margin-left:8px">${fDate(m.dia)} · S/ ${Number(m.precio).toFixed(2)}</span>
-          <button
-            onclick="toggleElegibleMenu(${m.id}, ${m.elegible ? 1 : 0})"
-            title="Click para cambiar"
-            style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;margin-left:6px;min-height:44px;display:inline-flex;align-items:center;${m.elegible ? 'color:var(--primary);border-color:var(--primary)' : 'color:var(--muted);border-color:var(--border)'}"
-          >${m.elegible ? 'Cliente elige' : 'Fijo'}</button>
-          <button
-            onclick="toggleActivoMenu(${m.id}, ${activo ? 1 : 0})"
-            title="${activo ? 'Ocultar del QR' : 'Mostrar en QR'}"
-            style="font-size:14px;padding:0 10px;border-radius:10px;cursor:pointer;border:1px solid;background:transparent;margin-left:6px;min-height:44px;display:inline-flex;align-items:center;${activo ? 'color:var(--success);border-color:var(--success)' : 'color:var(--danger);border-color:var(--danger)'}"
-          >${activo ? '● Visible' : '○ Oculto'}</button>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick="toggleMenuSecciones(${m.id})">Configurar secciones</button>
-          <button class="btn btn-danger" onclick="eliminarMenuDia(${m.id})">Eliminar</button>
-        </div>
-      </div>
-      <!-- Secciones (expandible) -->
-      <div id="menu-secciones-${m.id}" style="display:none;padding:1rem 1.25rem;border-top:1px solid var(--border)">
-        ${secRows || '<div style="font-size:12px;color:var(--muted)">Sin secciones configuradas</div>'}
-        <!-- Agregar sección al menú -->
-        <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px dashed var(--border)">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Agregar sección</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <select id="sel-sec-${m.id}" style="flex:1;border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-size:16px;background:var(--bg)">
-              <option value="">Selecciona una sección…</option>
-              ${seccionesCache.map(s => `<option value="${s.id}">${esc(s.nombre)}</option>`).join('')}
-            </select>
-            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
-              <input type="checkbox" id="req-sec-${m.id}" /> Obligatoria
-            </label>
-            <button class="btn btn-primary btn-sm" onclick="agregarSeccionMenu(${m.id})">Agregar</button>
-          </div>
-        </div>
+  body.innerHTML = `
+    ${secRows || '<div style="font-size:13px;color:var(--muted);margin-bottom:0.75rem">Sin secciones configuradas</div>'}
+    <div class="mc-add-sec">
+      <div class="mc-add-sec-title">Agregar sección</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <select id="mc-sel-sec" style="flex:1;min-width:0;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:16px;background:var(--bg)">
+          <option value="">Selecciona una sección…</option>
+          ${seccionesCache.map(s => `<option value="${s.id}">${esc(s.nombre)}</option>`).join('')}
+        </select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="mc-req-sec"> Obligatoria
+        </label>
+        <button class="btn btn-primary btn-sm" onclick="agregarSeccionMenu(${m.id})">Agregar</button>
       </div>
     </div>`;
 }
 
-function toggleMenuSecciones(id) {
-  const el = document.getElementById(`menu-secciones-${id}`);
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+function editarNombreMenu() {
+  if (!configMenuData) return;
+  const m = configMenuData;
+  FormModal.open({
+    title: 'Editar menú',
+    fields: [
+      { name: 'nombre', label: 'Nombre', type: 'text',   value: m.nombre, required: true },
+      { name: 'precio', label: 'Precio S/',  type: 'number', value: m.precio, step: '0.01', min: '0', required: true },
+    ],
+    submitLabel: 'Guardar',
+    onSubmit: async (vals) => {
+      await api('PATCH', `/api/menu/menus-dia/${m.id}`, { nombre: vals.nombre, precio: vals.precio });
+      toast('Menú actualizado');
+      recargarModalConfig();
+    },
+  });
+}
+
+function renderMenuCard(m) {
+  const activo = m.activo !== 0;
+  const nSecs  = m.secciones.length;
+  const secPreview = nSecs
+    ? m.secciones.map(s => `<span style="font-size:11px;padding:2px 6px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text-2)">${esc(s.nombre_seccion)}</span>`).join('')
+    : `<span style="font-size:11px;color:var(--muted)">Sin secciones</span>`;
+
+  return `
+    <div class="card" style="margin-bottom:0.75rem;${activo ? '' : 'opacity:0.6'}" id="menu-card-${m.id}">
+      <div class="card-header" style="align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+            <span class="card-title">${esc(m.nombre)}</span>
+            <span style="font-size:11px;color:var(--muted)">${fDate(m.dia)} · S/ ${Number(m.precio).toFixed(2)}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${secPreview}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+            <button onclick="toggleElegibleMenu(${m.id},${m.elegible?1:0})"
+              style="font-size:13px;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${m.elegible?'color:var(--primary);border-color:var(--primary)':'color:var(--muted);border-color:var(--border)'}"
+            >${m.elegible ? 'Cliente elige' : 'Fijo'}</button>
+            <button onclick="toggleActivoMenu(${m.id},${activo?1:0})"
+              style="font-size:13px;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${activo?'color:var(--success);border-color:var(--success)':'color:var(--danger);border-color:var(--danger)'}"
+            >${activo ? '● Visible' : '○ Oculto'}</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+          <button class="btn btn-primary btn-sm" onclick="abrirConfigMenu(${m.id})">⚙ Configurar</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarMenuDia(${m.id})">Eliminar</button>
+        </div>
+      </div>
+    </div>`;
 }
 
 async function crearMenuDia() {
@@ -1265,26 +1295,36 @@ async function crearMenuDia() {
 
 async function eliminarMenuDia(id) {
   if (!confirm('¿Eliminar este menú del día y toda su configuración?')) return;
-  try { await api('DELETE', `/api/menu/menus-dia/${id}`); toast('Menú eliminado'); loadMenusDia(); }
-  catch(e) { toast(e.message, 'err'); }
-}
-
-async function agregarSeccionMenu(menuId) {
-  const id_seccion_menu = document.getElementById(`sel-sec-${menuId}`).value;
-  const requerido       = document.getElementById(`req-sec-${menuId}`).checked;
-  if (!id_seccion_menu) return toast('Selecciona una sección', 'err');
   try {
-    await api('POST', `/api/menu/menus-dia/${menuId}/secciones`, { id_seccion_menu, requerido });
-    toast('Sección agregada'); loadMenusDia();
+    await api('DELETE', `/api/menu/menus-dia/${id}`);
+    toast('Menú eliminado');
+    if (configMenuId === id) cerrarConfigMenu(); else loadMenusDia();
   } catch(e) { toast(e.message, 'err'); }
 }
 
-async function agregarComponente(menuId, seccionId) {
-  const id_plato_menu = document.getElementById(`sel-plato-${menuId}-${seccionId}`).value;
-  if (!id_plato_menu) return toast('Selecciona un plato', 'err');
+async function agregarSeccionMenu(menuId) {
+  const id_seccion_menu = document.getElementById('mc-sel-sec')?.value;
+  const requerido       = document.getElementById('mc-req-sec')?.checked;
+  if (!id_seccion_menu) return toast('Selecciona una sección', 'err');
   try {
-    await api('POST', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos`, { id_plato_menu });
-    toast('Plato agregado'); loadMenusDia();
+    await api('POST', `/api/menu/menus-dia/${menuId}/secciones`, { id_seccion_menu, requerido });
+    toast('Sección agregada'); recargarModalConfig();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function abrirPicker(menuId, seccionId) {
+  if (!platoMenuCache.length) return toast('Carga primero el catálogo de platos', 'err');
+  PlatoPicker.open({
+    platos:   platoMenuCache,
+    onSelect: (plato) => agregarComponente(menuId, seccionId, plato.id),
+  });
+}
+
+async function agregarComponente(menuId, seccionId, platoId) {
+  if (!platoId) return toast('Selecciona un plato', 'err');
+  try {
+    await api('POST', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos`, { id_plato_menu: platoId });
+    toast('Plato agregado'); recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
 }
 
@@ -1293,14 +1333,14 @@ async function eliminarSeccionDeMenu(menuId, seccionId, nombreSeccion) {
   try {
     await api('DELETE', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}`);
     toast(`Sección "${nombreSeccion}" eliminada del menú`);
-    loadMenusDia();
+    recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
 }
 
 async function eliminarComponente(menuId, seccionId, componenteId) {
   try {
     await api('DELETE', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}`);
-    toast('Plato eliminado'); loadMenusDia();
+    toast('Plato eliminado'); recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
 }
 
@@ -1309,7 +1349,7 @@ async function toggleRequeridoSeccion(menuId, seccionId, requeridoActual) {
   try {
     await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}`, { requerido: nuevoRequerido });
     toast(nuevoRequerido ? 'Sección marcada como obligatoria' : 'Sección marcada como opcional');
-    loadMenusDia();
+    recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
 }
 
@@ -1336,7 +1376,7 @@ async function toggleAgotadoPlato(menuId, seccionId, componenteId, agotadoActual
   try {
     await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/agotado`, { agotado: nuevoAgotado });
     toast(nuevoAgotado ? 'Plato marcado como agotado' : 'Plato disponible nuevamente');
-    loadMenusDia();
+    recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
 }
 
@@ -1736,5 +1776,21 @@ initConfigListeners();
     return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
   }
 </script>
+
+<!-- ── Modal de configuración de menú del día ── -->
+<div class="mc-overlay" id="menu-config-overlay" onclick="if(event.target===this)cerrarConfigMenu()">
+  <div class="mc-sheet">
+    <div class="mc-handle"></div>
+    <div class="mc-header">
+      <div class="mc-header-info">
+        <div class="mc-title" id="mc-title"></div>
+        <div class="mc-meta" id="mc-meta"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="editarNombreMenu()">✏ Editar</button>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarConfigMenu()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="mc-body" id="mc-body"></div>
+  </div>
+</div>
 </body>
 </html>

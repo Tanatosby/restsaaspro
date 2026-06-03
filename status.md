@@ -2,6 +2,20 @@
 
 ---
 
+## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-03
+
+**Feature B completada (2026-06-03):** `renderMenuCard` → card compacta con pills de secciones + toggles inline + botón "⚙ Configurar". Modal `#menu-config-overlay` (bottom-sheet): secciones con platos, PlatoPicker, toggle agotado/disponible, agregar/eliminar sección. "✏ Editar" usa FormModal → `PATCH /api/menu/menus-dia/:id` (nuevo endpoint). Acciones del modal actualizan solo el modal sin re-renderizar la lista.
+
+**Barra sticky reservas completada (2026-06-03):** `#res-bar` sticky en `menu.html` (verde, análoga al `#cart-bar`): conteo + total + "Confirmar reserva →". Visible solo en modo reservar con ítems en el carrito. `.res-bar` / `.res-bar-btn` agregados a `menu.css`.
+
+**Feature C completada (2026-06-03):** Widget `MenuModal` (`public/js/widgets/menu-modal.js`) — bottom-sheet de selección para `menu.html`. Card compacta con foto/emoji, pills de secciones, botón "Ver opciones →". Modal con secciones, radio buttons (elegible) o bullets (fijo), platos agotados tachados, botón "Agregar" en footer. Funciona en modo `pedir` y `reservar`. Carrito no tocado.
+
+**Feature A completada (2026-06-03):** Widget `PlatoPicker` (`public/js/widgets/plato-picker.js`) — sheet bottom-up, grid cards foto+nombre, buscador en vivo, tap selecciona. Reemplaza el `<select>` de platos en `renderMenuCard`. Sin cambios de backend.
+
+**ISS-014 resuelto (2026-06-03):** Revenue Total y Ganancia de hoy siempre mostraban S/0.00. Dos bugs: (1) `GET /api/orders` no incluye `es_pagado` en el SELECT → revenue siempre 0 en frontend; fix: usar `resumen.total` del endpoint `/api/reportes/ganancias/resumen`. (2) `date('now')` en SQLite usa UTC vs fechas Lima UTC-5 → ganancia de hoy = 0 pasadas las 19h; fix: `date('now', '-5 hours')` en `routes/reportes.js`.
+
+---
+
 ## 🏁 RESUMEN EJECUTIVO — Estado al 2026-05-29
 
 **Código:** ✅ Listo para deploy

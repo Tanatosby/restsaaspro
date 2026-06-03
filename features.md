@@ -2,6 +2,11 @@
 
 ## Pendientes
 
+#### ~~Barra sticky de confirmación en reservas~~ ✅ Completado 2026-06-03 · sin backend
+~~En modo reservar, el usuario tenía que scrollear hasta el fondo de la página para llegar al botón "Confirmar reserva".~~
+
+Barra `#res-bar` sticky (verde, análoga al `#cart-bar` de órdenes): muestra conteo de ítems + total + botón "Confirmar reserva →". Visible solo en modo reservar cuando `resCart.length > 0`. `updateResCartSummary()` la actualiza en cada cambio; `switchMode()` la oculta al cambiar de modo. Sin cambios en backend ni en el flujo de confirmación existente.
+
 > **Priorizado por costo / impacto / dependencias (análisis 2026-06-02).** Orden recomendado: **D → A → C → B**.
 > A, B y C comparten el concepto "tarjeta de plato con foto": se construye **un solo widget `PlatoCard`** en A y se reutiliza en C y B (filosofía de widgets, ver `widgets.md`). Los puntos 1 y 2 originales pedían lo mismo → fusionados en **A**.
 
@@ -14,18 +19,20 @@ Cambios de marketing en `landing.html`, cero riesgo, alto retorno de conversión
 - **Badge "🎁 Primer mes gratis" eliminado del header** (redundante con "Probar gratis" y el CTA "Solicita un mes gratis…"); el gancho del mes gratis sigue en el badge del CTA final.
 - **Verificado** con Playwright a 360px y 1280px: chips sticky siguen visibles tras scroll, scroll horizontal interno en móvil, sin overflow horizontal de página, anclas alinean bajo el header, chips de 44px, 0 errores de consola.
 
-#### A — Selección visual de platos en el menú del día · 🟡 costo medio · impacto medio-alto · sin backend · **2º**
-En `owner.html`, elegir un plato para una sección del menú del día hoy es un **`<select>` de nombres** (`sel-plato-…`, `owner.html:1283`). Reemplazarlo por un **picker visual**: grid de **tarjetas con foto + nombre**; tap para seleccionar. Los platos ya tienen `url_foto` (gracias al widget `PhotoEditor`), así que **no requiere backend nuevo**.
-- Se construye como widget reutilizable **`PlatoCard`** (+ `PlatoPicker`) → base que reutilizan **C** y **B**.
+#### ~~A — Selección visual de platos en el menú del día~~ ✅ Completado 2026-06-03 · sin backend
+~~En `owner.html`, elegir un plato para una sección del menú del día era un `<select>` de nombres. Reemplazado por picker visual.~~
 
-#### C — Vista del cliente: cards + modal de selección · 🟠 costo medio-alto · impacto alto · **3º**
-En `menu.html` (cara del comensal), mostrar cada **menú del día y plato a la carta como card representativa** (foto si corresponde, título, descripción, llamada a la acción). Al tocar, abrir un **modal** para elegir entrada / segundo / refresco según la configuración del dueño. Reutiliza el widget `PlatoCard` de **A**. Alto impacto en ventas (lo ve quien paga); el riesgo es no romper el flujo del carrito existente.
+Widget `PlatoPicker` (`public/js/widgets/plato-picker.js`): sheet bottom-up con grid de cards foto+nombre, buscador en vivo, tap selecciona. En `owner.html`, el `<select>` + botón "Agregar" de cada sección fue reemplazado por un botón único "＋ Agregar plato" → `abrirPicker(menuId, seccionId)` → `PlatoPicker.open({ platos: platoMenuCache, onSelect })` → `agregarComponente(menuId, seccionId, platoId)`. Sin cambios de backend.
 
-#### B — Panel de configuración de menús: cards + modal de secciones · 🟡 costo medio · impacto medio-alto · depende de A · **4º**
-Rediseñar en `owner.html` la gestión de menús del día (`renderMenuCard`) para que sea **más fácil de usar** que el diseño actual. **Decisión 2026-06-02: sin foto de menú y sin cambios de base de datos** — solo card con título.
-- Cada menú creado se muestra como **card propio con su título** y acciones: **Configurar · Editar (nombre) · Eliminar**.
-- **Configurar** abre un **modal**: **+ Añadir sección** (cada sección es un card: "Entrada", etc.) con **+ Plato**, acciones **obligatoria/opcional**, **✕ eliminar**, y botón **Actualizar**.
-- Al elegir un plato dentro del modal se usa el **picker visual de A** (`PlatoCard`).
+#### ~~C — Vista del cliente: cards + modal de selección~~ ✅ Completado 2026-06-03 · sin backend
+~~En `menu.html`, mostrar cada menú del día como card compacta y abrir modal de selección al tap.~~
+
+Widget `MenuModal` (`public/js/widgets/menu-modal.js`): bottom-sheet con handle, header (nombre + tipo + precio), body con secciones (radio buttons para elegibles, bullets para fijos, platos agotados tachados), footer con botón "Agregar". Cierra automáticamente al agregar con éxito (`agregarMenu` retorna `true`). `renderMenuDiaCard` rediseñada: card compacta con foto del primer plato (o emoji 🍽️), pills de secciones como preview, botón "Ver opciones →". Función `abrirMenuModal(menuId, mode)` limpia selecciones previas y abre el modal. Funciona en modo `pedir` y `reservar`. No se tocó el flujo del carrito existente.
+
+#### ~~B — Panel de configuración de menús: cards + modal de secciones~~ ✅ Completado 2026-06-03
+~~Rediseñar `renderMenuCard` para que sea más fácil de usar.~~
+
+`renderMenuCard` rediseñado: card compacta con nombre, fecha, precio, pills de secciones como preview, toggles Elegible/Visible inline, botones "⚙ Configurar" y "Eliminar". Modal `#menu-config-overlay` (bottom-sheet) con `renderConfigBody`: secciones como cards (nombre, toggle Obligatoria/Opcional, platos con toggle Disponible/Agotado, ✕ eliminar), `PlatoPicker` integrado via "＋ Agregar plato", sección "Agregar sección" con select + checkbox. Botón "✏ Editar" en header abre `FormModal` para nombre+precio → `PATCH /api/menu/menus-dia/:id` (nuevo endpoint). Acciones del modal actualizan solo el modal (`recargarModalConfig()`); la lista se refresca al cerrar. `configMenuId` / `configMenuData` como estado global del modal.
 
 
 

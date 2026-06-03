@@ -420,9 +420,9 @@ router.get('/ganancias/resumen', authorizePermiso(), (req, res) => {
   const id = req.user.restaurant_id;
   res.json({
     total:  sumarGanancias(id, ''),
-    mes:    sumarGanancias(id, `strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now')`),
-    semana: sumarGanancias(id, `strftime('%Y-%W', fecha) = strftime('%Y-%W', 'now')`),
-    dia:    sumarGanancias(id, `fecha = date('now')`),
+    mes:    sumarGanancias(id, `strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now', '-5 hours')`),
+    semana: sumarGanancias(id, `strftime('%Y-%W', fecha) = strftime('%Y-%W', 'now', '-5 hours')`),
+    dia:    sumarGanancias(id, `fecha = date('now', '-5 hours')`),
   });
 });
 

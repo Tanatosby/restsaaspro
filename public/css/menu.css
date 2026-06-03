@@ -381,6 +381,42 @@ body {
 .qty-num { font-size: 16px; font-weight: 800; min-width: 22px; text-align: center; color: var(--text); }
 
 /* ──────────────────────────────────────────────────────────────
+   STICKY RES BAR (reservar mode)
+   ────────────────────────────────────────────────────────────── */
+.res-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  padding: 0.875rem 1.25rem calc(0.875rem + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.08);
+  display: none; animation: slideUp .3s var(--t-slow);
+}
+.res-bar.show { display: block; }
+
+.res-bar-btn {
+  width: 100%; max-width: 600px; margin: 0 auto; display: flex;
+  align-items: center; justify-content: space-between;
+  background: var(--green, #2a7a4a); color: white; border: none;
+  border-radius: var(--r); padding: 15px 22px; font-family: var(--font);
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: all var(--t-fast); min-height: 50px;
+  box-shadow: 0 6px 20px rgba(42,122,74,0.35);
+  gap: 0.75rem;
+}
+.res-bar-btn:hover  { filter: brightness(1.08); }
+.res-bar-btn:active { transform: scale(0.98); }
+.res-bar-left  { display: flex; align-items: center; gap: 10px; }
+.res-bar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.res-bar-count {
+  background: white; color: var(--green, #2a7a4a); font-size: 13px; font-weight: 800;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.res-bar-cta { font-size: 11px; font-weight: 600; opacity: 0.85; letter-spacing: 0.02em; }
+
+/* ──────────────────────────────────────────────────────────────
    STICKY CART BAR
    ────────────────────────────────────────────────────────────── */
 .cart-bar {
