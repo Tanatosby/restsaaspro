@@ -2,6 +2,16 @@
 
 ## Pendientes
 
+## Menú del día del lado de owner: 
+
+Me gusta la forma del primer form: Nombre + Precio + Fecha, pero quisiera lo mejores así: 1 Card del mismo tamaño que es: Que diga: "Elige la fecha del Menú" y pueda solo elegir la fecha y un botón de Siguiente,en una tarjeta del mismo tamaño sale Nombre + Precio. Que Sea modo carrusel, de tal manera que solo se quede en esa vista (no haga scroll) sino que al hacer clic en siguiente vaya al otro lado del form. Pero cada uno en su propio card del tamaño del form actual. Una vez terminado Nombre + Precio se abre otra tarjeta del mismo tamaño en modo carrusel que muestre los menús configurados con la fecha elegida anteriormente. Es decir obtenerla del dom y copiar en la fecha de Menús configurados. En esta tarjeta debe aparecer solo 1 menú en el mismo tamaño del card para Menu del día lo que le da más espacio a esa parte. botón de configurar visible mejor. En caso hayan más menú scroll a la derecha. Al ir a Configurar nuevo form del mismo tipo para la configuración, del mismo tamaño. 
+
+#### Cards verticales con scroll horizontal en menú del día y carta (cliente) — pendiente
+En `menu.html`, los cards de **menú del día** y de **carta** se ven apaisados (más anchos que altos) y apilados a lo alto. Rediseñarlos a **formato retrato (alto > ancho)**, redondeados, en **carruseles horizontales** (scroll a la derecha): uno para "Menú del día" y uno por cada categoría de la carta. Aplica a modo *pedir* y *reservar* (comparten `renderMenuDiaCard` / `renderPlatoCarta`).
+- Card retrato (~200px ancho, *peek* de la siguiente): foto arriba full-width; debajo nombre + datos + precio + acción (botón "Ver opciones →" en menú; control de cantidad en carta) al pie.
+- Contenedor carrusel: flex row con `overflow-x:auto`, `scroll-snap-type:x mandatory`, scrollbar oculta (mismo patrón que los chips de la landing).
+- Mobile-first respetado: touch targets ≥44px; el scroll-x es contenido e intencional, no overflow de página.
+
 #### ~~Barra sticky de confirmación en reservas~~ ✅ Completado 2026-06-03 · sin backend
 ~~En modo reservar, el usuario tenía que scrollear hasta el fondo de la página para llegar al botón "Confirmar reserva".~~
 

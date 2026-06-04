@@ -234,39 +234,69 @@ body {
 .section-block { margin-bottom: 2.5rem; }
 
 /* ──────────────────────────────────────────────────────────────
-   MENÚ DEL DÍA — card premium
+   CARRUSEL HORIZONTAL — menú del día y carta
+   Scroll-x intencional y contenido (patrón de los chips de la landing),
+   no es overflow accidental de página.
+   ────────────────────────────────────────────────────────────── */
+.card-carousel {
+  display: flex; gap: 0.85rem;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  margin: 0 -1.25rem;                  /* sangra hasta los bordes de pantalla */
+  padding: 0.25rem 1.25rem 0.85rem;    /* el padding-x alinea el primer card */
+  scrollbar-width: none;               /* Firefox */
+}
+.card-carousel::-webkit-scrollbar { display: none; } /* WebKit */
+
+/* ──────────────────────────────────────────────────────────────
+   MENÚ DEL DÍA — card retrato (alto > ancho)
    ────────────────────────────────────────────────────────────── */
 .menu-dia-card {
+  flex: 0 0 200px; scroll-snap-align: start;
+  display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r); overflow: hidden;
-  box-shadow: var(--shadow); margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
   transition: box-shadow var(--t), transform var(--t);
 }
-.menu-dia-card:hover { box-shadow: var(--shadow-lg); }
+.menu-dia-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
 
-.menu-dia-header {
+.menu-dia-photo {
+  position: relative; height: 130px; flex-shrink: 0;
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-  padding: 1.1rem 1.25rem; display: flex; align-items: center;
-  justify-content: space-between; position: relative; overflow: hidden;
 }
-.menu-dia-header::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(circle at 100% 0%,
-    rgba(255,255,255,0.18) 0%, transparent 50%);
-  pointer-events: none;
+.menu-dia-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.menu-dia-photo-ph {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center; font-size: 40px;
+}
+.menu-dia-price-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(0,0,0,0.55); color: #fff; backdrop-filter: blur(4px);
+  font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;
+  padding: 4px 11px; border-radius: var(--r-pill);
+}
+.menu-dia-body {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 0.8rem 0.9rem 0.9rem; flex: 1;
 }
 .menu-dia-name {
-  font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
-  color: white; letter-spacing: -0.01em; position: relative;
+  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+  color: var(--text); letter-spacing: -0.01em; line-height: 1.2;
 }
 .menu-dia-price {
-  font-family: var(--font-display); font-size: 1.2rem; font-weight: 700;
-  color: white; position: relative;
+  font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
+  color: var(--accent);
 }
 .menu-tipo {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: rgba(255,255,255,0.85); margin-top: 3px;
-  position: relative;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent);
+}
+.menu-dia-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.menu-dia-pill {
+  font-size: 10px; font-weight: 600; padding: 3px 8px;
+  border-radius: var(--r-pill); white-space: nowrap;
+  background: var(--accent-light); color: var(--accent);
 }
 
 .menu-secciones { padding: 1.1rem 1.25rem; }
@@ -320,21 +350,15 @@ body {
   border: 1px solid var(--border);
 }
 .plato-thumb:active { transform: scale(0.95); }
-.plato-carta-img {
-  width: 72px; height: 72px; border-radius: var(--r);
-  object-fit: cover; flex-shrink: 0; cursor: pointer;
-  transition: transform var(--t-fast);
-  border: 1px solid var(--border);
-}
-.plato-carta-img:active { transform: scale(0.95); }
+.plato-carta-photo:active img { transform: scale(0.95); }
 
 .btn-add-menu {
-  width: 100%; margin-top: 1rem;
+  width: 100%; margin-top: auto;
   background: var(--accent); color: white;
-  border: none; border-radius: var(--r-sm); padding: 14px;
+  border: none; border-radius: var(--r-sm); padding: 12px;
   font-family: var(--font); font-size: 14px; font-weight: 700;
-  cursor: pointer; transition: all var(--t-fast); min-height: 48px;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer; transition: all var(--t-fast); min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
   box-shadow: 0 4px 12px var(--accent-glow);
 }
 .btn-add-menu:hover { background: var(--accent-dark); box-shadow: 0 6px 18px var(--accent-glow); }
@@ -345,24 +369,41 @@ body {
    CARTA CARDS premium
    ────────────────────────────────────────────────────────────── */
 .plato-carta-card {
+  flex: 0 0 200px; scroll-snap-align: start;
+  display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 1rem 1.1rem; margin-bottom: 0.85rem;
-  box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 1rem;
+  border-radius: var(--r); overflow: hidden;
+  box-shadow: var(--shadow-sm);
   transition: box-shadow var(--t), transform var(--t), border-color var(--t);
 }
 .plato-carta-card:hover {
-  box-shadow: var(--shadow); transform: translateY(-1px);
+  box-shadow: var(--shadow); transform: translateY(-2px);
   border-color: var(--border-2);
 }
-.plato-carta-info { flex: 1; min-width: 0; }
-.plato-carta-name { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.005em; }
-.plato-carta-desc { font-size: 12.5px; color: var(--text-2); margin-top: 3px; line-height: 1.45; }
+.plato-carta-photo {
+  position: relative; height: 130px; flex-shrink: 0;
+  background: var(--bg-2); cursor: pointer;
+}
+.plato-carta-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.plato-carta-photo-ph {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center; font-size: 40px;
+}
+.plato-carta-body {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 0.8rem 0.9rem 0.9rem; flex: 1;
+}
+.plato-carta-name { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.005em; line-height: 1.25; }
+.plato-carta-desc {
+  font-size: 12.5px; color: var(--text-2); line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .plato-carta-price {
   font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
-  color: var(--accent); white-space: nowrap; margin-top: 8px;
+  color: var(--accent); white-space: nowrap; margin-top: 2px;
 }
 
-.qty-control { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.qty-control { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-top: auto; padding-top: 8px; justify-content: center; }
 .qty-btn {
   width: 32px; height: 32px; border-radius: 50%;
   border: 1.5px solid var(--border); background: var(--bg-2);

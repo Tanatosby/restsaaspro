@@ -456,14 +456,16 @@
     let html = '';
     if (hasMenus) {
       html += `<div class="section-block" id="sec-menu-dia"><div class="section-title">Menú del día</div>`;
+      html += `<div class="card-carousel">`;
       menusDia.forEach(m => { html += renderMenuDiaCard(m, 'pedir'); });
-      html += `</div>`;
+      html += `</div></div>`;
     }
     cartaCats.forEach(cat => {
       if (!cat.platos?.length) return;
       html += `<div class="section-block" id="sec-cat-${cat.id}"><div class="section-title">${esc(cat.nombre)}</div>`;
+      html += `<div class="card-carousel">`;
       cat.platos.forEach(p => { html += renderPlatoCarta(p, 'pedir'); });
-      html += `</div>`;
+      html += `</div></div>`;
     });
     content.innerHTML = html;
     cartaCats.forEach(cat => cat.platos?.forEach(p => updateQtyDisplay(p.id, 'pedir')));
@@ -507,16 +509,18 @@ async function renderReservarContent() {
   let html = '';
   if (hasMenus) {
     html += `<div class="section-block"><div class="section-title">Menú del día</div>`;
+    html += `<div class="card-carousel">`;
     resMenusDia.forEach(m => { html += renderMenuDiaCard(m, 'reservar'); });
-    html += `</div>`;
+    html += `</div></div>`;
   }
 
   // La carta siempre se muestra — no depende del día
   cartaCats.forEach(cat => {
     if (!cat.platos?.length) return;
     html += `<div class="section-block"><div class="section-title">${esc(cat.nombre)}</div>`;
+    html += `<div class="card-carousel">`;
     cat.platos.forEach(p => { html += renderPlatoCarta(p, 'reservar'); });
-    html += `</div>`;
+    html += `</div></div>`;
   });
 
   el.innerHTML = html;
@@ -525,30 +529,31 @@ async function renderReservarContent() {
 
 
   // ── Shared renderers ─────────────────────────────
+  // Cards en formato retrato (alto > ancho) — se disponen dentro de un
+  // contenedor .card-carousel con scroll horizontal (ver renderPedirContent).
   function renderMenuDiaCard(m, mode) {
     // Primera foto disponible entre todos los platos del menú
     const primeraFoto = m.secciones.flatMap(s => s.platos).find(p => p.url_foto)?.url_foto;
 
     // Pills de secciones como preview
     const secPills = m.secciones.map(s =>
-      `<span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,0.18);color:#fff;white-space:nowrap">${esc(s.nombre_seccion)}</span>`
+      `<span class="menu-dia-pill">${esc(s.nombre_seccion)}</span>`
     ).join('');
 
-    return `<div class="menu-dia-card" style="cursor:pointer" onclick="abrirMenuModal(${m.id},'${mode}')">
-      <div class="menu-dia-header" style="align-items:flex-start;gap:0.75rem">
-        ${primeraFoto
-          ? `<img src="${primeraFoto}" alt="${esc(m.nombre)}" style="width:72px;height:72px;object-fit:cover;border-radius:10px;flex-shrink:0;border:2px solid rgba(255,255,255,0.3)">`
-          : `<div style="width:72px;height:72px;border-radius:10px;flex-shrink:0;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:28px">🍽️</div>`
-        }
-        <div style="flex:1;min-width:0">
-          <div class="menu-dia-name">${esc(m.nombre)}</div>
-          <div class="menu-tipo" style="margin-bottom:6px">${m.elegible ? 'Elige tus platos' : 'Menú fijo'}</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px">${secPills}</div>
-        </div>
-        <div class="menu-dia-price" style="flex-shrink:0">S/ ${Number(m.precio).toFixed(2)}</div>
+    const foto = primeraFoto
+      ? `<img src="${primeraFoto}" alt="${esc(m.nombre)}">`
+      : `<div class="menu-dia-photo-ph">🍽️</div>`;
+
+    return `<div class="menu-dia-card" onclick="abrirMenuModal(${m.id},'${mode}')">
+      <div class="menu-dia-photo">
+        ${foto}
+        <span class="menu-dia-price-badge">S/ ${Number(m.precio).toFixed(2)}</span>
       </div>
-      <div style="padding:0.6rem 1.25rem 0.9rem;display:flex;justify-content:flex-end">
-        <button class="btn-add-menu" style="width:auto;padding:0 1.25rem" onclick="event.stopPropagation();abrirMenuModal(${m.id},'${mode}')">
+      <div class="menu-dia-body">
+        <div class="menu-dia-name">${esc(m.nombre)}</div>
+        <div class="menu-tipo">${m.elegible ? 'Elige tus platos' : 'Menú fijo'}</div>
+        <div class="menu-dia-pills">${secPills}</div>
+        <button class="btn-add-menu" onclick="event.stopPropagation();abrirMenuModal(${m.id},'${mode}')">
           Ver opciones →
         </button>
       </div>
@@ -557,17 +562,23 @@ async function renderReservarContent() {
 
   function renderPlatoCarta(p, mode) {
     const fn = `changeQty('${mode}',${p.id},${p.precio},'${esc(p.nombre)}',`;
+    const foto = p.url_foto
+      ? `<img src="${p.url_foto}" alt="${esc(p.nombre)}">`
+      : `<div class="plato-carta-photo-ph">🍽️</div>`;
+    const onclickFoto = p.url_foto
+      ? ` onclick="openPhotoModal('${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')"`
+      : '';
     return `<div class="plato-carta-card">
-      ${p.url_foto ? `<img src="${p.url_foto}" class="plato-carta-img" alt="${esc(p.nombre)}" onclick="openPhotoModal('${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">` : ''}
-      <div class="plato-carta-info">
+      <div class="plato-carta-photo"${onclickFoto}>${foto}</div>
+      <div class="plato-carta-body">
         <div class="plato-carta-name">${esc(p.nombre)}</div>
         ${p.descripcion ? `<div class="plato-carta-desc">${esc(p.descripcion)}</div>` : ''}
         <div class="plato-carta-price">S/ ${Number(p.precio).toFixed(2)}</div>
-      </div>
-      <div class="qty-control">
-        <button class="qty-btn" onclick="${fn}-1)">−</button>
-        <span class="qty-num" id="qty-${mode}-${p.id}">0</span>
-        <button class="qty-btn add" onclick="${fn}1)">+</button>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="${fn}-1)">−</button>
+          <span class="qty-num" id="qty-${mode}-${p.id}">0</span>
+          <button class="qty-btn add" onclick="${fn}1)">+</button>
+        </div>
       </div>
     </div>`;
   }

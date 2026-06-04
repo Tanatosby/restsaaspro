@@ -4,6 +4,12 @@
 
 ## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-03
 
+**Cards retrato + carrusel horizontal en `menu.html` (2026-06-03):** los cards de menú del día y de carta pasaron de apaisados/apilados a **formato retrato (alto > ancho)** dentro de **carruseles horizontales** (scroll a la derecha), uno por "Menú del día" y uno por categoría de carta. Aplica a modo *pedir* y *reservar* (renderers compartidos `renderMenuDiaCard` / `renderPlatoCarta`).
+- CSS (`menu.css`): nueva clase `.card-carousel` (flex + `overflow-x:auto` + `scroll-snap-type:x` + scrollbar oculta + bleed `margin:0 -1.25rem`). `.menu-dia-card` y `.plato-carta-card` reescritos a columna `flex:0 0 200px` con foto full-width arriba (130px), badge de precio en el menú, pills sobre fondo claro (`.menu-dia-pill`), acción al pie (`btn-add-menu` con `margin-top:auto` / `.qty-control` centrado).
+- HTML/JS (`menu.html`): `renderMenuDiaCard` y `renderPlatoCarta` reestructurados (foto arriba + cuerpo apilado), grupos envueltos en `.card-carousel` en `renderPedirContent` y `renderReservarContent`.
+- Verificado con Playwright a 360px: menú 200×295, carta 200×249 (alto > ancho), `scrollWidth == clientWidth` (sin overflow de página), 0 errores de consola, modal/carrito intactos. Documentado en `features.md`.
+- Prompt del usuario: "que los cards sean rectangulares donde su alto sea mayor que su base… redondeado sí, pero con scroll a la derecha, en el caso de los menús y en reservas igual".
+
 **Feature B completada (2026-06-03):** `renderMenuCard` → card compacta con pills de secciones + toggles inline + botón "⚙ Configurar". Modal `#menu-config-overlay` (bottom-sheet): secciones con platos, PlatoPicker, toggle agotado/disponible, agregar/eliminar sección. "✏ Editar" usa FormModal → `PATCH /api/menu/menus-dia/:id` (nuevo endpoint). Acciones del modal actualizan solo el modal sin re-renderizar la lista.
 
 **Barra sticky reservas completada (2026-06-03):** `#res-bar` sticky en `menu.html` (verde, análoga al `#cart-bar`): conteo + total + "Confirmar reserva →". Visible solo en modo reservar con ítems en el carrito. `.res-bar` / `.res-bar-btn` agregados a `menu.css`.
