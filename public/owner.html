@@ -23,6 +23,7 @@
   <script src="/js/widgets/form-modal.js"></script>
   <script src="/js/widgets/plato-picker.js"></script>
   <script src="/js/widgets/pwa-install.js"></script>
+  <script src="/js/widgets/menu-wizard.js"></script>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c8692a">
 
@@ -197,6 +198,12 @@
 
         <!-- Sub-panel: Menús del día -->
         <div id="subpanel-md-menus" class="hidden">
+          <!-- Asistente carrusel (widget MenuWizard) — flujo de 4 pasos -->
+          <div id="menu-wizard-mount"></div>
+
+          <!-- LEGACY: form clásico oculto. No se elimina para poder revertir fácil
+               (basta con quitar el wizard y borrar este display:none). -->
+          <div id="md-legacy" style="display:none">
           <div class="card">
             <div class="card-header"><span class="card-title">Crear menú del día</span></div>
             <div class="card-body">
@@ -228,6 +235,7 @@
             </div>
             <div id="list-menus-dia"><div class="loading-text">Cargando…</div></div>
           </div>
+          </div><!-- /#md-legacy -->
         </div>
       </div>
 
@@ -1130,6 +1138,8 @@ let configMenuId   = null; // ID del menú abierto en el modal de config
 let configMenuData = null; // objeto menú actual en el modal
 
 async function loadMenusDia() {
+  // El widget MenuWizard reemplaza el listado clásico: delegamos el refresco.
+  if (window.MenuWizard && MenuWizard.isMounted()) { MenuWizard.reload(); return; }
   const el = document.getElementById('list-menus-dia');
   el.innerHTML = '<div class="loading-text">Cargando…</div>';
   const fecha = document.getElementById('filter-md-fecha').value;
@@ -1719,6 +1729,12 @@ const hoy = new Intl.DateTimeFormat("en-CA", {
           timeZone: "America/Lima"
       }).format(new Date());
 document.getElementById('md-fecha').value = hoy;
+// Monta el asistente carrusel de menús del día (widget MenuWizard)
+if (window.MenuWizard) {
+  MenuWizard.mount(document.getElementById('menu-wizard-mount'), {
+    onConfigure: (menuId) => abrirConfigMenu(menuId),
+  });
+}
 updateSoundButton();
 loadEstatusOrden(); loadEstatusReserva();
 if (activePanel === 'menu-dia')        { loadSecciones(); loadPlatosMenu(); loadMenusDia(); }

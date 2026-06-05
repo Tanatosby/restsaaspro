@@ -2,6 +2,16 @@
 
 ---
 
+## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-04
+
+**Asistente carrusel de menús del día (owner) — widget `MenuWizard` (2026-06-04):** el form de "Crear menú del día" de `owner.html` se reemplazó por un **asistente tipo carrusel de 4 pasos** (cards del mismo tamaño, deslizamiento horizontal, sin scroll de página): `1) Elige la fecha · 2) Nombre + precio · 3) ¿Fijo o el cliente elige? (pregunta única) · 4) Menús de esa fecha` (carrusel horizontal 1-por-vista con peek, ⚙ Configurar destacado que abre el modal existente, "Cambiar fecha / Crear otro").
+- Nuevo **widget inline** `public/js/widgets/menu-wizard.js` (4º del proyecto; primero que se monta inline en vez de overlay). Hereda tokens de tema, mobile-first (touch ≥44px, inputs 16px, sin overflow a 360px).
+- **Sin backend** — reutiliza `POST/GET/PATCH/DELETE /api/menu/menus-dia` y el modal de config `#menu-config-overlay`. `loadMenusDia()` delega en `MenuWizard.reload()` → todos los refrescos existentes (toggles, eliminar, cierre de config) actualizan el carrusel sin tocar su código.
+- **Reversible por decisión del usuario:** el form clásico no se borró, quedó envuelto en `#md-legacy` (`display:none`).
+- Verificado: `scripts/test-menu-wizard.js` (Playwright 360px, **15/15**), **207/207 jest verde**, 0 errores de consola. Screenshots en `issues/screenshots/wizard-paso{1..4}.png`. Documentado en `widgets.md` y `features.md`.
+
+---
+
 ## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-03
 
 **Cards retrato + carrusel horizontal en `menu.html` (2026-06-03):** los cards de menú del día y de carta pasaron de apaisados/apilados a **formato retrato (alto > ancho)** dentro de **carruseles horizontales** (scroll a la derecha), uno por "Menú del día" y uno por categoría de carta. Aplica a modo *pedir* y *reservar* (renderers compartidos `renderMenuDiaCard` / `renderPlatoCarta`).

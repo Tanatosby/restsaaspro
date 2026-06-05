@@ -61,6 +61,7 @@ Los widgets eliminan el portado: se escribe una vez, se usa en todas partes.
 | **PhotoEditor** | `public/js/widgets/photo-editor.js` | ✅ Activo (2026-05-30) | `owner.html` | Ver imagen en grande + **Recortar (1:1)** + **Cambiar** + **Eliminar**. Para quien tiene permiso de edición. |
 | **FormModal** | `public/js/widgets/form-modal.js` | ✅ Activo (2026-05-30) | `owner.html` (editar platos) | Modal de **formulario genérico** por esquema de campos (text/number/textarea/select) con submit async. |
 | **PwaInstall** | `public/js/widgets/pwa-install.js` | ✅ Activo (2026-05-30) | `owner.html`, `login.html` | Botón **"Instalar app"** (captura `beforeinstallprompt`) + instructivo para iOS. Se oculta si ya está instalada. |
+| **MenuWizard** | `public/js/widgets/menu-wizard.js` | ✅ Activo (2026-06-04) | `owner.html` (Menús del día) | Asistente **carrusel inline** (4 pasos) para crear menús del día: fecha → nombre+precio → ¿fijo o cliente elige? → menús de esa fecha. |
 | **PhotoViewer** | `public/js/widgets/photo-viewer.js` | 🔜 Planeado | `menu.html` (migración) | Ver imagen en grande, **solo lectura**. Para el comensal. |
 
 ---
@@ -168,6 +169,48 @@ PwaInstall.installable();     // boolean
 > **Pendiente futura**: instalar el **menú del comensal** como PWA requiere un **manifest dinámico por
 > restaurante** (`start_url` al menú del local, nombre del restaurante). Es una feature aparte — ver
 > `features.md`. Idealmente combinada con las **URLs por slug** (`menupro.tech/karinamenu`).
+
+---
+
+### MenuWizard ✅
+
+Asistente tipo **carrusel** para crear menús del día en `owner.html`. Cuarto widget.
+A diferencia de los anteriores (modales/overlays), **se monta inline** dentro de un contenedor
+de la página y desliza horizontalmente entre pasos (no hay scroll vertical de página).
+
+**API**
+
+```js
+MenuWizard.mount(document.getElementById('menu-wizard-mount'), {
+  onConfigure: (menuId) => abrirConfigMenu(menuId), // qué hacer al tocar "⚙ Configurar"
+});
+MenuWizard.reload();      // re-fetch + re-render del paso 4 para la fecha actual
+MenuWizard.isMounted();   // boolean
+```
+
+**Flujo (4 pasos, cards del mismo tamaño):**
+1. **Fecha** — selector de fecha (precargado a hoy, zona Lima) + "Siguiente →".
+2. **Nombre + precio** — valida precio > 0; "← Atrás" / "Siguiente →".
+3. **¿Fijo o cliente elige?** — una sola pregunta con dos cards grandes (`elegible` 0/1); el botón
+   "Crear menú ✓" se habilita al elegir. Al crear → `POST /api/menu/menus-dia` y avanza al paso 4.
+4. **Menús de la fecha** — **carrusel horizontal** (1 menú por vista con peek del siguiente,
+   `scroll-snap-type:x`): nombre, precio, pills de secciones, toggles Fijo/Visible, **⚙ Configurar**
+   (destacado) y Eliminar. Footer: "← Cambiar fecha" / "＋ Crear otro" (conserva la fecha).
+
+**Integración con owner.html (clave):** todos los refrescos del listado pasan por la función global
+`loadMenusDia()`, que ahora **delega** en `MenuWizard.reload()` cuando el widget está montado. Así los
+handlers globales existentes (`toggleElegibleMenu`, `toggleActivoMenu`, `eliminarMenuDia`, y el cierre
+del modal de configuración) refrescan el carrusel **sin tocar su código**. El paso 4 reutiliza esos
+handlers y el modal `#menu-config-overlay` (widget no duplica la configuración).
+
+**Reversible:** el form clásico no se borró — quedó envuelto en `#md-legacy` con `display:none`.
+Para revertir basta quitar el `<script>` del widget + el `#menu-wizard-mount`, mostrar `#md-legacy`
+y borrar la línea de delegación en `loadMenusDia()`.
+
+**Nota de la regla 4 (autocontenido):** este widget sí referencia globales de la página (`api`, `toast`,
+`esc`, `fDate` y los handlers de menú). Es aceptable porque su dominio (menús del día) **vive solo en
+`owner.html`**; se construyó como widget —y no inline— para poder probarlo y revertirlo de forma aislada,
+no por reuso multipantalla.
 
 ---
 
