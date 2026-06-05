@@ -2,6 +2,45 @@
 
 ## Pendientes
 
+### Cambios 
+
+
+### Cambio en Flujo total : 
+
+#### Introducción
+
+En ves del menu galleta o hamburguesa vaya una opción de "Home" o casa para permitir el siguiente flujo: 
+
+Pantalla de inicio: Pantalla con 4 cards principales (Medianos de tamaño) la card debería tener un emoji representativo y el nombre y cuando se hace clic en el nombre se ingresa. Estos cards deberían aparecer para hacerles scroll a la derecha. Gestión de menús y platos a la carta| Operaciones diarias| Análisis de datos| Configuración
+
+#### Gestión de menús y platos a la carta
+
+Al entrar deben aparecer 2 Cards similares: Configurar menú del día, Configurar platos a la carta. 
+
+##### Menú del día 
+
+Si hace clic en configurar menú del día 3 cards: mismo estilo carrusel a la derecha, con botones de volver y el botón a home que envía al menú principal.  Los 3 cards deben decir: Crear o administrar secciones, la segunda : Administrar platos de menú, la tercera: Administrar menú del día. 
+
+Secciones se mantiene igual. con botón de volver
+
+###### Platos de menú
+
+Debe abrirse cards del estilo de Menú del día, grande 400px creo que era, estilo galería carrusl, con foto dentro del card (mismo estilo que si se hace clic en la foto te aparezca para elegir la foto) el nombre y la descripción. Con el botón de agregar plato arriba que envíe a dos pasos con cards del mismo tamaño que los pasos: Nombre y la segunda card Descripción para crear. Y con botones para editar el nombre y la descripción. Con botón de volver. 
+
+###### Menú del día
+
+Se mantiene igual, solo falta terminar la parte de configurar con los cards. 
+
+##### Carta
+
+Para carta mismo estilo que menú del día. Dos cards, configurar categorías | Administrar platos a la carta. Al entrar a categorías, deberían aparecer cards con nombre y botón de crear con un único caso de elegir nombre
+
+###### Platos a la carta
+
+Similar situación que platos de menú. Una galería bonita con imagen para elegir y con herramienta recorte. Con botón para agregar plato.  
+
+
+
 #### ~~Menú del día del lado de owner: asistente carrusel~~ ✅ Completado 2026-06-04 · sin backend · widget `MenuWizard`
 
 ~~Me gusta la forma del primer form: Nombre + Precio + Fecha, pero quisiera mejorarlo: cards del mismo tamaño en modo carrusel (no scroll vertical), un paso por card; tras crear, una card que muestre los menús de la fecha elegida, 1 por vista con scroll a la derecha y botón de configurar más visible.~~

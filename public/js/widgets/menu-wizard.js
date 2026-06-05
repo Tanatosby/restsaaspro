@@ -408,7 +408,7 @@
       if (act === 'to-pregunta')     return stepPrecioNext();
       if (act === 'to-precio-back')  return goto(1);
       if (act === 'crear')           return crear();
-      if (act === 'cfg-back')        return window.cerrarConfigMenu?.();
+      if (act === 'cfg-back')        return (window.configBack || window.cerrarConfigMenu)?.();
       if (act === 'cfg-edit')        return window.editarNombreMenu?.();
     });
   }
@@ -471,8 +471,7 @@
     const secs = (m.secciones && m.secciones.length)
       ? m.secciones.map(s => `<span class="mw-pill">${esc(s.nombre_seccion)}</span>`).join('')
       : `<span class="mw-pill muted">Sin secciones</span>`;
-    const hintElegible = m.elegible ? 'Arma su plato eligiendo en cada sección' : 'Todos reciben los mismos platos';
-    const hintActivo   = activo ? 'Aparece en el menú QR del cliente' : 'No se muestra al cliente';
+    // Los toggles "Cliente elige"/"Visible" se movieron a Configurar → "Configuración para el cliente".
     return `
     <div class="mw-menu-card ${activo ? '' : 'oculto'} ${foto ? 'has-photo' : ''}"${foto ? ` style="--mw-bg:url('${foto}')"` : ''}>
       ${foto ? '' : '<div class="mw-menu-watermark">🍽️</div>'}
@@ -481,20 +480,6 @@
         <span class="mw-menu-meta">S/ ${Number(m.precio).toFixed(2)}</span>
       </div>
       <div class="mw-pills">${secs}</div>
-      <div class="mw-toggles">
-        <div class="mw-toggle-group">
-          <button class="mw-toggle" data-toggle="elegible" data-id="${m.id}" data-cur="${m.elegible ? 1 : 0}"
-            style="${m.elegible ? 'color:var(--primary,#c8692a);border-color:var(--primary,#c8692a)' : 'color:var(--muted,#888);border-color:var(--border,#ccc)'}"
-          >${m.elegible ? 'Cliente elige' : 'Fijo'}</button>
-          <span class="mw-toggle-hint">${hintElegible}</span>
-        </div>
-        <div class="mw-toggle-group">
-          <button class="mw-toggle" data-toggle="activo" data-id="${m.id}" data-cur="${activo ? 1 : 0}"
-            style="${activo ? 'color:var(--success,#1e8e3e);border-color:var(--success,#1e8e3e)' : 'color:var(--danger,#c0392b);border-color:var(--danger,#c0392b)'}"
-          >${activo ? '● Visible' : '○ Oculto'}</button>
-          <span class="mw-toggle-hint">${hintActivo}</span>
-        </div>
-      </div>
       <div class="mw-menu-actions">
         <button class="mw-btn mw-btn-primary" data-cfg="${m.id}">⚙ Configurar</button>
         <button class="mw-btn" data-del="${m.id}" style="color:var(--danger,#c0392b)">Eliminar</button>

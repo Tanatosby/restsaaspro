@@ -1134,8 +1134,9 @@ async function eliminarFotoPlatoMenu(id) {
 }
 
 // ── Menús del día ─────────────────────────────────────────
-let configMenuId   = null; // ID del menú abierto en el modal de config
-let configMenuData = null; // objeto menú actual en el modal
+let configMenuId   = null; // ID del menú abierto en la vista de config
+let configMenuData = null; // objeto menú actual en la vista de config
+let configSubview  = 'hub'; // sub-vista de config: 'hub' | 'cliente' | 'secciones'
 
 async function loadMenusDia() {
   // El widget MenuWizard reemplaza el listado clásico: delegamos el refresco.
@@ -1152,6 +1153,7 @@ async function loadMenusDia() {
 
 function abrirConfigMenu(menuId) {
   configMenuId = menuId;
+  configSubview = 'hub';   // siempre se entra por el hub de 2 opciones
   // La configuración ya no es un modal: es una vista inline del widget MenuWizard.
   if (window.MenuWizard && MenuWizard.isMounted()) MenuWizard.showConfig();
   document.addEventListener('keydown', _mcEsc);
@@ -1160,12 +1162,19 @@ function abrirConfigMenu(menuId) {
 
 function cerrarConfigMenu() {
   document.removeEventListener('keydown', _mcEsc);
-  configMenuId = null; configMenuData = null;
+  configMenuId = null; configMenuData = null; configSubview = 'hub';
   if (window.MenuWizard && MenuWizard.isMounted()) MenuWizard.showGallery();
   loadMenusDia();
 }
 
-function _mcEsc(e) { if (e.key === 'Escape') cerrarConfigMenu(); }
+// "← Volver" contextual: baja un nivel (sub-vista → hub → galería de menús).
+function configBack() {
+  if (configSubview && configSubview !== 'hub') { configSubview = 'hub'; renderConfigSubview(); }
+  else cerrarConfigMenu();
+}
+
+// Esc: si estás en una sub-vista vuelve al hub; en el hub cierra la config.
+function _mcEsc(e) { if (e.key === 'Escape') configBack(); }
 
 async function recargarModalConfig() {
   if (!configMenuId) return;
@@ -1178,11 +1187,68 @@ async function recargarModalConfig() {
     document.getElementById('mc-title').textContent = m.nombre;
     document.getElementById('mc-meta').textContent  =
       `${fDate(m.dia)} · S/ ${Number(m.precio).toFixed(2)} · ${m.elegible ? 'Cliente elige' : 'Fijo'} · ${m.activo !== 0 ? 'Visible' : 'Oculto'}`;
-    renderConfigBody(m);
+    renderConfigSubview();
   } catch(e) { toast('Error al cargar el menú', 'err'); }
 }
 
-function renderConfigBody(m) {
+// Dispatcher de la vista de config según la sub-vista activa.
+function renderConfigSubview() {
+  const m = configMenuData;
+  if (!m) return;
+  if (configSubview === 'cliente')   return renderConfigCliente(m);
+  if (configSubview === 'secciones') return renderConfigSecciones(m);
+  return renderConfigHub(m);
+}
+
+function irConfigCliente()   { configSubview = 'cliente';   renderConfigSubview(); }
+function irConfigSecciones() { configSubview = 'secciones'; renderConfigSubview(); }
+
+// Hub: 2 cards medianas con emoji + botón grande.
+function renderConfigHub(m) {
+  const body = document.getElementById('mc-body');
+  if (!body) return;
+  body.innerHTML = `
+    <div class="mc-hub">
+      <button class="mc-hub-card" onclick="irConfigCliente()">
+        <span class="mc-hub-emoji">🧑‍🍳</span>
+        <span class="mc-hub-title">Configuración para el cliente</span>
+        <span class="mc-hub-desc">Cómo recibe su plato (fijo o a elección) y si el menú se muestra en el QR.</span>
+        <span class="mc-hub-cta">Abrir →</span>
+      </button>
+      <button class="mc-hub-card" onclick="irConfigSecciones()">
+        <span class="mc-hub-emoji">🍽️</span>
+        <span class="mc-hub-title">Secciones del menú</span>
+        <span class="mc-hub-desc">Entradas, fondos, postres… y los platos de cada sección.</span>
+        <span class="mc-hub-cta">Ir a secciones →</span>
+      </button>
+    </div>`;
+}
+
+// Configuración para el cliente: los toggles que antes estaban en la card del menú.
+function renderConfigCliente(m) {
+  const body = document.getElementById('mc-body');
+  if (!body) return;
+  const activo = m.activo !== 0;
+  body.innerHTML = `
+    <div class="mc-cli">
+      <div class="mc-cli-row">
+        <div class="mc-cli-q">¿Cómo recibe su plato el cliente?</div>
+        <button class="mc-cli-toggle" onclick="toggleElegibleMenu(${m.id},${m.elegible?1:0})"
+          style="${m.elegible?'color:var(--primary);border-color:var(--primary)':'color:var(--muted);border-color:var(--border)'}"
+        >${m.elegible ? 'Cliente elige' : 'Fijo'}</button>
+        <div class="mc-cli-hint">${m.elegible ? 'Arma su plato eligiendo en cada sección (entrada, fondo…).' : 'Todos reciben los mismos platos.'}</div>
+      </div>
+      <div class="mc-cli-row">
+        <div class="mc-cli-q">¿Se muestra en el menú del cliente (QR)?</div>
+        <button class="mc-cli-toggle" onclick="toggleActivoMenu(${m.id},${activo?1:0})"
+          style="${activo?'color:var(--success);border-color:var(--success)':'color:var(--danger);border-color:var(--danger)'}"
+        >${activo ? '● Visible' : '○ Oculto'}</button>
+        <div class="mc-cli-hint">${activo ? 'Aparece en el menú QR del cliente.' : 'No se muestra al cliente.'}</div>
+      </div>
+    </div>`;
+}
+
+function renderConfigSecciones(m) {
   const body = document.getElementById('mc-body');
 
   // Cada sección es una card retrato (mismo tamaño que las cards de menús),
