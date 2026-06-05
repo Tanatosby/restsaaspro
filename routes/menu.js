@@ -136,13 +136,13 @@ router.get('/menus-dia', (req, res) => {
 
   const menus = dia
     ? db.prepare(`
-        SELECT id, nombre, elegible, dia, precio, activo
+        SELECT id, nombre, elegible, dia, precio, activo, id_plato_portada
         FROM menus_dia
         WHERE id_restaurante = ? AND dia = ?
         ORDER BY created_at DESC
       `).all(req.user.restaurant_id, dia)
     : db.prepare(`
-        SELECT id, nombre, elegible, dia, precio, activo
+        SELECT id, nombre, elegible, dia, precio, activo, id_plato_portada
         FROM menus_dia
         WHERE id_restaurante = ?
         ORDER BY dia DESC, created_at DESC
@@ -230,6 +230,29 @@ router.patch('/menus-dia/:id', authorizePermiso(), (req, res) => {
   params.push(req.params.id);
   db.prepare(`UPDATE menus_dia SET ${sets.join(', ')} WHERE id = ?`).run(...params);
   res.json({ message: 'Menú actualizado' });
+});
+
+// PATCH /api/menu/menus-dia/:id/portada — define el plato cuya foto es la portada del menú
+// Body: { id_plato_portada: <id|null> }. null/'' limpia la portada (vuelve a la automática).
+router.patch('/menus-dia/:id/portada', authorizePermiso(), (req, res) => {
+  const { id_plato_portada } = req.body;
+
+  const menu = db.prepare(`
+    SELECT id FROM menus_dia WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, req.user.restaurant_id);
+  if (!menu) return res.status(404).json({ error: 'Menú no encontrado' });
+
+  let valor = null;
+  if (id_plato_portada !== null && id_plato_portada !== undefined && id_plato_portada !== '') {
+    const plato = db.prepare(`
+      SELECT id FROM platos_menu WHERE id = ? AND id_restaurante = ?
+    `).get(id_plato_portada, req.user.restaurant_id);
+    if (!plato) return res.status(400).json({ error: 'Plato no válido' });
+    valor = plato.id;
+  }
+
+  db.prepare(`UPDATE menus_dia SET id_plato_portada = ? WHERE id = ?`).run(valor, req.params.id);
+  res.json({ message: 'Portada actualizada', id_plato_portada: valor });
 });
 
 // PATCH /api/menu/menus-dia/:id/activo

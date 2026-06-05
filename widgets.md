@@ -61,7 +61,7 @@ Los widgets eliminan el portado: se escribe una vez, se usa en todas partes.
 | **PhotoEditor** | `public/js/widgets/photo-editor.js` | ✅ Activo (2026-05-30) | `owner.html` | Ver imagen en grande + **Recortar (1:1)** + **Cambiar** + **Eliminar**. Para quien tiene permiso de edición. |
 | **FormModal** | `public/js/widgets/form-modal.js` | ✅ Activo (2026-05-30) | `owner.html` (editar platos) | Modal de **formulario genérico** por esquema de campos (text/number/textarea/select) con submit async. |
 | **PwaInstall** | `public/js/widgets/pwa-install.js` | ✅ Activo (2026-05-30) | `owner.html`, `login.html` | Botón **"Instalar app"** (captura `beforeinstallprompt`) + instructivo para iOS. Se oculta si ya está instalada. |
-| **MenuWizard** | `public/js/widgets/menu-wizard.js` | ✅ Activo (2026-06-04) | `owner.html` (Menús del día) | Asistente **carrusel inline** (4 pasos) para crear menús del día: fecha → nombre+precio → ¿fijo o cliente elige? → menús de esa fecha. |
+| **MenuWizard** | `public/js/widgets/menu-wizard.js` | ✅ Activo (2026-06-04) | `owner.html` (Menús del día) | 3 vistas inline: **galería** (cards retrato + fecha ◀▶), **wizard de 3 pasos** (título → precio → ¿fijo o cliente elige?) y **configuración** (secciones/platos, reemplaza al modal). |
 | **PhotoViewer** | `public/js/widgets/photo-viewer.js` | 🔜 Planeado | `menu.html` (migración) | Ver imagen en grande, **solo lectura**. Para el comensal. |
 
 ---
@@ -174,9 +174,9 @@ PwaInstall.installable();     // boolean
 
 ### MenuWizard ✅
 
-Asistente tipo **carrusel** para crear menús del día en `owner.html`. Cuarto widget.
+**Galería** de menús del día + **wizard de creación** + **configuración** para `owner.html`. Cuarto widget.
 A diferencia de los anteriores (modales/overlays), **se monta inline** dentro de un contenedor
-de la página y desliza horizontalmente entre pasos (no hay scroll vertical de página).
+de la página. Tiene **tres vistas** que se alternan con `hidden` (galería ⇄ wizard ⇄ config).
 
 **API**
 
@@ -184,24 +184,62 @@ de la página y desliza horizontalmente entre pasos (no hay scroll vertical de p
 MenuWizard.mount(document.getElementById('menu-wizard-mount'), {
   onConfigure: (menuId) => abrirConfigMenu(menuId), // qué hacer al tocar "⚙ Configurar"
 });
-MenuWizard.reload();      // re-fetch + re-render del paso 4 para la fecha actual
+MenuWizard.reload();      // re-fetch + re-render de la galería para la fecha actual
+MenuWizard.showConfig();  // muestra la vista de configuración (la llama owner.abrirConfigMenu)
+MenuWizard.showGallery(); // vuelve a la galería (la llama owner.cerrarConfigMenu)
 MenuWizard.isMounted();   // boolean
 ```
 
-**Flujo (4 pasos, cards del mismo tamaño):**
-1. **Fecha** — selector de fecha (precargado a hoy, zona Lima) + "Siguiente →".
-2. **Nombre + precio** — valida precio > 0; "← Atrás" / "Siguiente →".
-3. **¿Fijo o cliente elige?** — una sola pregunta con dos cards grandes (`elegible` 0/1); el botón
-   "Crear menú ✓" se habilita al elegir. Al crear → `POST /api/menu/menus-dia` y avanza al paso 4.
-4. **Menús de la fecha** — **carrusel horizontal** (1 menú por vista con peek del siguiente,
-   `scroll-snap-type:x`): nombre, precio, pills de secciones, toggles Fijo/Visible, **⚙ Configurar**
-   (destacado) y Eliminar. Footer: "← Cambiar fecha" / "＋ Crear otro" (conserva la fecha).
+**Vista 1 — Galería (principal):**
+- Cabecera con **selector de fecha** (`◀` / input `date` / `▶`): las flechas mueven el día ±1 sin recargar
+  la página; el input cambia el día directamente. Precargado a hoy (zona Lima).
+- Botón fijo **"＋ Crear menú"** (fuera del scroll) → abre el wizard.
+- **Galería horizontal** de los menús de ESE día como **cards retrato** (`.mw-menu-card`, más altas que
+  anchas, `flex:0 0 82%` con peek + `scroll-snap-x`): nombre, precio, pills de secciones, toggles
+  Fijo/Visible, **⚙ Configurar** (destacado) y Eliminar. No hay "card contenedora" — las cards son los menús.
+- Estado vacío (`.mw-empty-card`) con CTA a crear cuando el día no tiene menús.
+- **Tamaño de card parametrizado** (variables sobre `.mw`, heredadas también por las cards de sección):
+  `--mw-card-w` (ancho/flex-basis), `--mw-card-maxw` (tope) y `--mw-card-h` (alto mínimo). Valor actual
+  **100% / 100% / 480px** → se ve **una sola card** sin peek. Para volver al peek de la siguiente:
+  `82% / 320px / 360px` (documentado en un comentario en el CSS del widget).
+- **Foto de portada + scrim:** la card usa la foto de un plato como fondo (`--mw-bg`, `::before` imagen +
+  `::after` degradado oscuro para legibilidad; texto en blanco). Sin foto → **watermark 🍽️** que llena el aire.
+  La portada la elige el owner (botón **"📷 Portada"** por plato en la vista de config) y se guarda en
+  `menus_dia.id_plato_portada` (backend); si no eligió, `portadaUrl()` usa el primer plato con foto.
+- **Toggles con explicación:** cada toggle (Fijo/Cliente elige, Visible/Oculto) lleva una `.mw-toggle-hint`
+  que describe su efecto y cambia según el estado.
+
+**Vista 2 — Wizard de creación (3 pasos, carrusel `translateX`):** hereda la fecha de la galería
+(cabecera "Nuevo menú · [fecha]").
+1. **Título** — con **figura/emoji** decorativa (`.mw-hero`); título opcional (default "Menú del día").
+   "✕ Cancelar" vuelve a la galería sin crear.
+2. **Precio** — con su propia **figura/emoji**; valida precio > 0.
+3. **¿Fijo o cliente elige?** — una sola pregunta con dos cards grandes (`elegible` 0/1); "Crear menú ✓"
+   se habilita al elegir → `POST /api/menu/menus-dia` y **vuelve a la galería** con el menú nuevo listado.
+
+**Vista 3 — Configuración = galería de secciones (inline, reemplaza al modal):** ⚙ Configurar ya no abre
+`#menu-config-overlay` (eliminado) — muestra esta vista del mismo estilo, con "← Volver" y "✏ Editar".
+El cuerpo es una **galería horizontal de secciones**: cada sección es una **card retrato** (~270×360, igual
+que las cards de menús; clases `.mc-sec-gallery`/`.mc-sec-card` en `owner.css`) con toggle Obligatoria/Opcional,
+sus platos (toggle Agotado/Disponible + ✕), "＋ Agregar plato" y "Quitar sección". Arriba, **solo** el botón
+**"＋ Agregar sección"**.
+
+- **Alta de sección por mini-wizard:** "＋ Agregar sección" abre un **carrusel de 2 pasos** dentro de la misma
+  vista, reutilizando las clases `.mw-*` del widget (track, choices, dots): **Paso 1** elegir sección del catálogo,
+  **Paso 2** ¿obligatoria? con dos cards de emoji (✅ / ⏭️). Lo renderiza/gobierna `owner.html`
+  (`abrirAddSeccion`/`renderAddSeccionWizard`/`confirmarAddSeccion`) dentro de `#mc-body`.
+
+Contiene los IDs `#mc-title` / `#mc-meta` / `#mc-body` que `owner.html` ya usaba en el modal, así que **toda la
+lógica se reutiliza sin cambios** (`renderConfigBody` —ahora emite el markup de galería—, `PlatoPicker`, toggles,
+`recargarModalConfig`). El widget solo aloja el contenedor; los botones de la cabecera delegan en los globales
+`cerrarConfigMenu()` / `editarNombreMenu()`. Motivo (usuario): el modal confundía el flujo, "cada sección debe ser
+una card de igual tamaño que los menús", y "al agregar debería abrirse un wizard de pasos".
 
 **Integración con owner.html (clave):** todos los refrescos del listado pasan por la función global
-`loadMenusDia()`, que ahora **delega** en `MenuWizard.reload()` cuando el widget está montado. Así los
-handlers globales existentes (`toggleElegibleMenu`, `toggleActivoMenu`, `eliminarMenuDia`, y el cierre
-del modal de configuración) refrescan el carrusel **sin tocar su código**. El paso 4 reutiliza esos
-handlers y el modal `#menu-config-overlay` (widget no duplica la configuración).
+`loadMenusDia()`, que **delega** en `MenuWizard.reload()` cuando el widget está montado. Así los
+handlers globales existentes (`toggleElegibleMenu`, `toggleActivoMenu`, `eliminarMenuDia`) refrescan la
+**galería** **sin tocar su código**. `abrirConfigMenu`/`cerrarConfigMenu` alternan a la vista de config
+vía `MenuWizard.showConfig()` / `showGallery()`. El widget no duplica la lógica de configuración.
 
 **Reversible:** el form clásico no se borró — quedó envuelto en `#md-legacy` con `display:none`.
 Para revertir basta quitar el `<script>` del widget + el `#menu-wizard-mount`, mostrar `#md-legacy`

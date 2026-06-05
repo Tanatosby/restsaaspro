@@ -610,57 +610,50 @@ tbody tr:hover { background: var(--surface-2); }
 .foto-cell-empty { background: var(--bg); border: 1px dashed var(--border); font-size: 16px; }
 .foto-cell-empty:hover { border-color: var(--accent-dim); }
 
-/* ── Modal de configuración de menú del día ────────────────── */
-.mc-overlay {
-  display: none; position: fixed; inset: 0; z-index: 1200;
-  background: rgba(0,0,0,0.55);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  align-items: flex-end; justify-content: center;
-}
-.mc-overlay.open { display: flex; }
-@keyframes mc-slide { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* ── Configuración de menú del día — galería de secciones ──────
+   La config ya no es un modal: vive como vista inline del widget
+   MenuWizard (#mw-config). Cada sección es una card retrato del mismo
+   tamaño que las cards de menús, en un carrusel horizontal. ── */
 
-.mc-sheet {
-  background: var(--surface); width: 100%; max-width: 520px;
-  max-height: 88vh; border-radius: 20px 20px 0 0;
-  border: 1px solid var(--border); border-bottom: none;
-  display: flex; flex-direction: column; overflow: hidden;
-  box-shadow: 0 -8px 40px rgba(0,0,0,0.22);
-  animation: mc-slide .28s cubic-bezier(.16,1,.3,1);
+/* Galería horizontal de secciones */
+.mc-sec-gallery {
+  display: flex; gap: 0.85rem; overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  padding: 2px 0 0.6rem; scroll-padding: 0 2px;
+  scrollbar-width: none;
 }
-.mc-handle {
-  width: 40px; height: 4px; border-radius: 2px;
-  background: var(--border); margin: 10px auto 0; flex-shrink: 0;
-}
-.mc-header {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--border); flex-shrink: 0;
-}
-.mc-header-info { flex: 1; min-width: 0; }
-.mc-title { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mc-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.mc-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 1rem 1.25rem 2rem; flex: 1; }
+.mc-sec-gallery::-webkit-scrollbar { display: none; }
 
 .mc-sec-card {
-  background: var(--bg); border-radius: var(--r);
-  border: 1px solid var(--border);
-  padding: 0.75rem 1rem; margin-bottom: 0.75rem;
+  /* Heredan las variables de tamaño de card del widget MenuWizard (.mw). */
+  flex: 0 0 var(--mw-card-w, 100%); max-width: var(--mw-card-maxw, 100%); min-height: var(--mw-card-h, 480px);
+  scroll-snap-align: start; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1.1rem; box-shadow: var(--shadow-sm);
 }
 .mc-sec-header {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 6px; flex-wrap: wrap; margin-bottom: 0.5rem;
+  gap: 6px; flex-wrap: wrap;
 }
-.mc-sec-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.mc-sec-name { font-size: 1.05rem; font-weight: 700; color: var(--text); font-family: var(--font-display); }
+.mc-sec-platos {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column;
+}
 .mc-plato-row {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 6px; padding: 4px 0; font-size: 13px; flex-wrap: wrap;
+  gap: 6px; padding: 6px 0; font-size: 13px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
 }
-.mc-add-sec {
-  background: var(--surface); border: 1.5px dashed var(--border-2);
-  border-radius: var(--r); padding: 0.75rem 1rem; margin-top: 0.5rem;
-}
-.mc-add-sec-title {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.5rem;
+.mc-sec-foot { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
+
+/* Card vacía (sección sin secciones configuradas) */
+.mc-empty-sec {
+  flex: 0 0 var(--mw-card-w, 100%); max-width: var(--mw-card-maxw, 100%); min-height: var(--mw-card-h, 480px);
+  scroll-snap-align: start; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.5rem; text-align: center; color: var(--muted); font-size: 14px;
+  border: 1px dashed var(--border); border-radius: var(--r);
+  padding: 1.1rem; background: var(--bg);
 }

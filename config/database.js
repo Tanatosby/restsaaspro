@@ -350,6 +350,9 @@ try { db.exec(`ALTER TABLE usuarios ADD COLUMN permisos TEXT DEFAULT NULL`); } c
 // Migración idempotente: columna activo en menus_dia
 try { db.exec(`ALTER TABLE menus_dia ADD COLUMN activo INTEGER DEFAULT 1`); } catch (_) {}
 
+// Migración idempotente: plato cuya foto es la portada de la card del menú (galería owner)
+try { db.exec(`ALTER TABLE menus_dia ADD COLUMN id_plato_portada INTEGER DEFAULT NULL`); } catch (_) {}
+
 // Migración idempotente: columna agotado en componentes_menu_dia
 try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN agotado INTEGER DEFAULT 0`); } catch (_) {}
 

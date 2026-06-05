@@ -6,13 +6,26 @@
 
 ~~Me gusta la forma del primer form: Nombre + Precio + Fecha, pero quisiera mejorarlo: cards del mismo tamaño en modo carrusel (no scroll vertical), un paso por card; tras crear, una card que muestre los menús de la fecha elegida, 1 por vista con scroll a la derecha y botón de configurar más visible.~~
 
-Implementado como **widget inline `MenuWizard`** (`public/js/widgets/menu-wizard.js`) montado en el sub-panel "Menús del día" de `owner.html`. Carrusel de **4 pasos** (cards del mismo tamaño, deslizamiento horizontal con `translateX`, no scroll de página):
-1. **Elige la fecha** (precargada a hoy, zona Lima) → Siguiente.
-2. **Nombre + precio** (valida precio > 0) → Atrás / Siguiente.
-3. **¿Este menú es fijo o el cliente elige sus platos?** — una sola pregunta con dos cards grandes (decisión del usuario); habilita "Crear menú ✓" → `POST /api/menu/menus-dia`.
-4. **Menús de esa fecha** — carrusel horizontal (1 menú por vista + peek, `scroll-snap-x`), toggles Fijo/Visible, **⚙ Configurar** destacado (abre el modal `#menu-config-overlay` existente) y Eliminar; footer "← Cambiar fecha" / "＋ Crear otro" (conserva la fecha).
+Implementado como **widget inline `MenuWizard`** (`public/js/widgets/menu-wizard.js`) montado en el sub-panel "Menús del día" de `owner.html`. Tras varias iteraciones del 2026-06-04, el modelo definitivo son **dos vistas** (no un carrusel todo-en-uno):
 
-**Decisiones del usuario:** (1) no borrar lo anterior — el form clásico quedó oculto en `#md-legacy` (`display:none`) para revertir fácil; (2) el "Cliente elige por sección" se convirtió en el paso 3 como pregunta única. **Integración limpia:** `loadMenusDia()` delega en `MenuWizard.reload()`, así todos los refrescos existentes actualizan el carrusel sin tocar más código. Verificado E2E a 360px (`scripts/test-menu-wizard.js`, **15/15**) + **207/207** jest verde. Detalle del widget en `widgets.md`.
+**Galería (vista principal):** selector de fecha con flechas **◀ fecha ▶**, botón fijo **"＋ Crear menú"**, y los menús de ese día como **cards retrato** (más altas que anchas) en carrusel horizontal — **una sola card visible** (tamaño parametrizado por variables CSS `--mw-card-*` sobre `.mw`: 100%/100%/480px; revertir al peek = 82%/320px/360px). No hay card contenedora: las cards *son* los menús. Cada una con: **foto de portada de fondo** (con scrim; watermark 🍽️ si no hay foto), toggles Fijo/Visible **con una línea explicativa cada uno**, **⚙ Configurar** (abre la 3ª vista inline ↓) y Eliminar. Estado vacío con CTA a crear.
+
+**Foto de portada elegible (mini-backend):** el owner elige qué plato aporta la foto de fondo con un botón **"📷 Portada"** por plato (con foto) en la vista de configuración; si no elige, se usa el primer plato con foto. Backend: columna `menus_dia.id_plato_portada` (migración idempotente), incluida en el GET, + `PATCH /api/menu/menus-dia/:id/portada` (valida pertenencia; `null` la limpia). Tests `tests/menu-portada.test.js` (8).
+
+**Configuración inline = galería de secciones (3ª vista):** ⚙ Configurar **dejó de ser un modal** (`#menu-config-overlay` eliminado de `owner.html`) y pasó a ser una **tercera vista del widget**, del mismo estilo (galería ⇄ wizard ⇄ config), con "← Volver" y "✏ Editar". El cuerpo es una **galería horizontal de secciones**: cada sección es una **card retrato** (~270×360, igual que las de menús) con toggle Obligatoria/Opcional, sus platos (toggle Agotado/Disponible + ✕), "＋ Agregar plato" y "Quitar sección". Arriba, **solo** el botón **"＋ Agregar sección"** (sin barra de select inline).
+
+**Alta de sección por mini-wizard:** "＋ Agregar sección" abre un **carrusel de 2 pasos** dentro de la misma vista (reutiliza las clases `.mw-*` del MenuWizard): **Paso 1 "Selecciona una sección"** (cards de opciones del catálogo) · **Paso 2 "¿Obligatoria?"** (dos cards con emoji ✅ Obligatoria / ⏭️ Opcional). Confirmar → `POST /api/menu/menus-dia/:id/secciones` y vuelve a la galería de secciones. Reemplaza el viejo `agregarSeccionMenu` (select + checkbox), eliminado.
+
+Toda la lógica (secciones, `PlatoPicker`, toggles, quitar, editar nombre+precio) se **reutiliza sin cambios de backend** desde `owner.html`; `renderConfigBody` emite el markup de galería (`.mc-sec-gallery`/`.mc-sec-card` en `owner.css`), los IDs `mc-title`/`mc-meta`/`mc-body` se reubicaron dentro del widget y `abrirConfigMenu`/`cerrarConfigMenu` alternan vistas vía `MenuWizard.showConfig()`/`showGallery()`. Motivo (usuario): "el modal confunde un poco el proceso", "cada sección debe ser una card de igual tamaño que los menús", "al hacer clic en Agregar debería abrirse un wizard de pasos".
+
+**Wizard de creación (3 pasos):** se abre con "＋ Crear menú", **hereda la fecha de la galería** y pide:
+1. **Título** del menú, con figura/emoji decorativa (título opcional, default "Menú del día"). "✕ Cancelar" vuelve a la galería sin crear.
+2. **Precio** (valida > 0), con su propia figura/emoji.
+3. **¿Este menú es fijo o el cliente elige sus platos?** — una sola pregunta con dos cards grandes; habilita "Crear menú ✓" → `POST /api/menu/menus-dia` y **vuelve a la galería** con el menú nuevo listado.
+
+**Decisiones del usuario:** (1) la creación dejó de ser un "paso" del carrusel — la galería es el hogar del módulo y el wizard se lanza desde ella; (2) la fecha se elige/cambia en la galería y la hereda la creación (wizard de solo 3 pasos); (3) no borrar lo anterior — el form clásico quedó oculto en `#md-legacy` (`display:none`) para revertir fácil. **Integración limpia:** `loadMenusDia()` delega en `MenuWizard.reload()` (refresca la galería) sin tocar más código. Verificado E2E a 360px (`scripts/test-menu-wizard.js`, **43/43**) + **215/215** jest verde, sin overflow. Detalle del widget en `widgets.md`.
+
+> Iteraciones del día (archivadas): primero 4 pasos (fecha → nombre+precio → ¿fijo o elige? → menús), luego 5 (separando título/precio + botón "Ver menús"), y finalmente este rediseño a **galería + wizard de 3 pasos**.
 
 #### Cards verticales con scroll horizontal en menú del día y carta (cliente) — pendiente
 En `menu.html`, los cards de **menú del día** y de **carta** se ven apaisados (más anchos que altos) y apilados a lo alto. Rediseñarlos a **formato retrato (alto > ancho)**, redondeados, en **carruseles horizontales** (scroll a la derecha): uno para "Menú del día" y uno por cada categoría de la carta. Aplica a modo *pedir* y *reservar* (comparten `renderMenuDiaCard` / `renderPlatoCarta`).
