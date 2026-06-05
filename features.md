@@ -2,10 +2,23 @@
 
 ## Pendientes
 
-### Cambios 
+### ~~Cambios en desktop~~ ✅ Completado 2026-06-05
+
+~~En desktop la parte de menú se ve mal, se debe crear una tarjeta para desktop que no sea tan ancha.~~
+
+Media query `@media (min-width: 680px)` en `menu.css` → columna centrada de 460px. Hero, header, content, res-panel, cart-bar, res-bar y drawer quedan contenidos en esa columna. Solo CSS + una línea JS (`body.classList.add('has-hero')`). Sin cambios de backend.
 
 
 ### Cambio en Flujo total : 
+
+> **Progreso al 2026-06-05:** Se aplicó una mejora incremental dentro de los paneles existentes (sin el rediseño de navegación con "Home" de 4 cards). Las piezas de UX completadas:
+> - ✅ **Secciones** → chips (pill con nombre + ×), botón "+ Crear sección" con `FormModal`
+> - ✅ **Platos de menú** → galería de cards retrato con foto, nombre, descripción, acciones (foto, editar, eliminar)
+> - ✅ **Categorías (Carta)** → chips igual que secciones
+> - ✅ **Platos a la carta** → galería de cards con foto, precio, pill de categoría, toggle Visible/Oculto, acciones
+> - ✅ **Stepper explicativo** en ambos paneles (Menú del día 3 pasos, Carta 2 pasos) con botones `?` que muestran callouts de ayuda
+> - ✅ **Grid desktop** (≥768px) para todas las galerías: 2 columnas, sin espacio muerto lateral
+> - ⏳ **Pendiente:** rediseño de navegación con pantalla "Home" de 4 cards y botones de volver/home por panel
 
 #### Introducción
 
@@ -25,11 +38,13 @@ Secciones se mantiene igual. con botón de volver
 
 ###### Platos de menú
 
-Debe abrirse cards del estilo de Menú del día, grande 400px creo que era, estilo galería carrusl, con foto dentro del card (mismo estilo que si se hace clic en la foto te aparezca para elegir la foto) el nombre y la descripción. Con el botón de agregar plato arriba que envíe a dos pasos con cards del mismo tamaño que los pasos: Nombre y la segunda card Descripción para crear. Y con botones para editar el nombre y la descripción. Con botón de volver. 
+~~Debe abrirse cards del estilo de Menú del día, grande 400px creo que era, estilo galería carrusel, con foto dentro del card (mismo estilo que si se hace clic en la foto te aparezca para elegir la foto) el nombre y la descripción. Con el botón de agregar plato arriba que envíe a dos pasos con cards del mismo tamaño que los pasos: Nombre y la segunda card Descripción para crear. Y con botones para editar el nombre y la descripción. Con botón de volver.~~
+
+✅ **Implementado 2026-06-05:** galería de cards retrato (`.pm-plate-gallery`) con foto, watermark 🍽️ si no hay foto, nombre, descripción, botones "📷 Subir foto", "✏ Editar", "Eliminar". Crear plato usa `FormModal` (nombre + descripción). Pendiente: wizard de 2 pasos (Nombre → Descripción) y botón "Volver" de la visión original del flujo total.
 
 ###### Menú del día
 
-Se mantiene igual, solo falta terminar la parte de configurar con los cards. 
+Se mantiene igual con el widget `MenuWizard` (galería + wizard de creación + config inline). ✅
 
 ##### Carta
 
@@ -37,7 +52,9 @@ Para carta mismo estilo que menú del día. Dos cards, configurar categorías | 
 
 ###### Platos a la carta
 
-Similar situación que platos de menú. Una galería bonita con imagen para elegir y con herramienta recorte. Con botón para agregar plato.  
+~~Similar situación que platos de menú. Una galería bonita con imagen para elegir y con herramienta recorte. Con botón para agregar plato.~~
+
+✅ **Implementado 2026-06-05:** galería (`.pc-plate-gallery`) con foto/watermark 🍴, nombre, precio, pill de categoría, descripción, toggle Visible/Oculto, "📷 Subir foto", "✏ Editar", "Eliminar". Crear plato usa `FormModal` con select de categoría. Herramienta de recorte ya existía en `recortarYSubirPlato()`.  
 
 
 

@@ -2,6 +2,66 @@
 
 ---
 
+## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-05 (sesión 3)
+
+**Menú del día y Carta: stepper + chips + galería (2026-06-05, sesión 3):**
+
+### `public/js/widgets/menu-wizard.js`
+- `max-width: 680px` en `.mw` dentro de `@media (min-width: 768px)` → el header (barra de fecha + botón "+ Crear menú") también queda contenido, no solo las cards.
+
+### `public/css/owner.css`
+- CSS del **hub de configuración** (`.mc-hub`, `.mc-hub-card`, `.mc-hub-emoji`, `.mc-hub-title`, `.mc-hub-desc`, `.mc-hub-cta`): cards verticales con emoji + título + descripción + CTA naranja.
+- CSS de **"Configuración para el cliente"** (`.mc-cli`, `.mc-cli-row`, `.mc-cli-q`, `.mc-cli-toggle`, `.mc-cli-hint`).
+- **Grid desktop para galerías**: `.mc-sec-gallery`, `.pm-plate-gallery`, `.pc-plate-gallery` → `grid-template-columns: repeat(2, 1fr)` en ≥768px, elimina espacio muerto lateral.
+- **CSS de stepper**: `.md-stepper`, `.md-step`, `.md-step-num`, `.md-step-line`, `.md-step-help`, `.md-help-box`, `.md-help-text`, `.md-help-close` — estados activos con color naranja.
+- **CSS de chips**: `.sec-gallery`, `.sec-create-btn`, `.sec-chips`, `.sec-chip` (pill 44px), `.sec-chip-name`, `.sec-chip-del`.
+- `.pm-plate-desc`: texto de descripción en blanco semi-transparente sobre cards con foto.
+
+### `public/owner.html`
+**Panel Menú del día:**
+- Tabs horizontales reemplazadas por **stepper de 3 pasos** (Secciones → Platos → Menú del día). Cada paso tiene botón `?` que muestra callout `#md-help-box` con explicación del paso.
+- Tabs originales conservadas en DOM con `style="display:none"` para `switchTab()`.
+- `loadSecciones()` → chips (`.sec-chip`): nombre + botón × para eliminar. "+ Crear sección" usa `FormModal`.
+- `loadPlatosMenu()` → galería (`.pm-plate-gallery`) con `.mw-menu-card`: foto/watermark 🍽️, nombre, descripción, acciones (📷 foto, ✏ editar, eliminar).
+- `abrirCrearPlatoMenu()` con `FormModal` (nombre + descripción).
+- Nuevas funciones: `updateMdStepper(tab)`, `STEP_HELP`, `showStepHelp(e,step)`, `closeStepHelp()`.
+- `switchTab()` llama `updateMdStepper(tab)` cuando `group === 'md'`.
+
+**Panel Carta:**
+- **Stepper de 2 pasos** (Categorías → Platos a la carta) con callout separado `#carta-help-box`.
+- `loadCategorias()` → chips igual que secciones.
+- `loadPlatosCarta()` → galería (`.pc-plate-gallery`): foto/watermark 🍴, nombre, precio, pill de categoría, descripción, toggle Visible/Oculto, 📷 foto, ✏ editar, eliminar.
+- `togglePlatoCarta()` recarga la galería tras el toggle.
+- `abrirCrearPlatoCarta()` con `FormModal` incluyendo `<select>` de categoría desde `categoriasCache`.
+- Nuevas funciones: `updateCartaStepper(tab)`, `CARTA_HELP`, `showCartaHelp(e,step)`, `closeCartaHelp()`, `abrirCrearCategoria()`, `platoCartaCard(p)`.
+- `switchTab()` llama `updateCartaStepper(tab)` cuando `group === 'carta'`.
+
+**Bug fix:** `recargarModalConfig()` lee fecha de `#mw-fecha` con fallback a `#filter-md-fecha` (evitaba config vacía cuando widget y filtro tenían fechas distintas).
+
+---
+
+## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-05 (sesión 2)
+
+**Config de menú del día — estilos completados (2026-06-05):**
+- Agregadas clases `.mc-hub`, `.mc-hub-card`, `.mc-hub-emoji`, `.mc-hub-title`, `.mc-hub-desc`, `.mc-hub-cta` en `owner.css` → el hub de 2 opciones ahora muestra cards con emoji grande + título + descripción + CTA naranja
+- Agregadas `.mc-cli`, `.mc-cli-row`, `.mc-cli-q`, `.mc-cli-toggle`, `.mc-cli-hint` → la sub-vista "Configuración para el cliente" con layout de cards ordenado
+- Bug fix en `recargarModalConfig`: ahora lee la fecha de `#mw-fecha` (widget) con fallback a `#filter-md-fecha`, evitando que la config quede vacía cuando ambos inputs difieren
+- MenuWizard desktop: contenedor `.mw` limitado a `max-width: 680px` en pantallas ≥768px (cards + header contenidos, no se estiran al ancho del panel)
+
+---
+
+## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-05
+
+**Desktop fix en `menu.html` (2026-06-05):** Media query `@media (min-width: 680px)` en `menu.css` que centra todo el layout en una columna de **460px** (look "teléfono en escritorio"):
+- `.hero-portada` y `.header` → `max-width: 460px; margin: 0 auto`, header con `border-radius` arriba cuando no hay hero (clase `has-hero` en body vía JS)
+- `.content` y `.res-panel` → `max-width: 460px; overflow: hidden` (para contener el bleed del carrusel), bordes laterales y `border-radius` abajo
+- `.cart-bar` y `.res-bar` → `left: 50%; transform: translateX(-50%); width: 460px; border-radius` arriba
+- `.drawer` → `left: 50%; width: 460px; transform: translateX(-50%) translateY(100%)` + `.drawer.open` → `translateX(-50%)`
+- `body` → `background: var(--bg-2)` para contraste exterior
+- Sin cambios en HTML (salvo `document.body.classList.add('has-hero')` cuando se muestra la portada)
+
+---
+
 ## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-04
 
 **MenuWizard → galería + wizard de creación (2026-06-04, rediseño):** el widget dejó de ser un carrusel "todo-en-uno" y pasó a **dos vistas** dentro del sub-panel "Menús del día":

@@ -144,7 +144,45 @@
            PANEL: MENÚ DEL DÍA
       ══════════════════════════════════════ -->
       <div class="panel active" id="panel-menu-dia">
-        <div class="tabs">
+
+        <!-- Stepper: explica el flujo de los 3 pasos -->
+        <div class="md-stepper">
+          <div class="md-step active" id="mdstep-secciones" onclick="switchTab('md','secciones')">
+            <div class="md-step-num">1</div>
+            <div class="md-step-info">
+              <div class="md-step-title">Secciones</div>
+              <div class="md-step-desc">Entrada, Fondo...</div>
+              <button class="md-step-help" onclick="showStepHelp(event,'secciones')" aria-label="Más info">?</button>
+            </div>
+          </div>
+          <div class="md-step-line"></div>
+          <div class="md-step" id="mdstep-platos" onclick="switchTab('md','platos')">
+            <div class="md-step-num">2</div>
+            <div class="md-step-info">
+              <div class="md-step-title">Platos</div>
+              <div class="md-step-desc">Platos que servís</div>
+              <button class="md-step-help" onclick="showStepHelp(event,'platos')" aria-label="Más info">?</button>
+            </div>
+          </div>
+          <div class="md-step-line"></div>
+          <div class="md-step" id="mdstep-menus" onclick="switchTab('md','menus')">
+            <div class="md-step-num">3</div>
+            <div class="md-step-info">
+              <div class="md-step-title">Menú del día</div>
+              <div class="md-step-desc">El menú de hoy</div>
+              <button class="md-step-help" onclick="showStepHelp(event,'menus')" aria-label="Más info">?</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Callout de ayuda del stepper -->
+        <div class="md-help-box" id="md-help-box" hidden>
+          <button class="md-help-close" onclick="closeStepHelp()" aria-label="Cerrar">×</button>
+          <p class="md-help-text" id="md-help-text"></p>
+        </div>
+
+        <!-- Tabs ocultos: solo para compatibilidad con switchTab() -->
+        <div class="tabs" style="display:none">
           <button class="tab active" id="tab-md-secciones"  onclick="switchTab('md','secciones')">Secciones</button>
           <button class="tab"        id="tab-md-platos"     onclick="switchTab('md','platos')">Platos de menú</button>
           <button class="tab"        id="tab-md-menus"      onclick="switchTab('md','menus')">Menús del día</button>
@@ -152,48 +190,12 @@
 
         <!-- Sub-panel: Secciones -->
         <div id="subpanel-md-secciones">
-          <div class="card">
-            <div class="card-header"><span class="card-title">Nueva sección</span></div>
-            <div class="card-body">
-              <div class="inline-form">
-                <div class="field"><label for="sec-nombre">Nombre</label>
-                  <input type="text" id="sec-nombre" placeholder="Ej: Entrada, Fondo, Postre…" /></div>
-                <button class="btn btn-primary" onclick="crearSeccion()">+ Crear</button>
-              </div>
-              <div class="form-error" id="err-sec"></div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Secciones del restaurante</span>
-              <button class="btn btn-ghost btn-sm" onclick="loadSecciones()">↻ Actualizar</button>
-            </div>
-            <div id="list-secciones"><div class="loading-text">Cargando…</div></div>
-          </div>
+          <div id="secciones-mount"><div class="loading-text">Cargando…</div></div>
         </div>
 
         <!-- Sub-panel: Platos de menú -->
         <div id="subpanel-md-platos" class="hidden">
-          <div class="card">
-            <div class="card-header"><span class="card-title">Nuevo plato de menú</span></div>
-            <div class="card-body">
-              <div class="form-grid">
-                <div class="field span-2"><label for="pm-nombre">Nombre *</label><input type="text" id="pm-nombre" placeholder="Ej: Arroz con pollo" /></div>
-                <div class="field span-2"><label for="pm-desc">Descripción</label><input type="text" id="pm-desc" placeholder="Opcional" /></div>
-              </div>
-              <div class="form-error" id="err-pm"></div>
-              <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
-                <button class="btn btn-primary" onclick="crearPlatoMenu()">+ Agregar plato</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Catálogo de platos de menú</span>
-              <button class="btn btn-ghost btn-sm" onclick="loadPlatosMenu()">↻ Actualizar</button>
-            </div>
-            <div id="list-platos-menu"><div class="loading-text">Cargando…</div></div>
-          </div>
+          <div id="platos-menu-mount"><div class="loading-text">Cargando…</div></div>
         </div>
 
         <!-- Sub-panel: Menús del día -->
@@ -243,59 +245,48 @@
            PANEL: CARTA
       ══════════════════════════════════════ -->
       <div class="panel" id="panel-carta">
-        <div class="tabs">
+
+        <!-- Stepper: explica el flujo de la Carta -->
+        <div class="md-stepper">
+          <div class="md-step active" id="cartastep-categorias" onclick="switchTab('carta','categorias')">
+            <div class="md-step-num">1</div>
+            <div class="md-step-info">
+              <div class="md-step-title">Categorías</div>
+              <div class="md-step-desc">Carnes, Postres...</div>
+              <button class="md-step-help" onclick="showCartaHelp(event,'categorias')" aria-label="Más info">?</button>
+            </div>
+          </div>
+          <div class="md-step-line"></div>
+          <div class="md-step" id="cartastep-platos" onclick="switchTab('carta','platos')">
+            <div class="md-step-num">2</div>
+            <div class="md-step-info">
+              <div class="md-step-title">Platos a la carta</div>
+              <div class="md-step-desc">Con precio y foto</div>
+              <button class="md-step-help" onclick="showCartaHelp(event,'platos')" aria-label="Más info">?</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Callout de ayuda del stepper -->
+        <div class="md-help-box" id="carta-help-box" hidden>
+          <button class="md-help-close" onclick="closeCartaHelp()" aria-label="Cerrar">×</button>
+          <p class="md-help-text" id="carta-help-text"></p>
+        </div>
+
+        <!-- Tabs ocultos: compatibilidad con switchTab() -->
+        <div class="tabs" style="display:none">
           <button class="tab active" id="tab-carta-categorias" onclick="switchTab('carta','categorias')">Categorías</button>
           <button class="tab"        id="tab-carta-platos"     onclick="switchTab('carta','platos')">Platos a la carta</button>
         </div>
 
         <!-- Sub-panel: Categorías -->
         <div id="subpanel-carta-categorias">
-          <div class="card">
-            <div class="card-header"><span class="card-title">Nueva categoría</span></div>
-            <div class="card-body">
-              <div class="inline-form">
-                <div class="field"><label for="cat-nombre">Nombre</label>
-                  <input type="text" id="cat-nombre" placeholder="Ej: Entradas, Carnes, Postres…" /></div>
-                <button class="btn btn-primary" onclick="crearCategoria()">+ Crear</button>
-              </div>
-              <div class="form-error" id="err-cat"></div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Categorías de carta</span>
-              <button class="btn btn-ghost btn-sm" onclick="loadCategorias()">↻ Actualizar</button>
-            </div>
-            <div id="list-categorias"><div class="loading-text">Cargando…</div></div>
-          </div>
+          <div id="categorias-mount"><div class="loading-text">Cargando…</div></div>
         </div>
 
         <!-- Sub-panel: Platos a la carta -->
         <div id="subpanel-carta-platos" class="hidden">
-          <div class="card">
-            <div class="card-header"><span class="card-title">Nuevo plato a la carta</span></div>
-            <div class="card-body">
-              <div class="form-grid">
-                <div class="field"><label for="pc-nombre">Nombre *</label><input type="text" id="pc-nombre" placeholder="Ej: Lomo saltado" /></div>
-                <div class="field"><label for="pc-categoria">Categoría *</label>
-                  <select id="pc-categoria"><option value="">— selecciona —</option></select>
-                </div>
-                <div class="field"><label for="pc-precio">Precio S/ *</label><input id="pc-precio" type="number" step="0.01" min="0" placeholder="0.00" /></div>
-                <div class="field"><label for="pc-desc">Descripción</label><input type="text" id="pc-desc" placeholder="Opcional" /></div>
-              </div>
-              <div class="form-error" id="err-pc"></div>
-              <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
-                <button class="btn btn-primary" onclick="crearPlatoCarta()">+ Agregar plato</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Platos a la carta</span>
-              <button class="btn btn-ghost btn-sm" onclick="loadPlatosCarta()">↻ Actualizar</button>
-            </div>
-            <div id="list-platos-carta"><div class="loading-text">Cargando…</div></div>
-          </div>
+          <div id="platos-carta-mount"><div class="loading-text">Cargando…</div></div>
         </div>
       </div>
 
@@ -1008,6 +999,38 @@ function switchTab(group, tab) {
   if (group === 'ord' && tab === 'plano')      loadPlanoMesas();
   if (group === 'ord' && tab === 'activas')    loadOrdenesActivas();
   if (group === 'res' && tab === 'activas')    loadReservasActivas();
+  if (group === 'md')    updateMdStepper(tab);
+  if (group === 'carta') updateCartaStepper(tab);
+}
+
+function updateMdStepper(tab) {
+  ['secciones', 'platos', 'menus'].forEach(t => {
+    const el = document.getElementById('mdstep-' + t);
+    if (el) el.classList.toggle('active', t === tab);
+  });
+  closeStepHelp();
+}
+
+const STEP_HELP = {
+  secciones: 'Las secciones son las partes de tu menú: Entrada, Fondo, Postre, Bebida... Créalas aquí primero. Luego las asignarás al armar cada Menú del día.',
+  platos:    'Los platos concretos que servís: Sopa de pollo, Arroz con leche... Cargalos con foto y descripción. Después los asignarás a las secciones de cada Menú del día.',
+  menus:     'El menú que ven tus clientes en el QR. Elegís el precio, las secciones (Entrada, Fondo…) y los platos de cada sección. Podés tener varios menús distintos por día.',
+};
+
+function showStepHelp(e, step) {
+  e.stopPropagation();
+  const box = document.getElementById('md-help-box');
+  const txt = document.getElementById('md-help-text');
+  if (!box) return;
+  if (!box.hidden && box.dataset.step === step) { closeStepHelp(); return; }
+  txt.textContent = STEP_HELP[step];
+  box.dataset.step = step;
+  box.hidden = false;
+}
+
+function closeStepHelp() {
+  const box = document.getElementById('md-help-box');
+  if (box) box.hidden = true;
 }
 
 // utils.js cargado como <script src> antes de este bloque
@@ -1020,28 +1043,39 @@ let platoMenuCache = [];
 
 // ── Secciones ────────────────────────────────────────────
 async function loadSecciones() {
-  const el = document.getElementById('list-secciones');
-  el.innerHTML = '<div class="loading-text">Cargando…</div>';
+  const mount = document.getElementById('secciones-mount');
+  if (!mount) return;
+  mount.innerHTML = '<div class="loading-text">Cargando…</div>';
   try {
     seccionesCache = await api('GET', '/api/menu/secciones');
-    if (!seccionesCache.length) { el.innerHTML = emptyState('🗂️','Sin secciones aún'); return; }
-    el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Nombre</th><th></th></tr></thead><tbody>` +
-      seccionesCache.map(s => `<tr>
-        <td><strong>${esc(s.nombre)}</strong></td>
-        <td style="text-align:right"><button class="btn btn-danger" onclick="eliminarSeccion(${s.id},'${esc(s.nombre)}')">Eliminar</button></td>
-      </tr>`).join('') + `</tbody></table></div>`;
-  } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
+    const chips = seccionesCache.length
+      ? seccionesCache.map(s => `
+          <div class="sec-chip">
+            <span class="sec-chip-name">${esc(s.nombre)}</span>
+            <button class="sec-chip-del" onclick="eliminarSeccion(${s.id},'${esc(s.nombre)}')" aria-label="Eliminar ${esc(s.nombre)}">×</button>
+          </div>`).join('')
+      : `<p style="font-size:14px;color:var(--muted);margin:0">Sin secciones aún. Crea la primera arriba.</p>`;
+    mount.innerHTML = `
+      <div class="sec-gallery">
+        <button class="sec-create-btn" onclick="abrirCrearSeccion()">＋ Crear sección</button>
+        <div class="sec-chips">${chips}</div>
+      </div>`;
+  } catch(e) { mount.innerHTML = emptyState('⚠️', e.message); }
 }
 
-async function crearSeccion() {
-  const nombre = document.getElementById('sec-nombre').value.trim();
-  setErr('err-sec', '');
-  if (!nombre) return setErr('err-sec', 'El nombre es requerido');
-  try {
-    await api('POST', '/api/menu/secciones', { nombre });
-    toast('Sección creada'); document.getElementById('sec-nombre').value = '';
-    loadSecciones();
-  } catch(e) { setErr('err-sec', e.message); }
+function abrirCrearSeccion() {
+  FormModal.open({
+    title: 'Nueva sección',
+    fields: [
+      { name: 'nombre', label: 'Nombre', type: 'text', required: true, placeholder: 'Ej: Entrada, Fondo, Postre…' },
+    ],
+    submitLabel: '+ Crear',
+    onSubmit: async (v) => {
+      await api('POST', '/api/menu/secciones', { nombre: v.nombre.trim() });
+      toast('Sección creada');
+      loadSecciones();
+    },
+  });
 }
 
 async function eliminarSeccion(id, nombre) {
@@ -1052,43 +1086,56 @@ async function eliminarSeccion(id, nombre) {
 
 // ── Platos de menú ───────────────────────────────────────
 async function loadPlatosMenu() {
-  const el = document.getElementById('list-platos-menu');
-  el.innerHTML = '<div class="loading-text">Cargando…</div>';
+  const mount = document.getElementById('platos-menu-mount');
+  if (!mount) return;
+  mount.innerHTML = '<div class="loading-text">Cargando…</div>';
   try {
     platoMenuCache = await api('GET', '/api/menu/platos-menu');
-    if (!platoMenuCache.length) { el.innerHTML = emptyState('🍽️','Sin platos en el catálogo aún'); return; }
-    el.innerHTML = `<div class="table-wrap"><table><thead><tr><th style="width:48px"></th><th>Nombre</th><th>Descripción</th><th></th></tr></thead><tbody>` +
-      platoMenuCache.map(p => `<tr>
-        <td>
-          ${p.url_foto
-            ? `<img src="${p.url_foto}" alt="" title="Ver foto" class="foto-cell foto-cell-img" onclick="abrirFotoPlato('menu',${p.id},'${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">`
-            : `<label class="foto-cell foto-cell-empty" title="Subir foto">🍽️<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('menu',${p.id},this)"></label>`}
-        </td>
-        <td><strong>${esc(p.nombre)}</strong></td>
-        <td>${esc(p.descripcion || '—')}</td>
-        <td style="text-align:right;white-space:nowrap;display:flex;gap:4px;justify-content:flex-end;align-items:center">
-          <button class="btn btn-ghost btn-sm" onclick="editarPlatoMenu(${p.id})" title="Editar nombre">✏️</button>
-          <label class="btn btn-ghost btn-sm" style="cursor:pointer" title="${p.url_foto ? 'Cambiar foto' : 'Subir foto'}">
-            📷
-            <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('menu',${p.id},this)">
-          </label>
-          ${p.url_foto ? `<button class="btn btn-ghost btn-sm" onclick="eliminarFotoPlatoMenu(${p.id})" title="Eliminar foto">🗑</button>` : ''}
-          <button class="btn btn-danger btn-sm" onclick="eliminarPlatoMenu(${p.id},'${esc(p.nombre)}')">Eliminar</button>
-        </td>
-      </tr>`).join('') + `</tbody></table></div>`;
-  } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
+    const cards = platoMenuCache.length
+      ? platoMenuCache.map(p => platoMenuCard(p)).join('')
+      : `<div class="mw-empty-card"><div class="mw-empty-emoji">🍽️</div><div>Sin platos en el catálogo aún.</div><div class="mw-hint">Toca «＋ Crear plato» para empezar.</div></div>`;
+    mount.innerHTML = `
+      <div class="mw">
+        <button class="mw-create-btn" onclick="abrirCrearPlatoMenu()">＋ Crear plato</button>
+        <div class="mw-menus pm-plate-gallery">${cards}</div>
+      </div>`;
+  } catch(e) { mount.innerHTML = emptyState('⚠️', e.message); }
 }
 
-async function crearPlatoMenu() {
-  const nombre = document.getElementById('pm-nombre').value.trim();
-  const descripcion = document.getElementById('pm-desc').value.trim();
-  setErr('err-pm', '');
-  if (!nombre) return setErr('err-pm', 'El nombre es requerido');
-  try {
-    await api('POST', '/api/menu/platos-menu', { nombre, descripcion });
-    toast('Plato agregado'); document.getElementById('pm-nombre').value = ''; document.getElementById('pm-desc').value = '';
-    loadPlatosMenu();
-  } catch(e) { setErr('err-pm', e.message); }
+function platoMenuCard(p) {
+  const foto = p.url_foto;
+  return `
+    <div class="mw-menu-card pm-plate-card ${foto ? 'has-photo' : ''}"${foto ? ` style="--mw-bg:url('${foto}')"` : ''}>
+      ${foto ? '' : '<div class="mw-menu-watermark">🍽️</div>'}
+      <div class="mw-menu-top">
+        <span class="mw-menu-name">${esc(p.nombre)}</span>
+      </div>
+      ${p.descripcion ? `<p class="pm-plate-desc">${esc(p.descripcion)}</p>` : ''}
+      <div class="mw-menu-actions">
+        <label class="mw-btn" style="cursor:pointer">
+          📷 ${foto ? 'Cambiar foto' : 'Subir foto'}
+          <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('menu',${p.id},this)">
+        </label>
+        <button class="mw-btn" onclick="editarPlatoMenu(${p.id})">✏ Editar</button>
+        <button class="mw-btn" style="color:var(--danger,#c0392b)" onclick="eliminarPlatoMenu(${p.id},'${esc(p.nombre)}')">Eliminar</button>
+      </div>
+    </div>`;
+}
+
+function abrirCrearPlatoMenu() {
+  FormModal.open({
+    title: 'Nuevo plato de menú',
+    fields: [
+      { name: 'nombre',      label: 'Nombre',      type: 'text',     required: true, placeholder: 'Ej: Arroz con pollo' },
+      { name: 'descripcion', label: 'Descripción', type: 'textarea', placeholder: 'Opcional' },
+    ],
+    submitLabel: '+ Agregar',
+    onSubmit: async (v) => {
+      await api('POST', '/api/menu/platos-menu', { nombre: v.nombre.trim(), descripcion: v.descripcion });
+      toast('Plato agregado');
+      loadPlatosMenu();
+    },
+  });
 }
 
 async function eliminarPlatoMenu(id, nombre) {
@@ -1178,7 +1225,7 @@ function _mcEsc(e) { if (e.key === 'Escape') configBack(); }
 
 async function recargarModalConfig() {
   if (!configMenuId) return;
-  const fecha = document.getElementById('filter-md-fecha').value;
+  const fecha = (document.getElementById('mw-fecha') || document.getElementById('filter-md-fecha'))?.value || '';
   try {
     const menus = await api('GET', `/api/menu/menus-dia${fecha ? `?dia=${fecha}` : ''}`);
     const m = menus.find(x => x.id === configMenuId);
@@ -1561,35 +1608,73 @@ async function toggleAgotadoPlato(menuId, seccionId, componenteId, agotadoActual
 // ════════════════════════════════════════════════════════
 // MÓDULO 2 — CARTA
 // ════════════════════════════════════════════════════════
+// ── Carta — stepper y helpers ─────────────────────────
+function updateCartaStepper(tab) {
+  ['categorias', 'platos'].forEach(t => {
+    const el = document.getElementById('cartastep-' + t);
+    if (el) el.classList.toggle('active', t === tab);
+  });
+  closeCartaHelp();
+}
+
+const CARTA_HELP = {
+  categorias: 'Las categorías agrupan tus platos a la carta: Entradas, Carnes, Postres, Bebidas... Créalas aquí primero. Luego cada plato se asigna a una de ellas.',
+  platos:     'Los platos de tu carta permanente, cada uno con su precio. Podés activarlos o desactivarlos sin eliminarlos. Cargalos con foto y descripción para que se vean mejor en el QR.',
+};
+
+function showCartaHelp(e, step) {
+  e.stopPropagation();
+  const box = document.getElementById('carta-help-box');
+  const txt = document.getElementById('carta-help-text');
+  if (!box) return;
+  if (!box.hidden && box.dataset.step === step) { closeCartaHelp(); return; }
+  txt.textContent = CARTA_HELP[step];
+  box.dataset.step = step;
+  box.hidden = false;
+}
+
+function closeCartaHelp() {
+  const box = document.getElementById('carta-help-box');
+  if (box) box.hidden = true;
+}
+
+// ── Categorías ────────────────────────────────────────
 let categoriasCache = [];
 
 async function loadCategorias() {
-  const el = document.getElementById('list-categorias');
-  el.innerHTML = '<div class="loading-text">Cargando…</div>';
+  const mount = document.getElementById('categorias-mount');
+  if (!mount) return;
+  mount.innerHTML = '<div class="loading-text">Cargando…</div>';
   try {
     categoriasCache = await api('GET', '/api/menu/categorias');
-    // Sync select en formulario de platos
-    const sel = document.getElementById('pc-categoria');
-    sel.innerHTML = '<option value="">— selecciona —</option>' +
-      categoriasCache.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
-    if (!categoriasCache.length) { el.innerHTML = emptyState('🗂️','Sin categorías aún'); return; }
-    el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Nombre</th><th></th></tr></thead><tbody>` +
-      categoriasCache.map(c => `<tr>
-        <td><strong>${esc(c.nombre)}</strong></td>
-        <td style="text-align:right"><button class="btn btn-danger" onclick="eliminarCategoria(${c.id},'${esc(c.nombre)}')">Eliminar</button></td>
-      </tr>`).join('') + `</tbody></table></div>`;
-  } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
+    const chips = categoriasCache.length
+      ? categoriasCache.map(c => `
+          <div class="sec-chip">
+            <span class="sec-chip-name">${esc(c.nombre)}</span>
+            <button class="sec-chip-del" onclick="eliminarCategoria(${c.id},'${esc(c.nombre)}')" aria-label="Eliminar ${esc(c.nombre)}">×</button>
+          </div>`).join('')
+      : `<p style="font-size:14px;color:var(--muted);margin:0">Sin categorías aún. Crea la primera arriba.</p>`;
+    mount.innerHTML = `
+      <div class="sec-gallery">
+        <button class="sec-create-btn" onclick="abrirCrearCategoria()">＋ Crear categoría</button>
+        <div class="sec-chips">${chips}</div>
+      </div>`;
+  } catch(e) { mount.innerHTML = emptyState('⚠️', e.message); }
 }
 
-async function crearCategoria() {
-  const nombre = document.getElementById('cat-nombre').value.trim();
-  setErr('err-cat', '');
-  if (!nombre) return setErr('err-cat', 'El nombre es requerido');
-  try {
-    await api('POST', '/api/menu/categorias', { nombre });
-    toast('Categoría creada'); document.getElementById('cat-nombre').value = '';
-    loadCategorias();
-  } catch(e) { setErr('err-cat', e.message); }
+function abrirCrearCategoria() {
+  FormModal.open({
+    title: 'Nueva categoría',
+    fields: [
+      { name: 'nombre', label: 'Nombre', type: 'text', required: true, placeholder: 'Ej: Entradas, Carnes, Postres…' },
+    ],
+    submitLabel: '+ Crear',
+    onSubmit: async (v) => {
+      await api('POST', '/api/menu/categorias', { nombre: v.nombre.trim() });
+      toast('Categoría creada');
+      loadCategorias();
+    },
+  });
 }
 
 async function eliminarCategoria(id, nombre) {
@@ -1598,65 +1683,78 @@ async function eliminarCategoria(id, nombre) {
   catch(e) { toast(e.message, 'err'); }
 }
 
+// ── Platos a la carta ─────────────────────────────────
 let platoCartaCache = [];
+
 async function loadPlatosCarta() {
-  const el = document.getElementById('list-platos-carta');
-  el.innerHTML = '<div class="loading-text">Cargando…</div>';
+  const mount = document.getElementById('platos-carta-mount');
+  if (!mount) return;
+  mount.innerHTML = '<div class="loading-text">Cargando…</div>';
   try {
     platoCartaCache = await api('GET', '/api/menu/platos-carta');
-    const platos = platoCartaCache;
-    if (!platos.length) { el.innerHTML = emptyState('🍽️','Sin platos a la carta aún'); return; }
-    el.innerHTML = `<div class="table-wrap"><table><thead><tr><th style="width:48px"></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Estado</th><th></th></tr></thead><tbody>` +
-      platos.map(p => `<tr>
-        <td>
-          ${p.url_foto
-            ? `<img src="${p.url_foto}" alt="" title="Ver foto" class="foto-cell foto-cell-img" onclick="abrirFotoPlato('carta',${p.id},'${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">`
-            : `<label class="foto-cell foto-cell-empty" title="Subir foto">🍴<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('carta',${p.id},this)"></label>`}
-        </td>
-        <td><strong>${esc(p.nombre)}</strong>${p.descripcion ? `<br><span style="font-size:11px;color:var(--muted)">${esc(p.descripcion)}</span>` : ''}</td>
-        <td>${esc(p.categoria)}</td>
-        <td>S/ ${Number(p.precio).toFixed(2)}</td>
-        <td>
-          <label class="toggle" title="${p.activo ? 'Desactivar' : 'Activar'}">
-            <input type="checkbox" ${p.activo ? 'checked' : ''} onchange="togglePlatoCarta(${p.id})" />
-            <span class="toggle-slider"></span>
-          </label>
-        </td>
-        <td style="text-align:right;white-space:nowrap;display:flex;gap:4px;justify-content:flex-end;align-items:center">
-          <button class="btn btn-ghost btn-sm" onclick="editarPlatoCarta(${p.id})" title="Editar plato">✏️</button>
-          <label class="btn btn-ghost btn-sm" style="cursor:pointer" title="${p.url_foto ? 'Cambiar foto' : 'Subir foto'}">
-            📷
-            <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('carta',${p.id},this)">
-          </label>
-          ${p.url_foto ? `<button class="btn btn-ghost btn-sm" onclick="eliminarFotoPlatoCarta(${p.id})" title="Eliminar foto">🗑</button>` : ''}
-          <button class="btn btn-danger btn-sm" onclick="eliminarPlatoCarta(${p.id},'${esc(p.nombre)}')">Eliminar</button>
-        </td>
-      </tr>`).join('') + `</tbody></table></div>`;
-  } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
+    const cards = platoCartaCache.length
+      ? platoCartaCache.map(p => platoCartaCard(p)).join('')
+      : `<div class="mw-empty-card"><div class="mw-empty-emoji">🍴</div><div>Sin platos a la carta aún.</div><div class="mw-hint">Toca «＋ Crear plato» para empezar.</div></div>`;
+    mount.innerHTML = `
+      <div class="mw">
+        <button class="mw-create-btn" onclick="abrirCrearPlatoCarta()">＋ Crear plato</button>
+        <div class="mw-menus pc-plate-gallery">${cards}</div>
+      </div>`;
+  } catch(e) { mount.innerHTML = emptyState('⚠️', e.message); }
 }
 
-async function crearPlatoCarta() {
-  const nombre      = document.getElementById('pc-nombre').value.trim();
-  const precio      = document.getElementById('pc-precio').value;
-  const descripcion = document.getElementById('pc-desc').value.trim();
-  const id_categoria = document.getElementById('pc-categoria').value;
-  setErr('err-pc', '');
-  if (!nombre)      return setErr('err-pc', 'El nombre es requerido');
-  if (!precio)      return setErr('err-pc', 'El precio es requerido');
-  if (!id_categoria) return setErr('err-pc', 'Selecciona una categoría');
-  try {
-    await api('POST', '/api/menu/platos-carta', { nombre, precio, descripcion, id_categoria });
-    toast('Plato agregado');
-    ['pc-nombre','pc-precio','pc-desc'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('pc-categoria').value = '';
-    loadPlatosCarta();
-  } catch(e) { setErr('err-pc', e.message); }
+function platoCartaCard(p) {
+  const foto   = p.url_foto;
+  const activo = p.activo !== 0;
+  return `
+    <div class="mw-menu-card pc-plate-card ${foto ? 'has-photo' : ''}"${foto ? ` style="--mw-bg:url('${foto}')"` : ''}>
+      ${foto ? '' : '<div class="mw-menu-watermark">🍴</div>'}
+      <div class="mw-menu-top">
+        <span class="mw-menu-name">${esc(p.nombre)}</span>
+        <span class="mw-menu-meta">S/ ${Number(p.precio).toFixed(2)}</span>
+      </div>
+      <div class="mw-pills">
+        <span class="mw-pill">${esc(p.categoria)}</span>
+      </div>
+      ${p.descripcion ? `<p class="pm-plate-desc">${esc(p.descripcion)}</p>` : ''}
+      <div class="mw-menu-actions">
+        <button class="mw-btn${activo ? ' mw-btn-primary' : ''}" onclick="togglePlatoCarta(${p.id})">
+          ${activo ? '● Visible' : '○ Oculto'}
+        </button>
+        <label class="mw-btn" style="cursor:pointer">
+          📷 ${foto ? 'Cambiar foto' : 'Subir foto'}
+          <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="recortarYSubirPlato('carta',${p.id},this)">
+        </label>
+        <button class="mw-btn" onclick="editarPlatoCarta(${p.id})">✏ Editar</button>
+        <button class="mw-btn" style="color:var(--danger,#c0392b)" onclick="eliminarPlatoCarta(${p.id},'${esc(p.nombre)}')">Eliminar</button>
+      </div>
+    </div>`;
+}
+
+function abrirCrearPlatoCarta() {
+  if (!categoriasCache.length) { toast('Crea primero una categoría', 'err'); return; }
+  FormModal.open({
+    title: 'Nuevo plato a la carta',
+    fields: [
+      { name: 'nombre',      label: 'Nombre',      type: 'text',     required: true, placeholder: 'Ej: Lomo saltado' },
+      { name: 'id_categoria', label: 'Categoría',  type: 'select',   required: true, options: categoriasCache.map(c => ({ value: c.id, label: c.nombre })) },
+      { name: 'precio',      label: 'Precio S/',   type: 'number',   required: true, step: '0.01', min: '0', placeholder: '0.00' },
+      { name: 'descripcion', label: 'Descripción', type: 'textarea', placeholder: 'Opcional' },
+    ],
+    submitLabel: '+ Agregar',
+    onSubmit: async (v) => {
+      await api('POST', '/api/menu/platos-carta', { nombre: v.nombre.trim(), precio: v.precio, descripcion: v.descripcion, id_categoria: v.id_categoria });
+      toast('Plato agregado');
+      loadPlatosCarta();
+    },
+  });
 }
 
 async function togglePlatoCarta(id) {
   try {
     const d = await api('PATCH', `/api/menu/platos-carta/${id}/toggle`);
     toast(d.message);
+    loadPlatosCarta();
   } catch(e) { toast(e.message, 'err'); loadPlatosCarta(); }
 }
 

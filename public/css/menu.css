@@ -807,6 +807,104 @@ body {
 
 .codigo-box { animation: pulse-glow 2.5s ease-in-out infinite; }
 
+/* ──────────────────────────────────────────────────────────────
+   DESKTOP — centrado en columna de 460px (≥680px)
+   Todo el layout se comporta como un "teléfono en el escritorio".
+   Sin cambios en el HTML.
+   ────────────────────────────────────────────────────────────── */
+@media (min-width: 680px) {
+
+  /* Fondo exterior ligeramente distinto para que la columna resalte */
+  body {
+    background: var(--bg-2);
+    padding-bottom: 0;
+  }
+
+  /* ── Elementos de flujo normal ── */
+  .hero-portada {
+    max-width: 460px;
+    margin: 1.5rem auto 0;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+
+  .header {
+    max-width: 460px;
+    margin: 0 auto;
+    border-radius: 0;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+
+  /* Cuando no hay hero, el header necesita border-radius arriba */
+  body:not(.has-hero) .header {
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    margin-top: 1.5rem;
+  }
+
+  .content {
+    max-width: 460px;
+    overflow: hidden; /* contiene el bleed del carrusel dentro del border-radius */
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+    background: var(--bg);
+    padding-bottom: 140px; /* espacio para la barra fija */
+  }
+
+  .res-panel {
+    max-width: 460px;
+    overflow: hidden;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+    background: var(--bg);
+    padding-bottom: 140px;
+  }
+
+  /* ── Barra sticky del carrito (pedir) ── */
+  .cart-bar {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 460px;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── Barra sticky de reservas ── */
+  .res-bar {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 460px;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Los botones internos ya tienen max-width:600px, aquí usamos el ancho completo */
+  .cart-btn, .res-bar-btn {
+    max-width: 100%;
+  }
+
+  /* ── Drawer del carrito ── */
+  .drawer {
+    left: 50%;
+    right: auto;
+    width: 460px;
+    transform: translateX(-50%) translateY(100%);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+  .drawer.open {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 /* Respeta usuarios con motion reduction */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

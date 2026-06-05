@@ -388,6 +388,7 @@
         img.onload = () => hero.classList.add('loaded');
         img.src = restData.foto_portada;
         hero.style.display = 'block';
+        document.body.classList.add('has-hero');
       }
       menusDia  = Array.isArray(menuData)  ? menuData  : [];
       cartaCats = Array.isArray(cartaData) ? cartaData : [];

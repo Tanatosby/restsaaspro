@@ -218,6 +218,15 @@
 .mw-cfg-body { display: flex; flex-direction: column; }
 
 @media (prefers-reduced-motion: reduce) { .mw-track { transition: none; } }
+
+/* ── Desktop: contenedor y cards a ancho fijo ── */
+@media (min-width: 768px) {
+  .mw {
+    --mw-card-w:    320px;
+    --mw-card-maxw: 320px;
+    max-width: 680px; /* header + galería contenidos; muestra peek de la siguiente card */
+  }
+}
 `;
 
   function injectStyle() {
