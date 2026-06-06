@@ -2,6 +2,55 @@
 
 ---
 
+## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-05 (sesión 4)
+
+**Pantalla Home + navegación por hubs (2026-06-05, sesión 4):**
+
+### Árbol de navegación resultante
+```
+🏠 Inicio
+├── 🍽️ Gestión de menús  → hub (panel-gestion-menus)
+│   ├── 📋 Menú del día   ← Gestión de menús
+│   └── 🍴 Carta          ← Gestión de menús
+├── ⚡ Operaciones         → hub (panel-operaciones)
+│   ├── ⚡ Cola del día    ← Operaciones
+│   ├── 🧾 Órdenes        ← Operaciones
+│   ├── 📅 Reservas       ← Operaciones
+│   └── 🍳 Cocina         ← Operaciones
+├── 📊 Análisis            → panel-reportes (directo) ← Inicio
+└── ⚙️ Ajustes             → hub (panel-ajustes)
+    ├── ⚙️ Configuración  ← Ajustes
+    └── 👥 Usuarios       ← Ajustes
+```
+
+### `public/css/owner.css`
+- Bloque **Home panel**: `.home-welcome`, `.home-greeting`, `.home-restaurant`, `.home-carousel` (scroll horizontal, snap), `.home-card` (230×340px portrait, scroll snap), `.home-card-emoji` (3rem), `.home-card-title`, `.home-card-desc`, `.home-card-cta` (naranja).
+- `.btn-back-home`: botón naranja "← Volver" reutilizado en todos los paneles.
+- `.home-btn`: botón 🏠 del topbar (44×44px).
+- Desktop `@media (min-width: 768px)`: `.home-carousel` → `flex-wrap: wrap`, cards `50% - 0.5rem` → grid 2×2 centrado.
+
+### `public/owner.html`
+- **Topbar**: hamburger → botón `🏠` (`home-btn`, `showPanel('home')`); hamburger movido al grupo derecho (junto a 🌙 y 🔔) para seguir abriendo el sidebar.
+- **`panel-home`** (nuevo, `class="panel active"`): saludo dinámico hora Lima (Buenos días/tardes/noches) + nombre del restaurante + 4 cards portrait en carrusel horizontal. Descripciones en tuteo peruano (sin voseo).
+- **`panel-gestion-menus`** (nuevo hub): 2 `.mc-hub-card` (Menú del día | Carta) + "← Inicio".
+- **`panel-operaciones`** (nuevo hub): 4 `.mc-hub-card` (Cola del día | Órdenes | Reservas | Cocina) + "← Inicio".
+- **`panel-ajustes`** (nuevo hub): 2 `.mc-hub-card` (Configuración | Usuarios) + "← Inicio".
+- **Botones de vuelta** en cada panel:
+  - `panel-menu-dia`, `panel-carta` → "← Gestión de menús"
+  - `panel-pedidos`, `panel-ordenes`, `panel-reservas`, `panel-cocina` → "← Operaciones"
+  - `panel-configuracion`, `panel-usuarios` → "← Ajustes"
+  - `panel-reportes` → "← Inicio"
+- **Bottom-nav**: "☰ Más" → "🏠 Inicio" (`data-target="home"`).
+- **Sidebar**: `nav-home`, `nav-gestion-menus`, `nav-operaciones`, `nav-ajustes` agregados; sub-ítems con indentación `padding-left: 2rem`.
+- **`PANELS`**: `['home','gestion-menus','operaciones','ajustes','menu-dia','carta','ordenes','reservas','cocina','pedidos','usuarios','reportes','configuracion']`.
+- **`TITLES`**: entradas para todos los nuevos paneles/hubs.
+- **`activePanel = 'home'`** (antes `'menu-dia'`).
+- **`showPanel()`**: `?.` en `nav-${p}` para paneles sin nav item en sidebar.
+- **Permisos cocinero/delegados**: remueven `active` de `panel-home` (antes `panel-menu-dia`).
+- **Init**: saludo con `Intl.DateTimeFormat` hora Lima + `MutationObserver` que espeja `#sidebar-restaurant` → `#home-restaurant-name`.
+
+---
+
 ## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-05 (sesión 3)
 
 **Menú del día y Carta: stepper + chips + galería (2026-06-05, sesión 3):**

@@ -11,14 +11,24 @@ Media query `@media (min-width: 680px)` en `menu.css` → columna centrada de 46
 
 ### Cambio en Flujo total : 
 
-> **Progreso al 2026-06-05:** Se aplicó una mejora incremental dentro de los paneles existentes (sin el rediseño de navegación con "Home" de 4 cards). Las piezas de UX completadas:
-> - ✅ **Secciones** → chips (pill con nombre + ×), botón "+ Crear sección" con `FormModal`
-> - ✅ **Platos de menú** → galería de cards retrato con foto, nombre, descripción, acciones (foto, editar, eliminar)
-> - ✅ **Categorías (Carta)** → chips igual que secciones
-> - ✅ **Platos a la carta** → galería de cards con foto, precio, pill de categoría, toggle Visible/Oculto, acciones
-> - ✅ **Stepper explicativo** en ambos paneles (Menú del día 3 pasos, Carta 2 pasos) con botones `?` que muestran callouts de ayuda
-> - ✅ **Grid desktop** (≥768px) para todas las galerías: 2 columnas, sin espacio muerto lateral
-> - ⏳ **Pendiente:** rediseño de navegación con pantalla "Home" de 4 cards y botones de volver/home por panel
+> **✅ Completado 2026-06-05 (sesiones 3 + 4)**
+>
+> **Sesión 3 — UX dentro de paneles:**
+> - ✅ Secciones → chips (pill + ×) con `FormModal`
+> - ✅ Platos de menú → galería de cards retrato con foto, nombre, descripción, acciones
+> - ✅ Categorías (Carta) → chips igual que secciones
+> - ✅ Platos a la carta → galería con foto, precio, categoría, toggle Visible/Oculto
+> - ✅ Stepper explicativo en Menú del día (3 pasos) y Carta (2 pasos), con botones `?`
+> - ✅ Grid desktop 2 columnas para todas las galerías
+>
+> **Sesión 4 — Navegación por hubs:**
+> - ✅ `panel-home`: 4 cards portrait en carrusel horizontal (230×340px), saludo dinámico hora Lima, nombre del restaurante, descripciones en tuteo peruano
+> - ✅ `panel-gestion-menus`: hub con 2 cards (Menú del día | Carta)
+> - ✅ `panel-operaciones`: hub con 4 cards (Cola del día | Órdenes | Reservas | Cocina)
+> - ✅ `panel-ajustes`: hub con 2 cards (Configuración | Usuarios)
+> - ✅ Botón 🏠 en topbar; hamburger movido al grupo derecho; bottom-nav "Más ☰" → "🏠 Inicio"
+> - ✅ Botones de vuelta contextuales en todos los paneles (← Gestión de menús / ← Operaciones / ← Ajustes / ← Inicio)
+> - ✅ Desktop: home cards en grid 2×2 centrado
 
 #### Introducción
 

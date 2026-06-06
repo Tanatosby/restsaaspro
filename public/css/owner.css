@@ -658,6 +658,87 @@ tbody tr:hover { background: var(--surface-2); }
   padding: 1.1rem; background: var(--bg);
 }
 
+/* ── Pantalla Home ───────────────────────────────────────── */
+.home-welcome {
+  padding: 0.5rem 0 1rem;
+}
+.home-greeting {
+  font-size: 1.1rem; font-weight: 700; color: var(--text);
+  font-family: var(--font-display, Georgia, serif);
+}
+.home-restaurant {
+  font-size: 13px; color: var(--muted, #888); margin-top: 2px;
+}
+
+/* Mobile: carrusel horizontal con cards portrait grandes */
+.home-carousel {
+  display: flex; flex-direction: row; gap: 1rem;
+  overflow-x: auto; overflow-y: visible;
+  padding: 0.5rem 0 1.25rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.home-carousel::-webkit-scrollbar { display: none; }
+
+.home-card {
+  flex: 0 0 230px; min-height: 340px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.7rem; padding: 1.75rem 1.25rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  cursor: pointer; scroll-snap-align: start; text-align: center;
+  transition: transform .15s, border-color .15s, background .15s;
+  box-shadow: var(--shadow-sm, 0 2px 12px rgba(0,0,0,.06));
+  -webkit-tap-highlight-color: transparent;
+}
+.home-card:active {
+  transform: scale(.97);
+  border-color: var(--primary, #c8692a);
+  background: var(--accent-glow-soft, rgba(200,105,42,.06));
+}
+.home-card-emoji { font-size: 3rem; line-height: 1; }
+.home-card-title {
+  font-weight: 700; font-size: 1rem; color: var(--text);
+  font-family: var(--font-display, Georgia, serif); line-height: 1.2;
+}
+.home-card-desc {
+  font-size: 13px; color: var(--muted, #888); line-height: 1.5;
+}
+.home-card-cta {
+  font-size: 13px; font-weight: 600; color: var(--primary, #c8692a);
+  margin-top: 0.4rem;
+}
+
+/* Desktop: grid 2×2 centrado */
+@media (min-width: 768px) {
+  .home-carousel {
+    flex-wrap: wrap; overflow-x: visible; scroll-snap-type: none;
+  }
+  .home-card { flex: 0 0 calc(50% - 0.5rem); min-height: 200px; }
+}
+
+/* Botón "← Volver" en paneles */
+.btn-back-home {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: none; border: none; cursor: pointer;
+  color: var(--primary, #c8692a); font-size: 14px; font-weight: 600;
+  padding: 8px 0 12px; min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-back-home:active { opacity: 0.65; }
+
+/* Botón Home en topbar */
+.home-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.35rem; line-height: 1;
+  min-width: 44px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; flex-shrink: 0;
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-btn:active { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
 /* Hub de configuración — 2 opciones como cards de elección */
 .mc-hub { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.25rem 0; }
 .mc-hub-card {

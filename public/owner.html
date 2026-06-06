@@ -70,15 +70,24 @@
     </div>
 
     <nav class="sidebar-nav">
+      <button class="nav-item" id="nav-home" onclick="showPanel('home')" style="font-weight:700">
+        <span class="nav-icon">🏠</span> Inicio
+      </button>
       <div class="nav-label">Gestión</div>
-      <button class="nav-item active" id="nav-menu-dia" onclick="showPanel('menu-dia')">
+      <button class="nav-item" id="nav-gestion-menus" onclick="showPanel('gestion-menus')">
+        <span class="nav-icon">🍽️</span> Gestión de menús
+      </button>
+      <button class="nav-item" id="nav-menu-dia" onclick="showPanel('menu-dia')" style="padding-left:2rem">
         <span class="nav-icon">📋</span> Menú del día
       </button>
       <button class="nav-item" id="nav-carta" onclick="showPanel('carta')">
         <span class="nav-icon">🍴</span> Carta
       </button>
       <div class="nav-label" style="margin-top:0.5rem">Operaciones</div>
-      <button class="nav-item" id="nav-ordenes" onclick="showPanel('ordenes')">
+      <button class="nav-item" id="nav-operaciones" onclick="showPanel('operaciones')">
+        <span class="nav-icon">⚡</span> Operaciones
+      </button>
+      <button class="nav-item" id="nav-ordenes" onclick="showPanel('ordenes')" style="padding-left:2rem">
         <span class="nav-icon">🧾</span> Órdenes
         <span class="nav-badge" id="badge-ordenes">0</span>
       </button>
@@ -94,15 +103,18 @@
         <span class="nav-icon">📋</span> Cola del día
         <span class="nav-badge" id="badge-pedidos">0</span>
       </button>
-      <button class="nav-item" id="nav-usuarios" onclick="showPanel('usuarios')">
+      <button class="nav-item" id="nav-usuarios" onclick="showPanel('usuarios')" style="padding-left:2rem">
         <span class="nav-icon">👥</span> Usuarios
       </button>
       <div class="nav-label" style="margin-top:0.5rem">Análisis</div>
       <button class="nav-item" id="nav-reportes" onclick="showPanel('reportes')">
         <span class="nav-icon">📊</span> Reportes
       </button>
-      <div class="nav-label" style="margin-top:0.5rem">Sistema</div>
-      <button class="nav-item" id="nav-configuracion" onclick="showPanel('configuracion')">
+      <div class="nav-label" style="margin-top:0.5rem">Ajustes</div>
+      <button class="nav-item" id="nav-ajustes" onclick="showPanel('ajustes')">
+        <span class="nav-icon">⚙️</span> Ajustes
+      </button>
+      <button class="nav-item" id="nav-configuracion" onclick="showPanel('configuracion')" style="padding-left:2rem">
         <span class="nav-icon">⚙️</span> Configuración
       </button>
     </nav>
@@ -124,11 +136,12 @@
   <!-- ── Main ── -->
   <div class="main">
     <div class="topbar">
-      <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
-        <span></span><span></span><span></span>
-      </button>
-      <div class="page-title" id="page-title">Menú del día</div>
+      <button class="home-btn" id="home-btn" onclick="showPanel('home')" aria-label="Ir al inicio">🏠</button>
+      <div class="page-title" id="page-title">Inicio</div>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú lateral">
+          <span></span><span></span><span></span>
+        </button>
         <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">🌙</button>
         <button id="sound-toggle" onclick="toggleSound()"
           style="background:none;border:none;cursor:pointer;font-size:1.25rem;line-height:1;padding:4px 6px;border-radius:8px;transition:background .15s"
@@ -141,9 +154,68 @@
     <div class="content">
 
       <!-- ══════════════════════════════════════
+           PANEL: HOME
+      ══════════════════════════════════════ -->
+      <div class="panel active" id="panel-home">
+        <div class="home-welcome">
+          <div class="home-greeting" id="home-greeting">Bienvenido</div>
+          <div class="home-restaurant" id="home-restaurant-name"></div>
+        </div>
+        <div class="home-carousel">
+          <button class="home-card" onclick="showPanel('gestion-menus')">
+            <span class="home-card-emoji">🍽️</span>
+            <span class="home-card-title">Gestión de menús</span>
+            <span class="home-card-desc">Carga tus platos con foto, arma las secciones y crea el menú del día que ven tus clientes en el QR. También gestiona tu carta con precios.</span>
+            <span class="home-card-cta">Configurar →</span>
+          </button>
+          <button class="home-card" onclick="showPanel('operaciones')">
+            <span class="home-card-emoji">⚡</span>
+            <span class="home-card-title">Operaciones</span>
+            <span class="home-card-desc">Sigue en tiempo real la cola de pedidos, gestiona órdenes y reservas activas, y coordina con cocina para que todo salga a tiempo.</span>
+            <span class="home-card-cta">Ver cola →</span>
+          </button>
+          <button class="home-card" onclick="showPanel('reportes')">
+            <span class="home-card-emoji">📊</span>
+            <span class="home-card-title">Análisis</span>
+            <span class="home-card-desc">Mira tus ganancias del día, la semana o el mes. Analiza los horarios de mayor demanda y descarga reportes en Excel.</span>
+            <span class="home-card-cta">Ver reportes →</span>
+          </button>
+          <button class="home-card" onclick="showPanel('ajustes')">
+            <span class="home-card-emoji">⚙️</span>
+            <span class="home-card-title">Ajustes</span>
+            <span class="home-card-desc">Personaliza el nombre, colores y foto de tu restaurante. Genera el QR de cada mesa y administra a tu equipo con permisos por rol.</span>
+            <span class="home-card-cta">Configurar →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           PANEL: GESTIÓN DE MENÚS (hub intermedio)
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-gestion-menus">
+        <button class="btn-back-home" onclick="showPanel('home')">← Inicio</button>
+        <div class="mc-hub">
+          <button class="mc-hub-card" onclick="showPanel('menu-dia')">
+            <span class="mc-hub-emoji">📋</span>
+            <span class="mc-hub-title">Menú del día</span>
+            <span class="mc-hub-desc">Secciones, platos y el menú que ven tus clientes hoy</span>
+            <span class="mc-hub-cta">Configurar →</span>
+          </button>
+          <button class="mc-hub-card" onclick="showPanel('carta')">
+            <span class="mc-hub-emoji">🍴</span>
+            <span class="mc-hub-title">Carta</span>
+            <span class="mc-hub-desc">Categorías y platos a la carta con precio y foto</span>
+            <span class="mc-hub-cta">Configurar →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
            PANEL: MENÚ DEL DÍA
       ══════════════════════════════════════ -->
-      <div class="panel active" id="panel-menu-dia">
+      <div class="panel" id="panel-menu-dia">
+
+        <button class="btn-back-home" onclick="showPanel('gestion-menus')">← Gestión de menús</button>
 
         <!-- Stepper: explica el flujo de los 3 pasos -->
         <div class="md-stepper">
@@ -246,6 +318,8 @@
       ══════════════════════════════════════ -->
       <div class="panel" id="panel-carta">
 
+        <button class="btn-back-home" onclick="showPanel('gestion-menus')">← Gestión de menús</button>
+
         <!-- Stepper: explica el flujo de la Carta -->
         <div class="md-stepper">
           <div class="md-step active" id="cartastep-categorias" onclick="switchTab('carta','categorias')">
@@ -294,6 +368,7 @@
            PANEL: ÓRDENES
       ══════════════════════════════════════ -->
       <div class="panel" id="panel-ordenes">
+        <button class="btn-back-home" onclick="showPanel('operaciones')">← Operaciones</button>
         <div class="tabs">
           <button class="tab active" id="tab-ord-plano"    onclick="switchTab('ord','plano')">Plano</button>
           <button class="tab"        id="tab-ord-activas"  onclick="switchTab('ord','activas')">Activas</button>
@@ -349,6 +424,7 @@
            PANEL: RESERVAS
       ══════════════════════════════════════ -->
       <div class="panel" id="panel-reservas">
+        <button class="btn-back-home" onclick="showPanel('operaciones')">← Operaciones</button>
         <div class="tabs">
           <button class="tab active" id="tab-res-activas"   onclick="switchTab('res','activas')">Pendientes / Confirmadas</button>
           <button class="tab"        id="tab-res-historial" onclick="switchTab('res','historial')">Historial</button>
@@ -391,7 +467,7 @@
       PANEL: USUARIOS
         ══════════════════════════════════════ -->
     <div class="panel" id="panel-usuarios">
-    
+      <button class="btn-back-home" onclick="showPanel('ajustes')">← Ajustes</button>
       <div class="card">
         <div class="card-header"><span class="card-title">Agregar usuario</span></div>
         <div class="card-body">
@@ -431,6 +507,7 @@
            PANEL: REPORTES
       ══════════════════════════════════════ -->
       <div class="panel" id="panel-reportes">
+        <button class="btn-back-home" onclick="showPanel('home')">← Inicio</button>
         <div class="sec-header">
           <div><div class="sec-title">Reportes</div><div class="sec-sub">Métricas del restaurante</div></div>
           <button class="btn btn-ghost btn-sm" onclick="loadReportes();loadGanancias();loadDemanda();loadPedidosFiltros();loadHoraPico()">↻ Actualizar</button>
@@ -519,6 +596,7 @@
            PANEL: COCINA
       ══════════════════════════════════════ -->
       <div class="panel" id="panel-cocina">
+        <button class="btn-back-home" onclick="showPanel('operaciones')">← Operaciones</button>
         <div class="sec-header">
           <div>
             <div class="sec-title">🍳 Cola de Cocina</div>
@@ -530,9 +608,43 @@
       </div>
 
       <!-- ══════════════════════════════════════
+           PANEL: OPERACIONES (hub intermedio)
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-operaciones">
+        <button class="btn-back-home" onclick="showPanel('home')">← Inicio</button>
+        <div class="mc-hub">
+          <button class="mc-hub-card" onclick="showPanel('pedidos')">
+            <span class="mc-hub-emoji">⚡</span>
+            <span class="mc-hub-title">Cola del día</span>
+            <span class="mc-hub-desc">Vista unificada de todas las órdenes y reservas activas por etapa</span>
+            <span class="mc-hub-cta">Ver cola →</span>
+          </button>
+          <button class="mc-hub-card" onclick="showPanel('ordenes')">
+            <span class="mc-hub-emoji">🧾</span>
+            <span class="mc-hub-title">Órdenes</span>
+            <span class="mc-hub-desc">Plano de mesas, órdenes activas e historial</span>
+            <span class="mc-hub-cta">Ver órdenes →</span>
+          </button>
+          <button class="mc-hub-card" onclick="showPanel('reservas')">
+            <span class="mc-hub-emoji">📅</span>
+            <span class="mc-hub-title">Reservas</span>
+            <span class="mc-hub-desc">Reservas pendientes, confirmadas e historial</span>
+            <span class="mc-hub-cta">Ver reservas →</span>
+          </button>
+          <button class="mc-hub-card" onclick="showPanel('cocina')">
+            <span class="mc-hub-emoji">🍳</span>
+            <span class="mc-hub-title">Cocina</span>
+            <span class="mc-hub-desc">Cola de cocina actualizada en tiempo real</span>
+            <span class="mc-hub-cta">Ver cocina →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
            PANEL: COLA DEL DÍA
       ══════════════════════════════════════ -->
       <div class="panel" id="panel-pedidos">
+        <button class="btn-back-home" onclick="showPanel('operaciones')">← Operaciones</button>
         <div class="sec-header">
           <div>
             <div class="sec-title">📋 Cola del día</div>
@@ -563,9 +675,31 @@
       </div>
 
       <!-- ══════════════════════════════════════
+           PANEL: AJUSTES (hub intermedio)
+      ══════════════════════════════════════ -->
+      <div class="panel" id="panel-ajustes">
+        <button class="btn-back-home" onclick="showPanel('home')">← Inicio</button>
+        <div class="mc-hub">
+          <button class="mc-hub-card" onclick="showPanel('configuracion')">
+            <span class="mc-hub-emoji">⚙️</span>
+            <span class="mc-hub-title">Configuración</span>
+            <span class="mc-hub-desc">Nombre, foto, colores, mesas, pagos y QR del restaurante</span>
+            <span class="mc-hub-cta">Configurar →</span>
+          </button>
+          <button class="mc-hub-card" onclick="showPanel('usuarios')">
+            <span class="mc-hub-emoji">👥</span>
+            <span class="mc-hub-title">Usuarios</span>
+            <span class="mc-hub-desc">Cocineros, mozos y permisos del equipo</span>
+            <span class="mc-hub-cta">Gestionar →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
            PANEL: CONFIGURACIÓN
       ══════════════════════════════════════ -->
       <div class="panel" id="panel-configuracion">
+        <button class="btn-back-home" onclick="showPanel('ajustes')">← Ajustes</button>
         <div class="sec-header">
           <div><div class="sec-title">Configuración</div><div class="sec-sub">Personalización visual del restaurante</div></div>
         </div>
@@ -824,9 +958,9 @@
           onclick="showPanel('menu-dia')" aria-label="Menú del día">
     <span class="bn-ico" aria-hidden="true">🍽</span><span>Menú</span>
   </button>
-  <button type="button" class="bottom-nav-item" id="bn-mas" data-target="__more__"
-          onclick="toggleSidebar()" aria-label="Más opciones">
-    <span class="bn-ico" aria-hidden="true">☰</span><span>Más</span>
+  <button type="button" class="bottom-nav-item" id="bn-home" data-target="home"
+          onclick="showPanel('home')" aria-label="Inicio">
+    <span class="bn-ico" aria-hidden="true">🏠</span><span>Inicio</span>
   </button>
 </nav>
 
@@ -852,9 +986,9 @@ function closeSidebar() {
 }
 
 // ── Panel navigation ─────────────────────────────────────
-let PANELS = ['menu-dia','carta','ordenes','reservas','cocina','pedidos','usuarios','reportes','configuracion'];
-const TITLES  = { 'menu-dia':'Menú del día', carta:'Carta', ordenes:'Órdenes', reservas:'Reservas', cocina:'Cocina', pedidos:'Cola del día', usuarios:'Usuarios', reportes:'Reportes', configuracion:'Configuración' };
-let activePanel = 'menu-dia';
+let PANELS = ['home','gestion-menus','operaciones','ajustes','menu-dia','carta','ordenes','reservas','cocina','pedidos','usuarios','reportes','configuracion'];
+const TITLES  = { home:'Inicio', 'gestion-menus':'Gestión de menús', operaciones:'Operaciones', ajustes:'Ajustes', 'menu-dia':'Menú del día', carta:'Carta', ordenes:'Órdenes', reservas:'Reservas', cocina:'Cocina', pedidos:'Cola del día', usuarios:'Usuarios', reportes:'Reportes', configuracion:'Configuración' };
+let activePanel = 'home';
 
 // ── Permisos: filtrar paneles para usuarios delegados ─────
 const PERM_REQUIRED = {
@@ -875,7 +1009,7 @@ if (session.role === 'cocinero' && !Array.isArray(session.permisos)) {
     document.getElementById(`nav-${id}`).classList.add('hidden');
   });
   document.querySelector('.brand-sub').textContent = 'Panel del cocinero';
-  document.getElementById('panel-menu-dia').classList.remove('active');
+  document.getElementById('panel-home').classList.remove('active');
   document.getElementById('nav-menu-dia').classList.remove('active');
   document.getElementById('panel-cocina').classList.add('active');
   document.getElementById('nav-cocina').classList.add('active');
@@ -919,16 +1053,14 @@ if (!isOwnerOrAdmin && Array.isArray(session.permisos)) {
 
   // Navegar al primer panel disponible
   const primerPanel = PANELS[0];
-  if (primerPanel && primerPanel !== 'menu-dia') {
-    document.getElementById('panel-menu-dia').classList.remove('active');
-    document.getElementById('nav-menu-dia').classList.remove('active');
+  if (primerPanel) {
+    document.getElementById('panel-home').classList.remove('active');
     document.getElementById(`panel-${primerPanel}`).classList.add('active');
-    document.getElementById(`nav-${primerPanel}`).classList.add('active');
-    document.getElementById('page-title').textContent = TITLES[primerPanel];
+    document.getElementById(`nav-${primerPanel}`)?.classList.add('active');
+    document.getElementById('page-title').textContent = TITLES[primerPanel] || primerPanel;
     activePanel = primerPanel;
-  } else if (!primerPanel) {
-    document.getElementById('panel-menu-dia').classList.remove('active');
-    document.getElementById('nav-menu-dia').classList.remove('active');
+  } else {
+    document.getElementById('panel-home').classList.remove('active');
   }
 }
 
@@ -968,19 +1100,19 @@ if (!isOwnerOrAdmin && Array.isArray(session.permisos)) {
 function showPanel(name) {
   PANELS.forEach(p => {
     document.getElementById(`panel-${p}`).classList.toggle('active', p === name);
-    document.getElementById(`nav-${p}`).classList.toggle('active', p === name);
+    document.getElementById(`nav-${p}`)?.classList.toggle('active', p === name);
   });
   // Sincroniza el bottom-nav móvil con el panel activo
   document.querySelectorAll('.bottom-nav-item').forEach(b => {
     b.classList.toggle('active', b.dataset.target === name);
   });
-  document.getElementById('page-title').textContent = TITLES[name];
+  document.getElementById('page-title').textContent = TITLES[name] || name;
   activePanel = name;
   closeSidebar();
   if (name === 'menu-dia')  { loadSecciones(); loadPlatosMenu(); loadMenusDia(); }
   if (name === 'carta')     { loadCategorias(); loadPlatosCarta(); }
   if (name === 'ordenes')   { loadPlanoMesas(); }
-  if (name === 'usuarios') {loadUsuarios();}
+  if (name === 'usuarios')  { loadUsuarios(); }
   if (name === 'reservas')  { loadReservasActivas(); }
   if (name === 'cocina')    { initCocinaPoll(); } else { stopCocinaPoll(); }
   if (name === 'pedidos')   { initPedidosPoll(); } else { stopPedidosPoll(); }
@@ -2003,6 +2135,15 @@ if (window.MenuWizard) {
 }
 updateSoundButton();
 loadEstatusOrden(); loadEstatusReserva();
+// Saludo dinámico en home (hora Lima)
+(function setGreeting() {
+  const hour = parseInt(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Lima', hour: 'numeric', hour12: false
+  }).format(new Date()), 10);
+  const gr = hour < 12 ? 'Buenos días ☀️' : hour < 19 ? 'Buenas tardes 🌤️' : 'Buenas noches 🌙';
+  const el = document.getElementById('home-greeting');
+  if (el) el.textContent = gr;
+})();
 if (activePanel === 'menu-dia')        { loadSecciones(); loadPlatosMenu(); loadMenusDia(); }
 else if (activePanel === 'carta')      { loadCategorias(); loadPlatosCarta(); }
 else if (activePanel === 'ordenes')    { loadOrdenesActivas(); }
@@ -2013,6 +2154,15 @@ else if (activePanel === 'configuracion') { loadConfiguracion(); }
 
 // config.js cargado como <script src>
 loadRestauranteBrand();
+
+// Espejo del nombre del restaurante en el home
+(function mirrorRestaurantName() {
+  const src = document.getElementById('sidebar-restaurant');
+  const dst = document.getElementById('home-restaurant-name');
+  if (!src || !dst) return;
+  const sync = () => { dst.textContent = src.textContent !== 'Cargando…' ? src.textContent : ''; };
+  new MutationObserver(sync).observe(src, { childList: true, characterData: true, subtree: true });
+})();
 
 // ── Configuración y brand (funciones en config.js) ───────
 initConfigListeners();
