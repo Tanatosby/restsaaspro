@@ -2,6 +2,27 @@
 
 ---
 
+## 📦 Sesión 2026-06-06 — Deploy a producción + limpieza de uploads en git
+
+**Prompt:** "Quiero actualizar mi servidor desplegado" → configurar acceso SSH y desplegar; luego sacar uploads de git; luego documentar dos pendientes.
+
+**Hecho:**
+- **Deploy a producción** (`menupro.tech`, Droplet `147.182.135.252`): `git pull origin main` → commit `76164ef`, `pm2 restart menupro`. Verificado: `/health` OK + `https://menupro.tech/` 200. Las migraciones de `config/database.js` corrieron en el restart.
+- **Acceso SSH** desde esta laptop (DESKTOP-LPSVKIS): clave `id_rsa.pub` autorizada en `/root/.ssh/authorized_keys` del servidor. ⚠️ `id_rsa` tiene passphrase → el entorno automático no conecta solo; deploys vía consola web del Droplet o `ssh` interactivo del usuario.
+- **`public/uploads/` fuera de git** (commit `6f4a276`): ya estaba en `.gitignore` pero seguía trackeado; `git rm --cached` de las 13 fotos/comprobantes. Las carpetas se autocrean al arrancar (ISS-005), no se necesita `.gitkeep`. Resuelve el choque recurrente de `git pull` con las fotos de producción. **Pendiente en servidor:** correr el bloque backup→pull→restore para que el deploy no borre las imágenes existentes.
+
+**ISS-015 — diagnosticado y corregido (foto de plato no se actualiza):**
+- **Síntoma:** "Cambiar foto" muestra "Foto actualizada" pero la imagen no cambia (o queda en gris/sin foto).
+- **Causa raíz:** el backend guardaba la foto con nombre fijo `plato_<id>.<ext>` (`routes/menu.js`, `makeUploadPlato`). Dos fallos: (1) URL estable → el navegador cachea la imagen vieja; (2) si la extensión coincide con la anterior, multer sobrescribe el archivo y luego el `fs.unlinkSync` del "anterior" borraba la imagen recién subida → plato sin foto.
+- **Fix:** nombre versionado `plato_<id>_<Date.now()>.<ext>`. URL nueva por subida (rompe caché) y el borrado del anterior nunca pisa la imagen nueva. 1 línea, cubre menú y carta. Tests 215/215 verde.
+- **Pendiente:** deploy a producción (`git pull` + `pm2 restart`).
+- **Nota:** el 500 al *eliminar* un plato referenciado (FK constraint) es comportamiento esperado, NO bug — decisión del owner de no tocarlo (preserva historial/reportería). Documentado en ISS-015.
+
+**Documentado:**
+- **features.md** → nuevo pendiente: actualizar la landing con fotos nuevas del sistema (UI quedó desactualizada tras el deploy de hoy).
+
+---
+
 ## 🏁 RESUMEN EJECUTIVO — Estado al 2026-06-05 (sesión 4)
 
 **Pantalla Home + navegación por hubs (2026-06-05, sesión 4):**

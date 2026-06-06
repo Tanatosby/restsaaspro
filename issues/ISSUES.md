@@ -4,6 +4,7 @@
 
 | ID | Título | Módulo | Reproducible | Prioridad |
 |----|--------|--------|--------------|-----------|
+| [ISS-015](ISS-015-foto-plato-menu-error.md) | La foto de un plato no se actualiza en pantalla tras "Cambiar foto" (caché por nombre de archivo fijo) | Menú del día / Carta | Sí | Alta |
 
 
 

@@ -9,6 +9,20 @@
 Media query `@media (min-width: 680px)` en `menu.css` → columna centrada de 460px. Hero, header, content, res-panel, cart-bar, res-bar y drawer quedan contenidos en esa columna. Solo CSS + una línea JS (`body.classList.add('has-hero')`). Sin cambios de backend.
 
 
+### Actualizar landing con nuevas fotos del sistema 📸
+
+La landing pública (`public/landing.html`) muestra capturas/imágenes del sistema que **quedaron desactualizadas** respecto a la UI actual (owner renovado con hubs/Home, menu-wizard, photo-editor, cards de configuración — desplegado 2026-06-06).
+
+**Tarea:** tomar nuevas capturas del sistema en su estado actual y reemplazar las imágenes de la landing para que reflejen la versión real que ven los clientes.
+
+- Revisar qué imágenes usa hoy la landing (hero, secciones de features, demo).
+- Capturas mobile-first (es donde vive el sistema) y, si aplica, desktop.
+- Optimizar peso de las imágenes (conexión móvil — ver regla mobile-first en CLAUDE.md).
+- Recordar que los assets pesados del bot de la landing están en `.gitignore`; si se regeneran, subirlos por `scp` (ver `deploy.md` §16).
+
+**Estado:** ⏳ Pendiente. Tarea de contenido/marketing, no bloqueante.
+
+
 ### Cambio en Flujo total : 
 
 > **✅ Completado 2026-06-05 (sesiones 3 + 4)**

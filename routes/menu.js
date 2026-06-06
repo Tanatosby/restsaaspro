@@ -863,7 +863,12 @@ function makeUploadPlato(subcarpeta) {
       },
       filename(req, file, cb) {
         const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, `plato_${req.params.id}${ext}`);
+        // Nombre versionado con timestamp: cada subida genera una URL nueva.
+        // Evita 2 problemas del nombre fijo (ISS-015):
+        //   1) el navegador cachea la URL estable y no muestra la foto nueva
+        //   2) si la extensión coincide, multer sobrescribe y luego el unlink
+        //      del "anterior" borraba la imagen recién subida (quedaba sin foto)
+        cb(null, `plato_${req.params.id}_${Date.now()}${ext}`);
       }
     }),
     limits: { fileSize: 2 * 1024 * 1024 },
