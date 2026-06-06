@@ -10,8 +10,9 @@ node_modules/
 *.sqlite-shm
 *.sqlite-wal
 
-# Uploads generados por usuarios (opcional; descomentar para excluir)
-
+# Uploads generados por usuarios (fotos de platos, comprobantes de pago).
+# NO versionar: son datos de producción y chocan con git pull en el deploy (ISS-005).
+# Las carpetas se recrean solas al arrancar (routes/menu.js, routes/public.js).
 public/uploads/
 
 # Logs
