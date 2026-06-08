@@ -2,7 +2,17 @@
 
 ## Pendientes
 
-### ~~Cambios en desktop~~ ✅ Completado 2026-06-05
+### ~~Galerías de platos y menús — desktop apretado~~ ✅ Completado 2026-06-08
+
+~~En desktop las galerías de Platos de menú, Platos a la carta y Menús del día se ven muy apretadas (cards de ~120px en fila) y dejan espacio vacío a la derecha del panel.~~
+
+**Causa raíz (doble bug de CSS):**
+1. `.mw { max-width: 680px }` inyectado por `menu-wizard.js` → cortaba el contenedor dejando vacío a la derecha.
+2. Problema de cascada: el `<style>` inyectado por el widget carga después de `owner.css` → `.mw-menus { display: flex }` del widget pisaba el `display: grid` de `owner.css` (misma especificidad 0,1,0).
+
+**Fix en `public/css/owner.css`:** selectores con ID de mount (`#platos-menu-mount`, `#platos-carta-mount`, `#menu-wizard-mount`) con especificidad (1,1,0) que siempre ganan sobre el widget. `max-width: none` elimina el límite de 680px. `grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))` da grid responsivo (~4 col en 1280px). `.mw-wizard` centrado con `max-width: 560px`. Solo CSS, sin cambios de backend.
+
+### ~~Cambios en desktop (menu.html)~~ ✅ Completado 2026-06-05
 
 ~~En desktop la parte de menú se ve mal, se debe crear una tarjeta para desktop que no sea tan ancha.~~
 

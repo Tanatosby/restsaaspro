@@ -889,27 +889,61 @@ tbody tr:hover { background: var(--surface-2); }
 }
 .mw-menu-card.has-photo .pm-plate-desc { color: rgba(255,255,255,.78); }
 
-/* Desktop: galería de platos como grid 2 col (menú y carta) */
+/* Desktop: galería de platos — ocupa todo el ancho del panel y hace grid responsivo.
+   Usamos el ID del mount para ganar especificidad sobre los estilos inyectados del widget. */
 @media (min-width: 768px) {
-  .pm-plate-gallery,
-  .pc-plate-gallery {
+  #platos-menu-mount .mw,
+  #platos-carta-mount .mw {
+    max-width: none;
+  }
+  #platos-menu-mount .pm-plate-gallery,
+  #platos-carta-mount .pc-plate-gallery {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     overflow-x: visible;
     scroll-snap-type: none;
   }
-  .pm-plate-gallery .mw-menu-card,
-  .pc-plate-gallery .mw-menu-card {
+  #platos-menu-mount .mw-menu-card,
+  #platos-carta-mount .mw-menu-card {
     flex: unset;
     max-width: none;
     min-height: 360px;
   }
-  .pm-plate-gallery .mw-empty-card,
-  .pc-plate-gallery .mw-empty-card {
+  #platos-menu-mount .mw-empty-card,
+  #platos-carta-mount .mw-empty-card {
     flex: unset;
     max-width: none;
     min-height: 200px;
     grid-column: 1 / -1;
+  }
+}
+
+/* Desktop: Menú del día — galería de menús ocupa todo el ancho del panel */
+@media (min-width: 768px) {
+  #menu-wizard-mount .mw {
+    max-width: none;
+  }
+  #menu-wizard-mount .mw-menus {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+  #menu-wizard-mount .mw-menu-card {
+    flex: unset;
+    max-width: none;
+    min-height: 400px;
+  }
+  #menu-wizard-mount .mw-empty-card {
+    flex: unset;
+    max-width: none;
+    grid-column: 1 / -1;
+  }
+  /* Wizard de creación (3 pasos): centrado y contenido */
+  #menu-wizard-mount .mw-wizard {
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 

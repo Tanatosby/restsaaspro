@@ -2,6 +2,44 @@
 
 ---
 
+## 📦 Sesión 2026-06-08 — Fix botón "Instalar app" no aparece en Android producción
+
+**Prompt:** "No aparece el botón de descargar app en mi celular" (producción `menupro.tech`).
+
+**Diagnóstico:**
+`beforeinstallprompt` en Android Chrome **puede no dispararse** aunque el sitio esté en HTTPS, si el usuario descartó el prompt antes (Chrome lo suprime por meses) o si Chrome lo suprimió internamente. En ese caso `installable()` devolvía `false` y el botón permanecía oculto indefinidamente, sin ningún fallback.
+
+**Fix — `public/js/widgets/pwa-install.js`:**
+- Nueva función `isMobileHTTPS()`: detecta Android/mobile en HTTPS.
+- `installable()` ahora retorna `true` si `isMobileHTTPS()`, incluso sin `deferred` — el botón siempre aparece en producción móvil.
+- `prompt()`: cuando `deferred` es null y no es iOS, llama a `showAndroidHelp()` (instrucciones manuales: ⋮ → "Instalar app").
+- Nueva función `showAndroidHelp()`: modal bottom-sheet reutilizando los estilos `.pwa-ios` del instructivo de iOS.
+- Nueva función `injectHelpStyles()`: extrae la inyección del `<style>` para que tanto iOS como Android la compartan (antes iOS inyectaba los estilos y Android los usaba sin inyectarlos → modal sin estilos).
+- Sin cambios de backend.
+
+---
+
+## 📦 Sesión 2026-06-08 — Desktop: galerías de platos y menús usan todo el ancho del panel
+
+**Prompt:** "No me gusta cómo se ve desde desktop — muy apretado" + captura `no_me_gusta.png`. Luego: replicar fix para la zona de Menú del día.
+
+**Diagnóstico:**
+Dos bugs de CSS se combinaban para dar el resultado "apretado":
+1. **`max-width: 680px` en `.mw`** (inyectado por `menu-wizard.js` en desktop) → el contenedor de la galería se cortaba en 680px dejando espacio vacío a la derecha del panel.
+2. **Problema de cascada:** `menu-wizard.js` inyecta un `<style>` en `<head>` en tiempo de ejecución, **después** de que `owner.css` carga. Como ambos selectores (`.mw-menus { display: flex }` del widget y `.pm-plate-gallery { display: grid }` de owner.css) tienen la misma especificidad (0,1,0), el inyectado ganaba siempre → las cards quedaban en una fila horizontal de 5 elementos muy angostos (~120px c/u) en lugar del grid de 2 columnas esperado.
+
+**Fix — `public/css/owner.css`:**
+- Reemplazado el bloque `@media (min-width: 768px) { .pm-plate-gallery, .pc-plate-gallery { ... } }` por selectores con ID de mount (`#platos-menu-mount`, `#platos-carta-mount`) que tienen especificidad (1,1,0) → ganan sobre el widget siempre.
+- Agregado bloque nuevo para `#menu-wizard-mount` con la misma lógica.
+- `max-width: none` en el `.mw` de cada mount → el contenedor llena todo el ancho del panel.
+- `grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))` → grid responsivo: ~4 columnas en 1280px, 2 columnas en pantalla chica desktop.
+- `.mw-wizard { max-width: 560px; margin: auto }` → el wizard de "Crear menú" (3 pasos) queda centrado y no se estira.
+- Sin cambios de backend ni de JS. Solo CSS.
+
+**Resultado:** las tres galerías (Platos de menú, Platos a la carta, Menús del día) usan todo el ancho disponible del panel en desktop, sin espacio vacío a la derecha. Cards cómodas de ≥240px. Verificado por el usuario: "está excelente".
+
+---
+
 ## 📦 Sesión 2026-06-06 — Deploy a producción + limpieza de uploads en git
 
 **Prompt:** "Quiero actualizar mi servidor desplegado" → configurar acceso SSH y desplegar; luego sacar uploads de git; luego documentar dos pendientes.

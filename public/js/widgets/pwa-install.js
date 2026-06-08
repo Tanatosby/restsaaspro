@@ -34,11 +34,15 @@
   function isIOS() {
     return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
   }
+  function isMobileHTTPS() {
+    return location.protocol === 'https:' && /android|mobile|phone/i.test(navigator.userAgent);
+  }
   function installable() {
     if (isStandalone()) return false; // ya instalada
     if (deferred) return true;        // Android/Chrome/Edge: tenemos el prompt nativo
     if (isIOS()) return true;         // iOS/Safari: instalable vía instructivo manual
-    return false;                     // navegador sin soporte
+    if (isMobileHTTPS()) return true; // Android sin prompt (suprimido): mostrar igual con instrucción manual
+    return false;
   }
 
   function refresh() {
@@ -54,7 +58,8 @@
       refresh();
       return;
     }
-    if (isIOS()) { showIosHelp(); }
+    if (isIOS()) { showIosHelp(); return; }
+    showAndroidHelp();
   }
 
   function attach(el) {
@@ -82,13 +87,17 @@
   display:flex; align-items:center; justify-content:center; }
 @media (prefers-reduced-motion: reduce) { .pwa-ios-card { animation:none; } }`;
 
+  function injectHelpStyles() {
+    if (document.getElementById('pwa-ios-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'pwa-ios-styles';
+    s.textContent = IOS_STYLE;
+    document.head.appendChild(s);
+  }
+
   function showIosHelp() {
     if (!iosModal) {
-      const s = document.createElement('style');
-      s.id = 'pwa-ios-styles';
-      s.textContent = IOS_STYLE;
-      document.head.appendChild(s);
-
+      injectHelpStyles();
       iosModal = document.createElement('div');
       iosModal.className = 'pwa-ios';
       iosModal.innerHTML = `
@@ -107,6 +116,30 @@
     iosModal.classList.add('open');
   }
   function closeIos() { if (iosModal) iosModal.classList.remove('open'); }
+
+  // ── Instructivo Android manual (cuando Chrome suprimió beforeinstallprompt) ──
+  let androidModal = null;
+  function showAndroidHelp() {
+    if (!androidModal) {
+      injectHelpStyles();
+      androidModal = document.createElement('div');
+      androidModal.className = 'pwa-ios'; // reutiliza los mismos estilos
+      androidModal.innerHTML = `
+        <div class="pwa-ios-card" role="dialog" aria-modal="true" aria-label="Cómo instalar la app">
+          <button class="pwa-ios-close" type="button" aria-label="Cerrar">✕</button>
+          <div class="pwa-ios-title">📲 Instalar Menú Pro</div>
+          <p class="pwa-ios-step">1. Toca el menú <b>⋮</b> (tres puntos) en la esquina superior derecha de Chrome.</p>
+          <p class="pwa-ios-step">2. Elige <b>"Instalar app"</b> o <b>"Añadir a pantalla de inicio"</b>.</p>
+          <p class="pwa-ios-step">3. Confirma con <b>Instalar</b>. La app quedará en tu pantalla de inicio.</p>
+        </div>`;
+      document.body.appendChild(androidModal);
+      androidModal.addEventListener('click', (e) => { if (e.target === androidModal) closeAndroid(); });
+      androidModal.querySelector('.pwa-ios-close').addEventListener('click', closeAndroid);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAndroid(); });
+    }
+    androidModal.classList.add('open');
+  }
+  function closeAndroid() { if (androidModal) androidModal.classList.remove('open'); }
 
   window.PwaInstall = { attach, prompt, installable };
 })();
