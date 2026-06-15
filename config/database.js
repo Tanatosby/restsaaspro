@@ -468,7 +468,9 @@ try { db.exec(`ALTER TABLE reservas  ADD COLUMN cargo_modalidad REAL DEFAULT 0`)
 try { db.exec(`ALTER TABLE restaurantes ADD COLUMN auto_merge_activo INTEGER DEFAULT 1`); } catch (_) {}
 
 // Migración idempotente: slug único por restaurante (URL personalizada)
-try { db.exec(`ALTER TABLE restaurantes ADD COLUMN slug TEXT UNIQUE`); } catch (_) {}
+// SQLite no admite UNIQUE en ALTER TABLE ADD COLUMN — se agrega la columna y luego el índice por separado
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN slug TEXT`); } catch (_) {}
+db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_restaurantes_slug ON restaurantes(slug) WHERE slug IS NOT NULL`);
 
 // Tabla de suscripciones push (Gap 3 — Web Push)
 db.exec(`
