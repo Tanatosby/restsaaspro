@@ -770,7 +770,7 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
     SELECT nombre, foto_portada, color_primario, color_secundario,
            yape_activo, yape_telefono, plin_activo, plin_telefono, efectivo_activo,
            minutos_preparacion, para_llevar_activo, delivery_activo,
-           costo_tapper, tarifa_delivery, auto_merge_activo
+           costo_tapper, tarifa_delivery, auto_merge_activo, slug
     FROM restaurantes WHERE id = ?
   `).get(req.user.restaurant_id);
   if (!row) return res.status(404).json({ error: 'Restaurante no encontrado' });
@@ -790,6 +790,7 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
     costo_tapper:         row.costo_tapper          ?? 0,
     tarifa_delivery:      row.tarifa_delivery       ?? 0,
     auto_merge_activo:    row.auto_merge_activo     ?? 1,
+    slug:                 row.slug                  || null,
   });
 });
 
@@ -817,6 +818,27 @@ router.patch('/config/auto-merge', authorizePermiso(), (req, res) => {
   db.prepare(`UPDATE restaurantes SET auto_merge_activo = ? WHERE id = ?`)
     .run(activo, req.user.restaurant_id);
   res.json({ auto_merge_activo: activo });
+});
+
+// PATCH /api/menu/config/slug — guardar URL personalizada del restaurante
+router.patch('/config/slug', authorizePermiso(), (req, res) => {
+  const slug = (req.body.slug || '').toLowerCase().trim();
+  if (!slug) {
+    db.prepare(`UPDATE restaurantes SET slug = NULL WHERE id = ?`).run(req.user.restaurant_id);
+    return res.json({ slug: null });
+  }
+  if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(slug))
+    return res.status(400).json({ error: 'El slug debe tener entre 3 y 30 caracteres: solo letras minúsculas, números y guiones (no puede empezar ni terminar con guión)' });
+  const RESERVADOS = ['menu', 'login', 'owner', 'kitchen', 'admin', 'manuales', 'api', 'uploads', 'health'];
+  if (RESERVADOS.includes(slug))
+    return res.status(400).json({ error: `"${slug}" es una palabra reservada del sistema` });
+  try {
+    db.prepare(`UPDATE restaurantes SET slug = ? WHERE id = ?`).run(slug, req.user.restaurant_id);
+    res.json({ slug });
+  } catch (e) {
+    if (e.message.includes('UNIQUE')) return res.status(409).json({ error: 'Ese nombre ya está en uso por otro restaurante' });
+    throw e;
+  }
 });
 
 // PATCH /api/menu/config/minutos-preparacion — tiempo de anticipación por restaurante

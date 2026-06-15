@@ -63,9 +63,44 @@ async function loadConfiguracion() {
     const amEl = document.getElementById('cfg-auto-merge-activo');
     if (amEl) amEl.checked = cfg.auto_merge_activo ?? true;
 
-    generarQR();
+    // Slug / URL personalizada
+    const slugEl = document.getElementById('config-slug');
+    if (slugEl) slugEl.value = cfg.slug || '';
+    actualizarSlugPreview(cfg.slug || null);
+
+    generarQR(cfg.slug || null);
     loadMesasConfig();
   } catch(e) { toast(e.message, 'err'); }
+}
+
+function actualizarSlugPreview(slug) {
+  const preview = document.getElementById('config-slug-preview');
+  const urlEl   = document.getElementById('config-slug-url');
+  if (!preview || !urlEl) return;
+  if (slug) {
+    const href = `${window.location.origin}/${slug}`;
+    urlEl.textContent = href;
+    urlEl.href = href;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+async function guardarSlug() {
+  const slug = (document.getElementById('config-slug')?.value || '').trim();
+  try {
+    const res = await api('PATCH', '/api/menu/config/slug', { slug });
+    actualizarSlugPreview(res.slug || null);
+    generarQR(res.slug || null);
+    toast(res.slug ? `URL guardada: menupro.tech/${res.slug}` : 'URL personalizada eliminada');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function copiarSlugUrl() {
+  const urlEl = document.getElementById('config-slug-url');
+  if (!urlEl) return;
+  navigator.clipboard.writeText(urlEl.textContent).then(() => toast('Link copiado'));
 }
 
 async function guardarConfigPagos() {
@@ -162,12 +197,14 @@ async function eliminarMesa(id, numero) {
 // ── QR del menú ──────────────────────────────────────────
 let _qrInstance = null;
 
-function generarQR() {
+function generarQR(slug) {
   const wrap = document.getElementById('qr-canvas-wrap');
   const linkInput = document.getElementById('qr-link-input');
   if (!wrap) return;
 
-  const url = `${window.location.origin}/menu.html?restaurante=${session.restaurant_id}`;
+  const url = slug
+    ? `${window.location.origin}/${slug}`
+    : `${window.location.origin}/menu?restaurante=${session.restaurant_id}`;
   linkInput.value = url;
   wrap.innerHTML = '';
 
@@ -199,9 +236,12 @@ function descargarQR() {
 function generarQRsMesas() {
   const n = parseInt(document.getElementById('qr-num-mesas').value) || 10;
   const grid = document.getElementById('qr-mesas-grid');
+  const slug = document.getElementById('config-slug')?.value.trim() || null;
   grid.innerHTML = '';
   for (let i = 1; i <= n; i++) {
-    const url = `${window.location.origin}/menu.html?restaurante=${session.restaurant_id}&mesa=${i}`;
+    const url = slug
+      ? `${window.location.origin}/${slug}/${i}`
+      : `${window.location.origin}/menu?restaurante=${session.restaurant_id}&mesa=${i}`;
     const wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px';
 

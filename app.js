@@ -115,6 +115,25 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
 });
 
+// Rutas por slug: /:slug y /:slug/:mesa
+// Se resuelven aquí, después de todas las rutas fijas, para no interferir.
+app.get('/:slug/:mesa', (req, res, next) => {
+  const { slug, mesa } = req.params;
+  if (!/^\d+$/.test(mesa)) return next();
+  const db = require('./config/database');
+  const rest = db.prepare(`SELECT id FROM restaurantes WHERE slug = ? AND activo = 1`).get(slug);
+  if (!rest) return next();
+  res.redirect(`/menu?restaurante=${rest.id}&mesa=${mesa}`);
+});
+
+app.get('/:slug', (req, res, next) => {
+  const { slug } = req.params;
+  const db = require('./config/database');
+  const rest = db.prepare(`SELECT id FROM restaurantes WHERE slug = ? AND activo = 1`).get(slug);
+  if (!rest) return next();
+  res.redirect(`/menu?restaurante=${rest.id}`);
+});
+
 app.use((err, req, res, next) => {
   console.error(`[ERROR] ${err.message}`);
   res.status(500).json({ error: 'Error interno del servidor' });

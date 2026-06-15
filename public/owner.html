@@ -844,6 +844,28 @@
           </div>
         </div>
 
+        <!-- URL personalizada -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">URL personalizada</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:0.75rem">
+            <p style="font-size:12px;color:var(--muted)">Elige el nombre único de tu restaurante en el link del menú. Solo letras minúsculas, números y guiones. Mínimo 3 caracteres.</p>
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Tu URL</label>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <span style="font-size:14px;color:var(--muted);white-space:nowrap">menupro.tech/</span>
+                <input id="config-slug" type="text" placeholder="karinamenu" maxlength="30"
+                       style="flex:1;min-width:120px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:16px;background:var(--bg);color:var(--text)"
+                       oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')" />
+                <button class="btn btn-primary btn-sm" onclick="guardarSlug()">Guardar</button>
+              </div>
+            </div>
+            <div id="config-slug-preview" style="display:none;font-size:13px;color:var(--muted)">
+              Tu link: <a id="config-slug-url" href="#" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600"></a>
+              <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;margin-left:4px" onclick="copiarSlugUrl()">Copiar</button>
+            </div>
+          </div>
+        </div>
+
         <!-- QR del menú -->
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-header"><span class="card-title">Código QR del menú</span></div>

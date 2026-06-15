@@ -467,6 +467,9 @@ try { db.exec(`ALTER TABLE reservas  ADD COLUMN cargo_modalidad REAL DEFAULT 0`)
 // Migración idempotente: auto-merge cuenta por mesa (Gap 8)
 try { db.exec(`ALTER TABLE restaurantes ADD COLUMN auto_merge_activo INTEGER DEFAULT 1`); } catch (_) {}
 
+// Migración idempotente: slug único por restaurante (URL personalizada)
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN slug TEXT UNIQUE`); } catch (_) {}
+
 // Tabla de suscripciones push (Gap 3 — Web Push)
 db.exec(`
   CREATE TABLE IF NOT EXISTS push_subscriptions (
