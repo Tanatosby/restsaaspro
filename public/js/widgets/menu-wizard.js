@@ -30,12 +30,19 @@
   const STYLE = `
 .mw {
   width: 100%;
-  /* Dimensiones de las cards de galería (menús Y secciones, las heredan por cascada).
-     Parametrizadas en un solo lugar para experimentar / revertir fácil.
-     Valores previos (con peek de la siguiente): --mw-card-w: 82%; --mw-card-maxw: 320px; --mw-card-h: 360px; */
-  --mw-card-w: 100%;      /* ancho (flex-basis): 100% = se ve una sola card, sin peek */
-  --mw-card-maxw: 100%;   /* tope de ancho */
-  --mw-card-h: 480px;     /* alto mínimo de la card */
+  /* Desktop: una card full-width, más alta para mostrar todos los controles */
+  --mw-card-w: 100%;
+  --mw-card-maxw: 100%;
+  --mw-card-h: 480px;
+}
+/* Mobile: cards compactas del mismo ancho que la card del cliente (200px),
+   con peek de la siguiente — igual a la experiencia del comensal */
+@media (max-width: 639px) {
+  .mw {
+    --mw-card-w: 200px;
+    --mw-card-maxw: 200px;
+    --mw-card-h: 300px;
+  }
 }
 .mw[hidden], .mw [hidden] { display: none !important; }
 

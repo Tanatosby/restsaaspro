@@ -533,16 +533,17 @@ async function renderReservarContent() {
   // Cards en formato retrato (alto > ancho) — se disponen dentro de un
   // contenedor .card-carousel con scroll horizontal (ver renderPedirContent).
   function renderMenuDiaCard(m, mode) {
-    // Primera foto disponible entre todos los platos del menú
-    const primeraFoto = m.secciones.flatMap(s => s.platos).find(p => p.url_foto)?.url_foto;
+    // Prioridad: foto de portada elegida por el owner → primera foto disponible de cualquier plato
+    const fotoUrl = m.url_foto_portada
+      || m.secciones.flatMap(s => s.platos).find(p => p.url_foto)?.url_foto;
 
     // Pills de secciones como preview
     const secPills = m.secciones.map(s =>
       `<span class="menu-dia-pill">${esc(s.nombre_seccion)}</span>`
     ).join('');
 
-    const foto = primeraFoto
-      ? `<img src="${primeraFoto}" alt="${esc(m.nombre)}">`
+    const foto = fotoUrl
+      ? `<img src="${fotoUrl}" alt="${esc(m.nombre)}">`
       : `<div class="menu-dia-photo-ph">🍽️</div>`;
 
     return `<div class="menu-dia-card" onclick="abrirMenuModal(${m.id},'${mode}')">

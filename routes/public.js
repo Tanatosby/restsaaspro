@@ -88,10 +88,12 @@ router.get('/menu', (req, res) => {
   const fecha = dia || fechaLima();
 
   const menus = db.prepare(`
-    SELECT id, nombre, elegible, dia, precio
-    FROM menus_dia
-    WHERE id_restaurante = ? AND dia = ? AND activo = 1
-    ORDER BY created_at ASC
+    SELECT md.id, md.nombre, md.elegible, md.dia, md.precio,
+           pm.url_foto AS url_foto_portada
+    FROM menus_dia md
+    LEFT JOIN platos_menu pm ON pm.id = md.id_plato_portada
+    WHERE md.id_restaurante = ? AND md.dia = ? AND md.activo = 1
+    ORDER BY md.created_at ASC
   `).all(restaurante, fecha);
 
   // Para cada menú traer secciones y platos
