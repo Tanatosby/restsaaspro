@@ -2,6 +2,26 @@
 
 ---
 
+## 📦 Sesión 2026-06-15 — Deploy a producción + fix ISS-016
+
+**Prompts:** Deploy del estado actual del branch main a producción; luego fix de toggles "Cliente elige/Fijo" y "Visible/Oculto" que no actualizaban la UI.
+
+**Deploy:**
+- `git pull origin main && pm2 restart menupro` en el servidor (`147.182.135.252`).
+- Commits desplegados: `72c1194` (galerías desktop full-width + botón instalar Android) + `c8c65cd` (ISS-015 foto plato versionada).
+- ISS-015 queda resuelto en producción a partir de esta sesión.
+- PM2: `online`, 13.1 MB memoria.
+
+**ISS-016 — Fix toggles config menú del día (`public/owner.html`):**
+- **Síntoma:** al tocar "Cliente elige"/"Visible" en la sub-vista "Configuración para el cliente", el toast aparecía (PATCH OK) pero el botón no cambiaba de texto ni estilo hasta recargar la página.
+- **Causa raíz:** `toggleElegibleMenu` y `toggleActivoMenu` llamaban solo `loadMenusDia()` → `MenuWizard.reload()`, que re-renderiza la **galería** (oculta cuando la config está abierta). La vista de config (`#mc-body`) no se refrescaba.
+- **Fix:** agregar `recargarModalConfig()` después de `loadMenusDia()` en ambas funciones. `recargarModalConfig()` ya tiene guard `if (!configMenuId) return`, así que es no-op fuera de la config. 2 líneas de cambio.
+
+**Issues:** ISS-015 → Resuelto (desplegado). ISS-016 → Resuelto.
+**Sin cambios de backend. Sin tests afectados (cambio solo frontend).**
+
+---
+
 ## 📦 Sesión 2026-06-08 — Fix botón "Instalar app" no aparece en Android producción
 
 **Prompt:** "No aparece el botón de descargar app en mi celular" (producción `menupro.tech`).

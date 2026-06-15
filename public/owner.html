@@ -1716,6 +1716,7 @@ async function toggleElegibleMenu(menuId, elegibleActual) {
     await api('PATCH', `/api/menu/menus-dia/${menuId}/elegible`, { elegible: nuevoElegible });
     toast(nuevoElegible ? 'Menú cambiado a: Cliente elige' : 'Menú cambiado a: Fijo');
     loadMenusDia();
+    recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
 }
 
@@ -1725,6 +1726,7 @@ async function toggleActivoMenu(menuId, activoActual) {
     await api('PATCH', `/api/menu/menus-dia/${menuId}/activo`, { activo: nuevoActivo });
     toast(nuevoActivo ? 'Menú visible en QR' : 'Menú oculto del QR');
     loadMenusDia();
+    recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
 }
 

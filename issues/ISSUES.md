@@ -4,7 +4,8 @@
 
 | ID | Título | Módulo | Reproducible | Prioridad |
 |----|--------|--------|--------------|-----------|
-| [ISS-015](ISS-015-foto-plato-menu-error.md) | La foto de un plato no se actualiza en pantalla tras "Cambiar foto" (caché por nombre de archivo fijo) | Menú del día / Carta | Sí | Alta |
+
+_(vacío)_
 
 
 
@@ -21,6 +22,8 @@ _(vacío)_
 
 | ID | Título | Fecha resolución | Solución |
 |----|--------|-----------------|---------|
+| [ISS-016](ISS-016-toggle-elegible-visible-no-actualiza.md) | Toggles "Cliente elige / Fijo" y "Visible / Oculto" no actualizan la UI | 2026-06-15 | `toggleElegibleMenu` y `toggleActivoMenu` solo llamaban `loadMenusDia()` (recarga la galería oculta). Fix: agregar `recargarModalConfig()` en ambas funciones para re-renderizar la vista de config activa. |
+| [ISS-015](ISS-015-foto-plato-menu-error.md) | La foto de un plato no se actualiza en pantalla tras "Cambiar foto" (caché por nombre de archivo fijo) | 2026-06-06 | Nombre versionado `plato_<id>_<Date.now()>.<ext>` en `makeUploadPlato`. URL nueva por subida rompe caché del navegador; el borrado del anterior nunca pisa la imagen recién subida. Desplegado a producción 2026-06-15. |
 | [ISS-014](ISS-014-reporteria-owner.md) | Revenue Total y Ganancia de hoy siempre S/0.00 en reportería | 2026-06-03 | Bug 1: `GET /api/orders` no devuelve `es_pagado` → filtro siempre vacío → revenue = 0. Fix: usar `resumen.total` de `/api/reportes/ganancias/resumen`. Bug 2: `date('now')` en SQLite usa UTC, fechas en BD usan Lima (UTC-5) → ganancia de hoy = 0 después de 19h. Fix: `date('now', '-5 hours')` en resumen/mes/semana. |
 | [ISS-013](ISS-013-sw-bloquea-cdn.md) | Service worker rompe CDN/fuentes cross-origin (landing sin estilos) | 2026-05-29 | `sw.js` interceptaba peticiones cross-origin y las reenviaba con `fetch(e.request)` → `ERR_FAILED` en Tailwind CDN / Google Fonts. Fix: `if (url.origin !== self.location.origin) return;` para no tocar cross-origin + bump cache `v1`→`v2`. Afectaba landing y potencialmente owner/menu para usuarios recurrentes. |
 | [ISS-010](ISS-010-orden-cocina.md) | Orden incorrecto en panel Cocina — Pendientes antes que En preparación | 2026-05-23 | Render reordenado en `cocina.js`: En preparación → Reservas en prep → Pendientes |
