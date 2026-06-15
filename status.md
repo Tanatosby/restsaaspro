@@ -2,6 +2,25 @@
 
 ---
 
+## 📦 Sesión 2026-06-15 — Feature: copiar menú del día a otra fecha
+
+**Prompt:** "que el menú creado se pueda replicar/copiar a otro día para solo hacer modificaciones simples".
+
+**Backend — `routes/menu.js`:**
+- Nuevo endpoint `POST /api/menu/menus-dia/:id/copiar` con body `{ dia: 'YYYY-MM-DD' }`.
+- Copia en una transacción: menú (`nombre`, `precio`, `elegible`, `activo`, `id_plato_portada`), sus `menu_secciones` (conservando flag `requerido`) y todos sus `componentes_menu_dia` (con la fecha destino). Valida pertenencia al restaurante y formato de fecha. Devuelve `{ id, dia, nombre }` con status 201.
+
+**Tests — `tests/copiar-menu.test.js`:** 7 casos: copia completa, original intacto, portada copiada, fecha destino con menús existentes, 404 de otro restaurante, 400 con fechas inválidas (4 variantes), menú sin secciones.
+
+**Frontend — `public/js/widgets/menu-wizard.js`:**
+- Botón "📋 Copiar a otro día" en cada card de la galería.
+- Al tocar: aparece un picker de fecha (pre-cargado con mañana, mínimo hoy) + botón "Copiar ✓" y "✕".
+- Al confirmar: POST al endpoint, toast "Menú copiado al [fecha] ✓", navega automáticamente a la fecha destino y recarga la galería.
+
+**Tests:** 222/222 verde. Sin cambios de DB (no requiere migración).
+
+---
+
 ## 📦 Sesión 2026-06-15 — Deploy a producción + fix ISS-016
 
 **Prompts:** Deploy del estado actual del branch main a producción; luego fix de toggles "Cliente elige/Fijo" y "Visible/Oculto" que no actualizaban la UI.

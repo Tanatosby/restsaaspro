@@ -310,6 +310,49 @@ router.delete('/menus-dia/:id', authorizePermiso(), (req, res) => {
   res.json({ message: `Menú "${menu.nombre}" eliminado` });
 });
 
+// POST /api/menu/menus-dia/:id/copiar — duplica un menú a otra fecha
+// Body: { dia: 'YYYY-MM-DD' }
+router.post('/menus-dia/:id/copiar', authorizePermiso(), (req, res) => {
+  const { dia } = req.body;
+  if (!dia || !/^\d{4}-\d{2}-\d{2}$/.test(dia))
+    return res.status(400).json({ error: 'Fecha inválida (YYYY-MM-DD)' });
+
+  const rid = req.user.restaurant_id;
+  const fuente = db.prepare(`
+    SELECT id, nombre, elegible, precio, activo, id_plato_portada
+    FROM menus_dia WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, rid);
+  if (!fuente) return res.status(404).json({ error: 'Menú no encontrado' });
+
+  const secciones = db.prepare(`
+    SELECT id_seccion_menu, requerido FROM menu_secciones WHERE id_menu_dia = ?
+  `).all(fuente.id);
+
+  const nuevoId = db.transaction(() => {
+    const { lastInsertRowid } = db.prepare(`
+      INSERT INTO menus_dia (nombre, elegible, dia, precio, activo, id_plato_portada, id_restaurante)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(fuente.nombre, fuente.elegible, dia, fuente.precio, fuente.activo,
+           fuente.id_plato_portada, rid);
+
+    const insSeccion   = db.prepare(`INSERT INTO menu_secciones (id_menu_dia, id_seccion_menu, requerido) VALUES (?, ?, ?)`);
+    const insComponente = db.prepare(`INSERT INTO componentes_menu_dia (id_menu_dia, dia, id_seccion_menu, id_plato_menu, id_restaurante) VALUES (?, ?, ?, ?, ?)`);
+
+    for (const sec of secciones) {
+      insSeccion.run(lastInsertRowid, sec.id_seccion_menu, sec.requerido);
+      const componentes = db.prepare(`
+        SELECT id_plato_menu FROM componentes_menu_dia
+        WHERE id_menu_dia = ? AND id_seccion_menu = ?
+      `).all(fuente.id, sec.id_seccion_menu);
+      for (const c of componentes)
+        insComponente.run(lastInsertRowid, dia, sec.id_seccion_menu, c.id_plato_menu, rid);
+    }
+    return lastInsertRowid;
+  })();
+
+  res.status(201).json({ id: nuevoId, dia, nombre: fuente.nombre });
+});
+
 // ─────────────────────────────────────────────────────
 // SECCIONES DEL MENÚ DEL DÍA
 // Define qué secciones tiene un menú y si son obligatorias

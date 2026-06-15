@@ -491,6 +491,14 @@
       <div class="mw-pills">${secs}</div>
       <div class="mw-menu-actions">
         <button class="mw-btn mw-btn-primary" data-cfg="${m.id}">⚙ Configurar</button>
+        <div class="mw-copy-row" id="mw-copy-row-${m.id}" style="display:none">
+          <input class="mw-date mw-copy-input" type="date" id="mw-copy-date-${m.id}" aria-label="Fecha destino">
+          <div style="display:flex;gap:6px">
+            <button class="mw-btn mw-btn-primary" style="flex:1" data-copy-ok="${m.id}">Copiar ✓</button>
+            <button class="mw-btn" style="flex:0 0 44px" data-copy-cancel="${m.id}">✕</button>
+          </div>
+        </div>
+        <button class="mw-btn" data-copy-open="${m.id}">📋 Copiar a otro día</button>
         <button class="mw-btn" data-del="${m.id}" style="color:var(--danger,#c0392b)">Eliminar</button>
       </div>
     </div>`;
@@ -498,7 +506,7 @@
 
   // Delegación de acciones de la galería → handlers globales de owner.html
   function wireMenuActions() {
-    host.querySelector('#mw-menus-list').addEventListener('click', (e) => {
+    host.querySelector('#mw-menus-list').addEventListener('click', async (e) => {
       const cfg = e.target.closest('[data-cfg]');
       if (cfg) { if (opts.onConfigure) opts.onConfigure(Number(cfg.dataset.cfg)); return; }
       const del = e.target.closest('[data-del]');
@@ -508,6 +516,55 @@
         const id = Number(tg.dataset.id), cur = Number(tg.dataset.cur);
         if (tg.dataset.toggle === 'elegible') window.toggleElegibleMenu?.(id, cur);
         else window.toggleActivoMenu?.(id, cur);
+        return;
+      }
+      // Abrir picker de fecha para copiar
+      const copyOpen = e.target.closest('[data-copy-open]');
+      if (copyOpen) {
+        const id  = copyOpen.dataset.copyOpen;
+        const row = host.querySelector(`#mw-copy-row-${id}`);
+        const inp = host.querySelector(`#mw-copy-date-${id}`);
+        if (!row) return;
+        const mañana = shiftDay(state.dia || todayLima(), 1);
+        inp.value = mañana;
+        inp.min   = todayLima();
+        row.style.display = 'flex';
+        row.style.flexDirection = 'column';
+        row.style.gap = '6px';
+        copyOpen.style.display = 'none';
+        inp.focus();
+        return;
+      }
+      // Cancelar picker
+      const copyCancel = e.target.closest('[data-copy-cancel]');
+      if (copyCancel) {
+        const id  = copyCancel.dataset.copyCancel;
+        host.querySelector(`#mw-copy-row-${id}`).style.display = 'none';
+        host.querySelector(`[data-copy-open="${id}"]`).style.display = '';
+        return;
+      }
+      // Confirmar copia
+      const copyOk = e.target.closest('[data-copy-ok]');
+      if (copyOk) {
+        const id  = Number(copyOk.dataset.copyOk);
+        const inp = host.querySelector(`#mw-copy-date-${id}`);
+        const dia = inp?.value;
+        if (!dia) { toast('Elige una fecha destino', 'err'); return; }
+        copyOk.disabled = true;
+        try {
+          const res = await api('POST', `/api/menu/menus-dia/${id}/copiar`, { dia });
+          toast(`Menú copiado al ${fDate(dia)} ✓`);
+          // Navegar a la fecha destino y recargar
+          state.dia = dia;
+          const fechaInput = host.querySelector('#mw-fecha');
+          if (fechaInput) fechaInput.value = dia;
+          await fetchMenus();
+          renderMenus();
+        } catch (err) {
+          toast(err.message, 'err');
+          copyOk.disabled = false;
+        }
+        return;
       }
     });
   }
