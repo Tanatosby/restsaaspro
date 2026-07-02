@@ -185,31 +185,61 @@ router.get('/menus-dia', (req, res) => {
 });
 
 // POST /api/menu/menus-dia
+// Body opcional: heredar_secciones: true → copia las secciones (con su flag
+// requerido, SIN platos) del menú más reciente del restaurante. La estructura
+// casi nunca cambia entre días, así el owner no la re-arma cada mañana (flujo v2).
 router.post('/menus-dia', authorizePermiso(), (req, res) => {
-  const { nombre, elegible, dia, precio } = req.body;
+  const { nombre, elegible, dia, precio, heredar_secciones } = req.body;
 
   if (!dia)
     return res.status(400).json({ error: 'La fecha del menú es requerida' });
   if (!precio || isNaN(precio))
     return res.status(400).json({ error: 'El precio es requerido' });
 
-  const { lastInsertRowid } = db.prepare(`
-    INSERT INTO menus_dia (nombre, elegible, dia, precio, id_restaurante)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(
-    nombre?.trim() || 'Menú del día',
-    elegible ? 1 : 0,
-    dia,
-    parseFloat(precio),
-    req.user.restaurant_id
-  );
+  const rid = req.user.restaurant_id;
+
+  const resultado = db.transaction(() => {
+    // Fuente de herencia: el menú más reciente ANTES de insertar el nuevo
+    const fuente = heredar_secciones
+      ? db.prepare(`
+          SELECT id FROM menus_dia
+          WHERE id_restaurante = ?
+          ORDER BY dia DESC, created_at DESC, id DESC
+          LIMIT 1
+        `).get(rid)
+      : null;
+
+    const { lastInsertRowid } = db.prepare(`
+      INSERT INTO menus_dia (nombre, elegible, dia, precio, id_restaurante)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      nombre?.trim() || 'Menú del día',
+      elegible ? 1 : 0,
+      dia,
+      parseFloat(precio),
+      rid
+    );
+
+    let heredadas = 0;
+    if (fuente) {
+      const secciones = db.prepare(`
+        SELECT id_seccion_menu, requerido FROM menu_secciones WHERE id_menu_dia = ?
+      `).all(fuente.id);
+      const ins = db.prepare(`
+        INSERT INTO menu_secciones (id_menu_dia, id_seccion_menu, requerido) VALUES (?, ?, ?)
+      `);
+      for (const s of secciones) { ins.run(lastInsertRowid, s.id_seccion_menu, s.requerido); heredadas++; }
+    }
+    return { id: lastInsertRowid, heredadas };
+  })();
 
   res.status(201).json({
-    id:      lastInsertRowid,
+    id:      resultado.id,
     nombre:  nombre?.trim() || 'Menú del día',
     elegible: elegible ? 1 : 0,
     dia,
-    precio:  parseFloat(precio)
+    precio:  parseFloat(precio),
+    secciones_heredadas: resultado.heredadas
   });
 });
 

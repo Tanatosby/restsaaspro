@@ -2,6 +2,48 @@
 
 ---
 
+## 📦 Sesión 2026-07-02 (parte 2) — IMPLEMENTACIÓN Flujo Menú del Día v2
+
+**Prompt:** "está fino fino, dale" (aprobación del mockup `demo_flujo_menu.html` y del plan de `flujo-menuv2.md`).
+
+**Backend — `routes/menu.js`:**
+- `POST /menus-dia` acepta `heredar_secciones: true` → en una transacción, copia las secciones (`id_seccion_menu` + `requerido`, SIN platos) del menú más reciente del restaurante (`ORDER BY dia DESC, created_at DESC, id DESC`). Respuesta incluye `secciones_heredadas: N`.
+
+**Frontend — `public/owner.html`:**
+- **Hub eliminado**: `renderConfigHub`, `renderConfigCliente`, `irConfigCliente/Secciones`, `renderConfigSubview` y `configSubview` borrados. `abrirConfigMenu(menuId, opciones)` aterriza directo en las secciones; `configBack` cierra en 1 tap.
+- **`renderConfigSecciones()` reescrito como acordeón vertical** (`mcSeccionAcordeon`): secciones apiladas con cabecera (nombre + badge "N platos"/"⚠ sin platos" + chevron), colapso persistente entre re-renders (`mcSecCerradas`), filas de plato con acciones detrás del ⋯ (Agotado/Portada/Quitar), «＋ Platos» por sección, pie con Obligatoria/Quitar, «＋ Agregar sección» al final. Toggles del cliente como fila compacta arriba (`.mc-cli-compact`). Hint ✨ de herencia cuando `configRecienCreado`.
+- **Alta rápida de sección (1 tap)**: `abrirAddSeccion` lista las secciones libres del catálogo con botones Obligatoria/Opcional → `confirmarAddSeccionRapida`. El mini-wizard de 2 pasos fue eliminado.
+- **`abrirPicker` multi**: pre-marcado con los platos de la sección; `aplicarSeleccionPlatos` hace POST por agregado y DELETE por quitado + toast "N agregados · M quitados ✓".
+
+**Frontend — `public/js/widgets/plato-picker.js`:** modo `multi: true` con `selectedIds`, `title` y `onConfirm(ids)`. Checks en cards, badge "ya asignado", contador en header, footer dinámico "Guardar (N nuevos · quitar M) ✓". Modo simple intacto.
+
+**Frontend — `public/js/widgets/menu-wizard.js`:** botón final «Crear y agregar platos →»; `crear()` envía `heredar_secciones: true` y encadena a `onConfigure(id, { recienCreado: true })` (ya no vuelve a la galería).
+
+**CSS — `public/css/owner.css`:** bloque del carrusel `.mc-sec-gallery`/`.mc-sec-card` reemplazado por estilos del acordeón (`.mc-acc`, `.mc-sec*`, `.mc-plato*`, `.mc-cli-compact`, `.mc-hint`, `.mc-add-sec`, `.mc-addsec-row`); CSS muerto `.mc-cli` viejo eliminado (`.mc-hub-*` se conserva — lo usan los hubs de navegación). Desktop: `.mw-config` a columna de 560px centrada.
+
+**Tests:**
+- Nuevo `tests/heredar-secciones.test.js` (8 casos: herencia con flag requerido, sin platos, sin flag = clásico, sin menús previos, el más reciente, scope por restaurante, fuente intacta, validaciones). **230/230 jest verde.**
+- `scripts/test-menu-wizard.js` reescrito para el flujo v2 (navegación por `showPanel/switchTab` — las tabs viejas están ocultas desde el rediseño Home; asserts de encadenado, acordeón, picker multi, sin hub; ignora 404 de `/uploads/` en dev). **51/51 E2E a 360px, 0 errores de consola.**
+- Nota: los 404 locales eran fotos seed pre-ISS-015 (`plato_1.jpg`, `plato_4.png`, carta `plato_3.jpg`) que no existen en esta laptop (uploads fuera de git) — no es bug de la app.
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`). El mockup `public/demo_flujo_menu.html` puede borrarse cuando el usuario ya no lo necesite.
+
+---
+
+## 📦 Sesión 2026-07-02 — Análisis del flujo de armado del menú del día (doc `flujo-menuv2.md`)
+
+**Prompt:** "El flujo de creación de menú del día aún se siente difícil: eliges platos para entrada y bien, pero al agregar para segundo el carrusel se queda fijado en entrada y hay que deslizar a la derecha a buscar segundo. Analizar el flujo y crear `flujo-menuv2.md` con ideas."
+
+**Diagnóstico (sin cambios de código en esta sesión):**
+- **Causa técnica del "rebote":** cada acción (agregar plato, toggles) llama `recargarModalConfig()` → `innerHTML` reconstruye toda la galería de secciones → el carrusel horizontal (`.mc-sec-gallery`) renace con `scrollLeft = 0` y aterriza siempre en la primera sección.
+- **Causa de diseño:** carrusel horizontal (patrón de vitrina) usado para una tarea de checklist; hub de 2 opciones agrega un nivel para llegar a los platos; mini-wizard de secciones repite 5 taps/sección cada día aunque la estructura casi nunca cambia (confirmado por el usuario); PlatoPicker de a un plato.
+
+**Entregable — `flujo-menuv2.md` (raíz del proyecto):** propuesta v2 en 4 cambios: (A) secciones como lista vertical acordeón en vez de carrusel, (B) PlatoPicker multi-selección con pre-marcado, (C) eliminar el hub (⚙ Configurar aterriza directo en secciones, toggles cliente como fila compacta), (D) heredar secciones del último menú al crear + botón «Crear y agregar platos →». Estimación: ~31 taps + swipes → ~15 taps (−52%) para un menú típico. Plan en 4 fases independientes (Fase 0 = hotfix `scrollIntoView` opcional). **Pendiente: decisión del usuario sobre qué fases implementar.**
+
+**Entregable 2 — `public/demo_flujo_menu.html` (mockup navegable):** demo autocontenida (HTML + JS vanilla, datos de mentira, sin backend) del flujo v2 completo: galería → wizard 3 pasos con «Crear y agregar platos →» → acordeón vertical con secciones heredadas (hint ✨) → picker multi-selección con pre-marcado y footer dinámico ("Guardar (3 nuevos · quitar 1) ✓") → sheet de agregar sección en 1 tap. Incluye contador de taps en el banner para comparar contra los ~31 del flujo actual. Se abre con doble clic o en `/demo_flujo_menu.html` del servidor (probable en celular vía LAN). Verificado con Playwright a 360px: 0 overflow, 0 errores de consola, flujo completo (menú + 3 entradas + 4 segundos) = 18 taps. **Es solo mockup — borrar cuando se implemente la v2 real.**
+
+---
+
 ## 📦 Sesión 2026-06-15 — Feature: copiar menú del día a otra fecha
 
 **Prompt:** "que el menú creado se pueda replicar/copiar a otro día para solo hacer modificaciones simples".

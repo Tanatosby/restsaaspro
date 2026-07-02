@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧪 Mockup — Flujo Menú del Día v2</title>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   MOCKUP flujo-menuv2.md — SOLO DEMO, sin backend, datos de mentira.
+   Simula: wizard de creación → herencia de secciones → acordeón
+   vertical → picker multi-selección. Mobile-first (360px).
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --primary: #c8692a;
+  --primary-soft: rgba(200,105,42,.10);
+  --bg: #f5f1ed;
+  --surface: #fff;
+  --text: #1a1410;
+  --text-2: #555;
+  --muted: #888;
+  --border: rgba(0,0,0,.12);
+  --success: #2e7d32;
+  --danger: #c0392b;
+  --warn: #b26a00;
+  --r: 14px;
+  --shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: #e8e0d8; color: var(--text); font-size: 15px;
+  min-height: 100vh;
+}
+button { font-family: inherit; }
+
+/* ── Banner de demo + contador de taps ── */
+.demo-banner {
+  position: sticky; top: 0; z-index: 50;
+  background: #1a1410; color: #fff;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 12px; font-size: 13px;
+}
+.demo-banner b { color: #f0b27a; }
+.tap-pill {
+  background: rgba(255,255,255,.14); border-radius: 999px;
+  padding: 4px 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.demo-reset {
+  background: transparent; border: 1px solid rgba(255,255,255,.3); color: #fff;
+  border-radius: 8px; min-height: 32px; padding: 0 10px; cursor: pointer; font-size: 13px;
+}
+
+/* ── Contenedor "teléfono" ── */
+.app {
+  max-width: 460px; margin: 0 auto; background: var(--bg);
+  min-height: calc(100vh - 41px); padding: 1rem 1.1rem 5rem;
+}
+@media (min-width: 500px) {
+  .app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+}
+
+/* ── Genéricos ── */
+.h-title { font-family: Georgia, serif; font-size: 1.25rem; font-weight: 700; margin: 0; line-height: 1.25; }
+.meta { font-size: 12.5px; color: var(--muted); }
+.btn {
+  min-height: 48px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: 15px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; transition: transform .1s;
+}
+.btn:active { transform: scale(.98); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+.btn-ghost { background: transparent; }
+.row { display: flex; gap: 8px; }
+.row .btn { flex: 1; min-width: 0; }
+input[type=text], input[type=number], input[type=search] {
+  width: 100%; height: 48px; font-size: 16px; padding: 0 .85rem;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); color: var(--text); outline: none;
+}
+input:focus { border-color: var(--primary); }
+label { font-size: 13px; font-weight: 600; color: var(--text-2); display: block; margin: 0 0 6px; }
+
+/* ── Vista GALERÍA ── */
+.gal-head { display: flex; align-items: center; gap: 8px; margin-bottom: .85rem; }
+.gal-nav {
+  flex: 0 0 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); font-size: 16px; cursor: pointer;
+}
+.gal-fecha {
+  flex: 1; height: 44px; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  font-weight: 700; font-size: 15px;
+}
+.empty-card {
+  border: 1.5px dashed var(--border); border-radius: var(--r); background: rgba(255,255,255,.5);
+  padding: 2.2rem 1rem; text-align: center; color: var(--muted); font-size: 14px;
+  display: flex; flex-direction: column; gap: 6px; align-items: center; margin-top: .85rem;
+}
+.empty-emoji { font-size: 2.6rem; }
+/* Card de menú ya creado en la galería */
+.menu-card {
+  margin-top: .85rem; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--shadow); padding: 1rem 1.1rem;
+  display: flex; flex-direction: column; gap: .6rem;
+}
+.menu-card-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.menu-card-name { font-family: Georgia, serif; font-weight: 700; font-size: 1.1rem; }
+.pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.pill {
+  font-size: 11.5px; padding: 3px 9px; border-radius: 6px;
+  background: var(--bg); border: 1px solid var(--border); color: var(--text-2);
+}
+
+/* ── Vista WIZARD (3 pasos, igual al actual — se conserva) ── */
+.wiz-head { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: .6rem; }
+.dots { display: flex; gap: 6px; margin-bottom: .75rem; }
+.dot { flex: 1; height: 4px; border-radius: 4px; background: var(--border); transition: background .25s; }
+.dot.done { background: var(--primary); }
+.viewport { overflow: hidden; border-radius: var(--r); }
+.track { display: flex; transition: transform .35s cubic-bezier(.16,1,.3,1); }
+.slide { flex: 0 0 100%; min-width: 100%; padding: 2px; }
+.wcard {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  box-shadow: var(--shadow); padding: 1.25rem; min-height: 360px;
+  display: flex; flex-direction: column;
+}
+.step-label { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--primary); margin-bottom: .35rem; }
+.wbody { flex: 1; display: flex; flex-direction: column; gap: .85rem; }
+.hero { display: flex; flex-direction: column; align-items: center; gap: .3rem; margin: .3rem 0; text-align: center; }
+.hero-emoji {
+  font-size: 3rem; width: 84px; height: 84px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: var(--primary-soft);
+}
+.hero-sub { font-size: 13px; color: var(--muted); }
+.choice {
+  display: flex; align-items: flex-start; gap: .75rem; text-align: left; width: 100%;
+  border: 2px solid var(--border); border-radius: var(--r); padding: 1rem;
+  background: var(--bg); cursor: pointer; min-height: 44px;
+}
+.choice.sel { border-color: var(--primary); background: var(--primary-soft); }
+.choice-emoji { font-size: 26px; line-height: 1; }
+.choice-name { font-weight: 700; font-size: 15px; display: block; }
+.choice-desc { font-size: 13px; color: var(--muted); }
+.wactions { display: flex; gap: 8px; margin-top: 1rem; }
+.wactions .btn { flex: 1; min-width: 0; }
+
+/* ── Vista ARMADO (acordeón vertical — el corazón de la v2) ── */
+.arm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: .6rem; }
+.arm-back { min-height: 44px; padding: 0 .9rem; border-radius: 10px; border: 1px solid var(--border); background: transparent; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text); }
+.arm-titlebar { margin-bottom: .5rem; }
+.edit-inline { border: none; background: transparent; cursor: pointer; font-size: 15px; padding: 4px; }
+/* Fila compacta de toggles del cliente (reemplaza al hub) */
+.cli-row { display: flex; gap: 8px; margin-bottom: .85rem; }
+.cli-toggle {
+  flex: 1; min-height: 44px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: var(--surface); font-size: 13.5px; font-weight: 700; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  padding: 6px 4px;
+}
+.cli-toggle small { font-weight: 400; font-size: 10.5px; color: var(--muted); }
+.cli-toggle.on { border-color: var(--primary); color: var(--primary); }
+.cli-toggle.vis { border-color: var(--success); color: var(--success); }
+.cli-toggle.hid { border-color: var(--danger); color: var(--danger); }
+/* Hint de herencia */
+.hint-box {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--primary-soft); border: 1px solid rgba(200,105,42,.3);
+  border-radius: var(--r); padding: .8rem .9rem; font-size: 13.5px; line-height: 1.4;
+  margin-bottom: .85rem; color: var(--text);
+}
+.hint-close { margin-left: auto; border: none; background: transparent; font-size: 16px; cursor: pointer; color: var(--muted); padding: 0 2px; }
+/* Sección (acordeón) */
+.secs { display: flex; flex-direction: column; gap: .6rem; }
+.sec { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+.sec-head {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  min-height: 56px; padding: 8px 12px; border: none; background: transparent;
+  cursor: pointer; text-align: left; font-size: 15px; color: var(--text);
+}
+.sec-emoji { font-size: 22px; }
+.sec-name { font-weight: 700; font-size: 16px; flex: 1; min-width: 0; }
+.sec-badge { font-size: 12px; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.sec-badge.ok   { background: rgba(46,125,50,.1); color: var(--success); }
+.sec-badge.warn { background: rgba(178,106,0,.12); color: var(--warn); font-weight: 700; }
+.chev { color: var(--muted); font-size: 13px; transition: transform .2s; }
+.sec.open .chev { transform: rotate(180deg); }
+.sec-body { display: none; padding: 0 12px 12px; }
+.sec.open .sec-body { display: block; }
+/* Fila de plato */
+.plato-row { display: flex; align-items: center; gap: 6px; min-height: 48px; border-top: 1px solid var(--border); }
+.plato-nom { flex: 1; min-width: 0; font-size: 14.5px; display: flex; align-items: center; gap: 6px; overflow: hidden; }
+.plato-nom .nom-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plato-row.agotado .nom-txt { text-decoration: line-through; color: var(--muted); }
+.badge-mini { font-size: 10.5px; padding: 2px 6px; border-radius: 6px; background: var(--primary-soft); color: var(--primary); font-weight: 700; white-space: nowrap; }
+.dots-btn {
+  flex: 0 0 44px; height: 44px; border: none; background: transparent;
+  font-size: 20px; color: var(--muted); cursor: pointer; border-radius: 10px;
+}
+.dots-btn:active { background: var(--bg); }
+/* Acciones expandidas del plato (al tocar ⋯) */
+.plato-acts { display: none; gap: 6px; padding: 0 0 10px; }
+.plato-acts.open { display: flex; }
+.mini-act {
+  flex: 1; min-height: 40px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); font-size: 12.5px; font-weight: 600; cursor: pointer; color: var(--text-2);
+}
+.mini-act.danger { color: var(--danger); border-color: rgba(192,57,43,.35); }
+.sec-add-btn {
+  width: 100%; min-height: 46px; margin-top: 8px; border-radius: 10px;
+  border: 1.5px dashed var(--primary); background: var(--primary-soft);
+  color: var(--primary); font-size: 14.5px; font-weight: 700; cursor: pointer;
+}
+.sec-foot { display: flex; gap: 6px; margin-top: 8px; }
+.sec-foot button {
+  flex: 1; min-height: 40px; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; font-size: 12.5px; cursor: pointer; color: var(--muted);
+}
+.sec-foot .req-on { color: var(--primary); border-color: var(--primary); font-weight: 700; }
+.add-sec-btn {
+  width: 100%; min-height: 48px; margin-top: .6rem; border-radius: var(--r);
+  border: 1.5px dashed var(--border); background: transparent;
+  color: var(--muted); font-size: 14.5px; font-weight: 600; cursor: pointer;
+}
+
+/* ── Bottom sheet (picker multi-select + agregar sección) ── */
+.backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100;
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.backdrop.show { opacity: 1; pointer-events: auto; }
+.sheet {
+  width: 100%; max-width: 460px; max-height: 82vh; background: var(--bg);
+  border-radius: 18px 18px 0 0; display: flex; flex-direction: column;
+  transform: translateY(100%); transition: transform .25s cubic-bezier(.16,1,.3,1);
+}
+.backdrop.show .sheet { transform: translateY(0); }
+.sheet-head { padding: 14px 16px 8px; }
+.sheet-grab { width: 40px; height: 4px; border-radius: 4px; background: var(--border); margin: 0 auto 10px; }
+.sheet-title { font-family: Georgia, serif; font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sel-count { font-family: inherit; font-size: 13px; color: var(--primary); font-weight: 700; white-space: nowrap; }
+.sheet-body { flex: 1; overflow-y: auto; padding: 8px 16px; }
+.sheet-foot { padding: 10px 16px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); border-radius: 0 0 0 0; }
+/* Cards de plato en el picker */
+.pick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-bottom: 8px; }
+.pick-card {
+  position: relative; border: 2px solid var(--border); border-radius: 12px;
+  background: var(--surface); padding: 12px 10px; min-height: 84px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; text-align: center; font-size: 13.5px; font-weight: 600; color: var(--text);
+}
+.pick-card .pk-emoji { font-size: 26px; }
+.pick-card.sel { border-color: var(--primary); background: var(--primary-soft); }
+.pick-check {
+  position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary); color: #fff; font-size: 13px; line-height: 22px; text-align: center;
+  display: none;
+}
+.pick-card.sel .pick-check { display: block; }
+.pick-card.ya { }
+.pick-ya-badge {
+  position: absolute; top: 6px; left: 6px; font-size: 9.5px; font-weight: 700;
+  color: var(--muted); background: var(--bg); border-radius: 6px; padding: 2px 5px;
+}
+/* Opciones de sección en el sheet de agregar sección */
+.addsec-row { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.addsec-name { flex: 1; font-weight: 700; font-size: 15px; }
+.addsec-row .mini-act { flex: 0 0 auto; padding: 0 12px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+  background: #1a1410; color: #fff; font-size: 14px; padding: 12px 18px;
+  border-radius: 12px; opacity: 0; pointer-events: none; transition: all .25s;
+  z-index: 200; max-width: 90vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Banner del mockup: contador de taps para comparar con el flujo actual (~31 taps) -->
+<div class="demo-banner">
+  <span>🧪 <b>Mockup v2</b> — datos de mentira</span>
+  <span class="tap-pill"><span id="tap-n">0</span> taps</span>
+  <button class="demo-reset" onclick="resetDemo()">↺ Reiniciar</button>
+</div>
+
+<div class="app">
+
+  <!-- ═══ VISTA 1: GALERÍA (simplificada — igual a la actual) ═══ -->
+  <section id="v-galeria">
+    <div class="gal-head">
+      <button class="gal-nav">◀</button>
+      <div class="gal-fecha">📅 Miércoles 2 de julio</div>
+      <button class="gal-nav">▶</button>
+    </div>
+    <button class="btn btn-primary" onclick="abrirWizard()">＋ Crear menú</button>
+    <div id="gal-contenido"></div>
+    <p class="meta" style="text-align:center;margin-top:1rem">
+      Esta parte no cambia: la galería y «📋 Copiar a otro día» se quedan igual.<br>
+      Lo nuevo empieza al tocar <b>＋ Crear menú</b>.
+    </p>
+  </section>
+
+  <!-- ═══ VISTA 2: WIZARD DE CREACIÓN (se conserva el actual de 3 pasos; -->
+  <!--     solo cambia el botón final: «Crear y agregar platos →») ═══ -->
+  <section id="v-wizard" hidden>
+    <div class="wiz-head">Nuevo menú · miércoles 2 de julio</div>
+    <div class="dots"><div class="dot" data-d="0"></div><div class="dot" data-d="1"></div><div class="dot" data-d="2"></div></div>
+    <div class="viewport"><div class="track" id="wiz-track">
+
+      <div class="slide">
+        <div class="wcard">
+          <div class="step-label">Paso 1 de 3</div>
+          <h3 class="h-title" style="margin-bottom:1rem">Ponle un título al menú</h3>
+          <div class="wbody">
+            <div class="hero"><span class="hero-emoji">📝</span><span class="hero-sub">Así lo verá tu cliente en la carta.</span></div>
+            <div><label for="w-nombre">Título</label><input type="text" id="w-nombre" placeholder="Menú del día"></div>
+          </div>
+          <div class="wactions">
+            <button class="btn btn-ghost" onclick="showView('v-galeria')">✕ Cancelar</button>
+            <button class="btn btn-primary" onclick="wizGoto(1)">Siguiente →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide">
+        <div class="wcard">
+          <div class="step-label">Paso 2 de 3</div>
+          <h3 class="h-title" style="margin-bottom:1rem">¿Cuánto cuesta este menú?</h3>
+          <div class="wbody">
+            <div class="hero"><span class="hero-emoji">💲</span><span class="hero-sub">Precio por persona, en soles.</span></div>
+            <div><label for="w-precio">Precio S/ *</label><input type="number" id="w-precio" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></div>
+            <div id="w-err" style="color:var(--danger);font-size:13px;min-height:1em"></div>
+          </div>
+          <div class="wactions">
+            <button class="btn btn-ghost" onclick="wizGoto(0)">← Atrás</button>
+            <button class="btn btn-primary" onclick="wizPrecioNext()">Siguiente →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide">
+        <div class="wcard">
+          <div class="step-label">Paso 3 de 3</div>
+          <h3 class="h-title" style="margin-bottom:1rem">¿Este menú es fijo o el cliente elige sus platos?</h3>
+          <div class="wbody">
+            <button class="choice" data-eleg="0" onclick="selElegible(0)">
+              <span class="choice-emoji">🍽️</span>
+              <span><span class="choice-name">Menú fijo</span><span class="choice-desc">Todos reciben los mismos platos.</span></span>
+            </button>
+            <button class="choice" data-eleg="1" onclick="selElegible(1)">
+              <span class="choice-emoji">✅</span>
+              <span><span class="choice-name">El cliente elige</span><span class="choice-desc">Escoge un plato por cada sección (entrada, fondo…).</span></span>
+            </button>
+          </div>
+          <div class="wactions">
+            <button class="btn btn-ghost" onclick="wizGoto(1)">← Atrás</button>
+            <!-- ⭐ CAMBIO: antes decía «Crear menú ✓» y volvía a la galería. -->
+            <button class="btn btn-primary" id="w-crear" onclick="crearMenu()" disabled>Crear y agregar platos →</button>
+          </div>
+        </div>
+      </div>
+
+    </div></div>
+  </section>
+
+  <!-- ═══ VISTA 3: ARMADO — acordeón vertical (reemplaza hub + carrusel) ═══ -->
+  <section id="v-armado" hidden>
+    <div class="arm-head">
+      <button class="arm-back" onclick="volverAGaleria()">← Volver</button>
+      <button class="arm-back" onclick="toastMsg('En la app real abre el editor de nombre y precio ✏')">✏ Editar</button>
+    </div>
+    <div class="arm-titlebar">
+      <h2 class="h-title" id="arm-nombre">Menú del día</h2>
+      <div class="meta" id="arm-meta"></div>
+    </div>
+
+    <!-- ⭐ CAMBIO C: los 2 toggles del cliente viven aquí, en una fila compacta. Ya no hay hub. -->
+    <div class="cli-row" id="cli-row"></div>
+
+    <!-- ⭐ CAMBIO D: hint de herencia (solo aparece tras crear) -->
+    <div class="hint-box" id="hint-herencia" hidden>
+      <span style="font-size:20px">✨</span>
+      <span>Tu menú ya tiene las secciones de siempre — <b>solo agrega los platos de hoy</b>.</span>
+      <button class="hint-close" onclick="document.getElementById('hint-herencia').hidden=true">✕</button>
+    </div>
+
+    <!-- ⭐ CAMBIO A: lista vertical de secciones (acordeón). Nada de carrusel horizontal. -->
+    <div class="secs" id="secs-list"></div>
+
+    <!-- La acción rara al final: agregar una sección extra -->
+    <button class="add-sec-btn" onclick="abrirAddSeccion()">＋ Agregar sección</button>
+  </section>
+
+</div>
+
+<!-- ═══ SHEET: PICKER MULTI-SELECCIÓN (Cambio B) ═══ -->
+<div class="backdrop" id="picker-bd" onclick="if(event.target===this)cerrarPicker()">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-grab"></div>
+      <div class="sheet-title"><span id="pk-title">Platos</span><span class="sel-count" id="pk-count"></span></div>
+    </div>
+    <div class="sheet-body">
+      <input type="search" id="pk-search" placeholder="🔍 Buscar plato…" oninput="renderPicker()" style="margin-bottom:10px">
+      <div class="pick-grid" id="pk-grid"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="pk-confirm" onclick="confirmarPicker()">Confirmar ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SHEET: AGREGAR SECCIÓN (caso raro — 1 tap por sección) ═══ -->
+<div class="backdrop" id="addsec-bd" onclick="if(event.target===this)cerrarAddSeccion()">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sheet-grab"></div>
+      <div class="sheet-title">Agregar sección</div>
+      <p class="meta" style="margin:6px 0 0">Toca «Obligatoria» u «Opcional» y queda agregada.</p>
+    </div>
+    <div class="sheet-body" id="addsec-body"></div>
+    <div class="sheet-foot">
+      <button class="btn btn-ghost" onclick="cerrarAddSeccion()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════
+   DATOS DE MENTIRA — en la app real vienen de la API
+   ══════════════════════════════════════════════════════════════ */
+const CATALOGO_PLATOS = [
+  { id: 1,  nombre: 'Papa a la huancaína',    emoji: '🥔' },
+  { id: 2,  nombre: 'Sopa de casa',           emoji: '🍲' },
+  { id: 3,  nombre: 'Tequeños',               emoji: '🥟' },
+  { id: 4,  nombre: 'Ocopa arequipeña',       emoji: '🥑' },
+  { id: 5,  nombre: 'Lomo saltado',           emoji: '🥩' },
+  { id: 6,  nombre: 'Ají de gallina',         emoji: '🍛' },
+  { id: 7,  nombre: 'Arroz con pollo',        emoji: '🍗' },
+  { id: 8,  nombre: 'Tallarín rojo',          emoji: '🍝' },
+  { id: 9,  nombre: 'Estofado de pollo',      emoji: '🥘' },
+  { id: 10, nombre: 'Seco de res',            emoji: '🍖' },
+  { id: 11, nombre: 'Chicha morada',          emoji: '🧃' },
+  { id: 12, nombre: 'Maracuyá',               emoji: '🥤' },
+  { id: 13, nombre: 'Arroz con leche',        emoji: '🍮' },
+  { id: 14, nombre: 'Mazamorra morada',       emoji: '🍇' },
+];
+const CATALOGO_SECCIONES = [
+  { id: 1, nombre: 'Entrada',  emoji: '🥗' },
+  { id: 2, nombre: 'Segundo',  emoji: '🍛' },
+  { id: 3, nombre: 'Refresco', emoji: '🥤' },
+  { id: 4, nombre: 'Postre',   emoji: '🍮' },
+];
+// Estructura "del último menú" que se hereda al crear (Cambio D):
+const SECCIONES_HEREDADAS = [
+  { idSec: 1, requerido: 1 },
+  { idSec: 2, requerido: 1 },
+  { idSec: 3, requerido: 0 },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   ESTADO
+   ══════════════════════════════════════════════════════════════ */
+let menu = null;            // { nombre, precio, elegible, activo, portadaId, secciones: [] }
+let wizStep = 0, wizElegible = null;
+let pkSeccion = null;       // sección que abrió el picker
+let pkSel = new Set();      // selección actual del picker
+let pkInicial = new Set();  // lo que ya estaba asignado (para el toast N agregados · M quitados)
+let taps = 0;
+
+/* ── Utilidades ── */
+const $ = id => document.getElementById(id);
+function toastMsg(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function showView(id) {
+  ['v-galeria', 'v-wizard', 'v-armado'].forEach(v => $(v).hidden = (v !== id));
+  window.scrollTo(0, 0);
+}
+function plato(id) { return CATALOGO_PLATOS.find(p => p.id === id); }
+function seccionCat(id) { return CATALOGO_SECCIONES.find(s => s.id === id); }
+
+/* ── Contador de taps (para comparar con los ~31 del flujo actual) ── */
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.demo-banner')) return;   // el banner no cuenta
+  if (e.target.closest('button, .choice, .pick-card')) {
+    taps++;
+    $('tap-n').textContent = taps;
+  }
+});
+
+function resetDemo() {
+  menu = null; wizStep = 0; wizElegible = null; taps = 0;
+  $('tap-n').textContent = 0;
+  $('w-nombre').value = ''; $('w-precio').value = ''; $('w-err').textContent = '';
+  document.querySelectorAll('.choice').forEach(c => c.classList.remove('sel'));
+  $('w-crear').disabled = true;
+  renderGaleria();
+  showView('v-galeria');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VISTA 1 — GALERÍA
+   ══════════════════════════════════════════════════════════════ */
+function renderGaleria() {
+  const c = $('gal-contenido');
+  if (!menu) {
+    c.innerHTML = `
+      <div class="empty-card">
+        <div class="empty-emoji">📋</div>
+        <div>Aún no hay menús para esta fecha.</div>
+        <div style="font-size:12px">Toca «＋ Crear menú» para agregar uno.</div>
+      </div>`;
+    return;
+  }
+  const nPlatos = menu.secciones.reduce((n, s) => n + s.platos.length, 0);
+  c.innerHTML = `
+    <div class="menu-card">
+      <div class="menu-card-top">
+        <span class="menu-card-name">${menu.nombre}</span>
+        <span class="meta">S/ ${Number(menu.precio).toFixed(2)}</span>
+      </div>
+      <div class="pills">
+        ${menu.secciones.map(s => `<span class="pill">${seccionCat(s.idSec).emoji} ${seccionCat(s.idSec).nombre} · ${s.platos.length}</span>`).join('')}
+      </div>
+      <button class="btn btn-primary" onclick="abrirArmado(false)">⚙ Configurar (${nPlatos} platos)</button>
+      <button class="btn" onclick="toastMsg('📋 Copiar a otro día — se mantiene igual que hoy')">📋 Copiar a otro día</button>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VISTA 2 — WIZARD (igual al actual, con final encadenado)
+   ══════════════════════════════════════════════════════════════ */
+function abrirWizard() {
+  wizStep = 0; wizElegible = null;
+  showView('v-wizard');
+  wizGoto(0);
+}
+function wizGoto(step) {
+  wizStep = step;
+  $('wiz-track').style.transform = `translateX(-${step * 100}%)`;
+  document.querySelectorAll('.dot').forEach(d => d.classList.toggle('done', Number(d.dataset.d) <= step));
+}
+function wizPrecioNext() {
+  const p = $('w-precio').value;
+  if (!p || Number(p) <= 0) { $('w-err').textContent = 'Ingresa un precio válido.'; return; }
+  $('w-err').textContent = '';
+  wizGoto(2);
+}
+function selElegible(v) {
+  wizElegible = v;
+  document.querySelectorAll('.choice').forEach(c => c.classList.toggle('sel', Number(c.dataset.eleg) === v));
+  $('w-crear').disabled = false;
+}
+function crearMenu() {
+  // ⭐ CAMBIO D: el menú nace con las secciones del último menú (sin platos)
+  menu = {
+    nombre: ($('w-nombre').value || '').trim() || 'Menú del día',
+    precio: $('w-precio').value || '13.00',
+    elegible: wizElegible,
+    activo: 1,
+    portadaId: null,
+    secciones: SECCIONES_HEREDADAS.map(h => ({
+      idSec: h.idSec, requerido: h.requerido, abierta: true, platos: [],
+    })),
+  };
+  toastMsg('Menú creado ✓ — secciones heredadas de tu último menú');
+  abrirArmado(true);   // ⭐ encadena directo al armado (no vuelve a la galería)
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VISTA 3 — ARMADO (acordeón vertical)
+   ══════════════════════════════════════════════════════════════ */
+function abrirArmado(recienCreado) {
+  $('hint-herencia').hidden = !recienCreado;
+  renderArmado();
+  showView('v-armado');
+}
+function volverAGaleria() {
+  renderGaleria();
+  showView('v-galeria');
+}
+
+function renderArmado() {
+  $('arm-nombre').textContent = menu.nombre;
+  $('arm-meta').textContent = `Miércoles 2 de julio · S/ ${Number(menu.precio).toFixed(2)}`;
+
+  // Toggles compactos del cliente (Cambio C — ya no hay hub)
+  $('cli-row').innerHTML = `
+    <button class="cli-toggle ${menu.elegible ? 'on' : ''}" onclick="toggleElegible()">
+      ${menu.elegible ? '✅ Cliente elige' : '🍽️ Menú fijo'}
+      <small>${menu.elegible ? 'elige por sección' : 'mismos platos p/ todos'}</small>
+    </button>
+    <button class="cli-toggle ${menu.activo ? 'vis' : 'hid'}" onclick="toggleActivo()">
+      ${menu.activo ? '● Visible' : '○ Oculto'}
+      <small>${menu.activo ? 'aparece en el QR' : 'no se muestra'}</small>
+    </button>`;
+
+  renderSecciones();
+}
+
+function renderSecciones() {
+  $('secs-list').innerHTML = menu.secciones.map((s, i) => {
+    const cat = seccionCat(s.idSec);
+    const n = s.platos.length;
+    const badge = n
+      ? `<span class="sec-badge ok">${n} plato${n > 1 ? 's' : ''}</span>`
+      : `<span class="sec-badge warn">⚠ sin platos</span>`;
+    const filas = s.platos.map(pid => {
+      const p = plato(pid);
+      const esPortada = menu.portadaId === pid;
+      const agotado = s.agotados && s.agotados.has(pid);
+      return `
+        <div class="plato-row ${agotado ? 'agotado' : ''}">
+          <span class="plato-nom">
+            <span>${p.emoji}</span><span class="nom-txt">${p.nombre}</span>
+            ${esPortada ? '<span class="badge-mini">📷 Portada</span>' : ''}
+            ${agotado ? '<span class="badge-mini" style="background:rgba(192,57,43,.1);color:var(--danger)">Agotado</span>' : ''}
+          </span>
+          <button class="dots-btn" onclick="toggleActs(this)" aria-label="Más acciones">⋯</button>
+        </div>
+        <div class="plato-acts">
+          <button class="mini-act" onclick="toggleAgotado(${i},${pid})">${agotado ? '✔ Disponible' : '⛔ Agotado'}</button>
+          <button class="mini-act" onclick="setPortada(${pid})">📷 ${esPortada ? 'Quitar portada' : 'Portada'}</button>
+          <button class="mini-act danger" onclick="quitarPlato(${i},${pid})">✕ Quitar</button>
+        </div>`;
+    }).join('');
+    return `
+      <div class="sec ${s.abierta ? 'open' : ''}">
+        <button class="sec-head" onclick="toggleSec(${i})">
+          <span class="sec-emoji">${cat.emoji}</span>
+          <span class="sec-name">${cat.nombre}</span>
+          ${badge}
+          <span class="chev">▼</span>
+        </button>
+        <div class="sec-body">
+          ${filas || '<div class="meta" style="padding:4px 0 8px;border-top:1px solid var(--border)">Aún no tiene platos.</div>'}
+          <button class="sec-add-btn" onclick="abrirPicker(${i})">＋ Platos</button>
+          <div class="sec-foot">
+            <button class="${s.requerido ? 'req-on' : ''}" onclick="toggleRequerido(${i})">${s.requerido ? '✅ Obligatoria' : '⏭ Opcional'}</button>
+            <button onclick="quitarSeccion(${i})">Quitar sección</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleSec(i) {
+  menu.secciones[i].abierta = !menu.secciones[i].abierta;
+  renderSecciones();   // el scroll vertical de la página sobrevive al re-render — esa es la gracia
+}
+function toggleActs(btn) {
+  const acts = btn.closest('.plato-row').nextElementSibling;
+  acts.classList.toggle('open');
+}
+function toggleRequerido(i) {
+  const s = menu.secciones[i];
+  s.requerido = s.requerido ? 0 : 1;
+  toastMsg(s.requerido ? 'Sección obligatoria: el cliente debe elegir aquí' : 'Sección opcional: el cliente puede saltarla');
+  renderSecciones();
+}
+function quitarSeccion(i) {
+  const cat = seccionCat(menu.secciones[i].idSec);
+  if (!confirm(`¿Quitar la sección "${cat.nombre}" de este menú?`)) return;
+  menu.secciones.splice(i, 1);
+  toastMsg(`Sección "${cat.nombre}" quitada`);
+  renderSecciones();
+}
+function quitarPlato(i, pid) {
+  const s = menu.secciones[i];
+  s.platos = s.platos.filter(x => x !== pid);
+  if (menu.portadaId === pid) menu.portadaId = null;
+  toastMsg('Plato quitado');
+  renderSecciones();
+}
+function toggleAgotado(i, pid) {
+  const s = menu.secciones[i];
+  if (!s.agotados) s.agotados = new Set();
+  s.agotados.has(pid) ? s.agotados.delete(pid) : s.agotados.add(pid);
+  toastMsg(s.agotados.has(pid) ? 'Plato marcado como agotado' : 'Plato disponible nuevamente');
+  renderSecciones();
+}
+function setPortada(pid) {
+  menu.portadaId = (menu.portadaId === pid) ? null : pid;
+  toastMsg(menu.portadaId ? 'Foto de portada actualizada' : 'Portada quitada');
+  renderSecciones();
+}
+function toggleElegible() {
+  menu.elegible = menu.elegible ? 0 : 1;
+  toastMsg(menu.elegible ? 'Menú cambiado a: Cliente elige' : 'Menú cambiado a: Fijo');
+  renderArmado();
+}
+function toggleActivo() {
+  menu.activo = menu.activo ? 0 : 1;
+  toastMsg(menu.activo ? 'Menú visible en el QR' : 'Menú oculto del QR');
+  renderArmado();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PICKER MULTI-SELECCIÓN (Cambio B)
+   Pre-marcado con lo ya asignado: marcar = agregar, desmarcar = quitar.
+   ══════════════════════════════════════════════════════════════ */
+function abrirPicker(i) {
+  pkSeccion = i;
+  const s = menu.secciones[i];
+  pkInicial = new Set(s.platos);
+  pkSel = new Set(s.platos);
+  $('pk-title').textContent = `Platos para «${seccionCat(s.idSec).nombre}»`;
+  $('pk-search').value = '';
+  renderPicker();
+  $('picker-bd').classList.add('show');
+}
+function cerrarPicker() { $('picker-bd').classList.remove('show'); }
+
+function renderPicker() {
+  const q = ($('pk-search').value || '').toLowerCase();
+  const lista = CATALOGO_PLATOS.filter(p => p.nombre.toLowerCase().includes(q));
+  $('pk-grid').innerHTML = lista.map(p => `
+    <div class="pick-card ${pkSel.has(p.id) ? 'sel' : ''}" onclick="togglePick(${p.id})">
+      ${pkInicial.has(p.id) ? '<span class="pick-ya-badge">ya asignado</span>' : ''}
+      <span class="pick-check">✓</span>
+      <span class="pk-emoji">${p.emoji}</span>
+      <span>${p.nombre}</span>
+    </div>`).join('') || '<div class="meta" style="grid-column:1/-1;text-align:center;padding:1rem">Sin resultados</div>';
+  actualizarPkFooter();
+}
+function togglePick(id) {
+  pkSel.has(id) ? pkSel.delete(id) : pkSel.add(id);
+  renderPicker();
+}
+function actualizarPkFooter() {
+  const agregados = [...pkSel].filter(x => !pkInicial.has(x)).length;
+  const quitados  = [...pkInicial].filter(x => !pkSel.has(x)).length;
+  $('pk-count').textContent = `${pkSel.size} ✓`;
+  const partes = [];
+  if (agregados) partes.push(`${agregados} nuevo${agregados > 1 ? 's' : ''}`);
+  if (quitados)  partes.push(`quitar ${quitados}`);
+  $('pk-confirm').textContent = partes.length ? `Guardar (${partes.join(' · ')}) ✓` : 'Listo ✓';
+}
+function confirmarPicker() {
+  const s = menu.secciones[pkSeccion];
+  const agregados = [...pkSel].filter(x => !pkInicial.has(x)).length;
+  const quitados  = [...pkInicial].filter(x => !pkSel.has(x)).length;
+  s.platos = CATALOGO_PLATOS.filter(p => pkSel.has(p.id)).map(p => p.id);
+  if (menu.portadaId && !pkSel.has(menu.portadaId)) menu.portadaId = null;
+  cerrarPicker();
+  if (agregados || quitados) {
+    const partes = [];
+    if (agregados) partes.push(`${agregados} agregado${agregados > 1 ? 's' : ''}`);
+    if (quitados)  partes.push(`${quitados} quitado${quitados > 1 ? 's' : ''}`);
+    toastMsg(partes.join(' · ') + ' ✓');
+  }
+  renderSecciones();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AGREGAR SECCIÓN (caso raro — 1 tap: elegir obligatoria u opcional)
+   ══════════════════════════════════════════════════════════════ */
+function abrirAddSeccion() {
+  const usadas = new Set(menu.secciones.map(s => s.idSec));
+  const libres = CATALOGO_SECCIONES.filter(c => !usadas.has(c.id));
+  $('addsec-body').innerHTML = libres.length
+    ? libres.map(c => `
+        <div class="addsec-row">
+          <span style="font-size:20px">${c.emoji}</span>
+          <span class="addsec-name">${c.nombre}</span>
+          <button class="mini-act" style="color:var(--primary);border-color:var(--primary);font-weight:700" onclick="addSeccion(${c.id},1)">Obligatoria</button>
+          <button class="mini-act" onclick="addSeccion(${c.id},0)">Opcional</button>
+        </div>`).join('')
+    : '<div class="meta" style="text-align:center;padding:1.5rem 0">Ya usaste todas las secciones de tu catálogo 🎉</div>';
+  $('addsec-bd').classList.add('show');
+}
+function cerrarAddSeccion() { $('addsec-bd').classList.remove('show'); }
+function addSeccion(idSec, req) {
+  menu.secciones.push({ idSec, requerido: req, abierta: true, platos: [] });
+  cerrarAddSeccion();
+  toastMsg(`Sección "${seccionCat(idSec).nombre}" agregada (${req ? 'obligatoria' : 'opcional'})`);
+  renderSecciones();
+}
+
+/* ── Init ── */
+renderGaleria();
+</script>
+</body>
+</html>

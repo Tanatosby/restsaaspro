@@ -385,7 +385,7 @@
         </div>
         <div class="mw-actions">
           <button class="mw-btn mw-btn-ghost" data-act="to-precio-back">← Atrás</button>
-          <button class="mw-btn mw-btn-primary" data-act="crear" disabled>Crear menú ✓</button>
+          <button class="mw-btn mw-btn-primary" data-act="crear" disabled>Crear y agregar platos →</button>
         </div>
       </div>
     </div>`;
@@ -626,15 +626,20 @@
     const btn = host.querySelector('[data-act="crear"]');
     btn.disabled = true;
     try {
-      await api('POST', '/api/menu/menus-dia', {
+      // heredar_secciones: el menú nace con la estructura del último menú
+      // (sin platos) — el owner solo agrega los platos de hoy (flujo v2).
+      const nuevo = await api('POST', '/api/menu/menus-dia', {
         nombre: (state.nombre || '').trim() || 'Menú del día',
         precio: state.precio,
         dia: state.dia,
         elegible: state.elegible,
+        heredar_secciones: true,
       });
-      toast('Menú creado');
+      toast(nuevo.secciones_heredadas ? 'Menú creado ✓ — secciones heredadas' : 'Menú creado ✓');
       await fetchMenus();
-      closeWizard();     // vuelve a la galería con el menú nuevo listado
+      closeWizard();     // deja la galería fresca detrás
+      // Encadena directo al armado de platos (sin volver a pasar por ⚙ Configurar)
+      if (opts.onConfigure) opts.onConfigure(nuevo.id, { recienCreado: true });
     } catch (e) {
       setErr('mw-err-crear', e.message);
       btn.disabled = false;
