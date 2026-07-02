@@ -7,6 +7,7 @@ const { authenticate, authorize, authorizePermiso } = require('../middleware/aut
 const { calcularPrecioUnitario, calcularMenuTotal } = require('../utils/menuPricing');
 const { calcularTotalOrden } = require('../utils/totales');
 const { fechaLima } = require('../utils/fecha');
+const { descontarStock, devolverStock, itemsMenuDeOrden } = require('../utils/stock');
 
 router.use(authenticate);
 
@@ -269,57 +270,58 @@ router.post('/', (req, res) => {
 
   const fecha = fechaLima();
 
-  const { lastInsertRowid: ordenId } = db.prepare(`
-    INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus)
-    VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_inicial = 1))
-  `).run(mesa || null, nombre_cliente || null, fecha, id_restaurante);
-
-  // Insertar ítems de carta
-  if (carta_items?.length) {
-    const stmtCarta = db.prepare(`
-      INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)
-      VALUES (?, ?, ?, (SELECT precio FROM platos_carta WHERE id = ? AND activo = 1))
-    `);
-
-    for (const item of carta_items) {
-      // Verificar que el plato existe, pertenece al restaurante y está activo
-      const plato = db.prepare(`
-        SELECT id, precio FROM platos_carta
-        WHERE id = ? AND id_restaurante = ? AND activo = 1
-      `).get(item.id_plato_carta, id_restaurante);
-
-      if (!plato) {
-        return res.status(400).json({
-          error: `Plato #${item.id_plato_carta} no disponible`
-        });
-      }
-
-      stmtCarta.run(ordenId, item.id_plato_carta, item.cantidad || 1, item.id_plato_carta);
-    }
+  // Validar ítems ANTES de insertar (evita órdenes huérfanas si un ítem es inválido)
+  for (const item of (carta_items || [])) {
+    const plato = db.prepare(`
+      SELECT id FROM platos_carta
+      WHERE id = ? AND id_restaurante = ? AND activo = 1
+    `).get(item.id_plato_carta, id_restaurante);
+    if (!plato)
+      return res.status(400).json({ error: `Plato #${item.id_plato_carta} no disponible` });
+  }
+  for (const item of (menu_items || [])) {
+    const componente = db.prepare(`
+      SELECT cmd.id FROM componentes_menu_dia cmd
+      JOIN menus_dia md ON cmd.id_menu_dia = md.id
+      WHERE cmd.id = ? AND md.id_restaurante = ?
+    `).get(item.id_componente, id_restaurante);
+    if (!componente)
+      return res.status(400).json({ error: `Componente #${item.id_componente} no válido` });
   }
 
-  // Insertar ítems de menú del día
-  if (menu_items?.length) {
-    const stmtMenu = db.prepare(`
-      INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad)
-      VALUES (?, ?, ?, ?)
-    `);
+  // Insertar en transacción (si el stock no alcanza, revierte todo)
+  let ordenId;
+  try {
+    ordenId = db.transaction(() => {
+      const { lastInsertRowid } = db.prepare(`
+        INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus)
+        VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_inicial = 1))
+      `).run(mesa || null, nombre_cliente || null, fecha, id_restaurante);
 
-    for (const item of menu_items) {
-      const componente = db.prepare(`
-        SELECT cmd.id FROM componentes_menu_dia cmd
-        JOIN menus_dia md ON cmd.id_menu_dia = md.id
-        WHERE cmd.id = ? AND md.id_restaurante = ?
-      `).get(item.id_componente, id_restaurante);
-
-      if (!componente) {
-        return res.status(400).json({
-          error: `Componente #${item.id_componente} no válido`
-        });
+      const stmtCarta = db.prepare(`
+        INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)
+        VALUES (?, ?, ?, (SELECT precio FROM platos_carta WHERE id = ? AND activo = 1))
+      `);
+      for (const item of (carta_items || [])) {
+        stmtCarta.run(lastInsertRowid, item.id_plato_carta, item.cantidad || 1, item.id_plato_carta);
       }
 
-      stmtMenu.run(ordenId, item.id_menu_dia, item.id_componente, item.cantidad || 1);
-    }
+      const stmtMenu = db.prepare(`
+        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad)
+        VALUES (?, ?, ?, ?)
+      `);
+      for (const item of (menu_items || [])) {
+        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
+      }
+
+      // Descuenta stock de los platos con control; lanza 409 si no alcanza
+      descontarStock(db, menu_items || []);
+
+      return lastInsertRowid;
+    })();
+  } catch (e) {
+    if (e.status === 409) return res.status(409).json({ error: e.message });
+    throw e;
   }
 
   res.status(201).json({
@@ -343,14 +345,14 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
   if (flag) {
     if (!VALID_ORDER_FLAGS.has(flag))
       return res.status(400).json({ error: `Flag inválido. Válidos: ${[...VALID_ORDER_FLAGS].join(', ')}` });
-    nuevoEstatus = db.prepare(`SELECT id, nombre, es_pagado FROM estatus_orden WHERE ${flag} = 1`).get();
+    nuevoEstatus = db.prepare(`SELECT id, nombre, es_pagado, es_cancelado FROM estatus_orden WHERE ${flag} = 1`).get();
     if (!nuevoEstatus)
       return res.status(400).json({ error: `No existe estatus con flag ${flag}` });
   } else {
     const estatusValidos = db.prepare(`SELECT nombre FROM estatus_orden`).all().map(e => e.nombre);
     if (!estatusValidos.includes(estatus))
       return res.status(400).json({ error: `Estatus inválido. Válidos: ${estatusValidos.join(', ')}` });
-    nuevoEstatus = db.prepare(`SELECT id, nombre, es_pagado FROM estatus_orden WHERE nombre = ?`).get(estatus);
+    nuevoEstatus = db.prepare(`SELECT id, nombre, es_pagado, es_cancelado FROM estatus_orden WHERE nombre = ?`).get(estatus);
   }
 
   const orden = db.prepare(`
@@ -370,6 +372,12 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
     const total = calcularTotalOrden(db, req.params.id);
     db.prepare(`UPDATE ordenes SET id_estatus = ?, total = ?, estado_pago = 'pagado' WHERE id = ?`)
       .run(nuevoEstatus.id, total, req.params.id);
+  } else if (nuevoEstatus.es_cancelado) {
+    // Cancelar devuelve el stock de los platos del menú (en la misma transacción)
+    db.transaction(() => {
+      db.prepare(`UPDATE ordenes SET id_estatus = ? WHERE id = ?`).run(nuevoEstatus.id, req.params.id);
+      devolverStock(db, itemsMenuDeOrden(db, req.params.id));
+    })();
   } else {
     db.prepare(`UPDATE ordenes SET id_estatus = ? WHERE id = ?`)
       .run(nuevoEstatus.id, req.params.id);
@@ -627,8 +635,16 @@ function actualizarOrdenKitchen(req, res) {
   if (!nuevoEstatus)
     return res.status(500).json({ error: `No existe estatus con flag ${flag}` });
 
-  db.prepare(`UPDATE ordenes SET id_estatus = ? WHERE id = ?`)
-    .run(nuevoEstatus.id, req.params.id);
+  if (flag === 'es_cancelado') {
+    // Cancelar desde cocina también devuelve el stock del menú
+    db.transaction(() => {
+      db.prepare(`UPDATE ordenes SET id_estatus = ? WHERE id = ?`).run(nuevoEstatus.id, req.params.id);
+      devolverStock(db, itemsMenuDeOrden(db, req.params.id));
+    })();
+  } else {
+    db.prepare(`UPDATE ordenes SET id_estatus = ? WHERE id = ?`)
+      .run(nuevoEstatus.id, req.params.id);
+  }
 
   res.json({ message: `Orden #${req.params.id} → ${nuevoEstatus.nombre}`, status });
 }

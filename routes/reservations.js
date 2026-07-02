@@ -6,6 +6,7 @@ const ExcelJS  = require('exceljs');
 const { authenticate, authorize, authorizePermiso } = require('../middleware/authenticate');
 const { calcularPrecioUnitario, calcularMenuTotal } = require('../utils/menuPricing');
 const { calcularTotalReserva } = require('../utils/totales');
+const { descontarStock, devolverStock, itemsMenuDeReserva } = require('../utils/stock');
 
 router.use(authenticate);
 
@@ -172,38 +173,52 @@ router.post('/', (req, res) => {
   if (!restaurante)
     return res.status(404).json({ error: 'Restaurante no encontrado o inactivo' });
 
-  const { lastInsertRowid: reservaId } = db.prepare(`
-    INSERT INTO reservas (nombre_cliente, telefono_cliente, fecha, hora_llegada, mesa, id_restaurante, id_estatus)
-    VALUES (?, ?, ?, ?, ?, ?, (SELECT id FROM estatus_reserva WHERE es_inicial = 1))
-  `).run(
-    nombre_cliente.trim(),
-    telefono_cliente || null,
-    fecha,
-    hora_llegada || null,
-    mesa || null,
-    restauranteId
-  );
+  // Insertar en transacción (si el stock no alcanza, revierte todo)
+  let reservaId;
+  try {
+    reservaId = db.transaction(() => {
+      const { lastInsertRowid } = db.prepare(`
+        INSERT INTO reservas (nombre_cliente, telefono_cliente, fecha, hora_llegada, mesa, id_restaurante, id_estatus)
+        VALUES (?, ?, ?, ?, ?, ?, (SELECT id FROM estatus_reserva WHERE es_inicial = 1))
+      `).run(
+        nombre_cliente.trim(),
+        telefono_cliente || null,
+        fecha,
+        hora_llegada || null,
+        mesa || null,
+        restauranteId
+      );
 
-  // Insertar ítems de carta si vienen
-  if (carta_items?.length) {
-    const stmt = db.prepare(`
-      INSERT INTO reserva_carta_items (id_reserva, id_plato_carta, cantidad, precio_unitario)
-      VALUES (?, ?, ?, (SELECT precio FROM platos_carta WHERE id = ?))
-    `);
-    for (const item of carta_items) {
-      stmt.run(reservaId, item.id_plato_carta, item.cantidad || 1, item.id_plato_carta);
-    }
-  }
+      // Insertar ítems de carta si vienen
+      if (carta_items?.length) {
+        const stmt = db.prepare(`
+          INSERT INTO reserva_carta_items (id_reserva, id_plato_carta, cantidad, precio_unitario)
+          VALUES (?, ?, ?, (SELECT precio FROM platos_carta WHERE id = ?))
+        `);
+        for (const item of carta_items) {
+          stmt.run(lastInsertRowid, item.id_plato_carta, item.cantidad || 1, item.id_plato_carta);
+        }
+      }
 
-  // Insertar ítems de menú si vienen
-  if (menu_items?.length) {
-    const stmt = db.prepare(`
-      INSERT INTO reserva_menu_items (id_reserva, id_menu_dia, id_componente, cantidad)
-      VALUES (?, ?, ?, ?)
-    `);
-    for (const item of menu_items) {
-      stmt.run(reservaId, item.id_menu_dia, item.id_componente, item.cantidad || 1);
-    }
+      // Insertar ítems de menú si vienen
+      if (menu_items?.length) {
+        const stmt = db.prepare(`
+          INSERT INTO reserva_menu_items (id_reserva, id_menu_dia, id_componente, cantidad)
+          VALUES (?, ?, ?, ?)
+        `);
+        for (const item of menu_items) {
+          stmt.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
+        }
+      }
+
+      // Descuenta stock de los platos con control; lanza 409 si no alcanza
+      descontarStock(db, menu_items || []);
+
+      return lastInsertRowid;
+    })();
+  } catch (e) {
+    if (e.status === 409) return res.status(409).json({ error: e.message });
+    throw e;
   }
 
   res.status(201).json({
@@ -225,14 +240,14 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
   if (flag) {
     if (!VALID_RESERVA_FLAGS.has(flag))
       return res.status(400).json({ error: `Flag inválido. Válidos: ${[...VALID_RESERVA_FLAGS].join(', ')}` });
-    nuevoEstatus = db.prepare(`SELECT id, nombre, es_full FROM estatus_reserva WHERE ${flag} = 1`).get();
+    nuevoEstatus = db.prepare(`SELECT id, nombre, es_full, es_cancelado FROM estatus_reserva WHERE ${flag} = 1`).get();
     if (!nuevoEstatus)
       return res.status(400).json({ error: `No existe estatus con flag ${flag}` });
   } else {
     const estatusValidos = db.prepare(`SELECT nombre FROM estatus_reserva ORDER BY id ASC`).all().map(e => e.nombre);
     if (!estatusValidos.includes(estatus))
       return res.status(400).json({ error: `Estatus inválido. Válidos: ${estatusValidos.join(', ')}` });
-    nuevoEstatus = db.prepare(`SELECT id, nombre, es_full FROM estatus_reserva WHERE nombre = ?`).get(estatus);
+    nuevoEstatus = db.prepare(`SELECT id, nombre, es_full, es_cancelado FROM estatus_reserva WHERE nombre = ?`).get(estatus);
   }
 
   const reserva = db.prepare(`
@@ -254,6 +269,12 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
     const total = calcularTotalReserva(db, req.params.id);
     db.prepare(`UPDATE reservas SET id_estatus = ?, total = ?, estado_pago = 'pagado' WHERE id = ?`)
       .run(nuevoEstatus.id, total, req.params.id);
+  } else if (nuevoEstatus.es_cancelado) {
+    // Cancelar (o marcar no-show) devuelve el stock de los platos del menú
+    db.transaction(() => {
+      db.prepare(`UPDATE reservas SET id_estatus = ? WHERE id = ?`).run(nuevoEstatus.id, req.params.id);
+      devolverStock(db, itemsMenuDeReserva(db, req.params.id));
+    })();
   } else {
     db.prepare(`UPDATE reservas SET id_estatus = ? WHERE id = ?`)
       .run(nuevoEstatus.id, req.params.id);

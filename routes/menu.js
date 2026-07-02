@@ -166,6 +166,8 @@ router.get('/menus-dia', (req, res) => {
         SELECT
           cmd.id      AS id_componente,
           cmd.agotado,
+          cmd.stock_inicial,
+          cmd.stock_restante,
           pm.id       AS id_plato,
           pm.nombre,
           pm.descripcion,
@@ -366,16 +368,17 @@ router.post('/menus-dia/:id/copiar', authorizePermiso(), (req, res) => {
            fuente.id_plato_portada, rid);
 
     const insSeccion   = db.prepare(`INSERT INTO menu_secciones (id_menu_dia, id_seccion_menu, requerido) VALUES (?, ?, ?)`);
-    const insComponente = db.prepare(`INSERT INTO componentes_menu_dia (id_menu_dia, dia, id_seccion_menu, id_plato_menu, id_restaurante) VALUES (?, ?, ?, ?, ?)`);
+    // El stock se copia como stock_inicial y el restante arranca completo (día nuevo, olla nueva)
+    const insComponente = db.prepare(`INSERT INTO componentes_menu_dia (id_menu_dia, dia, id_seccion_menu, id_plato_menu, id_restaurante, stock_inicial, stock_restante) VALUES (?, ?, ?, ?, ?, ?, ?)`);
 
     for (const sec of secciones) {
       insSeccion.run(lastInsertRowid, sec.id_seccion_menu, sec.requerido);
       const componentes = db.prepare(`
-        SELECT id_plato_menu FROM componentes_menu_dia
+        SELECT id_plato_menu, stock_inicial FROM componentes_menu_dia
         WHERE id_menu_dia = ? AND id_seccion_menu = ?
       `).all(fuente.id, sec.id_seccion_menu);
       for (const c of componentes)
-        insComponente.run(lastInsertRowid, dia, sec.id_seccion_menu, c.id_plato_menu, rid);
+        insComponente.run(lastInsertRowid, dia, sec.id_seccion_menu, c.id_plato_menu, rid, c.stock_inicial, c.stock_inicial);
     }
     return lastInsertRowid;
   })();
@@ -551,6 +554,37 @@ router.patch('/menus-dia/:id/secciones/:seccionId/platos/:componenteId/agotado',
     .run(agotado ? 1 : 0, componente.id);
 
   res.json({ message: 'Plato actualizado', agotado: agotado ? 1 : 0 });
+});
+
+// PATCH /api/menu/menus-dia/:id/secciones/:seccionId/platos/:componenteId/stock
+// Fija el stock del plato en ESTE menú ("hoy tengo N porciones").
+// Body: { stock: <número ≥ 0 | null> } — null/'' quita el control (ilimitado).
+// Fijar stock resetea inicial y restante al mismo valor.
+router.patch('/menus-dia/:id/secciones/:seccionId/platos/:componenteId/stock', authorizePermiso(), (req, res) => {
+  const menu = db.prepare(`
+    SELECT id FROM menus_dia WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, req.user.restaurant_id);
+  if (!menu) return res.status(404).json({ error: 'Menú no encontrado' });
+
+  const componente = db.prepare(`
+    SELECT id FROM componentes_menu_dia
+    WHERE id = ? AND id_menu_dia = ? AND id_seccion_menu = ?
+  `).get(req.params.componenteId, req.params.id, req.params.seccionId);
+  if (!componente) return res.status(404).json({ error: 'Componente no encontrado' });
+
+  const { stock } = req.body;
+  let valor = null;
+  if (stock !== null && stock !== undefined && stock !== '') {
+    const n = Number(stock);
+    if (!Number.isInteger(n) || n < 0)
+      return res.status(400).json({ error: 'El stock debe ser un número entero ≥ 0 (o null para quitar el control)' });
+    valor = n;
+  }
+
+  db.prepare(`UPDATE componentes_menu_dia SET stock_inicial = ?, stock_restante = ? WHERE id = ?`)
+    .run(valor, valor, componente.id);
+
+  res.json({ message: valor === null ? 'Control de stock quitado' : `Stock fijado en ${valor}`, stock: valor });
 });
 
 // DELETE /api/menu/menus-dia/:id/secciones/:seccionId/platos/:componenteId

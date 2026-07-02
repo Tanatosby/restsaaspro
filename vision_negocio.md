@@ -2,7 +2,7 @@
 
 > Este documento es la brújula del proyecto. Debe leerse al inicio de cada sesión de desarrollo
 > para garantizar que cada decisión técnica va en la dirección correcta.
-> Última actualización: 2026-05-23
+> Última actualización: 2026-07-02
 
 ---
 
@@ -271,6 +271,8 @@ El dueño define su política (configurable por restaurante):
 - Auth + roles (owner, cocinero, mozo, admin) con permisos granulares
 - Menú del día: secciones, platos, fijo vs elegible, múltiples menús por día
 - Toggle visible/oculto por menú, platos agotados
+- **Flujo de armado v2 del menú del día** (2026-07-02): acordeón vertical de secciones, picker multi-selección, herencia de secciones del último menú, «Crear y agregar platos →» — el menú diario se arma en ~15 taps (ver `flujo-menuv2.md`)
+- **Stock por plato del menú** (2026-07-02): el owner fija "hoy tengo 25 arroz con pollo" por plato y POR MENÚ (si el plato está en 2 menús, reparte porciones entre ambos — decisión del negocio). Cada pedido descuenta al crearse; cancelar devuelve; en 0 el plato desaparece del QR solo. Opcional: sin stock fijado, todo funciona como antes
 - Platos a la carta: categorías, precios, toggle activo/inactivo, fotos
 - Órdenes: creación, flujo completo de estatus, historial, descarga Excel
 - Reservas: creación, confirmación, hora de llegada, flujo completo (Confirmar → Cocina → Listo → Cliente llegó → Completar), asignación de mesa, historial, descarga Excel

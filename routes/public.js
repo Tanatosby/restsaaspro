@@ -8,6 +8,7 @@ const path    = require('path');
 const fs      = require('fs');
 const { fechaLima } = require('../utils/fecha');
 const { generarCodigoUnico } = require('../utils/codigoReserva');
+const { descontarStock } = require('../utils/stock');
 const db      = require('../config/database');
 
 // Multer para comprobantes de pago (subidos por el cliente)
@@ -121,6 +122,7 @@ router.get('/menu', (req, res) => {
         FROM componentes_menu_dia cmd
         JOIN platos_menu pm ON cmd.id_plato_menu = pm.id
         WHERE cmd.id_menu_dia = ? AND cmd.id_seccion_menu = ? AND cmd.agotado = 0
+          AND (cmd.stock_restante IS NULL OR cmd.stock_restante > 0)
         ORDER BY pm.nombre ASC
       `).all(menu.id, s.id_seccion);
 
@@ -231,33 +233,42 @@ router.post('/orders', (req, res) => {
 
   const cargo_modalidad = modalidad === 'para_llevar' ? (rest.costo_tapper ?? 0) : 0;
 
-  // Todo válido — insertar en transacción
-  const ordenId = db.transaction(() => {
-    const { lastInsertRowid } = db.prepare(`
-      INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, modalidad, cargo_modalidad)
-      VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_inicial = 1), ?, ?)
-    `).run(mesa || null, nombre_cliente?.trim() || null, fecha, id_restaurante, modalidad, cargo_modalidad);
+  // Todo válido — insertar en transacción (si el stock no alcanza, revierte todo)
+  let ordenId;
+  try {
+    ordenId = db.transaction(() => {
+      const { lastInsertRowid } = db.prepare(`
+        INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, modalidad, cargo_modalidad)
+        VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_inicial = 1), ?, ?)
+      `).run(mesa || null, nombre_cliente?.trim() || null, fecha, id_restaurante, modalidad, cargo_modalidad);
 
-    // Ítems de carta
-    const stmtCarta = db.prepare(`
-      INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)
-      SELECT ?, id, ?, precio FROM platos_carta WHERE id = ?
-    `);
-    for (const item of carta_items) {
-      stmtCarta.run(lastInsertRowid, item.cantidad || 1, item.id_plato_carta);
-    }
+      // Ítems de carta
+      const stmtCarta = db.prepare(`
+        INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)
+        SELECT ?, id, ?, precio FROM platos_carta WHERE id = ?
+      `);
+      for (const item of carta_items) {
+        stmtCarta.run(lastInsertRowid, item.cantidad || 1, item.id_plato_carta);
+      }
 
-    // Ítems de menú
-    const stmtMenu = db.prepare(`
-      INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad)
-      VALUES (?, ?, ?, ?)
-    `);
-    for (const item of menu_items) {
-      stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
-    }
+      // Ítems de menú
+      const stmtMenu = db.prepare(`
+        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad)
+        VALUES (?, ?, ?, ?)
+      `);
+      for (const item of menu_items) {
+        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
+      }
 
-    return lastInsertRowid;
-  })();
+      // Descuenta stock de los platos con control; lanza 409 si no alcanza
+      descontarStock(db, menu_items);
+
+      return lastInsertRowid;
+    })();
+  } catch (e) {
+    if (e.status === 409) return res.status(409).json({ error: e.message });
+    throw e;
+  }
 
   res.status(201).json({
     message: '¡Pedido enviado correctamente!',
@@ -341,9 +352,11 @@ router.post('/reservations', (req, res) => {
   if (modalidad === 'para_llevar') cargo_modalidad_res = rest.costo_tapper    ?? 0;
   if (modalidad === 'delivery')    cargo_modalidad_res = (rest.costo_tapper ?? 0) + (rest.tarifa_delivery ?? 0);
 
-  // Insertar en transacción
-  const { reservaId, codigo } = db.transaction(() => {
-    const codigoNuevo = generarCodigoUnico(db);
+  // Insertar en transacción (si el stock no alcanza, revierte todo)
+  let reservaId, codigo;
+  try {
+    ({ reservaId, codigo } = db.transaction(() => {
+      const codigoNuevo = generarCodigoUnico(db);
 
     const { lastInsertRowid } = db.prepare(`
       INSERT INTO reservas (nombre_cliente, telefono_cliente, fecha, hora_llegada, mesa, id_restaurante, id_estatus, codigo, modalidad, cargo_modalidad)
@@ -377,8 +390,16 @@ router.post('/reservations', (req, res) => {
       stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
     }
 
+    // Descuenta stock de los platos con control; lanza 409 si no alcanza.
+    // La reserva descuenta del stock del componente de SU fecha (el menú es de esa fecha).
+    descontarStock(db, menu_items);
+
     return { reservaId: lastInsertRowid, codigo: codigoNuevo };
-  })();
+    })());
+  } catch (e) {
+    if (e.status === 409) return res.status(409).json({ error: e.message });
+    throw e;
+  }
 
   res.status(201).json({
     message: '¡Reserva creada correctamente!',

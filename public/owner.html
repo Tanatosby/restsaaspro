@@ -1436,20 +1436,29 @@ function mcSeccionAcordeon(m, s) {
     ? `<span class="mc-sec-badge ok">${n} plato${n > 1 ? 's' : ''}</span>`
     : `<span class="mc-sec-badge warn">⚠ sin platos</span>`;
 
-  const filas = s.platos.map(p => `
+  const filas = s.platos.map(p => {
+    // Badge de stock: NULL = sin control (no se muestra nada)
+    const tieneStock = p.stock_restante !== null && p.stock_restante !== undefined;
+    const badgeStock = !tieneStock ? ''
+      : p.stock_restante <= 0 ? '<span class="mc-badge-mini rojo">Sin stock</span>'
+      : `<span class="mc-badge-mini ${p.stock_restante <= 5 ? 'ambar' : ''}">quedan ${p.stock_restante}</span>`;
+    return `
     <div class="mc-plato-row ${p.agotado ? 'agotado' : ''}">
       <span class="mc-plato-nom">
         <span class="mc-plato-txt">${esc(p.nombre)}</span>
         ${m.id_plato_portada === p.id_plato ? '<span class="mc-badge-mini">📷 Portada</span>' : ''}
         ${p.agotado ? '<span class="mc-badge-mini rojo">Agotado</span>' : ''}
+        ${badgeStock}
       </span>
       <button class="mc-dots" onclick="toggleAccionesPlato(this)" aria-label="Más acciones">⋯</button>
     </div>
     <div class="mc-plato-acts">
+      <button class="mc-mini-act" onclick="abrirStockPlato(${m.id},${s.id_seccion},${p.id_componente},${tieneStock ? p.stock_restante : 'null'})">📦 Stock</button>
       <button class="mc-mini-act" onclick="toggleAgotadoPlato(${m.id},${s.id_seccion},${p.id_componente},${p.agotado?1:0})">${p.agotado ? '✔ Disponible' : '⛔ Agotado'}</button>
       ${p.url_foto ? `<button class="mc-mini-act" onclick="setPortada(${m.id},${p.id_plato})">📷 ${m.id_plato_portada === p.id_plato ? 'Quitar portada' : 'Portada'}</button>` : ''}
       <button class="mc-mini-act danger" onclick="eliminarComponente(${m.id},${s.id_seccion},${p.id_componente})">✕ Quitar</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   return `
     <div class="mc-sec ${abierta ? 'open' : ''}">
@@ -1598,6 +1607,26 @@ async function confirmarAddSeccionRapida(menuId, idSeccion, requerido) {
     toast(`Sección agregada (${requerido ? 'obligatoria' : 'opcional'})`);
     recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
+}
+
+// Fija cuántas porciones hay HOY de un plato en este menú (control de stock).
+// Vacío = quitar el control (ilimitado, comportamiento clásico). Cada pedido
+// descuenta; al llegar a 0 el plato desaparece del QR del cliente solo.
+function abrirStockPlato(menuId, seccionId, componenteId, actual) {
+  FormModal.open({
+    title: '📦 Stock del plato',
+    fields: [
+      { name: 'stock', label: 'Porciones disponibles hoy (vacío = sin límite)', type: 'number',
+        value: (actual === null || actual === undefined) ? '' : actual, min: '0', step: '1' },
+    ],
+    submitLabel: 'Guardar',
+    onSubmit: async (vals) => {
+      const stock = (vals.stock === '' || vals.stock === null || vals.stock === undefined) ? null : Number(vals.stock);
+      const r = await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/stock`, { stock });
+      toast(r.message || 'Stock actualizado');
+      recargarModalConfig();
+    },
+  });
 }
 
 // Define (o quita, si ya lo era) el plato cuya foto es la portada del menú.

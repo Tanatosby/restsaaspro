@@ -356,6 +356,11 @@ try { db.exec(`ALTER TABLE menus_dia ADD COLUMN id_plato_portada INTEGER DEFAULT
 // Migración idempotente: columna agotado en componentes_menu_dia
 try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN agotado INTEGER DEFAULT 0`); } catch (_) {}
 
+// Migración idempotente: stock por plato del menú del día (NULL = sin control).
+// stock_inicial = porciones cocinadas hoy; stock_restante baja con cada pedido.
+try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN stock_inicial  INTEGER DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN stock_restante INTEGER DEFAULT NULL`); } catch (_) {}
+
 // Migración idempotente: hora de llegada en reservas
 try { db.exec(`ALTER TABLE reservas ADD COLUMN hora_llegada TEXT DEFAULT NULL`); } catch (_) {}
 

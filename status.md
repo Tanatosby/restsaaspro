@@ -2,6 +2,28 @@
 
 ---
 
+## 📦 Sesión 2026-07-02 (parte 3) — Stock por plato del menú del día
+
+**Prompt:** "los restaurantes preparan porciones contadas (ej: solo 25 arroz con pollo), ¿se puede agregar?". Decisiones del usuario: (1) stock **por menú** — si el plato está en 2 menús, el owner reparte porciones entre ambos (más fácil de controlar para él); (2) descuento **al crear** el pedido, devolución al cancelar.
+
+**BD — `config/database.js`:** migración idempotente: `stock_inicial` y `stock_restante` (INTEGER NULL) en `componentes_menu_dia`. **NULL = sin control** → el restaurante que no cuenta porciones no ve fricción nueva.
+
+**Backend:**
+- **`utils/stock.js` (nuevo):** `descontarStock(db, items)` — UPDATE con guard `stock_restante >= n` (dos pedidos simultáneos no se llevan la última porción); si no alcanza lanza error 409 ("Solo quedan N porciones de X" / "Ya no quedan porciones de X") y la transacción del caller revierte todo. `devolverStock`, `itemsMenuDeOrden`, `itemsMenuDeReserva`.
+- **`routes/public.js`:** POST /orders y /reservations descuentan dentro de su transacción (409 al cliente si no alcanza). GET /menu filtra `stock_restante IS NULL OR > 0` (mismo tratamiento que agotado).
+- **`routes/orders.js`:** POST / (mozo/owner) refactorizado a validar-primero + transacción con descuento (de paso elimina órdenes huérfanas si un ítem era inválido). PATCH /:id/estatus y el endpoint de cocina devuelven stock al pasar a `es_cancelado`.
+- **`routes/reservations.js`:** POST / en transacción con descuento; PATCH /:id/estatus devuelve stock al cancelar (incluye no-show).
+- **`routes/menu.js`:** GET /menus-dia expone `stock_inicial`/`stock_restante` por plato. Nuevo `PATCH /menus-dia/:id/secciones/:sid/platos/:cid/stock` body `{ stock: n|null }` — fija inicial y restante al valor; null quita el control. Copiar menú replica `stock_inicial` y arranca con la olla llena (`restante = inicial`).
+- **Nota:** el auto-merge (Gap 8) copia ítems directamente en BD → NO re-descuenta (correcto: es la misma comida ya descontada por la reserva).
+
+**Frontend — `public/owner.html` (acordeón v2):** badge en la fila del plato: "quedan N" (ámbar si ≤5), "Sin stock" (rojo) en 0; nada si no hay control. Acción "📦 Stock" en el ⋯ → FormModal numérico ("Porciones disponibles hoy — vacío = sin límite") → PATCH + recarga. CSS `.mc-badge-mini.ambar`.
+
+**Tests:** `tests/stock-platos.test.js` (11 casos, prueba las funciones REALES de utils/stock.js contra BD en memoria: descuento por cantidad, NULL ilimitado, 409 con rollback total de la orden, carrera por la última porción, devolución, filtro público, fijar/quitar stock, copia con olla llena). **241/241 jest verde.** E2E full-stack en Playwright: 11/11 (fijar desde UI → badge → pedido público descuenta → 409 → oculto del QR → "Sin stock" → cancelar devuelve). `scripts/test-menu-wizard.js` re-verificado: 51/51.
+
+**Docs:** features.md (fila en Implementados), vision_negocio.md (sección 12 + fecha). **Pendiente:** commit + deploy a producción. Fase 2 futura: stock en carta, aviso "¡quedan 3!" al cliente, reporte cociné-vs-vendí (merma).
+
+---
+
 ## 📦 Sesión 2026-07-02 (parte 2) — IMPLEMENTACIÓN Flujo Menú del Día v2
 
 **Prompt:** "está fino fino, dale" (aprobación del mockup `demo_flujo_menu.html` y del plan de `flujo-menuv2.md`).
