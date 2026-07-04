@@ -85,7 +85,8 @@
 .pp-search:focus { border-color: var(--accent, #c8692a); }
 .pp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-auto-rows: min-content;
   gap: 0.75rem;
   padding: 0.75rem 1.25rem 1.25rem;
   overflow-y: auto;
@@ -107,24 +108,24 @@
 .pp-card:hover { border-color: var(--accent, #c8692a); box-shadow: 0 2px 10px rgba(200,105,42,.15); }
 .pp-card:active { transform: scale(.97); }
 .pp-img {
-  width: 80px; height: 80px;
+  width: 100px; height: 100px;
   border-radius: var(--r, 10px);
   object-fit: cover;
   display: block;
 }
 .pp-placeholder {
-  width: 80px; height: 80px;
+  width: 100px; height: 100px;
   border-radius: var(--r, 10px);
   background: var(--surface, #eee);
   display: flex; align-items: center; justify-content: center;
-  font-size: 28px; color: var(--muted, #aaa);
+  font-size: 32px; color: var(--muted, #aaa);
   border: 1px solid var(--border, rgba(0,0,0,.1));
 }
 .pp-name {
   font-size: 12px; font-weight: 600;
   color: var(--text, #1a1410);
   line-height: 1.3;
-  max-width: 110px;
+  max-width: 130px;
   word-break: break-word;
 }
 .pp-empty {

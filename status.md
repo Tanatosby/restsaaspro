@@ -2,6 +2,35 @@
 
 ---
 
+## 🖼️ Sesión 2026-07-03 (parte 2) — Imágenes más grandes + fix de overlap real en el PlatoPicker
+
+**Prompt 1:** en Menú del día → Configurar secciones → "＋ Platos", las fotos de los platos aparecían muy pequeñas y las cards se sentían apretadas al seleccionar.
+
+**Cambio 1:** `.pp-img`/`.pp-placeholder` en `public/js/widgets/plato-picker.js` 80×80px → **100×100px** (placeholder emoji a 32px), grid `minmax(130px → 150px, 1fr)`, `.pp-name max-width` 110px → 130px.
+
+**Prompt 2 (bug real, con captura):** el usuario reportó que el borde naranja de selección "sobrepasa su propio margen" — las cards de secciones con muchos platos (con fotos reales) aparecían literalmente superpuestas entre filas.
+
+**Diagnóstico:** no era un problema de bordes ni de tamaño de imagen — con ≤2 platos (sin necesidad de scroll) el picker se veía perfecto, pero con suficientes platos para necesitar scroll interno, `.pp-img`/`.pp-placeholder` colapsaban a una fracción de 100px (75px en fotos con aspect ratio horizontal, 45px en placeholders), y las cards de una fila se montaban sobre la fila anterior. Causa raíz: `.pp-grid` es hijo flex de `.pp-sheet` (`overflow: hidden`, `max-height: 80vh`) y se le permite encoger (correcto, para poder hacer scroll interno); pero al no declarar `grid-auto-rows`, Chrome calculaba el alto de las filas del grid en función del alto YA COMPRIMIDO del contenedor en vez de basarse en el contenido, comprimiendo las cards en lugar de dejarlas desbordar con scroll.
+
+**Fix:** una línea — `grid-auto-rows: min-content;` en `.pp-grid`. Fuerza a que cada fila se dimensione por el contenido real de sus cards (100px de imagen + texto), sin importar cuánto se haya comprimido el contenedor scrolleable; el exceso ahora se resuelve con scroll (como estaba previsto), no con superposición.
+
+**Verificación:** reproducido con fotos reales de `public/uploads/platos-menu/` (no con placeholders, que no mostraban el bug) vía Playwright a 411×823px — confirmado el overlap antes del fix y su desaparición después, con `getComputedStyle`/`getBoundingClientRect` mostrando 100×100px consistente en las 9 cards tras el cambio. `scripts/test-menu-wizard.js` 51/51 verde, 0 errores de consola.
+
+---
+
+## 🚀 Sesión 2026-07-03 — Inicio de pruebas piloto con usuario real
+
+**Hito:** hoy **03/07/2026** arrancaron las pruebas en producción con una usuaria real: **Karina** (`karina@menupro.tech`), dueña del restaurante piloto (slug `karinamenu`, ver `features.md` #URLs por slug), ingresando desde su celular a `https://menupro.tech`.
+
+**Incidente durante la sesión:** Karina no pudo ingresar desde un celular con su correo original. Diagnóstico vía SSH al servidor (`147.182.135.252`):
+- `pm2 logs menupro` y `/var/log/nginx/access.log` (incluyendo rotados) **sin ninguna traza del intento** → el request nunca llegó al servidor. Descarta bug de la app (rate limit, credenciales rechazadas, etc.); el problema fue del lado del cliente (typo de correo, autocompletado, o similar).
+- De paso se confirmó que el log de Nginx recibe tráfico constante de bots de escaneo automatizado (rutas PHP/Laravel/ThinkPHP tipo `eval-stdin.php`, `pearcmd`) — todo `404`, ruido de fondo normal de cualquier IP pública, la app Node.js no es vulnerable a esos payloads. No requiere acción.
+- **Resuelto por workaround:** Karina creó una cuenta con otro correo y pudo ingresar sin problema desde el mismo celular. Si más adelante quiere recuperar el correo original, hay que resetear contraseña vía admin (`deploy.md` §8.4).
+
+**Deploy de sesiones anteriores:** el usuario desplegó manualmente en el servidor (`git pull` + `pm2 restart menupro`) los cambios de la sesión 2026-07-02 (stock por plato + flujo v2 del menú del día) fuera de esta sesión de Claude Code. Producción queda al día con la última versión de `main`.
+
+---
+
 ## 📦 Sesión 2026-07-02 (parte 3) — Stock por plato del menú del día
 
 **Prompt:** "los restaurantes preparan porciones contadas (ej: solo 25 arroz con pollo), ¿se puede agregar?". Decisiones del usuario: (1) stock **por menú** — si el plato está en 2 menús, el owner reparte porciones entre ambos (más fácil de controlar para él); (2) descuento **al crear** el pedido, devolución al cancelar.
