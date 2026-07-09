@@ -68,14 +68,20 @@ function renderReservaCard(r, withActions) {
     : '';
 
   const sinMesa = r.modalidad === 'para_llevar' || r.modalidad === 'delivery';
+  // Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante
+  // antes de poder completar la reserva (el backend también lo bloquea).
+  const requiereConfirmar = ['yape', 'plin'].includes(r.metodo_pago) && r.estado_pago !== 'confirmado';
+  const btnCompletar = requiereConfirmar
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoReserva(${r.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="cambiarEstatusReservaFlag(${r.id},'es_full')">💰 Completar</button>`;
   const actions = withActions ? `
     <div class="order-actions">
       ${r.es_inicial      ? `<button class="btn btn-success btn-sm"  onclick="cambiarEstatusReservaFlag(${r.id},'es_confirmada')">✓ Confirmar</button>` : ''}
       ${r.es_confirmada   ? `<button class="btn btn-primary btn-sm"  onclick="cambiarEstatusReservaFlag(${r.id},'es_en_cocina')">🍳 A cocina</button>` : ''}
       ${r.es_en_cocina    ? `<button class="btn btn-primary btn-sm"  onclick="cambiarEstatusReservaFlag(${r.id},'es_listo')">✅ Listo</button>` : ''}
       ${r.es_listo && !sinMesa ? `<button class="btn btn-primary btn-sm"  onclick="cambiarEstatusReservaFlag(${r.id},'es_cliente_llego')">🍽 Entregado</button>` : ''}
-      ${r.es_listo && sinMesa  ? `<button class="btn btn-success btn-sm" onclick="cambiarEstatusReservaFlag(${r.id},'es_full')">💰 Completar</button>` : ''}
-      ${r.es_cliente_llego ? `<button class="btn btn-success btn-sm" onclick="cambiarEstatusReservaFlag(${r.id},'es_full')">💰 Completar</button>` : ''}
+      ${r.es_listo && sinMesa  ? btnCompletar : ''}
+      ${r.es_cliente_llego ? btnCompletar : ''}
       ${!r.es_cliente_llego && !r.es_full ? `<button class="btn btn-danger btn-sm" onclick="cambiarEstatusReservaFlag(${r.id},'es_cancelado')">Cancelar</button>` : ''}
     </div>` : '';
 
@@ -112,6 +118,14 @@ async function cambiarEstatusReserva(id, estatus) {
   try {
     await api('PATCH', `/api/reservations/${id}/estatus`, { estatus });
     toast(`Reserva #${id} → ${estatus}`);
+    loadReservasActivas();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function confirmarPagoReserva(id) {
+  try {
+    await api('PATCH', `/api/reservations/${id}/confirmar-pago`);
+    toast(`Pago de la reserva #${id} confirmado ✓`);
     loadReservasActivas();
   } catch(e) { toast(e.message, 'err'); }
 }

@@ -828,6 +828,21 @@
           </div>
         </div>
 
+        <!-- Ventana de cancelación de reservas (cliente) -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">✗ Cancelación de reservas por el cliente</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:14px;color:var(--muted)">El cliente puede cancelar su propia reserva desde la pantalla de estado, siempre que falten al menos estos minutos para la hora de llegada. Si la reserva no tiene hora especificada, puede cancelarla en cualquier momento.</p>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+              <label style="font-size:14px;font-weight:600" for="cfg-minutos-cancelacion-reserva">Bloquear cancelación si faltan menos de</label>
+              <input type="number" id="cfg-minutos-cancelacion-reserva" min="0" max="1440" value="30"
+                style="width:80px;font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <span style="font-size:14px">minutos</span>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="guardarMinutosCancelacionReserva()" style="align-self:flex-start">💾 Guardar</button>
+          </div>
+        </div>
+
         <!-- Foto de portada -->
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-header"><span class="card-title">Foto de portada</span></div>

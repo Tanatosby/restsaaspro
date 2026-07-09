@@ -6,9 +6,10 @@ const router  = express.Router();
 const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
-const { fechaLima } = require('../utils/fecha');
+const { fechaLima, ahoraLima } = require('../utils/fecha');
 const { generarCodigoUnico } = require('../utils/codigoReserva');
-const { descontarStock } = require('../utils/stock');
+const { descontarStock, devolverStock, itemsMenuDeReserva } = require('../utils/stock');
+const { dentroDeVentanaCancelacion } = require('../utils/cancelacionReserva');
 const db      = require('../config/database');
 
 // Multer para comprobantes de pago (subidos por el cliente)
@@ -410,8 +411,10 @@ router.post('/reservations', (req, res) => {
 
 // ─────────────────────────────────────────────────────
 // PATCH /api/public/pago/orden/:id
-// El cliente marca su pago como enviado y sube foto del comprobante
-// Body: multipart/form-data — metodo_pago ('yape'|'plin'|'efectivo'), foto (opcional)
+// El cliente marca su pago como enviado y sube foto del comprobante.
+// La foto es OBLIGATORIA para yape/plin (es la única evidencia de una
+// transferencia digital); efectivo no la requiere (se paga en persona).
+// Body: multipart/form-data — metodo_pago ('yape'|'plin'|'efectivo'), foto
 // ─────────────────────────────────────────────────────
 function handlePago(tabla, idField) {
   return (req, res) => {
@@ -421,6 +424,8 @@ function handlePago(tabla, idField) {
       const { metodo_pago } = req.body;
       if (!['yape', 'plin', 'efectivo'].includes(metodo_pago))
         return res.status(400).json({ error: 'metodo_pago inválido' });
+      if (['yape', 'plin'].includes(metodo_pago) && !req.file)
+        return res.status(400).json({ error: 'Debes adjuntar la foto del comprobante' });
 
       const row = db.prepare(`SELECT id, estado_pago FROM ${tabla} WHERE id = ?`).get(req.params.id);
       if (!row) return res.status(404).json({ error: 'Registro no encontrado' });
@@ -488,6 +493,47 @@ router.get('/reserva/:codigo', (req, res) => {
   `).all(reserva.id);
 
   res.json({ ...reserva, carta_items, menu_items });
+});
+
+// ─────────────────────────────────────────────────────
+// PATCH /api/public/reserva/:codigo/cancelar
+// El cliente cancela su propia reserva con su código (actúa como token).
+// Sujeto a la ventana de tiempo del restaurante (minutos_cancelacion_reserva,
+// default 30) respecto a la hora_llegada. Si la reserva no tiene hora_llegada
+// (el cliente no la especificó), se permite cancelar sin límite de horario
+// mientras el estatus siga siendo cancelable.
+// ─────────────────────────────────────────────────────
+router.patch('/reserva/:codigo/cancelar', (req, res) => {
+  const reserva = db.prepare(`
+    SELECT r.id, r.fecha, r.hora_llegada, r.id_restaurante,
+           er.nombre AS estatus_actual, er.es_full, er.es_cancelado
+    FROM reservas r
+    JOIN estatus_reserva er ON r.id_estatus = er.id
+    WHERE r.codigo = ?
+  `).get(req.params.codigo);
+
+  if (!reserva)
+    return res.status(404).json({ error: 'Reserva no encontrada. Verifica tu código.' });
+
+  if (reserva.es_full || reserva.es_cancelado)
+    return res.status(400).json({ error: `No se puede cancelar una reserva ${reserva.estatus_actual}` });
+
+  const rest = db.prepare(`SELECT minutos_cancelacion_reserva FROM restaurantes WHERE id = ?`)
+    .get(reserva.id_restaurante);
+  const minutosLimite = rest?.minutos_cancelacion_reserva ?? 30;
+
+  const ventana = dentroDeVentanaCancelacion(reserva.fecha, reserva.hora_llegada, minutosLimite, ahoraLima());
+  if (!ventana.permitido)
+    return res.status(400).json({ error: ventana.error });
+
+  const cancelado = db.prepare(`SELECT id FROM estatus_reserva WHERE es_cancelado = 1`).get();
+
+  db.transaction(() => {
+    db.prepare(`UPDATE reservas SET id_estatus = ? WHERE id = ?`).run(cancelado.id, reserva.id);
+    devolverStock(db, itemsMenuDeReserva(db, reserva.id));
+  })();
+
+  res.json({ message: 'Reserva cancelada correctamente', estatus: 'cancelada' });
 });
 
 module.exports = router;

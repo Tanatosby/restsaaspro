@@ -228,7 +228,7 @@
 
       <!-- Upload comprobante -->
       <div id="pago-comprobante-wrap" style="display:none;margin-top:1rem;text-align:left">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">📎 Foto del comprobante (opcional)</label>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">📎 Foto del comprobante (obligatoria)</label>
         <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted)">
           📷 Seleccionar imagen
           <input type="file" id="pago-foto" accept="image/*" style="display:none">
@@ -239,7 +239,6 @@
       <!-- Acciones -->
       <div style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1.5rem">
         <button id="btn-ya-pague" class="btn-confirmar" onclick="enviarPago()" style="display:none">✓ Ya pagué</button>
-        <button class="btn-nuevo" onclick="skipPago()" style="background:transparent;color:var(--muted);font-size:13px;border:none;padding:0.5rem;cursor:pointer">Pagar más tarde</button>
       </div>
     </div>
   </div>
@@ -966,12 +965,15 @@ async function renderReservarContent() {
 
   async function enviarPago() {
     if (!pagoMetodo || !pagoOrdenId) return;
+    const foto = document.getElementById('pago-foto').files[0];
+    if (['yape', 'plin'].includes(pagoMetodo) && !foto)
+      return showMsg('Adjunta la foto del comprobante para continuar', true);
+
     const btn = document.getElementById('btn-ya-pague');
     btn.disabled = true; btn.textContent = 'Enviando…';
 
     const formData = new FormData();
     formData.append('metodo_pago', pagoMetodo);
-    const foto = document.getElementById('pago-foto').files[0];
     if (foto) formData.append('foto', foto);
 
     try {
@@ -988,11 +990,6 @@ async function renderReservarContent() {
       btn.disabled = false;
       btn.textContent = pagoMetodo === 'efectivo' ? '✓ Confirmar — pagaré en efectivo' : `✓ Ya pagué con ${pagoMetodo === 'yape' ? 'Yape' : 'Plin'}`;
     }
-  }
-
-  function skipPago() {
-    document.getElementById('pago-screen').classList.remove('show');
-    showConfirm(pagoTipo === 'reserva' ? 'reservar' : 'pedir', pagoOrdenId, pagoTipo === 'reserva' ? pagoCodigoReserva : null);
   }
 
   // ── Confirmation ─────────────────────────────────
@@ -1116,6 +1113,13 @@ async function renderReservarContent() {
 
     const now = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 
+    const puedeCancelar = !['es_full', 'es_cancelado'].includes(activeFlag);
+    const cancelarHtml = puedeCancelar ? `
+      <button onclick="cancelarReservaCliente('${data.codigo}')"
+        style="width:100%;margin-top:0.75rem;padding:12px;min-height:44px;border-radius:10px;border:1px solid #dc2626;background:none;color:#dc2626;font-size:14px;font-weight:600;cursor:pointer">
+        ✗ Cancelar reserva
+      </button>` : '';
+
     return `
       <div style="background:${s.bg};border-radius:12px;padding:1rem;margin:0.75rem 0;text-align:center">
         <div style="font-size:2rem;margin-bottom:4px">${s.icon}</div>
@@ -1131,11 +1135,25 @@ async function renderReservarContent() {
         <div style="margin-bottom:0.75rem">${menuRows}${cartaRows}</div>
       ` : ''}
       ${pagoHtml}
+      ${cancelarHtml}
       <div style="margin-top:1.5rem;font-size:11px;color:var(--muted);text-align:center">
         Actualizado ${now} ·
         <button onclick="buscarReserva()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:0;text-decoration:underline">Actualizar</button>
       </div>
     `;
+  }
+
+  async function cancelarReservaCliente(codigo) {
+    if (!confirm('¿Seguro que quieres cancelar tu reserva? Esta acción no se puede deshacer.')) return;
+    try {
+      const res  = await fetch(`/api/public/reserva/${encodeURIComponent(codigo)}/cancelar`, { method: 'PATCH' });
+      const data = await res.json();
+      if (!res.ok) { showMsg(data.error, true); return; }
+      showMsg('Reserva cancelada');
+      cargarEstadoReserva(codigo);
+    } catch(_) {
+      showMsg('Error de conexión. Intenta de nuevo.', true);
+    }
   }
 
   // ── Reset ────────────────────────────────────────

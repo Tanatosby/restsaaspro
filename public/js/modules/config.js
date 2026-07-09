@@ -49,6 +49,10 @@ async function loadConfiguracion() {
     const mpEl = document.getElementById('cfg-minutos-preparacion');
     if (mpEl) mpEl.value = cfg.minutos_preparacion ?? 20;
 
+    // Ventana de cancelación de reservas (cliente)
+    const mcEl = document.getElementById('cfg-minutos-cancelacion-reserva');
+    if (mcEl) mcEl.value = cfg.minutos_cancelacion_reserva ?? 30;
+
     // Modalidades y costos (Gap 4 + Gap 5)
     const plEl = document.getElementById('cfg-para-llevar-activo');
     const dlEl = document.getElementById('cfg-delivery-activo');
@@ -302,6 +306,16 @@ async function guardarMinutosPreparacion() {
   try {
     await api('PATCH', '/api/menu/config/minutos-preparacion', { minutos_preparacion: minutos });
     toast('Tiempo de preparación guardado');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function guardarMinutosCancelacionReserva() {
+  const minutos = parseInt(document.getElementById('cfg-minutos-cancelacion-reserva').value, 10);
+  if (isNaN(minutos) || minutos < 0 || minutos > 1440)
+    return toast('Ingresa un valor entre 0 y 1440 minutos', 'err');
+  try {
+    await api('PATCH', '/api/menu/config/minutos-cancelacion-reserva', { minutos_cancelacion_reserva: minutos });
+    toast('Ventana de cancelación guardada');
   } catch(e) { toast(e.message, 'err'); }
 }
 

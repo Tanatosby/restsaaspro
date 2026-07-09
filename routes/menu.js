@@ -834,27 +834,29 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
     SELECT nombre, foto_portada, color_primario, color_secundario,
            yape_activo, yape_telefono, plin_activo, plin_telefono, efectivo_activo,
            minutos_preparacion, para_llevar_activo, delivery_activo,
-           costo_tapper, tarifa_delivery, auto_merge_activo, slug
+           costo_tapper, tarifa_delivery, auto_merge_activo, slug,
+           minutos_cancelacion_reserva
     FROM restaurantes WHERE id = ?
   `).get(req.user.restaurant_id);
   if (!row) return res.status(404).json({ error: 'Restaurante no encontrado' });
   res.json({
-    nombre:               row.nombre,
-    foto_portada:         row.foto_portada         || null,
-    color_primario:       row.color_primario        || '#c8692a',
-    color_secundario:     row.color_secundario      || '#1a6090',
-    yape_activo:          row.yape_activo           ?? 0,
-    yape_telefono:        row.yape_telefono         || '',
-    plin_activo:          row.plin_activo           ?? 0,
-    plin_telefono:        row.plin_telefono         || '',
-    efectivo_activo:      row.efectivo_activo       ?? 0,
-    minutos_preparacion:  row.minutos_preparacion   ?? 20,
-    para_llevar_activo:   row.para_llevar_activo    ?? 1,
-    delivery_activo:      row.delivery_activo       ?? 0,
-    costo_tapper:         row.costo_tapper          ?? 0,
-    tarifa_delivery:      row.tarifa_delivery       ?? 0,
-    auto_merge_activo:    row.auto_merge_activo     ?? 1,
-    slug:                 row.slug                  || null,
+    nombre:                      row.nombre,
+    foto_portada:                row.foto_portada                || null,
+    color_primario:              row.color_primario               || '#c8692a',
+    color_secundario:            row.color_secundario             || '#1a6090',
+    yape_activo:                 row.yape_activo                  ?? 0,
+    yape_telefono:               row.yape_telefono                || '',
+    plin_activo:                 row.plin_activo                  ?? 0,
+    plin_telefono:               row.plin_telefono                || '',
+    efectivo_activo:             row.efectivo_activo              ?? 0,
+    minutos_preparacion:         row.minutos_preparacion          ?? 20,
+    para_llevar_activo:          row.para_llevar_activo           ?? 1,
+    delivery_activo:             row.delivery_activo              ?? 0,
+    costo_tapper:                row.costo_tapper                 ?? 0,
+    tarifa_delivery:             row.tarifa_delivery              ?? 0,
+    auto_merge_activo:           row.auto_merge_activo            ?? 1,
+    slug:                        row.slug                         || null,
+    minutos_cancelacion_reserva: row.minutos_cancelacion_reserva  ?? 30,
   });
 });
 
@@ -915,6 +917,18 @@ router.patch('/config/minutos-preparacion', authorizePermiso(), (req, res) => {
     .run(minutos, req.user.restaurant_id);
 
   res.json({ minutos_preparacion: minutos });
+});
+
+// PATCH /api/menu/config/minutos-cancelacion-reserva — ventana de tiempo para que el cliente cancele su reserva
+router.patch('/config/minutos-cancelacion-reserva', authorizePermiso(), (req, res) => {
+  const minutos = parseInt(req.body.minutos_cancelacion_reserva, 10);
+  if (isNaN(minutos) || minutos < 0 || minutos > 1440)
+    return res.status(400).json({ error: 'minutos_cancelacion_reserva debe ser un número entre 0 y 1440' });
+
+  db.prepare(`UPDATE restaurantes SET minutos_cancelacion_reserva = ? WHERE id = ?`)
+    .run(minutos, req.user.restaurant_id);
+
+  res.json({ minutos_cancelacion_reserva: minutos });
 });
 
 // PATCH /api/menu/config/pagos — guardar métodos de pago del restaurante

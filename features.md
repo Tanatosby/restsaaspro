@@ -303,6 +303,33 @@ Panel Kanban en `owner.html` con 4 tabs: **Pendientes / En Cocina / Listos / Por
 #### ~~Bug: reservas con roles de usuario~~ ✅ Resuelto 2026-05-25
 7 endpoints usaban `authorize('owner','mozo')` en vez de `authorizePermiso()`. Un cocinero con permiso `reservas_activas` recibía 403 al intentar confirmar/cambiar estatus. Ver ISS-012.
 
+#### ~~Cancelar reserva desde el lado del cliente~~ ✅ Completado 2026-07-09
+El cliente ahora puede cancelar su propia reserva desde `menu.html` con su código, sin necesidad de llamar al restaurante.
+
+- **Backend:** `PATCH /api/public/reserva/:codigo/cancelar` (`routes/public.js`) — valida que la reserva no esté ya `es_full`/`es_cancelado` (misma regla que el endpoint del owner), reutiliza `devolverStock`/`itemsMenuDeReserva` de `utils/stock.js` para devolver el stock reservado.
+- **Ventana de tiempo:** nueva columna `restaurantes.minutos_cancelacion_reserva` (default **30**, migración idempotente en `config/database.js`), configurable por el owner. Función pura `dentroDeVentanaCancelacion(fecha, hora_llegada, minutosLimite, ahora)` en `utils/cancelacionReserva.js` — bloquea la cancelación si faltan menos minutos que el límite para la `hora_llegada`. **Si la reserva no tiene hora_llegada** (el cliente no la especificó), se permite cancelar en cualquier momento — decisión del usuario, ya que sin hora exacta no se puede calcular "faltan N minutos".
+- **Config del owner:** nueva card "✗ Cancelación de reservas por el cliente" en el panel Configuración (`owner.html` + `public/js/modules/config.js`), mismo patrón que "Auto-preparación de reservas". Nuevo endpoint `PATCH /api/menu/config/minutos-cancelacion-reserva` (0–1440 min) + incluido en `GET /api/menu/restaurante/config`.
+- **Frontend cliente:** botón "✗ Cancelar reserva" en `renderEstadoReserva()` de `menu.html`, oculto cuando el estado ya es `es_full`/`es_cancelado`, con `confirm()` antes de enviar.
+- **Tests:** `tests/cancelar-reserva-cliente.test.js` (7 casos: sin hora → siempre permitido, dentro/fuera de ventana, borde exacto, hora ya pasada, límite 0, devolución de stock real). **248/248 jest verde.**
+- Verificado manualmente contra el servidor local (curl): crear reserva → cancelar sin hora (OK) → cancelar ya cancelada (bloqueado) → hora dentro de la ventana (bloqueado con mensaje) → hora fuera de la ventana (OK) → código inexistente (404).
+
+#### ~~Fix: flujo de pago inseguro (foto opcional + "pagar más tarde" sin retorno + confirmación manual muerta)~~ ✅ Completado 2026-07-09
+Diagnóstico completo y flujo real documentado en `flujo-pago.md`. Tres problemas encontrados en la misma sesión, los dos primeros reportados por el usuario y el tercero detectado al investigar:
+1. La foto del comprobante era opcional en `handlePago()` (`routes/public.js`) — el cliente podía marcar "Ya pagué con Yape" sin adjuntar nada.
+2. El botón "Pagar más tarde" (`skipPago()` en `menu.html`) cerraba el flujo sin registrar ningún dato y sin dejar forma de volver a pagar — no estaba contemplado en `vision_negocio.md`.
+3. El endpoint `PATCH /:id/confirmar-pago` (orders.js y reservations.js) existía en el backend pero **no estaba conectado a ningún botón** — el único control real del owner era "💰 Cobrar/Completar", que pisaba `estado_pago = 'pagado'` sin mirar nunca el comprobante.
+
+**Decisión del usuario:** eliminar "Pagar más tarde" por completo — Efectivo ya cubre el caso legítimo de pago diferido.
+
+**Fix:**
+- `routes/public.js`: `handlePago()` rechaza (400) pagos yape/plin sin foto.
+- `utils/verificacionPago.js` (nuevo): `requiereConfirmarPagoAntes(metodo_pago, estado_pago)` — true solo para yape/plin no confirmados.
+- `routes/orders.js` / `routes/reservations.js`: `PATCH /:id/estatus` bloquea (400) la transición a `es_pagado`/`es_full` si el pago digital no fue confirmado.
+- `public/menu.html`: botón "Pagar más tarde" y `skipPago()` eliminados; `enviarPago()` valida la foto en cliente antes de enviar.
+- `public/js/modules/ordenes.js`, `reservas.js`, `pedidos.js`: nuevo botón "✓ Confirmar pago" (llama al endpoint ya existente `confirmar-pago`) que reemplaza a "💰 Cobrar/Completar" mientras el pago digital no esté confirmado.
+- **Tests:** `tests/verificacion-pago.test.js` (6 casos sobre la función pura). **254/254 jest verde.**
+- Verificado manualmente contra el servidor local con `curl` (JWT firmado localmente para simular sesión de owner): yape sin foto → 400; yape con foto → OK; completar sin confirmar → 400 con mensaje claro; confirmar pago → OK; completar tras confirmar → OK.
+
 ---
 
 ### ~~Prioridad Alta~~
@@ -836,6 +863,32 @@ El cliente paga con Yape/Plin antes de llegar al restaurante al crear una reserv
 Exponer endpoints REST documentados (OpenAPI/Swagger) para que los restaurantes integren el sistema con sus propias herramientas (POS físico, delivery propio, contabilidad). Requiere API keys por restaurante.
 - **Schema:** tabla `api_keys` con `id_restaurante`, `key_hash`, `permisos`, `activo`
 - **Complejidad:** alta (auth adicional, rate limiting por key, documentación)
+
+#### C6 — Métrica de visitas al menú por restaurante (dashboard admin) — anotado 2026-07-09
+Idea del usuario: no implementar todavía — recién tiene sentido "cuando inicie masivo" (varios restaurantes activos con tráfico real). Ver `vision_negocio.md` sección 15 para el detalle completo de la motivación de negocio (ingreso indirecto vía publicidad dentro de `menu.html`, usando el tráfico agregado de todos los restaurantes como audiencia local vendible).
+- **Objetivo del admin de la plataforma:** saber cuántas personas ven el menú de cada restaurante, para (a) evaluar si el tráfico agregado justifica vender espacio publicitario, y (b) tener el dato antes de cotizarle a un anunciante.
+- **A definir antes de implementar** (decisiones de producto, no técnicas):
+  - ¿Se cuenta cada carga de página (page views) o visitantes únicos por sesión/día? Lo segundo requiere un identificador anónimo (cookie o hash) con las implicancias de privacidad correspondientes — el sistema hoy es 100% anónimo del lado cliente (sección 9 de `vision_negocio.md`).
+  - ¿El dato es visible solo para el admin de la plataforma, o también para el owner de cada restaurante (riesgo: filtra info competitiva entre restaurantes si se muestra mal)?
+  - ¿Cuánto tiempo se retienen los datos crudos vs. agregados?
+- **Boceto técnico (sin comprometer diseño final):** tabla nueva `visitas_menu` (o similar) con `id_restaurante`, `fecha`, `contador` — incrementada en `GET /api/public/menu` o en la carga inicial de `menu.html`; nuevo endpoint en `routes/admin.js` (ej. `GET /api/admin/restaurantes/:id/visitas` o resumen agregado); nueva card/gráfica en `public/admin/dashboard.html`.
+- **Complejidad:** media (la métrica en sí es simple; lo que hay que resolver es el diseño de privacidad/alcance antes de tocar código).
+
+#### C7 — Módulo de blog/noticias de la empresa (dashboard admin) — anotado 2026-07-09
+Idea del usuario: un módulo dentro del panel admin (`public/admin/dashboard.html`) para que Pedro, como fundador, publique actualizaciones sobre la evolución de la empresa — no del restaurante de un cliente, sino de Menú Pro como producto/negocio. Ejemplos que dio el usuario: "ya tengo mi primera prueba piloto", "una semana después, así van las pruebas", anuncios de nuevas features, hitos. Por ahora **solo documentación, sin implementar**.
+
+**Para qué sirve (contexto de negocio):** construir confianza pública con prospectos y restaurantes piloto mostrando avance real y transparencia — el tipo de "build in public" que ayuda a vender el producto a los próximos restaurantes sin depender de marketing pagado. Complementa la landing (`public/landing.html`), que hoy es estática.
+
+**Boceto técnico (sin comprometer diseño final):**
+- **Schema:** tabla nueva `posts_blog` — `id`, `titulo`, `contenido` (markdown o HTML simple), `slug`, `publicado` (bool), `created_at`, `id_usuario_admin` (autor).
+- **Backend:** `routes/admin.js` (o un `routes/blog.js` separado) — `POST/GET/PATCH/DELETE /api/admin/blog` protegido con `authorize('admin')` (mismo patrón que el resto de `admin.js`); endpoint público de solo lectura `GET /api/public/blog` (o similar) para listar los posts publicados, sin autenticación.
+- **Frontend admin:** nueva sección en `dashboard.html` — lista de posts + editor (título, contenido, toggle publicado/borrador) con `FormModal` u otro patrón ya usado en el proyecto.
+- **Frontend público:** página nueva, ej. `public/blog.html` o una sección dentro de `landing.html`, que liste los posts publicados (más reciente primero) — mobile-first como el resto del sistema.
+- **Decisiones a tomar antes de implementar:**
+  - ¿Editor de texto simple (textarea) o con formato (markdown/rich text)? Empezar simple es razonable dado el volumen bajo de posts esperado.
+  - ¿Los posts llevan fotos/imágenes? Si sí, reutilizar el patrón de upload ya existente (`multer` + carpeta en `public/uploads/`).
+  - ¿Viven en una URL propia (`menupro.tech/blog`) o como sección scrolleable de la landing? Afecta SEO y si se linkean posts individuales.
+- **Complejidad:** media-baja (CRUD simple, sin lógica de negocio compleja — el esfuerzo real está en el editor/UI, no en el backend).
 
 ---
 

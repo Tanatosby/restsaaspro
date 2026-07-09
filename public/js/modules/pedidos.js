@@ -194,21 +194,33 @@ function renderKanbanReserva(r, zona) {
 
 // ── Botones de acción rápida ──────────────────────────────
 
+// Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante
+// antes de poder cobrar/completar (el backend también lo bloquea).
+function requiereConfirmarPago(x) {
+  return ['yape', 'plin'].includes(x.metodo_pago) && x.estado_pago !== 'confirmado';
+}
+
 function btnOrden(o, zona) {
   const paraLlevar = o.modalidad === 'para_llevar';
+  const btnCobrar = requiereConfirmarPago(o)
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoOrden(${o.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="accionRapidaOrden(${o.id},'es_pagado')">💰 Cobrar</button>`;
   if (zona === 'pendientes' && o.es_inicial)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_en_cocina')">🍳 A cocina</button>`;
   if (zona === 'listos' && o.es_listo && !paraLlevar)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">🍽 Entregar</button>`;
   if (zona === 'listos' && o.es_listo && paraLlevar)
-    return `<button class="btn btn-success btn-sm" onclick="accionRapidaOrden(${o.id},'es_pagado')">💰 Cobrar</button>`;
+    return btnCobrar;
   if (zona === 'cobrar' && o.es_entregado)
-    return `<button class="btn btn-success btn-sm" onclick="accionRapidaOrden(${o.id},'es_pagado')">💰 Cobrar</button>`;
+    return btnCobrar;
   return '';
 }
 
 function btnReserva(r, zona) {
   const sinMesa = r.modalidad === 'para_llevar' || r.modalidad === 'delivery';
+  const btnCompletar = requiereConfirmarPago(r)
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoReserva(${r.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_full')">💰 Completar</button>`;
   if (zona === 'pendientes' && r.es_confirmada)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_en_cocina')">🍳 A cocina</button>`;
   if (zona === 'pendientes' && r.es_inicial)
@@ -216,9 +228,9 @@ function btnReserva(r, zona) {
   if (zona === 'listos' && r.es_listo && !sinMesa)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_cliente_llego')">🍽 Entregado</button>`;
   if (zona === 'listos' && r.es_listo && sinMesa)
-    return `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_full')">💰 Completar</button>`;
+    return btnCompletar;
   if (zona === 'cobrar' && r.es_cliente_llego)
-    return `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_full')">💰 Completar</button>`;
+    return btnCompletar;
   return '';
 }
 

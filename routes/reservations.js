@@ -7,6 +7,7 @@ const { authenticate, authorize, authorizePermiso } = require('../middleware/aut
 const { calcularPrecioUnitario, calcularMenuTotal } = require('../utils/menuPricing');
 const { calcularTotalReserva } = require('../utils/totales');
 const { descontarStock, devolverStock, itemsMenuDeReserva } = require('../utils/stock');
+const { requiereConfirmarPagoAntes } = require('../utils/verificacionPago');
 
 router.use(authenticate);
 
@@ -251,7 +252,7 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
   }
 
   const reserva = db.prepare(`
-    SELECT r.id, er.nombre AS estatus_actual, er.es_full, er.es_cancelado
+    SELECT r.id, r.metodo_pago, r.estado_pago, er.nombre AS estatus_actual, er.es_full, er.es_cancelado
     FROM reservas r
     JOIN estatus_reserva er ON r.id_estatus = er.id
     WHERE r.id = ? AND r.id_restaurante = ?
@@ -264,6 +265,9 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
     return res.status(400).json({
       error: `No se puede cambiar una reserva ${reserva.estatus_actual}`
     });
+
+  if (nuevoEstatus.es_full && requiereConfirmarPagoAntes(reserva.metodo_pago, reserva.estado_pago))
+    return res.status(400).json({ error: 'Confirma el pago (revisa el comprobante) antes de completar la reserva' });
 
   if (nuevoEstatus.es_full) {
     const total = calcularTotalReserva(db, req.params.id);

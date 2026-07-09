@@ -2,6 +2,85 @@
 
 ---
 
+## ✅ Sesión 2026-07-09 — Implementado: cancelar reserva desde el lado del cliente
+
+**Prompt:** implementar el gap anotado en la sesión 2026-07-06, con ventana de tiempo en minutos para cancelar, default **30 minutos**, configurable por el owner.
+
+**Decisión del usuario (pregunta directa):** si la reserva no tiene `hora_llegada` (el cliente no la especificó al reservar), se permite cancelar **siempre** (sin límite de horario) mientras el estatus siga siendo cancelable — no tiene sentido calcular "faltan 30 min" sin una hora de referencia.
+
+**Backend:**
+- `config/database.js`: migración idempotente `restaurantes.minutos_cancelacion_reserva INTEGER DEFAULT 30`.
+- `utils/fecha.js`: nuevo helper `ahoraLima()` (fecha/hora actual de Lima como Date "naive", comparable contra `fecha`+`hora_llegada` de la reserva sin conversión real de timezone).
+- `utils/cancelacionReserva.js` (nuevo): función pura `dentroDeVentanaCancelacion(fecha, hora_llegada, minutosLimite, ahora)` — sin `hora_llegada` siempre permite; si faltan menos minutos que el límite, bloquea con mensaje (distingue "faltan menos de N minutos" vs "la hora ya pasó").
+- `routes/public.js`: nuevo `PATCH /api/public/reserva/:codigo/cancelar` — busca por código (actúa como token, sin auth), valida no esté ya `es_full`/`es_cancelado`, aplica la ventana de tiempo, y en transacción cancela + devuelve stock (`devolverStock`/`itemsMenuDeReserva` de `utils/stock.js`, reutilizados del flujo del owner).
+- `routes/menu.js`: `minutos_cancelacion_reserva` agregado a `GET /restaurante/config`; nuevo `PATCH /config/minutos-cancelacion-reserva` (valida 0–1440).
+
+**Frontend:**
+- `public/owner.html` + `public/js/modules/config.js`: nueva card "✗ Cancelación de reservas por el cliente" en el panel Configuración (mismo patrón que "Auto-preparación de reservas"), con input de minutos y botón Guardar.
+- `public/menu.html`: botón "✗ Cancelar reserva" en `renderEstadoReserva()` — oculto si la reserva ya está `es_full`/`es_cancelado`, con `confirm()` antes de llamar al endpoint y recarga automática del estado tras cancelar.
+
+**Tests:** nuevo `tests/cancelar-reserva-cliente.test.js` (7 casos sobre la función pura + devolución de stock real). **248/248 jest verde.** Verificado además manualmente contra el servidor local con `curl`: reserva sin hora → cancela sin restricción; reserva con hora dentro de la ventana → bloqueada con mensaje; fuera de la ventana → cancela y devuelve stock; reserva ya cancelada → rechazada; código inexistente → 404.
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`).
+
+---
+
+## ✅ Sesión 2026-07-09 (parte 2) — Fix: flujo de pago inseguro
+
+**Prompt:** el usuario notó que la foto de comprobante es opcional (debería ser obligatoria) y que "pagar más tarde" ya no permite pagar después (rompe el flujo automatizado, se vuelve manual). Preguntó: "¿Cómo verificamos luego los pagos?".
+
+**Diagnóstico (verificado leyendo `routes/public.js`, `routes/orders.js`, `routes/reservations.js`, `ordenes.js`, `reservas.js`):**
+1. `handlePago()` en `routes/public.js` guardaba `comprobante_url = req.file ? ... : null` — foto opcional.
+2. `skipPago()` en `menu.html` cerraba el flujo de pago sin registrar `metodo_pago`/`estado_pago` y sin ningún camino de vuelta.
+3. **El hallazgo clave:** `PATCH /:id/confirmar-pago` (orders.js y reservations.js) existe en el backend pero **no está conectado a ningún botón** en `owner.html`. El único control real que usa el owner es "💰 Cobrar/Completar" (`PATCH /:id/estatus` con flag `es_pagado`/`es_full`), que **pisa automáticamente `estado_pago = 'pagado'`** sin mirar el comprobante, sin importar el método, incluso si el cliente nunca pasó por el flujo de pago. `vision_negocio.md` sección 7 nunca contempló "pagar más tarde" — solo Yape/Plin+foto o Efectivo.
+
+**Recomendación dada y aprobada por el usuario:** eliminar "Pagar más tarde" por completo (Efectivo ya cubre el pago diferido legítimo), hacer la foto obligatoria para Yape/Plin, y conectar el endpoint muerto `confirmar-pago` como gate real antes de poder cobrar/completar.
+
+**Implementado:**
+- `routes/public.js`: foto obligatoria para yape/plin en `handlePago()`.
+- `utils/verificacionPago.js` (nuevo): función pura `requiereConfirmarPagoAntes(metodo_pago, estado_pago)`.
+- `routes/orders.js` / `routes/reservations.js`: `PATCH /:id/estatus` bloquea (400) `es_pagado`/`es_full` si el pago digital no está `confirmado`.
+- `public/menu.html`: eliminado botón "Pagar más tarde" y `skipPago()`; `enviarPago()` valida foto en cliente.
+- `public/js/modules/ordenes.js`, `reservas.js`, `pedidos.js`: nuevo botón "✓ Confirmar pago" que reemplaza "💰 Cobrar/Completar" mientras el pago digital no esté confirmado.
+
+**Tests:** `tests/verificacion-pago.test.js` (6 casos). **254/254 jest verde.** Verificado manualmente contra servidor local con `curl` (sesión de owner simulada con JWT firmado localmente): yape sin foto → 400; con foto → OK; completar sin confirmar → 400; confirmar → OK; completar tras confirmar → OK.
+
+**Documentado:** nuevo `flujo-pago.md` (diagrama completo del flujo cliente + owner), `vision_negocio.md` sección 7 y 12 actualizadas, `features.md`.
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`) — mismo pendiente que la sesión anterior, se puede desplegar junto.
+
+---
+
+## 📋 Sesión 2026-07-09 (parte 3) — Anotado: métrica de visitas al menú (ingreso indirecto por publicidad)
+
+**Prompt:** idea del usuario para cuando el sistema arranque en modo masivo — medir cuántas personas ven el menú de cada restaurante en un dashboard del admin, como base para evaluar a futuro una opción de publicidad dentro de las páginas de menú (ingreso indirecto para restaurantes pequeños con tráfico agregado).
+
+**Acción (solo documentación, sin código, tal como pidió el usuario):**
+- `vision_negocio.md`: nueva sección **15. Modelo de Ingreso Indirecto — Publicidad** con la motivación de negocio completa y las preguntas de producto sin resolver (page views vs. visitantes únicos, visibilidad del dato para el owner vs. solo admin, privacidad). Nuevo **Gap 15** en la tabla de la sección 13.
+- `features.md`: nuevo **C6 — Métrica de visitas al menú por restaurante** en el Roadmap (Tier C), con boceto técnico de alto nivel (tabla `visitas_menu`, endpoint en `routes/admin.js`, card en `dashboard.html`) marcado explícitamente como no vinculante — las decisiones de producto van primero.
+
+**Sin cambios de código.** Queda anotado para retomar cuando haya varios restaurantes activos con tráfico real que justifique la conversación de venta de publicidad.
+
+---
+
+## 📋 Sesión 2026-07-09 (parte 4) — Anotado: módulo de blog/noticias de la empresa
+
+**Prompt:** el usuario quiere un módulo en el dashboard admin para publicar actualizaciones sobre la evolución de Menú Pro como empresa (primera prueba piloto, avances semanales, hitos) — "build in public" para generar confianza con prospectos. Pidió solo documentación por ahora.
+
+**Acción:** `features.md` → nuevo **C7 — Módulo de blog/noticias de la empresa** en el Roadmap (Tier C), con boceto técnico (tabla `posts_blog`, endpoints admin + público de solo lectura, página pública nueva o sección en `landing.html`) y las decisiones de producto pendientes (editor simple vs. rich text, fotos, URL propia vs. sección de landing). **Sin cambios de código.**
+
+---
+
+## 📋 Sesión 2026-07-06 — Gap detectado: el cliente no puede cancelar su reserva
+
+**Prompt:** el usuario preguntó si el cliente puede cancelar su reserva actualmente (no confundir con órdenes).
+
+**Diagnóstico (solo investigación, sin cambios de código):** confirmado que **no puede**. `routes/public.js` solo expone `POST /reservations` (crear), `PATCH /pago/reserva/:id` (pago) y `GET /reserva/:codigo` (consultar estado, usado por `showEstadoReserva` en `menu.html`). El único endpoint que cancela (`PATCH /api/reservations/:id/estatus` → `es_cancelado`, con devolución de stock) vive en `routes/reservations.js` y está protegido con `authorizePermiso()` — solo owner/staff desde `owner.html`. `ISS-006` (resuelto 2026-05-23) se revisó pero trata otro tema (botones de avance de estado en el panel del owner), no cubre este gap.
+
+**Acción:** agregado a `features.md` (Prioridad Alta — Features funcionales) el feature pendiente **"Cancelar reserva desde el lado del cliente"**, con alcance propuesto: endpoint público `PATCH /api/public/reserva/:codigo/cancelar` (misma regla de estados cancelables + devolución de stock que ya usa el owner) + botón "✗ Cancelar reserva" en la pantalla de estado de `menu.html`. Queda pendiente decidir si aplica ventana de tiempo límite para cancelar. Sin implementación aún — el usuario pidió dejarlo solo anotado por ahora.
+
+---
+
 ## 🖼️ Sesión 2026-07-03 (parte 2) — Imágenes más grandes + fix de overlap real en el PlatoPicker
 
 **Prompt 1:** en Menú del día → Configurar secciones → "＋ Platos", las fotos de los platos aparecían muy pequeñas y las cards se sentían apretadas al seleccionar.

@@ -477,6 +477,9 @@ try { db.exec(`ALTER TABLE restaurantes ADD COLUMN auto_merge_activo INTEGER DEF
 try { db.exec(`ALTER TABLE restaurantes ADD COLUMN slug TEXT`); } catch (_) {}
 db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_restaurantes_slug ON restaurantes(slug) WHERE slug IS NOT NULL`);
 
+// Migración idempotente: ventana de tiempo (minutos) para que el cliente pueda cancelar su reserva
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN minutos_cancelacion_reserva INTEGER DEFAULT 30`); } catch (_) {}
+
 // Tabla de suscripciones push (Gap 3 — Web Push)
 db.exec(`
   CREATE TABLE IF NOT EXISTS push_subscriptions (

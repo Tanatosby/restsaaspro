@@ -8,6 +8,7 @@ const { calcularPrecioUnitario, calcularMenuTotal } = require('../utils/menuPric
 const { calcularTotalOrden } = require('../utils/totales');
 const { fechaLima } = require('../utils/fecha');
 const { descontarStock, devolverStock, itemsMenuDeOrden } = require('../utils/stock');
+const { requiereConfirmarPagoAntes } = require('../utils/verificacionPago');
 
 router.use(authenticate);
 
@@ -356,7 +357,7 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
   }
 
   const orden = db.prepare(`
-    SELECT o.id, eo.nombre AS estatus_actual, eo.es_pagado, eo.es_cancelado
+    SELECT o.id, o.metodo_pago, o.estado_pago, eo.nombre AS estatus_actual, eo.es_pagado, eo.es_cancelado
     FROM ordenes o
     JOIN estatus_orden eo ON o.id_estatus = eo.id
     WHERE o.id = ? AND o.id_restaurante = ?
@@ -367,6 +368,9 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
 
   if (orden.es_pagado || orden.es_cancelado)
     return res.status(400).json({ error: `No se puede cambiar una orden ${orden.estatus_actual}` });
+
+  if (nuevoEstatus.es_pagado && requiereConfirmarPagoAntes(orden.metodo_pago, orden.estado_pago))
+    return res.status(400).json({ error: 'Confirma el pago (revisa el comprobante) antes de completar la orden' });
 
   if (nuevoEstatus.es_pagado) {
     const total = calcularTotalOrden(db, req.params.id);

@@ -2,7 +2,7 @@
 
 > Este documento es la brújula del proyecto. Debe leerse al inicio de cada sesión de desarrollo
 > para garantizar que cada decisión técnica va en la dirección correcta.
-> Última actualización: 2026-07-02
+> Última actualización: 2026-07-09
 
 ---
 
@@ -166,8 +166,10 @@ El panel de cocina muestra **reservas y órdenes juntas** en una sola lista orde
 ## 7. Flujo de Pago
 
 ### Reservas pagadas por adelantado
-- Pago al momento de reservar (Yape/Plin + foto de comprobante, o Efectivo marcado como "pagará al recoger")
-- Al llegar: solo verificación, no hay cobro adicional (salvo órdenes extras en mesa)
+- Pago al momento de reservar: **Yape/Plin + foto de comprobante obligatoria** (es la única evidencia de una transferencia digital — sin foto no se puede verificar, así que el sistema no acepta el pago sin ella), o **Efectivo** marcado como "pagará al recoger" (no requiere foto — se cobra en persona).
+- **No existe un "pagar más tarde"** — el cliente siempre sale del flujo con un método definido. Efectivo ya cubre el caso de pago diferido de forma legítima; un tercer estado "sin definir" solo generaba pedidos/reservas sin ningún rastro de pago y sin forma de retomarlos.
+- **Verificación humana antes de completar:** si el método fue Yape/Plin, el owner debe revisar el comprobante y tocar "✓ Confirmar pago" (`PATCH /:id/confirmar-pago`) antes de poder marcar la orden/reserva como pagada/completada — el sistema bloquea ese paso si no se confirmó primero. Efectivo no pasa por este paso (se cobra y completa en el mismo momento).
+- Al llegar: solo verificación, no hay cobro adicional (salvo órdenes extras en mesa).
 
 ### Reservas "pagar al llegar"
 - Riesgo de no-show → el cliente puede **cancelar hasta 30 minutos antes** de su hora de llegada
@@ -279,7 +281,7 @@ El dueño define su política (configurable por restaurante):
 - Plano de mesas visual con estado en tiempo real
 - Panel de cocina con polling y alerta de sonido — órdenes + reservas en preparación unificadas (ISS-008 resuelto 2026-05-23)
 - Cola del día unificada: órdenes + reservas activas ordenadas por urgencia (`pedidos.js`)
-- Pagos Fase 1: Yape/Plin/Efectivo, foto de comprobante, confirmación manual
+- **Pagos Fase 1 (endurecido 2026-07-09):** Yape/Plin/Efectivo, foto de comprobante **obligatoria** en pagos digitales, confirmación manual del owner **bloqueante** (no se puede completar una orden/reserva pagada por Yape/Plin sin que el owner confirme el comprobante primero) — ver `flujo-pago.md`
 - Reportes: curva de clientes, análisis de pedidos, ganancias, descarga Excel
 - Configuración visual: foto de portada, colores, QR del menú
 - Panel admin: gestión de restaurantes, usuarios y estatus
@@ -318,6 +320,7 @@ En orden de impacto:
 | 12 | Sistema de cuentas de cliente (híbrido anónimo + login) | Bajo | Alta | Fase 2 |
 | 13 | Cupones y créditos por cancelación | Bajo | Media | Fase 2 |
 | 14 | Notificaciones WhatsApp/SMS | Bajo | Alta | Fase 2 |
+| 15 | Métrica de visitas al menú por restaurante (dashboard admin) | Bajo (hoy) / Alto (a escala) | Media | Fase 2 — ver sección 15, "cuando inicie masivo" |
 
 > **Nota flujo Caso B reservas (sin pago anticipado):** el cliente llega sin haber pagado → mozo marca `es_cliente_llego` y asigna mesa → envía a cocina manualmente → flujo normal → cobra al final → `es_full`. La UI mostrará badge "⚠️ Sin pago" en la tarjeta para que el mozo lo identifique.
 
@@ -347,6 +350,9 @@ Cuando una reserva se cancela, el sistema emite un cupón de descuento o crédit
 **Gap 14 — Notificaciones WhatsApp/SMS** *(Fase 2)*
 Mensajes automáticos al cliente: confirmación de reserva, pedido listo, delivery en camino. Requiere integrar Twilio o Meta WhatsApp Business API (con costo por mensaje). Web Push (Gap 3) ya cubre las notificaciones al owner/mozo/cocinero — este gap es para el cliente final.
 
+**Gap 15 — Métrica de visitas al menú por restaurante** *(Fase 2 — "cuando inicie masivo")*
+Ver sección 15 para el detalle del modelo de negocio. Resumen técnico: registrar cada carga de `GET /api/public/menu` (o de la carga inicial de `menu.html`) por restaurante y por día, y mostrar el conteo en un dashboard nuevo del panel admin (`routes/admin.js` + `public/admin/dashboard.html`). A definir antes de implementar: ¿se cuenta cada request (page views) o visitantes únicos por sesión/día (requeriría un identificador anónimo, ej. cookie o hash de IP+user-agent, con las implicancias de privacidad que eso trae); retención de los datos (¿cuánto tiempo se guardan?); si el owner del restaurante puede ver su propio número o es información exclusiva del admin de la plataforma.
+
 ---
 
 ## 14. Decisiones Pendientes de Validar en Producción
@@ -354,3 +360,24 @@ Mensajes automáticos al cliente: confirmación de reserva, pedido listo, delive
 - ¿El cocinero presiona "plato listo" o el mozo actualiza al escuchar la campana? → implementar botón del cocinero primero, evaluar con uso real
 - ¿Cuánto tiempo antes prepara cada restaurante sus reservas? → configurable por owner (default: 20 min)
 - ¿Los clientes usan más "pagar ahora" o "pagar al llegar"? → observar con datos reales
+
+---
+
+## 15. Modelo de Ingreso Indirecto — Publicidad (idea, sin implementar)
+
+> Anotado 2026-07-09, a partir de una idea del usuario. Sin diseño ni implementación aún — queda documentado para retomarlo "cuando inicie masivo" (múltiples restaurantes activos y con tráfico real).
+
+**La idea:** Menú Pro no le cobra directamente al comensal — el ingreso hoy es 100% B2B (lo que paga cada restaurante por usar el sistema). Pero si el sistema junta muchos restaurantes activos, cada uno con su propio flujo de comensales viendo su menú QR, la suma de ese tráfico agregado tiene valor: es una audiencia local, geolocalizada por barrio/ciudad, ya segmentada por "gente que está por comer en este momento". Ese tráfico se podría vender como espacio publicitario dentro de las páginas de menú (`menu.html`) — un ingreso indirecto que no depende de subirle la cuota al restaurante.
+
+**Ejemplo del propio usuario:** si cada restaurante recibe ~100 visitas, 10 restaurantes ya representan ~1000 personas — una audiencia agregada interesante para anunciantes locales (proveedores, otros negocios del barrio, marcas de bebidas/insumos), aunque cada restaurante individualmente sea un negocio pequeño.
+
+**Por qué "indirecto":** no es el modelo de negocio principal (que sigue siendo la suscripción/cuota del restaurante) — es una fuente de ingreso adicional que solo se vuelve viable con escala (muchos restaurantes, tráfico agregado suficiente para interesar a un anunciante). No tiene sentido activarlo con 1-8 restaurantes piloto.
+
+**Prerequisito de este feature (Gap 15, sección 13):** antes de poder vender publicidad hace falta poder *medir* el tráfico — de ahí que el primer paso concreto sea la métrica de visitas al menú en el dashboard admin, no la publicidad en sí. Sin ese dato, no hay forma de saber si la idea es viable ni qué precio cobrar.
+
+**Preguntas a resolver antes de diseñar la implementación (deliberadamente sin responder todavía):**
+- ¿Qué se cuenta? Page views (cada carga) vs. visitantes únicos (requiere un identificador anónimo por sesión/día).
+- ¿Cómo se ve en el dashboard admin? ¿Por restaurante, por ciudad, agregado total?
+- ¿El owner del restaurante ve su propio número, o es solo visibilidad del admin de la plataforma (para no filtrar información competitiva entre restaurantes)?
+- ¿Cuándo se activa la conversación de venta de publicidad? (ej. umbral mínimo de restaurantes activos o de tráfico agregado mensual)
+- Implicancias de privacidad si se decide trackear visitantes únicos (el sistema hoy es 100% anónimo del lado del cliente — sección 9).

@@ -93,13 +93,19 @@ function renderOrdenCard(o, withActions) {
     : '';
 
   const paraLlevar = o.modalidad === 'para_llevar';
+  // Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante
+  // antes de poder cobrar/completar (el backend también lo bloquea).
+  const requiereConfirmar = ['yape', 'plin'].includes(o.metodo_pago) && o.estado_pago !== 'confirmado';
+  const btnCobrar = (label, flag) => requiereConfirmar
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoOrden(${o.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'${flag}')">${label}</button>`;
   const actions = withActions ? `
     <div class="order-actions">
       ${o.es_inicial   ? `<button class="btn btn-primary btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_en_cocina')">→ Preparando</button>` : ''}
       ${o.es_en_cocina ? `<button class="btn btn-primary btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_listo')">→ Listo</button>` : ''}
       ${o.es_listo && !paraLlevar ? `<button class="btn btn-primary btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_entregado')">🍽 Entregar</button>` : ''}
-      ${o.es_listo && paraLlevar  ? `<button class="btn btn-success btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_pagado')">💰 Cobrar</button>` : ''}
-      ${o.es_entregado ? `<button class="btn btn-success btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_pagado')">✓ Completado</button>` : ''}
+      ${o.es_listo && paraLlevar  ? btnCobrar('💰 Cobrar', 'es_pagado') : ''}
+      ${o.es_entregado ? btnCobrar('✓ Completado', 'es_pagado') : ''}
       <button class="btn btn-danger" onclick="cambiarEstatusOrdenFlag(${o.id},'es_cancelado')">Cancelar</button>
     </div>` : '';
 
@@ -128,6 +134,14 @@ async function cambiarEstatusOrden(id, estatus) {
   try {
     await api('PATCH', `/api/orders/${id}/estatus`, { estatus });
     toast(`Orden #${id} → ${estatus}`);
+    loadOrdenesActivas();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function confirmarPagoOrden(id) {
+  try {
+    await api('PATCH', `/api/orders/${id}/confirmar-pago`);
+    toast(`Pago de la orden #${id} confirmado ✓`);
     loadOrdenesActivas();
   } catch(e) { toast(e.message, 'err'); }
 }
