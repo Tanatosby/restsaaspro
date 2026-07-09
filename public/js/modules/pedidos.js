@@ -147,12 +147,21 @@ function renderKanbanCard(item, zona) {
     : renderKanbanReserva(item.datos, zona);
 }
 
+// Miniatura clicable del comprobante (mismo patrón que ordenes.js/reservas.js)
+// para que el owner pueda verificar el pago sin salir de la Cola del día.
+function comprobanteThumb(x) {
+  return x.comprobante_url
+    ? `<div style="margin-top:6px"><a href="${x.comprobante_url}" target="_blank" title="Ver comprobante"><img src="${x.comprobante_url}" alt="Comprobante" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer"></a></div>`
+    : '';
+}
+
 function renderKanbanOrden(o, zona) {
   const minutos   = Math.floor((Date.now() - new Date(toUTC(o.created_at)).getTime()) / 60000);
   const mesaTag   = o.mesa ? `· Mesa ${o.mesa} ` : '';
   const items     = renderItemLines(o.carta_items, o.menu_items);
   const btnAccion = btnOrden(o, zona);
   const modBadge  = badgeModalidad(o.modalidad);
+  const pagoHtml  = o.metodo_pago ? `<div style="margin-top:4px">${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
 
   return `
     <div class="cola-card cola-orden">
@@ -165,6 +174,7 @@ function renderKanbanOrden(o, zona) {
         <span class="cola-tiempo">${minutos} min</span>
       </div>
       ${items ? `<div class="cola-items">${items}</div>` : ''}
+      ${pagoHtml}
       ${btnAccion ? `<div class="order-actions" style="margin-top:0.5rem">${btnAccion}</div>` : ''}
     </div>`;
 }
@@ -176,6 +186,7 @@ function renderKanbanReserva(r, zona) {
   const items     = renderItemLines(r.carta_items, r.menu_items);
   const btnAccion = btnReserva(r, zona);
   const modBadge  = badgeModalidad(r.modalidad);
+  const pagoHtml  = r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteThumb(r)}</div>` : '';
 
   return `
     <div class="cola-card cola-reserva">
@@ -188,6 +199,7 @@ function renderKanbanReserva(r, zona) {
         <span class="cola-tiempo">${horaTag}${mesaTag}</span>
       </div>
       ${items ? `<div class="cola-items">${items}</div>` : ''}
+      ${pagoHtml}
       ${btnAccion ? `<div class="order-actions" style="margin-top:0.5rem">${btnAccion}</div>` : ''}
     </div>`;
 }

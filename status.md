@@ -2,6 +2,20 @@
 
 ---
 
+## ✅ Sesión 2026-07-09 (parte 5) — Fix: comprobante de pago invisible en Cola del día
+
+**Prompt:** el usuario reportó (con capturas en `issues/`: `Efectivo_sin_comprobacion.png`, `sin_confirmacion_depago.png`, `solo_se_puede_ver_en_reservas.png`) que al verificar un pago desde "Cola del día" → "Por cobrar" no podía ver la foto del comprobante — tenía que saltar a Órdenes/Reservas para verla y volver, relentizando el flujo.
+
+**Diagnóstico:** `public/js/modules/ordenes.js` y `reservas.js` ya pintaban `badgePago(o)` + una miniatura clicable de `comprobante_url` en sus cards. `public/js/modules/pedidos.js` (Cola del día) no — `renderKanbanOrden()`/`renderKanbanReserva()` solo mostraban ítems y el botón de acción, sin rastro del pago. El botón "✓ Confirmar pago" ya funcionaba correctamente ahí (gate de la sesión de pagos anterior); el problema era solo de visualización.
+
+**Fix — `public/js/modules/pedidos.js`:** nuevo helper `comprobanteThumb(x)` (mismo patrón que ordenes.js/reservas.js) + `badgePago(x)` (global, ya cargado antes que pedidos.js en `owner.html`) insertados en `renderKanbanOrden()` y `renderKanbanReserva()`, debajo de los ítems y antes del botón de acción.
+
+**Verificación:** Playwright a 360px contra servidor local — reserva real (id 31, Plin, con comprobante) movida temporalmente a estado "cliente llegó" para verla en "Por cobrar", capturada mostrando badge + miniatura + "✓ Confirmar pago" sin salir de la Cola, 0 errores de consola, sin overflow. Reserva revertida a su estado original tras la prueba. **254/254 jest verde** (sin cambios de backend, no se agregaron tests nuevos — es un cambio de renderizado puro que reutiliza funciones/campos ya cubiertos).
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`), junto con los pendientes de sesiones anteriores.
+
+---
+
 ## ✅ Sesión 2026-07-09 — Implementado: cancelar reserva desde el lado del cliente
 
 **Prompt:** implementar el gap anotado en la sesión 2026-07-06, con ventana de tiempo en minutos para cancelar, default **30 minutos**, configurable por el owner.
