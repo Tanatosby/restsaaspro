@@ -12,7 +12,11 @@
 
 **Docs actualizadas:** `features.md` (quitada referencia al deep link inexistente en 2 secciones), `issues/ISSUES.md` + nuevo `issues/ISS-017-boton-abrir-yape-roto.md`.
 
-**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`), junto con los pendientes de sesiones anteriores.
+**Deploy:** commit `93d48eb` pusheado a `main` y desplegado en producción el mismo día (`git pull` + `pm2 restart menupro`). Verificado: `pm2 status` → `online`, `curl /health` → `{"status":"ok"}`. Fix activo en producción.
+
+**Investigación adicional (mismo día):** el usuario pidió investigar si existe un deep link real de Yape. Búsqueda web confirma que sí existe (`https://www.yape.com.pe/app/checkout/approval_code`), pero es dinámico — se genera server-side por una pasarela de pago afiliada (Mercado Pago, Culqi, Izipay, ProntoPaga), válido ~15 min por transacción, y requiere afiliación del restaurante como comercio + llamada a API + costo por transacción. No es un link estático armable solo con el número de teléfono.
+
+**Decisión del usuario:** inviable — la complejidad de afiliarse a una pasarela no se justifica todavía. **Gap 16 cerrado por diseño** en `vision_negocio.md`. El flujo "Copiar número" (igual que Plin) queda como solución **definitiva**, no temporal.
 
 ---
 

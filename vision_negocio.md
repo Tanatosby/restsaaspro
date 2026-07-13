@@ -321,6 +321,7 @@ En orden de impacto:
 | 13 | Cupones y créditos por cancelación | Bajo | Media | Fase 2 |
 | 14 | Notificaciones WhatsApp/SMS | Bajo | Alta | Fase 2 |
 | 15 | Métrica de visitas al menú por restaurante (dashboard admin) | Bajo (hoy) / Alto (a escala) | Media | Fase 2 — ver sección 15, "cuando inicie masivo" |
+| 16 | ~~Deep link real de Yape (requiere pasarela de pago afiliada)~~ | ~~Bajo~~ | ~~Alta~~ | ❌ Cerrado por diseño 2026-07-13 — inviable, complejidad no justificada; "Copiar número" es la solución definitiva |
 
 > **Nota flujo Caso B reservas (sin pago anticipado):** el cliente llega sin haber pagado → mozo marca `es_cliente_llego` y asigna mesa → envía a cocina manualmente → flujo normal → cobra al final → `es_full`. La UI mostrará badge "⚠️ Sin pago" en la tarjeta para que el mozo lo identifique.
 
@@ -352,6 +353,15 @@ Mensajes automáticos al cliente: confirmación de reserva, pedido listo, delive
 
 **Gap 15 — Métrica de visitas al menú por restaurante** *(Fase 2 — "cuando inicie masivo")*
 Ver sección 15 para el detalle del modelo de negocio. Resumen técnico: registrar cada carga de `GET /api/public/menu` (o de la carga inicial de `menu.html`) por restaurante y por día, y mostrar el conteo en un dashboard nuevo del panel admin (`routes/admin.js` + `public/admin/dashboard.html`). A definir antes de implementar: ¿se cuenta cada request (page views) o visitantes únicos por sesión/día (requeriría un identificador anónimo, ej. cookie o hash de IP+user-agent, con las implicancias de privacidad que eso trae); retención de los datos (¿cuánto tiempo se guardan?); si el owner del restaurante puede ver su propio número o es información exclusiva del admin de la plataforma.
+
+**Gap 16 — Investigar deep link real de la app Yape**
+`https://yape.com.pe/cobrar?phone=XXXX` (usado hasta el 2026-07-13, ver [ISS-017](issues/ISS-017-boton-abrir-yape-roto.md)) no era un endpoint real — abría una página inexistente y fue removido.
+
+**Investigación 2026-07-13 (vía búsqueda web):** Yape sí tiene un deep link real y documentado: `https://www.yape.com.pe/app/checkout/approval_code`. Pero **no es un link estático armable desde el frontend con solo el número de teléfono** — es un link *dinámico*, generado del lado del servidor por una pasarela de pago afiliada (Mercado Pago, Culqi, Izipay, ProntoPaga — funcionalidades llamadas "Yape Código de Pago" / "Yape On File"), válido solo ~15 minutos por transacción, y requiere: (1) el restaurante afiliado como comercio a una de esas pasarelas, (2) una llamada server-side a su API para generar el `approval_code` por cada cobro, (3) el monto y datos de la transacción ya definidos antes de abrir el link. Es decir, no es "abrir Yape con el número precargado" como se asumió originalmente — es una integración completa de pasarela de pago, con costo por transacción y proceso de afiliación como comercio.
+
+**Decisión del usuario (2026-07-13):** inviable para el negocio actual — la complejidad de afiliarse a una pasarela (comisión por transacción, onboarding, integración server-side) no se justifica frente al flujo "Copiar número" que ya funciona bien. **Gap cerrado por diseño, no se implementará** salvo que cambie el contexto del negocio (ej. escala grande, restaurantes que ya usan pasarela). El flujo actual (número + botón "Copiar número", igual que Plin) queda como solución definitiva, no temporal.
+
+Fuentes: [Mercado Pago Developers — Yape Checkout API](https://www.mercadopago.com.pe/developers/es/docs/checkout-api-payments/integration-configuration/yape), [Culqi — Cargo único con Yape](https://docs.culqi.com/es/documentacion/pagos-online/cargo-unico/tokens-yape), [Izipay — Pago con Código Yape](https://developers.izipay.pe/products/pay-with-yape-code/), [ProntoPaga — Yape On File](https://docs.prontopaga.com/docs/yape-on-file-ocp)
 
 ---
 
