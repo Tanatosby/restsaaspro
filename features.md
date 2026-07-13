@@ -509,7 +509,7 @@ Cada restaurante configura sus propios datos de cobro en el panel de Configuraci
 ##### Métodos de pago
 
 ###### Yape
-- **Cómo funciona:** El cliente ordena desde su propio celular, así que mostrarle un QR en pantalla no sirve (no puede escanearse a sí mismo). La solución correcta es un **botón "Pagar con Yape"** que genera un deep link del tipo `https://yape.com.pe/cobrar?phone=9XXXXXXXX` — al tocarlo, el celular abre la app de Yape directamente con el número del restaurante pre-cargado. El cliente solo ingresa el monto y confirma. El QR como imagen solo tiene sentido en desktop (donde el cliente sí puede escanearlo con su celular) o impreso físicamente en la mesa.
+- **Cómo funciona:** El cliente ordena desde su propio celular, así que mostrarle un QR en pantalla no sirve (no puede escanearse a sí mismo). ⚠️ No existe un deep link web público de Yape para abrir la app con un número pre-cargado (`https://yape.com.pe/cobrar?phone=...` no es un endpoint real — se probó y da error 404). La solución actual es mostrar el número de Yape del restaurante con un **botón "Copiar número"**, igual que Plin: el cliente copia el número, abre su propia app Yape manualmente, paga y confirma. El QR como imagen solo tiene sentido en desktop (donde el cliente sí puede escanearlo con su celular) o impreso físicamente en la mesa.
 - **Configuración por restaurante:**
   - Número de teléfono Yape (campo `yape_telefono TEXT`) — con esto se genera el link automáticamente, sin subir nada
   - Toggle "Habilitar Yape" (`yape_activo INTEGER DEFAULT 0`)
@@ -600,7 +600,7 @@ La Fase 1 está en desarrollo. Lo que ya existe en el código:
 
 **Frontend `menu.html` (ya implementado):**
 - Paso de pago tras confirmar orden/reserva: botones Yape / Plin / Efectivo
-- Deep link a Yape: `https://yape.com.pe/cobrar?phone=XXXX`
+- Yape: número + botón "Copiar número" (igual que Plin — no existe deep link web público de Yape)
 - Upload de foto comprobante (opcional) + preview
 - Botón "Ya pagué" → `PATCH /api/public/pago/...`
 

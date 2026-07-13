@@ -2,6 +2,36 @@
 
 ---
 
+## ✅ Sesión 2026-07-13 — Fix: botón "Abrir Yape" abría página inexistente
+
+**Prompt:** el usuario reportó que en `menu.html`, al pagar con Yape, el botón "Abrir Yape" abría una página que no existe, afectando el flujo del cliente. Pidió arreglarlo o, si no había solución, eliminar el botón.
+
+**Diagnóstico:** el botón enlazaba a `https://yape.com.pe/cobrar?phone=XXXX`, un endpoint que no existe públicamente — Yape no ofrece un deep link web para abrir la app con un número pre-cargado sin integración de comercio afiliado. Era una asunción incorrecta documentada en `features.md`.
+
+**Fix — `public/menu.html`:** en `seleccionarMetodoPago('yape')`, reemplazado el `<a href="https://yape.com.pe/...">Abrir Yape</a>` por un botón "Copiar número 📋" (`navigator.clipboard.writeText`), igual patrón que ya usaba Plin. Texto de instrucción actualizado a "Abre tu app Yape, paga a este número y luego sube la foto del comprobante."
+
+**Docs actualizadas:** `features.md` (quitada referencia al deep link inexistente en 2 secciones), `issues/ISSUES.md` + nuevo `issues/ISS-017-boton-abrir-yape-roto.md`.
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`), junto con los pendientes de sesiones anteriores.
+
+---
+
+## 🚀 Sesión 2026-07-09 (parte 6) — Deploy a producción
+
+**Acción:** `git pull origin main` + `pm2 restart menupro` en el servidor (`147.182.135.252`, `menupro-prod`). El pull trajo varios commits acumulados (el servidor estaba atrasado desde la sesión del 2026-07-03) hasta `902f04f`, incluyendo `utils/verificacionPago.js` como archivo nuevo.
+
+**Verificado:** `pm2 status` → `online`; `curl http://localhost:3000/health` → `{"status":"ok"}`.
+
+**Commits desplegados** (quedan resueltos los "Pendiente: deploy a producción" de las sesiones correspondientes):
+- `902f04f` — fix(cola): comprobante y badge de pago visibles en Cola del día
+- `a20e8ea` — feat(reservas): cancelación por el cliente + fix(pagos): flujo seguro de verificación (foto obligatoria yape/plin, gate `confirmar-pago`, eliminado "Pagar más tarde")
+- `da15152` — fix(plato-picker): imágenes más grandes y fix de overlap por grid comprimido
+- `52a0ddf` — mejora en workflow de creación de menú
+
+**Producción queda al día con `main`.** Sigue pendiente en el servidor: correr el sembrado del restaurante demo (`deploy.md` §10.1) si aún no se hizo, y confirmar visualmente desde el celular que "Por cobrar" muestra la miniatura del comprobante.
+
+---
+
 ## ✅ Sesión 2026-07-09 (parte 5) — Fix: comprobante de pago invisible en Cola del día
 
 **Prompt:** el usuario reportó (con capturas en `issues/`: `Efectivo_sin_comprobacion.png`, `sin_confirmacion_depago.png`, `solo_se_puede_ver_en_reservas.png`) que al verificar un pago desde "Cola del día" → "Por cobrar" no podía ver la foto del comprobante — tenía que saltar a Órdenes/Reservas para verla y volver, relentizando el flujo.
