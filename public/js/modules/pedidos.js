@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════
 // MÓDULO: COLA DEL DÍA — KANBAN
 // Órdenes + reservas activas agrupadas por zona/etapa.
-// Hace polling cada 15 s mientras el panel está activo.
+// Hace polling cada 30 s mientras el panel está activo.
 // Globals requeridos (owner.html): detectNuevasOrdenes(),
 //   detectNuevasReservas(), cambiarEstatusOrdenFlag(),
 //   cambiarEstatusReservaFlag(), badgeEst(), toUTC()
@@ -15,7 +15,7 @@ let _zonaActiva = 'pendientes';
 function initPedidosPoll() {
   stopPedidosPoll();
   loadColaDia();
-  _pedidosPollTimer = setInterval(loadColaDia, 15000);
+  _pedidosPollTimer = setInterval(loadColaDia, 30000);
 }
 
 function stopPedidosPoll() {
@@ -42,13 +42,22 @@ function switchZona(zona) {
 
 async function loadColaDia() {
   try {
-    const [ordenes, reservas] = await Promise.all([
+    // GET /api/reservations sin filtro trae TODO el historial del restaurante
+    // (con una consulta N+1 de ítems por cada una) — con el tiempo se vuelve
+    // cada vez más pesado y bloquea el proceso entero (better-sqlite3 es
+    // síncrono). Igual que reservas.js, se piden solo los 5 estados activos
+    // (los otros 2 son es_full/es_cancelado — no interesan acá).
+    const [ordenes, pendientes, confirmadas, enCocina, listas, llegaron] = await Promise.all([
       api('GET', '/api/orders/activas'),
-      api('GET', '/api/reservations'),
+      api('GET', '/api/reservations?flag=es_inicial'),
+      api('GET', '/api/reservations?flag=es_confirmada'),
+      api('GET', '/api/reservations?flag=es_en_cocina'),
+      api('GET', '/api/reservations?flag=es_listo'),
+      api('GET', '/api/reservations?flag=es_cliente_llego'),
     ]);
+    const reservasActivas = [...pendientes, ...confirmadas, ...enCocina, ...listas, ...llegaron];
 
     detectNuevasOrdenes(ordenes);
-    const reservasActivas = reservas.filter(r => !r.es_full && !r.es_cancelado);
     detectNuevasReservas(reservasActivas);
 
     // Clasificar por zona

@@ -2,6 +2,22 @@
 
 ---
 
+## ✅ Sesión 2026-07-14 (parte 5) — ISS-023 + ISS-024: lentitud en horas pico
+
+**Prompt:** el usuario reportó lentitud al reabrir la app, notada especialmente con varios pedidos/en horas pico, más lentitud aparte al cargar imágenes del menú. Pidió poder auditar con una carga masiva simulada en vez de adivinar.
+
+**ISS-023 — Cola del día:** `pedidos.js` pedía `GET /api/reservations` **sin filtro** en cada poll de 15s — traía todo el historial de reservas (+ N+1 de ítems por cada una). Como `better-sqlite3` es síncrono, esa consulta bloqueaba el proceso Node entero mientras se resolvía, no solo la pantalla de quien la pidió — coincide con que se sienta peor en horas pico (más historial acumulado + más gente usando el sistema a la vez). `reservas.js` ya resolvía esto bien (5 llamadas por `flag`); se replicó el mismo patrón en `pedidos.js`.
+
+**Auditoría** (`scripts/audit-carga-cola.js`, nuevo — sembró 3000 reservas históricas realistas contra el restaurante piloto, midió, limpió los datos al final): **540ms → 38ms, 14.2× más rápido, 95% menos datos transferidos.**
+
+**ISS-024 — Imágenes del menú:** de paso, se encontró que `/uploads` se sirve sin ningún header de caché (`express.static` sin `max-age`) — cada carga de página vuelve a pedir cada foto al servidor, aunque nunca cambien (los nombres ya son versionados con timestamp desde ISS-015, así que cachearlas para siempre es seguro). Se agregó `Cache-Control: public, max-age=31536000, immutable` solo para `/uploads`, sin tocar el caché de `owner.html`/`css`/JS (deben seguir revalidando siempre).
+
+**Verificación:** `curl -I` confirma los headers correctos en ambos casos. **267/267 jest verde** en todo el proceso.
+
+**Pendiente:** deploy a producción (acumulado con todo lo de hoy: Gap 17/18/19, tamaño de letra, ISS-018 a ISS-024).
+
+---
+
 ## ✅ Sesión 2026-07-14 (parte 4) — Gap 19: cancelar desde Cola del día
 
 **Prompt:** "la del botón de cancelar para que se pueda tener eso pendiente" — cierre del Gap 19 (la modalidad ya se mostraba en la Cola desde antes; solo faltaba cancelar).

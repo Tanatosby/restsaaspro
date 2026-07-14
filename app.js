@@ -70,6 +70,17 @@ app.use(logger);
 app.use(express.json());
 app.use(cookieParser());
 
+// /uploads (fotos de platos, comprobantes, portada) usa nombres versionados
+// con Date.now() en cada subida (ver ISS-015/comentario en routes/menu.js) —
+// una URL nunca cambia de contenido, así que cachearla "para siempre" en el
+// navegador es seguro y evita re-descargar cada foto en cada carga de página.
+// El resto de /public (owner.html, menu.html, JS, CSS) NO lleva max-age
+// acá — deben revalidarse en cada visita para no quedar desactualizados
+// (ISS-022 ya cubre el caso del Service Worker instalado).
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
+  maxAge: '1y',
+  immutable: true,
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 // Screenshots del bot para los manuales (fuera de public/)
 app.use('/bot-screenshots', express.static(path.join(__dirname, 'landing', 'bot', 'output', 'screenshots')));

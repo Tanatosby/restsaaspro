@@ -22,6 +22,8 @@ _(vacío)_
 
 | ID | Título | Fecha resolución | Solución |
 |----|--------|-----------------|---------|
+| [ISS-024](ISS-024-uploads-sin-cache-control.md) | Fotos de `/uploads` se re-descargan en cada carga (sin caché HTTP) | 2026-07-14 | `express.static` sin `max-age`. Como los nombres de archivo ya son versionados (timestamp único por subida), se agregó `Cache-Control: public, max-age=31536000, immutable` solo para `/uploads`. |
+| [ISS-023](ISS-023-cola-lenta-reservas-sin-filtrar.md) | Cola del día se pone lenta en horas pico (`GET /api/reservations` traía todo el historial) | 2026-07-14 | `pedidos.js` pedía reservas sin filtro (+ N+1) cada 15s de polling; bloqueaba el proceso Node entero (síncrono). Cambiado a 5 llamadas por `flag`, igual que `reservas.js`. Auditado con 3000 reservas sembradas: 540ms→38ms, 14.2× más rápido. |
 | [ISS-022](ISS-022-service-worker-cache-desactualizado.md) | Service Worker sirve `owner.html`/`owner.css` viejos aunque el deploy sea correcto | 2026-07-14 | `CACHE` en `sw.js` no se bumpeaba desde 2026-05-29 — el navegador nunca refrescaba el caché de `owner.html`/`css/owner.css`. Bumpeado a `menupro-v3`. Probablemente explica por qué varios fixes previos "no se veían". |
 | [ISS-021](ISS-021-comprobante-rompe-pwa.md) | Foto de comprobante en Cola no carga / rompe la app instalada | 2026-07-13 | `<a target="_blank">` sobre una PWA standalone instalada rompe el contenedor de la app (sobre todo en iOS). Reemplazado por modal in-app (`comprobanteThumb()` unificado en `utils.js`). |
 | [ISS-020](ISS-020-error-handler-sin-contexto.md) | Error handler global no loguea ruta ni stack trace | 2026-07-13 | `app.js` solo logueaba `err.message`. Ahora loguea `req.method`, `req.originalUrl` y `err.stack`. |
