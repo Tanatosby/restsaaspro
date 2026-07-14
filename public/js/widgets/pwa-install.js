@@ -80,10 +80,10 @@
   position:relative; box-shadow:0 -10px 40px rgba(0,0,0,.3); animation:pwa-up .3s cubic-bezier(.16,1,.3,1); }
 @keyframes pwa-up { from { transform:translateY(100%); } to { transform:none; } }
 .pwa-ios-title { font-family:var(--font-display,Georgia,serif); font-weight:700; font-size:1.2rem; margin-bottom:.9rem; }
-.pwa-ios-step { font-size:14px; line-height:1.6; margin-bottom:.55rem; }
+.pwa-ios-step { font-size:1rem; line-height:1.6; margin-bottom:.55rem; }
 .pwa-ios-step b { color:var(--accent,#c8692a); }
 .pwa-ios-close { position:absolute; top:12px; right:12px; background:var(--bg,rgba(0,0,0,.06)); border:none;
-  width:38px; height:38px; border-radius:50%; font-size:18px; cursor:pointer; color:var(--muted,#888);
+  width:38px; height:38px; border-radius:50%; font-size:1.285714rem; cursor:pointer; color:var(--muted,#888);
   display:flex; align-items:center; justify-content:center; }
 @media (prefers-reduced-motion: reduce) { .pwa-ios-card { animation:none; } }`;
 

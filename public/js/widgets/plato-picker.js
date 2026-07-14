@@ -61,7 +61,7 @@
   font-weight: 700; font-size: 1.1rem;
 }
 .pp-close {
-  background: none; border: none; font-size: 20px; cursor: pointer;
+  background: none; border: none; font-size:1.428571rem; cursor: pointer;
   color: var(--muted, #888);
   min-width: 44px; min-height: 44px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -76,7 +76,7 @@
   border: 1px solid var(--border, rgba(0,0,0,.15));
   border-radius: 8px;
   padding: 0 0.75rem;
-  font-size: 16px;
+  font-size:1.142857rem;
   height: 44px;
   background: var(--bg, #f5f1ed);
   color: var(--text, #1a1410);
@@ -118,11 +118,11 @@
   border-radius: var(--r, 10px);
   background: var(--surface, #eee);
   display: flex; align-items: center; justify-content: center;
-  font-size: 32px; color: var(--muted, #aaa);
+  font-size:2.285714rem; color: var(--muted, #aaa);
   border: 1px solid var(--border, rgba(0,0,0,.1));
 }
 .pp-name {
-  font-size: 12px; font-weight: 600;
+  font-size:0.857143rem; font-weight: 600;
   color: var(--text, #1a1410);
   line-height: 1.3;
   max-width: 130px;
@@ -131,7 +131,7 @@
 .pp-empty {
   grid-column: 1 / -1;
   text-align: center; padding: 2rem;
-  color: var(--muted, #888); font-size: 13px;
+  color: var(--muted, #888); font-size:0.928571rem;
 }
 /* ── Modo multi-selección ── */
 .pp-card { position: relative; }
@@ -142,16 +142,16 @@
 .pp-check {
   position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
   border-radius: 50%; background: var(--accent, #c8692a); color: #fff;
-  font-size: 13px; line-height: 22px; text-align: center; display: none;
+  font-size:0.928571rem; line-height: 22px; text-align: center; display: none;
 }
 .pp-card.sel .pp-check { display: block; }
 .pp-ya {
-  position: absolute; top: 6px; left: 6px; font-size: 9.5px; font-weight: 700;
+  position: absolute; top: 6px; left: 6px; font-size:0.678571rem; font-weight: 700;
   color: var(--muted, #888); background: var(--surface, #fff);
   border: 1px solid var(--border, rgba(0,0,0,.1));
   border-radius: 6px; padding: 2px 5px;
 }
-.pp-count { font-size: 13px; font-weight: 700; color: var(--accent, #c8692a); white-space: nowrap; }
+.pp-count { font-size:0.928571rem; font-weight: 700; color: var(--accent, #c8692a); white-space: nowrap; }
 .pp-foot {
   display: none; flex-shrink: 0;
   padding: 10px 1.25rem calc(14px + env(safe-area-inset-bottom));
@@ -163,7 +163,7 @@
   width: 100%; min-height: 48px; border-radius: 10px; cursor: pointer;
   border: 1px solid var(--accent, #c8692a);
   background: var(--accent, #c8692a); color: #fff;
-  font-size: 15px; font-weight: 700;
+  font-size:1.071429rem; font-weight: 700;
 }
 .pp-confirm:active { transform: scale(.99); }
 `;

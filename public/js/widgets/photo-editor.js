@@ -63,13 +63,13 @@
 }
 .pe-name[hidden], .pe-desc[hidden], .pe-btn[hidden] { display: none; }
 .pe-desc {
-  font-size: 13.5px; color: rgba(255,255,255,0.85);
+  font-size:0.964286rem; color: rgba(255,255,255,0.85);
   text-align: center; max-width: 340px; line-height: 1.5;
 }
 .pe-actions { display: flex; gap: 0.6rem; margin-top: 0.25rem; flex-wrap: wrap; justify-content: center; }
 .pe-btn {
   display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px;
-  padding: 0 16px; border-radius: var(--r-sm, 7px); font-size: 14px; font-weight: 600;
+  padding: 0 16px; border-radius: var(--r-sm, 7px); font-size:1rem; font-weight: 600;
   cursor: pointer; border: 1px solid transparent; transition: all .15s ease;
 }
 .pe-btn:active { transform: scale(0.96); }
@@ -92,12 +92,12 @@
   position: absolute; top: 0; left: 0; transform-origin: 0 0; max-width: none;
   user-select: none; -webkit-user-drag: none; pointer-events: none;
 }
-.pe-crop-hint { font-size: 12.5px; color: rgba(255,255,255,0.8); text-align: center; max-width: 340px; }
+.pe-crop-hint { font-size:0.892857rem; color: rgba(255,255,255,0.8); text-align: center; max-width: 340px; }
 .pe-crop-zoom { width: min(86vw, 360px); max-width: 100%; height: 44px; cursor: pointer; accent-color: var(--accent, #c8692a); }
 .pe-close {
   position: absolute; top: calc(env(safe-area-inset-top, 0px) + 16px); right: 16px;
   background: rgba(255,255,255,0.16); border: none;
-  width: 44px; height: 44px; border-radius: 50%; color: #fff; font-size: 22px;
+  width: 44px; height: 44px; border-radius: 50%; color: #fff; font-size:1.571429rem;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: background .15s ease;
 }

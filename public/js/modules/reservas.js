@@ -57,9 +57,9 @@ function renderReservaCard(r, withActions) {
 
   const mesaSelector = (withActions && !r.es_full && !r.es_cancelado) ? `
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem">
-      <span style="font-size:12px;color:var(--muted)">Mesa:</span>
+      <span style="font-size:0.857143rem;color:var(--muted)">Mesa:</span>
       <input type="number" id="mesa-res-${r.id}" value="${r.mesa || ''}" min="1" placeholder="N° mesa"
-        style="width:80px;border:1px solid var(--border);border-radius:5px;padding:3px 6px;font-size:12px;background:var(--bg)" />
+        style="width:80px;border:1px solid var(--border);border-radius:5px;padding:3px 6px;font-size:0.857143rem;background:var(--bg)" />
       <button class="btn btn-ghost btn-sm" onclick="asignarMesaReserva(${r.id})">Asignar</button>
     </div>` : '';
 
@@ -88,17 +88,17 @@ function renderReservaCard(r, withActions) {
       <div class="order-card-header">
         <div>
           <strong>${esc(r.nombre_cliente)}</strong>
-          ${r.mesa ? `<span style="font-size:12px;color:var(--muted)"> · Mesa ${r.mesa}</span>` : ''}
-          ${r.telefono_cliente ? `<span style="font-size:12px;color:var(--muted)"> · ${esc(r.telefono_cliente)}</span>` : ''}
+          ${r.mesa ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${r.mesa}</span>` : ''}
+          ${r.telefono_cliente ? `<span style="font-size:0.857143rem;color:var(--muted)"> · ${esc(r.telefono_cliente)}</span>` : ''}
           ${badgeModalidad(r.modalidad)}
-          ${r.codigo ? `<div style="font-family:monospace;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.1em;margin-top:3px">🔑 ${r.codigo}</div>` : ''}
+          ${r.codigo ? `<div style="font-family:monospace;font-size:0.928571rem;font-weight:700;color:var(--accent);letter-spacing:.1em;margin-top:3px">🔑 ${r.codigo}</div>` : ''}
         </div>
         ${badgeEst(r.estatus)}
       </div>
       <div class="order-meta">
         <span>📅 ${fDate(r.fecha)}</span>
-        ${r.hora_llegada ? `<span style="color:var(--primary);font-size:11px;font-weight:600">🕐 ${r.hora_llegada}</span>` : ''}
-        <span style="color:var(--muted);font-size:11px">Creada ${fDT(r.created_at)}</span>
+        ${r.hora_llegada ? `<span style="color:var(--primary);font-size:0.785714rem;font-weight:600">🕐 ${r.hora_llegada}</span>` : ''}
+        <span style="color:var(--muted);font-size:0.785714rem">Creada ${fDT(r.created_at)}</span>
         ${r.es_full && r.total > 0
           ? `<span style="color:var(--accent);font-weight:700">S/ ${Number(r.total).toFixed(2)}</span>`
           : `<span style="color:var(--muted)">S/ 0.00</span>`}
@@ -106,7 +106,7 @@ function renderReservaCard(r, withActions) {
       ${r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteResHtml}</div>` : ''}
       ${tieneItems
         ? `<div class="order-items">${cartaLines}${menuLines}</div>`
-        : `<div style="font-size:11px;color:var(--muted);margin-bottom:0.5rem">Sin ítems registrados</div>`}
+        : `<div style="font-size:0.785714rem;color:var(--muted);margin-bottom:0.5rem">Sin ítems registrados</div>`}
       ${mesaSelector}
       ${actions}
     </div>`;

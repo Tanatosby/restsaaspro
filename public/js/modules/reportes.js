@@ -14,7 +14,7 @@ function sc(label, value, cls) {
 function renderBarChart(containerId, countObj, emptyMsg, color = '') {
   const el = document.getElementById(containerId);
   const entries = Object.entries(countObj).sort((a,b) => b[1]-a[1]).slice(0, 8);
-  if (!entries.length) { el.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:1rem">${emptyMsg}</div>`; return; }
+  if (!entries.length) { el.innerHTML = `<div style="font-size:0.857143rem;color:var(--muted);text-align:center;padding:1rem">${emptyMsg}</div>`; return; }
   const max = entries[0][1];
   el.innerHTML = entries.map(([name, count]) => `
     <div class="bar-row">
@@ -325,7 +325,7 @@ async function loadPedidosFiltros() {
     const lista = pedidosTipoActual === 'menu' ? data.secciones : data.categorias;
 
     if (!lista.length) {
-      wrap.innerHTML = `<span style="font-size:12px;color:var(--muted)">Sin ${pedidosTipoActual === 'menu' ? 'secciones' : 'categorías'} configuradas</span>`;
+      wrap.innerHTML = `<span style="font-size:0.857143rem;color:var(--muted)">Sin ${pedidosTipoActual === 'menu' ? 'secciones' : 'categorías'} configuradas</span>`;
       return;
     }
 
@@ -337,7 +337,7 @@ async function loadPedidosFiltros() {
     pedidosFiltroActual = lista[0];
     await loadPedidos();
   } catch(e) {
-    wrap.innerHTML = `<span style="font-size:12px;color:var(--muted)">${e.message}</span>`;
+    wrap.innerHTML = `<span style="font-size:0.857143rem;color:var(--muted)">${e.message}</span>`;
   }
 }
 

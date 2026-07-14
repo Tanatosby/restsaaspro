@@ -2,6 +2,31 @@
 
 ---
 
+## ✅ Sesión 2026-07-14 (parte 2) — Tamaño de letra ajustable en el panel del owner
+
+**Prompt:** "ahora para aumentar el tamaño de letra" — siguiente ítem del backlog documentado en `features.md` (anotado 2026-07-13).
+
+**Decisiones de diseño (2 preguntas al usuario antes de implementar, vía AskUserQuestion):** 3 niveles fijos (Normal/Grande/Muy grande), control solo dentro de Configuración (no en el sidebar).
+
+**Mecanismo — diagnóstico técnico probado empíricamente antes de decidir:**
+1. `zoom` (probado primero por ser el cambio de menor alcance) **se descartó** — verificado con Playwright que rompe `grid-template-columns: repeat(auto-fill, minmax(...))` del Home: `.home-card` terminaba renderizando en fila (hasta 1270px de ancho en un viewport de 360px) en vez de apilarse en columna.
+2. Se optó por convertir mecánicamente los ~247 `font-size` en `px` de `owner.css` + `owner.html` + 9 módulos JS + 5 widgets a `rem` (script de migración temporal en el scratchpad, no versionado) y escalar con `--font-scale` sobre `html,body`.
+
+**Bug propio detectado y corregido en el camino (antes de commitear):** la primera pasada dividió cada `px` por 16 (el default del navegador) en vez de por 14 (la base real de `html,body{font-size:14px}` del proyecto desde antes de este cambio) — eso encogía **todo el panel ~12.5%** incluso en el nivel "Normal", y además dejaba los inputs marcados originalmente como 16px (regla obligatoria anti-zoom de iOS) por debajo del mínimo. Como los archivos migrados no estaban commiteados aún, se revirtieron con `git checkout` (Gap 18 de la sesión anterior ya estaba a salvo en el commit `ed4293f`) y se rehizo la conversión dividiendo por 14.
+
+**Implementado:**
+- `utils`/CSS: `html,body { font-size: calc(14px * var(--font-scale, 1)); }` — raíz en `px` absoluto (un `rem` en el propio elemento raíz se resolvería contra el default del navegador, no contra sí mismo, reintroduciendo el mismo bug).
+- Resto del CSS/JS convertido a `rem` relativo a esa raíz (script mecánico: `rem = px / 14`, redondeado a 6 decimales).
+- `public/owner.html`: script en `<head>` (mismo patrón que el tema claro/oscuro, aplicado antes del paint para evitar flash) — lee `localStorage['mp-font-scale']`, aplica `--font-scale`, expone `window.setFontScale(factor)`. Nueva card "🔤 Tamaño de letra" en Configuración con 3 botones.
+- `public/js/modules/config.js`: `loadConfiguracion()` marca el botón activo según `localStorage`.
+- `public/css/owner.css`: `.font-scale-btn`/`.font-scale-btn.active`.
+
+**Verificación con Playwright (JWT firmado localmente + sessionStorage simulado, sin adivinar contraseñas):** a escala Normal, cada elemento reproduce el `px` original exacto (`brand-icon` 20px, `.nav-item` 14px, 5 inputs muestreados incluidos los del horario de atención — todos en 16px, igual que antes); a 1.3 el root pasa a 18.2px y un input de 16px pasa a 20.8px (proporcional, nunca por debajo de 16px ya que los 3 niveles son siempre ≥100%); sin overflow horizontal en Home/Configuración/Cola del día en los 3 niveles (`scrollWidth === innerWidth` siempre). Persistencia confirmada tras recargar (aplicado antes del paint, sin flash). **267/267 jest verde** (sin cambios de backend).
+
+**Pendiente:** deploy a producción, acumulado con Gap 17/18 y los fixes ISS-018 a ISS-021.
+
+---
+
 ## ✅ Sesión 2026-07-14 — Gap 18: horario de atención configurable y estricto
 
 **Prompt:** siguiente ítem del backlog (Gap 18, anotado 2026-07-13). El usuario pidió que no se pueda registrar ninguna orden ni reserva antes de la hora de atención.

@@ -74,7 +74,7 @@ function renderCocinaTicket(o) {
   ).join('');
   const menuLines = o.menu_items.map(i =>
     `<div class="order-item-line">📋 <strong>${esc(i.plato)}</strong> ×${i.cantidad}
-      <span style="font-size:11px;color:var(--muted)">[${esc(i.seccion)}]</span>
+      <span style="font-size:0.785714rem;color:var(--muted)">[${esc(i.seccion)}]</span>
     </div>`
   ).join('');
 
@@ -89,8 +89,8 @@ function renderCocinaTicket(o) {
       <div class="order-card-header">
         <div>
           <strong>#${o.numero_dia ?? o.id}</strong>
-          ${o.mesa ? `<span style="font-size:12px;color:var(--muted)"> · Mesa ${o.mesa}</span>` : ''}
-          ${o.nombre_cliente ? `<span style="font-size:12px;color:var(--muted)"> · ${esc(o.nombre_cliente)}</span>` : ''}
+          ${o.mesa ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${o.mesa}</span>` : ''}
+          ${o.nombre_cliente ? `<span style="font-size:0.857143rem;color:var(--muted)"> · ${esc(o.nombre_cliente)}</span>` : ''}
         </div>
         ${badgeEst(o.estatus)}
       </div>
@@ -102,7 +102,7 @@ function renderCocinaTicket(o) {
 function renderCocinaReserva(r) {
   const menuLines = (r.menu_items || []).map(i =>
     `<div class="order-item-line">📋 <strong>${esc(i.plato)}</strong> ×${i.cantidad}
-      <span style="font-size:11px;color:var(--muted)">[${esc(i.seccion)}]</span>
+      <span style="font-size:0.785714rem;color:var(--muted)">[${esc(i.seccion)}]</span>
     </div>`
   ).join('');
   const cartaLines = (r.carta_items || []).map(i =>
@@ -110,10 +110,10 @@ function renderCocinaReserva(r) {
   ).join('');
 
   const horaTag = r.hora_llegada
-    ? `<span style="font-size:12px;color:var(--muted)"> · 🕐 ${r.hora_llegada}</span>`
+    ? `<span style="font-size:0.857143rem;color:var(--muted)"> · 🕐 ${r.hora_llegada}</span>`
     : '';
   const mesaTag = r.mesa
-    ? `<span style="font-size:12px;color:var(--muted)"> · Mesa ${r.mesa}</span>`
+    ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${r.mesa}</span>`
     : '';
 
   return `
@@ -121,9 +121,9 @@ function renderCocinaReserva(r) {
       <div class="order-card-header">
         <div>
           <strong>📅 ${esc(r.nombre_cliente)}</strong>${mesaTag}${horaTag}
-          ${r.codigo ? `<span style="font-size:11px;color:var(--muted)"> · 🔑 ${r.codigo}</span>` : ''}
+          ${r.codigo ? `<span style="font-size:0.785714rem;color:var(--muted)"> · 🔑 ${r.codigo}</span>` : ''}
         </div>
-        <span class="badge" style="background:#eef2ff;color:#4338ca;font-size:11px">Reserva</span>
+        <span class="badge" style="background:#eef2ff;color:#4338ca;font-size:0.785714rem">Reserva</span>
       </div>
       <div class="order-items">${menuLines}${cartaLines}</div>
       <div class="order-actions">

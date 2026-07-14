@@ -7,17 +7,17 @@
 function badgeModalidad(modalidad) {
   if (!modalidad || modalidad === 'en_local') return '';
   if (modalidad === 'para_llevar')
-    return `<span style="font-size:11px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:20px;font-weight:600">🥡 Para llevar</span>`;
+    return `<span style="font-size:0.785714rem;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:20px;font-weight:600">🥡 Para llevar</span>`;
   if (modalidad === 'delivery')
-    return `<span style="font-size:11px;background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:20px;font-weight:600">🛵 Delivery</span>`;
+    return `<span style="font-size:0.785714rem;background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:20px;font-weight:600">🛵 Delivery</span>`;
   return '';
 }
 
 function badgePago(o) {
   if (!o.metodo_pago) return '';
   const metodoLabel = { yape: '💚 Yape', plin: '🔵 Plin', efectivo: '💵 Efectivo' }[o.metodo_pago] || o.metodo_pago;
-  if (o.estado_pago === 'confirmado') return `<span style="font-size:11px;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-weight:600">${metodoLabel} · ✓ Confirmado</span>`;
-  if (o.estado_pago === 'enviado')    return `<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-weight:600">${metodoLabel} · Pendiente confirmación</span>`;
+  if (o.estado_pago === 'confirmado') return `<span style="font-size:0.785714rem;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-weight:600">${metodoLabel} · ✓ Confirmado</span>`;
+  if (o.estado_pago === 'enviado')    return `<span style="font-size:0.785714rem;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-weight:600">${metodoLabel} · Pendiente confirmación</span>`;
   return '';
 }
 
@@ -112,8 +112,8 @@ function renderOrdenCard(o, withActions) {
       <div class="order-card-header">
         <div>
           <strong>#${o.numero_dia ?? o.id}</strong>
-          ${o.mesa ? `<span style="font-size:12px;color:var(--muted)"> · Mesa ${o.mesa}</span>` : ''}
-          ${o.nombre_cliente ? `<span style="font-size:12px;color:var(--muted)"> · ${esc(o.nombre_cliente)}</span>` : ''}
+          ${o.mesa ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${o.mesa}</span>` : ''}
+          ${o.nombre_cliente ? `<span style="font-size:0.857143rem;color:var(--muted)"> · ${esc(o.nombre_cliente)}</span>` : ''}
           ${badgeModalidad(o.modalidad)}
         </div>
         ${badgeEst(o.estatus)}

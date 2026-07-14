@@ -86,6 +86,13 @@ async function loadConfiguracion() {
 
     generarQR(cfg.slug || null);
     loadMesasConfig();
+
+    // Tamaño de letra ajustable — preferencia por dispositivo (localStorage, no viaja al backend)
+    let scaleActual = parseFloat(localStorage.getItem('mp-font-scale'));
+    if (![1, 1.15, 1.3].includes(scaleActual)) scaleActual = 1;
+    document.querySelectorAll('.font-scale-btn').forEach(btn => {
+      btn.classList.toggle('active', parseFloat(btn.dataset.scale) === scaleActual);
+    });
   } catch(e) { toast(e.message, 'err'); }
 }
 
@@ -177,16 +184,16 @@ async function loadMesasConfig() {
   try {
     const mesas = await api('GET', '/api/mesas');
     if (!mesas.length) {
-      el.innerHTML = '<span style="font-size:12px;color:var(--muted)">Sin mesas configuradas</span>';
+      el.innerHTML = '<span style="font-size:0.857143rem;color:var(--muted)">Sin mesas configuradas</span>';
       return;
     }
     el.innerHTML = mesas.map(m => `
-      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:0.928571rem">
         <span style="font-weight:700">Mesa ${m.numero}</span>
-        <span style="color:var(--muted);font-size:11px">${m.capacidad} personas</span>
-        <button onclick="eliminarMesa(${m.id}, ${m.numero})" style="margin-left:4px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 2px" title="Eliminar">✕</button>
+        <span style="color:var(--muted);font-size:0.785714rem">${m.capacidad} personas</span>
+        <button onclick="eliminarMesa(${m.id}, ${m.numero})" style="margin-left:4px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.928571rem;padding:0 2px" title="Eliminar">✕</button>
       </div>`).join('');
-  } catch(e) { el.innerHTML = `<span style="color:var(--danger);font-size:12px">${e.message}</span>`; }
+  } catch(e) { el.innerHTML = `<span style="color:var(--danger);font-size:0.857143rem">${e.message}</span>`; }
 }
 
 async function crearMesa() {
@@ -268,7 +275,7 @@ function generarQRsMesas() {
     new QRCode(canvasWrap, { text: url, width: 110, height: 110, colorDark: '#1a1612', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
 
     const label = document.createElement('span');
-    label.style.cssText = 'font-size:12px;font-weight:700;color:var(--text)';
+    label.style.cssText = 'font-size:0.857143rem;font-weight:700;color:var(--text)';
     label.textContent = `Mesa ${i}`;
 
     const btn = document.createElement('button');

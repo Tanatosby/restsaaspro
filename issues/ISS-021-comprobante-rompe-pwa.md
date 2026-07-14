@@ -42,3 +42,15 @@ De paso se eliminó la triplicación del mismo snippet (existía una copia casi 
 - El modal muestra la foto correcta y cierra con el botón ✕.
 
 **254/254 jest verde.** Nota aparte: el `FOREIGN KEY constraint failed` de los logs de producción (ver ISS-020) no correlacionó con este bug — queda como asunto separado, a monitorear con el logging mejorado. Pendiente: desplegar a producción.
+
+## Re-reporte 2026-07-14 — mismo síntoma en producción
+
+**Reporte del usuario:** "la imagen de pagos no envía ningún tipo de request... es la visualización de la imagen desde la cola, desde la cola no se puede ver el popup de la imagen... que no se vaya a otra página, sino que aparezca ahí mismo."
+
+**Diagnóstico:** se reprodujo el flujo completo contra el código actual de `main` (rama con el fix ya aplicado) con Playwright — orden real creada vía API pública, comprobante subido con una foto JPEG real y decodificable (no el buffer de prueba de 16 bytes que usan los scripts de test), movida a "Por cobrar", y clic en la miniatura desde Cola del día:
+- Miniatura se renderiza a 56×56px correctamente (`naturalWidth`/`naturalHeight` reales, sin corrupción).
+- El clic abre `#comprobante-modal` in-app, con el `src` correcto, **sin** navegar a otra página ni abrir pestañas nuevas.
+
+Es decir: **el código en `main` ya no tiene este bug** — es exactamente el comportamiento que este issue arregló el 2026-07-13. La causa del re-reporte es que el fix **nunca se desplegó a producción** (`status.md` viene arrastrando "pendiente: desplegar" desde el 2026-07-13 parte 2, a través de 4+ sesiones sucesivas: Gap 17, Gap 18, tamaño de letra). El owner en producción sigue con el `<a target="_blank">` roto original.
+
+**Acción:** no requiere cambio de código nuevo — requiere **desplegar `main` a producción** (`git pull origin main` + `pm2 restart menupro` en el servidor `147.182.135.252`). El entorno automatizado de esta sesión no tiene acceso SSH (la clave `id_rsa` tiene passphrase, ver sesión 2026-06-06 en `status.md`) — el deploy debe hacerlo el usuario manualmente (consola web del Droplet o SSH interactivo).

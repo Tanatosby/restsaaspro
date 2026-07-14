@@ -17,10 +17,17 @@ El usuario preguntó puntualmente: "¿cuántos platos voy hasta ahora?", "¿qué
 
 **Alcance propuesto:** (1) fix rápido del contenedor (`position:relative;height:280px` en `#chart-pedidos-wrap`, igual que los otros 2 gráficos); (2) nuevo filtro de fecha (día actual por default, con opción de rango) en `GET /api/reportes/pedidos`; (3) evaluar una vista resumen "Hoy" que no requiera elegir sección/categoría manualmente — posible pestaña nueva o vista por defecto al abrir el panel Reportes.
 
-### Tamaño de letra ajustable / auto-configurable en el panel del owner
-*Anotado 2026-07-13, pendiente de implementar.*
+### ~~Tamaño de letra ajustable en el panel del owner~~ ✅ Completado 2026-07-14
 
-No existe hoy ningún control de tamaño de fuente en `owner.html` — el usuario pidió poder aumentar el tamaño de letra, idealmente que se autoconfigure según el dispositivo/pantalla de quien usa la app (dueño u operador). Es una feature de accesibilidad, relevante porque el sistema vive 100% en celulares de gama media (ver `vision_negocio.md` principio 1). Alcance a definir: control manual (ej. 3 tamaños: normal/grande/muy grande, persistido en `localStorage`, aplicado vía variable CSS `--font-scale` multiplicando los `font-size` base de `owner.css`) vs. detección automática por `prefers-contrast`/tamaño de viewport — a decidir antes de implementar.
+~~No existe hoy ningún control de tamaño de fuente en `owner.html`...~~
+
+**Decisión de alcance:** 3 niveles fijos (Normal/Grande/Muy grande), control manual dentro de Configuración (no en el sidebar), sin auto-detección.
+
+**Diagnóstico técnico previo:** `zoom` (probado primero por ser el cambio de menor alcance) se descartó — rompe `grid-template-columns: repeat(auto-fill, minmax(...))` del Home (`.home-card` terminaba render como fila de 3-4 cards muy por fuera del viewport en vez de apilarse). Se optó por convertir mecánicamente los ~247 `font-size` en `px` de `owner.css` + `owner.html` + 9 módulos JS + 5 widgets a `rem` (script de migración temporal, no versionado), y escalar con la variable `--font-scale` sobre `html,body`.
+
+**Bug propio detectado y corregido en el camino:** la primera pasada dividió cada `px` por 16 (el default del navegador) en vez de por 14 (la base real declarada en `html,body{font-size:14px}` desde antes de este cambio) — eso encogía **todo el panel ~12.5%** incluso en el nivel "Normal". Se revirtió (los archivos no estaban commiteados aún) y se rehizo dividiendo por 14; verificado con Playwright que a escala Normal cada elemento reproduce el px original exacto (`brand-icon` 20px, `.nav-item` 14px, inputs a 16px — igual que antes del cambio), y que a 1.15/1.3 escala proporcionalmente sin overflow horizontal en Home/Configuración/Cola del día (`scrollWidth === innerWidth` en los 3 niveles). Como los 3 niveles son siempre ≥100%, ningún input cae nunca por debajo de los 16px obligatorios contra el zoom automático de iOS.
+
+**Implementado:** `--font-scale` (1/1.15/1.3) en `html,body` vía `calc(14px * var(--font-scale,1))` (raíz en `px` absoluto — un `rem` en el propio elemento raíz se resolvería contra el default del navegador, no contra sí mismo). Persistencia en `localStorage` (`mp-font-scale`, por dispositivo, no viaja al backend), aplicado antes del paint (mismo patrón que el tema claro/oscuro) para evitar flash. Card "🔤 Tamaño de letra" en Configuración con 3 botones.
 
 ### ~~Galerías de platos y menús — desktop apretado~~ ✅ Completado 2026-06-08
 
