@@ -169,7 +169,7 @@
     <div class="drawer-body">
       <div id="drawer-items"></div>
       <div class="nombre-field">
-        <label for="nombre-cliente">Tu nombre (opcional)</label>
+        <label for="nombre-cliente">Tu nombre</label>
         <input id="nombre-cliente" type="text" placeholder="Ej: Juan" maxlength="50" />
       </div>
       <!-- Modalidad de orden (solo si para_llevar está activo) -->
@@ -215,7 +215,7 @@
   </div>
 
   <!-- ── Payment screen ── -->
-  <div class="confirm-screen" id="pago-screen">
+  <div class="confirm-screen" id="pago-screen" style="justify-content:flex-start;overflow-y:auto">
     <div style="width:100%;max-width:400px;padding:0 1rem">
       <div class="confirm-title" style="font-size:1.4rem">💳 ¿Cómo vas a pagar?</div>
       <div id="pago-orden-ref" style="font-size:13px;color:var(--muted);margin-bottom:1.25rem"></div>
@@ -240,6 +240,35 @@
       <div style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1.5rem">
         <button id="btn-ya-pague" class="btn-confirmar" onclick="enviarPago()" style="display:none">✓ Ya pagué</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Payment review screen (repaso final antes de enviar) ── -->
+  <div class="confirm-screen" id="repaso-screen" style="justify-content:flex-start;overflow-y:auto">
+    <div style="width:100%;max-width:400px;padding:0 1rem 2rem">
+      <button onclick="volverAPago()" aria-label="Volver" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:1rem 0 0.25rem;color:var(--text)">←</button>
+      <div class="confirm-title" id="repaso-titulo" style="font-size:1.4rem">📋 Revisa tu pedido</div>
+
+      <div class="nombre-field" style="margin-top:0.75rem">
+        <label>Nombre</label>
+        <div id="repaso-nombre" style="font-size:14.5px;font-weight:700;color:var(--text)"></div>
+      </div>
+
+      <div id="repaso-items" style="margin-top:0.5rem"></div>
+      <div class="cart-total">
+        <span>Total</span>
+        <span class="cart-total-price" id="repaso-total">S/ 0.00</span>
+      </div>
+
+      <div style="margin-top:1rem;padding:0.85rem 1rem;background:var(--bg-2, rgba(0,0,0,.03));border-radius:12px;text-align:left">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:4px">Método de pago</div>
+        <div id="repaso-metodo" style="font-size:14.5px;font-weight:700;color:var(--text)"></div>
+        <div id="repaso-foto-wrap" style="display:none;margin-top:8px">
+          <img id="repaso-foto-img" src="" alt="Comprobante" style="max-height:90px;border-radius:8px;border:1px solid var(--border)">
+        </div>
+      </div>
+
+      <button id="btn-repaso-confirmar" class="btn-confirmar" style="margin-top:1.5rem" onclick="confirmarEnvioFinal()">✓ Confirmar pedido</button>
     </div>
   </div>
 
@@ -310,10 +339,12 @@
   // Pago state
   let modalidades          = { para_llevar: true, delivery: false }; // activas del restaurante
   let pagoInfo             = null; // { yape, plin, efectivo } del restaurante
-  let pagoOrdenId          = null;
-  let pagoTipo             = null; // 'orden' | 'reserva'
+  // Orden/reserva armada en memoria mientras el cliente resuelve el pago —
+  // no se crea nada en el backend hasta confirmarEnvioFinal(). Gate de pago
+  // obligatorio (Gap 17, vision_negocio.md): antes el pedido se creaba de
+  // entrada y el pago quedaba como paso posterior, sin bloquear nada.
+  let pagoPendiente        = null; // { tipo, payload, nombre, items, total, metodo, foto }
   let pagoMetodo           = null;
-  let pagoCodigoReserva    = null; // código de la reserva en curso
   let codigoReservaActual  = null; // código pre-llenado en la pantalla de estado
   let estadoPollInterval   = null; // polling de la pantalla de estado
 
@@ -370,6 +401,14 @@
       pagoInfo    = restData.pagos       || null;
       modalidades = restData.modalidades || { para_llevar: true, delivery: false };
       initModalidadSelectors();
+
+      // Si hay algún método de pago activo, el pago se resuelve ANTES de
+      // crear el pedido/reserva — los botones reflejan que el siguiente
+      // paso es ir a pagar, no enviar directo.
+      if (pagoInfo && (pagoInfo.yape || pagoInfo.plin || pagoInfo.efectivo)) {
+        document.getElementById('btn-confirmar').textContent = 'Ir a pagar →';
+        document.getElementById('btn-reservar').textContent  = 'Ir a pagar →';
+      }
 
       // Aplicar colores del restaurante
       if (restData.color_primario) {
@@ -754,31 +793,58 @@ async function renderReservarContent() {
     return sel ? sel.value : 'en_local';
   }
 
+  // Crea la orden vía API. Separado de confirmarPedido() porque ahora puede
+  // dispararse en 2 momentos distintos: directo (si el restaurante no tiene
+  // ningún método de pago activo) o recién al final del repaso de pago.
+  async function crearOrden(payload) {
+    const res = await fetch('/api/public/orders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al enviar');
+    return data;
+  }
+
   async function confirmarPedido() {
     if (!cart.length) return;
-    const btn = document.getElementById('btn-confirmar');
-    btn.disabled = true; btn.textContent = 'Enviando…';
+    const nombre = document.getElementById('nombre-cliente').value.trim();
+    if (!nombre) return showMsg('Tu nombre es requerido', true);
 
     const cartaItems = cart.filter(i => i.type === 'carta').map(i => ({ id_plato_carta: i.platoId, cantidad: i.cantidad }));
     const menuItems  = cart.filter(i => i.type === 'menu').flatMap(i => i.payload.menuItems);
+    const payload = {
+      id_restaurante: parseInt(restauranteId),
+      mesa:           mesa ? parseInt(mesa) : null,
+      nombre_cliente: nombre,
+      modalidad:      getModalidadOrden(),
+      carta_items: cartaItems, menu_items: menuItems
+    };
 
-    try {
-      const res = await fetch('/api/public/orders', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_restaurante: parseInt(restauranteId),
-          mesa:           mesa ? parseInt(mesa) : null,
-          nombre_cliente: document.getElementById('nombre-cliente').value.trim() || null,
-          modalidad:      getModalidadOrden(),
-          carta_items: cartaItems, menu_items: menuItems
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al enviar');
+    const tienePagos = pagoInfo && (pagoInfo.yape || pagoInfo.plin || pagoInfo.efectivo);
+
+    // Si hay algún método de pago activo, todavía no se crea nada — el
+    // pedido recién se envía al confirmar en la pantalla de repaso, después
+    // de elegir método de pago (antes se creaba acá y el pago quedaba como
+    // paso posterior, sin bloquear nada — ver Gap 17 en vision_negocio.md).
+    if (tienePagos) {
+      const cargo = getModalidadOrden() === 'para_llevar' ? (modalidades.costo_tapper || 0) : 0;
+      pagoPendiente = {
+        tipo: 'orden', payload, nombre,
+        items: cart.slice(),
+        total: cart.reduce((s, i) => s + i.precio, 0) + cargo,
+      };
       closeDrawer();
-      const tienePagos = pagoInfo && (pagoInfo.yape || pagoInfo.plin || pagoInfo.efectivo);
-      if (tienePagos) showPagoStep(data.id_orden);
-      else            showConfirm('pedir', data.id_orden);
+      showPagoStep();
+      return;
+    }
+
+    const btn = document.getElementById('btn-confirmar');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const data = await crearOrden(payload);
+      closeDrawer();
+      showConfirm('pedir', data.id_orden);
     } catch(e) {
       showMsg(e.message, true);
     } finally {
@@ -828,6 +894,16 @@ async function renderReservarContent() {
     updateResCartSummary();
   }
 
+  async function crearReserva(payload) {
+    const res = await fetch('/api/public/reservations', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al reservar');
+    return data;
+  }
+
   async function confirmarReserva() {
     const nombre   = document.getElementById('res-nombre').value.trim();
     const telefono = document.getElementById('res-telefono').value.trim();
@@ -838,31 +914,42 @@ async function renderReservarContent() {
     if (!fecha)   return showMsg('La fecha es requerida', true);
     if (!resCart.length) return showMsg('Agrega al menos un ítem a la reserva', true);
 
-    const btn = document.getElementById('btn-reservar');
-    btn.disabled = true; btn.textContent = 'Enviando…';
-
     const cartaItems = resCart.filter(i => i.type === 'carta').map(i => ({ id_plato_carta: i.platoId, cantidad: i.cantidad }));
     const menuItems  = resCart.filter(i => i.type === 'menu').flatMap(i => i.payload.menuItems);
+    const payload = {
+      id_restaurante:   parseInt(restauranteId),
+      nombre_cliente:   nombre,
+      telefono_cliente: telefono || null,
+      fecha,
+      hora_llegada:     hora || null,
+      modalidad:        getModalidadReserva(),
+      carta_items: cartaItems,
+      menu_items:  menuItems
+    };
 
+    const tienePagos = pagoInfo && (pagoInfo.yape || pagoInfo.plin || pagoInfo.efectivo);
+
+    // Mismo gate que confirmarPedido(): si hay pago activo, todavía no se
+    // crea la reserva — recién se envía al confirmar en el repaso final.
+    if (tienePagos) {
+      const mod = getModalidadReserva();
+      let cargo = 0;
+      if (mod === 'para_llevar') cargo = modalidades.costo_tapper || 0;
+      if (mod === 'delivery')    cargo = (modalidades.costo_tapper || 0) + (modalidades.tarifa_delivery || 0);
+      pagoPendiente = {
+        tipo: 'reserva', payload, nombre,
+        items: resCart.slice(),
+        total: resCart.reduce((s, i) => s + i.precio, 0) + cargo,
+      };
+      showPagoStep();
+      return;
+    }
+
+    const btn = document.getElementById('btn-reservar');
+    btn.disabled = true; btn.textContent = 'Enviando…';
     try {
-      const res = await fetch('/api/public/reservations', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_restaurante:   parseInt(restauranteId),
-          nombre_cliente:   nombre,
-          telefono_cliente: telefono || null,
-          fecha,
-          hora_llegada:     hora || null,
-          modalidad:        getModalidadReserva(),
-          carta_items: cartaItems,
-          menu_items:  menuItems
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al reservar');
-      const tienePagos = pagoInfo && (pagoInfo.yape || pagoInfo.plin || pagoInfo.efectivo);
-      if (tienePagos) showPagoStep(data.id_reserva, 'reserva', data.codigo);
-      else            showConfirm('reservar', data.id_reserva, data.codigo);
+      const data = await crearReserva(payload);
+      showConfirm('reservar', data.id_reserva, data.codigo);
     } catch(e) {
       showMsg(e.message, true);
     } finally {
@@ -871,12 +958,11 @@ async function renderReservarContent() {
   }
 
   // ── Payment step ─────────────────────────────────
-  function showPagoStep(id, tipo = 'orden', codigoReserva = null) {
-    pagoOrdenId       = id;
-    pagoTipo          = tipo;
-    pagoMetodo        = null;
-    pagoCodigoReserva = codigoReserva;
-    document.getElementById('pago-orden-ref').textContent = tipo === 'reserva' ? `Reserva #${id}` : `Orden #${id}`;
+  function showPagoStep() {
+    pagoMetodo = null;
+    const { tipo, items } = pagoPendiente;
+    document.getElementById('pago-orden-ref').textContent =
+      `${tipo === 'reserva' ? 'Tu reserva' : 'Tu pedido'} — ${items.length} ítem${items.length === 1 ? '' : 's'}`;
     document.getElementById('pago-metodo-detalle').innerHTML = '';
     document.getElementById('pago-comprobante-wrap').style.display = 'none';
     const btnPague = document.getElementById('btn-ya-pague');
@@ -963,32 +1049,93 @@ async function renderReservarContent() {
     reader.readAsDataURL(file);
   });
 
-  async function enviarPago() {
-    if (!pagoMetodo || !pagoOrdenId) return;
-    const foto = document.getElementById('pago-foto').files[0];
+  // "Ya pagué" — SOLO valida (foto adjunta si aplica) y guarda el método
+  // elegido. Todavía no crea nada ni llama al backend: eso ocurre recién en
+  // confirmarEnvioFinal(), tras el repaso final que pidió el usuario.
+  function enviarPago() {
+    if (!pagoMetodo || !pagoPendiente) return;
+    const foto = document.getElementById('pago-foto').files[0] || null;
     if (['yape', 'plin'].includes(pagoMetodo) && !foto)
       return showMsg('Adjunta la foto del comprobante para continuar', true);
 
-    const btn = document.getElementById('btn-ya-pague');
+    pagoPendiente.metodo = pagoMetodo;
+    pagoPendiente.foto   = foto;
+
+    document.getElementById('pago-screen').classList.remove('show');
+    showRepasoStep();
+  }
+
+  // ── Payment review step (repaso final) ────────────
+  const METODO_LABEL = { yape: '💚 Yape', plin: '🔵 Plin', efectivo: '💵 Efectivo' };
+
+  function showRepasoStep() {
+    const { tipo, nombre, items, total, metodo, foto } = pagoPendiente;
+    const isReserva = tipo === 'reserva';
+
+    document.getElementById('repaso-titulo').textContent = isReserva ? '📋 Revisa tu reserva' : '📋 Revisa tu pedido';
+    document.getElementById('repaso-nombre').textContent = nombre;
+    document.getElementById('repaso-metodo').textContent = METODO_LABEL[metodo] || metodo;
+    document.getElementById('repaso-items').innerHTML = items.map(item => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${esc(item.label)}</div>
+          <div class="cart-item-sub">${esc(item.subLabel || '')}</div>
+        </div>
+        <span class="cart-item-price">S/ ${item.precio.toFixed(2)}</span>
+      </div>`).join('');
+    document.getElementById('repaso-total').textContent = `S/ ${total.toFixed(2)}`;
+
+    const fotoWrap = document.getElementById('repaso-foto-wrap');
+    if (foto) {
+      const reader = new FileReader();
+      reader.onload = e => { document.getElementById('repaso-foto-img').src = e.target.result; };
+      reader.readAsDataURL(foto);
+      fotoWrap.style.display = 'block';
+    } else {
+      fotoWrap.style.display = 'none';
+    }
+
+    const btn = document.getElementById('btn-repaso-confirmar');
+    btn.disabled = false;
+    btn.textContent = isReserva ? '✓ Confirmar reserva' : '✓ Confirmar pedido';
+
+    document.getElementById('repaso-screen').classList.add('show');
+  }
+
+  // Volver corrige el método sin perder nombre/ítems ya cargados en pagoPendiente.
+  function volverAPago() {
+    document.getElementById('repaso-screen').classList.remove('show');
+    showPagoStep();
+  }
+
+  // Acá recién se crea la orden/reserva en el backend y se le adjunta el
+  // pago — el único punto del flujo donde el pedido pasa a existir de verdad.
+  async function confirmarEnvioFinal() {
+    const btn = document.getElementById('btn-repaso-confirmar');
     btn.disabled = true; btn.textContent = 'Enviando…';
 
-    const formData = new FormData();
-    formData.append('metodo_pago', pagoMetodo);
-    if (foto) formData.append('foto', foto);
-
     try {
-      const endpoint = pagoTipo === 'reserva'
-        ? `/api/public/pago/reserva/${pagoOrdenId}`
-        : `/api/public/pago/orden/${pagoOrdenId}`;
+      const { tipo, payload, metodo, foto } = pagoPendiente;
+      const data = tipo === 'reserva' ? await crearReserva(payload) : await crearOrden(payload);
+      const id   = tipo === 'reserva' ? data.id_reserva : data.id_orden;
+
+      const formData = new FormData();
+      formData.append('metodo_pago', metodo);
+      if (foto) formData.append('foto', foto);
+      const endpoint = tipo === 'reserva'
+        ? `/api/public/pago/reserva/${id}`
+        : `/api/public/pago/orden/${id}`;
       const res = await fetch(endpoint, { method: 'PATCH', body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al registrar pago');
-      document.getElementById('pago-screen').classList.remove('show');
-      showConfirm(pagoTipo === 'reserva' ? 'reservar' : 'pedir', pagoOrdenId, pagoTipo === 'reserva' ? pagoCodigoReserva : null);
+      const pagoData = await res.json();
+      if (!res.ok) throw new Error(pagoData.error || 'Error al registrar el pago');
+
+      document.getElementById('repaso-screen').classList.remove('show');
+      showConfirm(tipo === 'reserva' ? 'reservar' : 'pedir', id, tipo === 'reserva' ? data.codigo : null);
+      pagoPendiente = null;
     } catch(e) {
       alert(e.message);
       btn.disabled = false;
-      btn.textContent = pagoMetodo === 'efectivo' ? '✓ Confirmar — pagaré en efectivo' : `✓ Ya pagué con ${pagoMetodo === 'yape' ? 'Yape' : 'Plin'}`;
+      btn.textContent = pagoPendiente.tipo === 'reserva' ? '✓ Confirmar reserva' : '✓ Confirmar pedido';
     }
   }
 
@@ -1160,12 +1307,13 @@ async function renderReservarContent() {
   function resetTodo() {
     cart = []; cartaQty = {}; menuSelections = {};
     resCart = []; resCartaQty = {}; resMenuSelections = {};
-    pagoOrdenId = null; pagoMetodo = null; pagoCodigoReserva = null;
+    pagoPendiente = null; pagoMetodo = null;
     document.getElementById('btn-ver-estado').style.display = 'none';
     document.getElementById('estado-screen').classList.remove('show');
     clearInterval(estadoPollInterval); estadoPollInterval = null;
     document.getElementById('confirm-screen').classList.remove('show');
     document.getElementById('pago-screen').classList.remove('show');
+    document.getElementById('repaso-screen').classList.remove('show');
     document.getElementById('nombre-cliente').value = '';
     document.getElementById('res-nombre').value     = '';
     document.getElementById('res-telefono').value   = '';

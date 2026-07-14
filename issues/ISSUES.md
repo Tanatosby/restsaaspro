@@ -22,6 +22,10 @@ _(vacío)_
 
 | ID | Título | Fecha resolución | Solución |
 |----|--------|-----------------|---------|
+| [ISS-021](ISS-021-comprobante-rompe-pwa.md) | Foto de comprobante en Cola no carga / rompe la app instalada | 2026-07-13 | `<a target="_blank">` sobre una PWA standalone instalada rompe el contenedor de la app (sobre todo en iOS). Reemplazado por modal in-app (`comprobanteThumb()` unificado en `utils.js`). |
+| [ISS-020](ISS-020-error-handler-sin-contexto.md) | Error handler global no loguea ruta ni stack trace | 2026-07-13 | `app.js` solo logueaba `err.message`. Ahora loguea `req.method`, `req.originalUrl` y `err.stack`. |
+| [ISS-019](ISS-019-trust-proxy.md) | `trust proxy` no configurado — rate-limiter falla en casi cada request | 2026-07-13 | Servidor detrás de Nginx sin `app.set('trust proxy', 1)`. Agregado en `app.js`. |
+| [ISS-018](ISS-018-boton-pago-sin-scroll.md) | Botón "Ya pagué" no visible / sin scroll en pantalla de pago | 2026-07-13 | `#pago-screen` sin `overflow-y`. Agregado `overflow-y:auto` + `justify-content:flex-start` (mismo patrón que `#estado-screen`). |
 | [ISS-017](ISS-017-boton-abrir-yape-roto.md) | Botón "Abrir Yape" abre página inexistente en `menu.html` | 2026-07-13 | `https://yape.com.pe/cobrar?phone=XXXX` no es un endpoint real de Yape. Reemplazado por botón "Copiar número" igual que Plin, sin deep link inexistente. |
 | [ISS-016](ISS-016-toggle-elegible-visible-no-actualiza.md) | Toggles "Cliente elige / Fijo" y "Visible / Oculto" no actualizan la UI | 2026-06-15 | `toggleElegibleMenu` y `toggleActivoMenu` solo llamaban `loadMenusDia()` (recarga la galería oculta). Fix: agregar `recargarModalConfig()` en ambas funciones para re-renderizar la vista de config activa. |
 | [ISS-015](ISS-015-foto-plato-menu-error.md) | La foto de un plato no se actualiza en pantalla tras "Cambiar foto" (caché por nombre de archivo fijo) | 2026-06-06 | Nombre versionado `plato_<id>_<Date.now()>.<ext>` en `makeUploadPlato`. URL nueva por subida rompe caché del navegador; el borrado del anterior nunca pisa la imagen recién subida. Desplegado a producción 2026-06-15. |

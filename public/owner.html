@@ -972,6 +972,12 @@
   </div>
 </div>
 
+<!-- ── Modal de comprobante de pago (evita target="_blank", rompe la PWA instalada) ── -->
+<div class="comprobante-modal" id="comprobante-modal" onclick="cerrarComprobante(event)">
+  <button class="comprobante-modal-close" onclick="cerrarComprobante()" aria-label="Cerrar">✕</button>
+  <img class="comprobante-modal-img" id="comprobante-modal-img" src="" alt="Comprobante de pago">
+</div>
+
 <div id="toast"></div>
 
 <!-- ── Bottom nav móvil (Fase 2) ── -->

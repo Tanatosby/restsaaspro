@@ -2,6 +2,50 @@
 
 ---
 
+## ✅ Sesión 2026-07-13 (parte 3) — Gap 17: gate de pago obligatorio + nombre obligatorio en órdenes
+
+**Prompt:** "comenzamos con el gate de pago obligatorio + nombre obligatorio" — siguiente ítem del backlog documentado en la sesión anterior.
+
+**Decisiones de diseño (2 preguntas al usuario antes de implementar, vía AskUserQuestion):**
+1. Restaurante con solo Efectivo activo (sin Yape/Plin): se mantiene la pantalla de pago normal, 2 taps (elegir método → confirmar) — no se auto-selecciona sin interacción.
+2. Flujo de pantallas: el usuario pidió explícitamente **invertir** el orden actual ("ahora primero confirma el pedido y luego paga, sería más bien al revés, primero paga y luego confirma") y, ante 2 mockups concretos, eligió el de **3 pasos con pantalla de repaso final** (pago → repaso con resumen → recién ahí se envía) en vez de que "Ya pagué" ya dispare el envío. Sobre la atomicidad backend, aceptó explícitamente el riesgo residual de mantener 2 llamadas (crear + adjuntar pago) en vez de fusionar en un endpoint único, para no tocar `routes/orders.js`/`routes/reservations.js`.
+
+**Implementado:**
+- **Backend** (`routes/public.js`, `POST /orders`): `nombre_cliente` pasa a ser obligatorio (400 si falta) — mismo patrón que reservas.
+- **Frontend** (`public/menu.html`) — reestructuración completa del flujo de pago:
+  - Nuevo estado `pagoPendiente` reemplaza a `pagoOrdenId`/`pagoTipo`/`pagoCodigoReserva` — el pedido/reserva vive solo en memoria del navegador hasta el paso final.
+  - `confirmarPedido()`/`confirmarReserva()`: si el restaurante tiene algún método de pago activo, ya no crean nada — arman el payload y abren la pantalla de pago. Si no hay ningún método activo, siguen creando directo (sin cambios para ese caso).
+  - `enviarPago()`: pasó de disparar el `PATCH` de pago a solo **validar** (foto adjunta obligatoria para yape/plin) y avanzar a la nueva pantalla de repaso.
+  - Nueva pantalla `#repaso-screen`: resumen de ítems (render limpio, sin los botones de quitar del carrito original), nombre, método de pago, miniatura del comprobante si aplica, botón "← Volver" (corrige el método sin perder nombre/ítems) y botón final "✓ Confirmar pedido/reserva".
+  - `confirmarEnvioFinal()` (nueva): único punto donde se crea la orden/reserva de verdad — `POST /orders`/`/reservations` seguido inmediatamente del `PATCH` de pago con la foto, en la misma acción de tap.
+  - Botón del carrito pasa a decir "Ir a pagar →" cuando hay algún método de pago activo (se define una vez al cargar la config del restaurante).
+
+**Tests:** nuevo `scripts/test-gate-pago.js` (Playwright, no forma parte de jest) — **24/24 checks verdes**, cubre: nombre obligatorio bloqueado en cliente y backend; la orden/reserva **no existe en la BD** ni al mostrar la pantalla de pago ni en el repaso (verificado con queries directas a SQLite entre cada paso); recién existe (con `metodo_pago`/`comprobante_url` ya adjuntos) al confirmar en el repaso; restaurante sin métodos de pago sigue creando directo; botón "← Volver" conserva nombre/ítems y refleja el método corregido. `npm test` **254/254 verde** antes y después (sin cambios de backend fuera de la validación de nombre).
+
+**Pendiente:** desplegar a producción junto con los 4 fixes de la sesión anterior (ISS-018 a ISS-021, aún no desplegados). Siguiente ítem del backlog: Gap 18 (horario de atención) o Gap 19 (Cola: cancelar + mostrar modalidad) — a definir con el usuario.
+
+---
+
+## ✅ Sesión 2026-07-13 (parte 2) — 4 fixes críticos + backlog documentado (8 pedidos del usuario)
+
+**Prompt:** el usuario trajo 8 issues/features de golpe (foto de comprobante rota en Cola, flujo de pago separado de la orden, pago en efectivo, horario de atención, nombre obligatorio, cancelar desde Cola, estadísticas de pedidos, tamaño de letra ajustable). Se pidió primero categorizar y documentar; en el camino, revisando código y logs de producción junto con el usuario, aparecieron 2 bugs críticos nuevos no reportados originalmente (botón de pago sin scroll, con capturas reales de una clienta afectada) y 2 bugs de infraestructura (detectados vía `pm2 logs`). El usuario aprobó implementar, probar y documentar el lote de 4 fixes ya diagnosticados; el resto queda documentado como backlog pendiente (ver `vision_negocio.md` Gaps 17-19 y `features.md`).
+
+**Implementado (4 fixes, todos verificados, sin romper nada — 254/254 jest verde):**
+1. **[ISS-018](issues/ISS-018-boton-pago-sin-scroll.md)** — `#pago-screen` sin `overflow-y` cortaba el botón "✓ Ya pagué" en celulares con poco alto disponible (capturas reales de una clienta). Fix: `overflow-y:auto` + `justify-content:flex-start`.
+2. **[ISS-019](issues/ISS-019-trust-proxy.md)** — `trust proxy` no configurado en `app.js`; el servidor detrás de Nginx generaba `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` en casi cada request (encontrado corriendo `pm2 logs` en producción junto con el usuario).
+3. **[ISS-020](issues/ISS-020-error-handler-sin-contexto.md)** — el error handler global solo logueaba `err.message`, sin ruta ni stack — imposible diagnosticar 500s en producción. Ahora loguea `req.method`, `req.originalUrl` y `err.stack`.
+4. **[ISS-021](issues/ISS-021-comprobante-rompe-pwa.md)** — la foto de comprobante en Cola del día "no cargaba" y la app se cerraba sola al volver: `owner.html` es una PWA instalada (standalone) y las miniaturas de comprobante usaban `<a target="_blank">`, que rompe el contenedor de una PWA standalone (sobre todo iOS). Reemplazado por un modal in-app nuevo, compartido entre `pedidos.js`/`ordenes.js`/`reservas.js` (de paso se eliminó una triplicación de código idéntico entre los 3 módulos).
+
+**Metodología de diagnóstico (vale la pena registrar):** para ISS-021 se descartaron 2 hipótesis con evidencia real antes de llegar a la causa — (a) límite de tamaño de Nginx/Multer (5MB): descartado revisando `ls -la` de los archivos reales en el servidor, todos bien por debajo del límite; (b) archivo faltante/corrupto: descartado, los archivos existen. La causa real solo apareció al pedirle al usuario una descripción más precisa del síntoma ("la app se cierra sola al querer reabrir") — coincide con el comportamiento documentado de `target="_blank"` en PWAs standalone instaladas.
+
+**Verificación:** `scripts/test-fixes-pago-comprobante.js` (nuevo, Playwright, no forma parte de jest) — Test 1 reproduce el viewport reducido real y confirma que el botón de pago es alcanzable con scroll; Test 2 crea una orden + pago con foto real vía API, loguea como owner, y confirma que la miniatura ya no usa `<a target="_blank">`, que tocarla abre el modal sin abrir pestañas nuevas, y que muestra la foto correcta. 10/10 checks verdes. `npm test` 254/254 verde antes y después de los 4 fixes.
+
+**Backlog documentado, sin implementar aún** (aprobado categorizar, no implementar todavía): ver `vision_negocio.md` Gap 17 (pago obligatorio antes de crear orden/reserva, con efectivo como default si no hay Yape/Plin), Gap 18 (horario de atención estricto configurable), Gap 19 (Cola del día: cancelar pedido + mostrar modalidad/todos los datos); `features.md` (nombre obligatorio en órdenes — paridad con reservas; estadísticas "qué pidió la gente hoy" + fix del gráfico de barras chico en reportería; tamaño de letra ajustable/auto en la pantalla del owner). El `FOREIGN KEY constraint failed` visto en los logs de producción no correlacionó con ISS-021 — queda abierto, a monitorear con el logging mejorado de ISS-020 la próxima vez que ocurra.
+
+**Pendiente:** desplegar los 4 fixes a producción (`git pull` + `pm2 restart menupro`), y decidir con el usuario el orden de implementación del backlog (Gap 17 es el de mayor impacto de negocio).
+
+---
+
 ## ✅ Sesión 2026-07-13 — Fix: botón "Abrir Yape" abría página inexistente
 
 **Prompt:** el usuario reportó que en `menu.html`, al pagar con Yape, el botón "Abrir Yape" abría una página que no existe, afectando el flujo del cliente. Pidió arreglarlo o, si no había solución, eliminar el botón.

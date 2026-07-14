@@ -88,9 +88,7 @@ function renderOrdenCard(o, withActions) {
     `<div class="order-item-line">📋 [${esc(i.seccion)}] ${esc(i.plato)} x${i.cantidad}</div>`
   ).join('');
 
-  const comprobanteHtml = o.comprobante_url
-    ? `<div style="margin-top:6px"><a href="${o.comprobante_url}" target="_blank" title="Ver comprobante"><img src="${o.comprobante_url}" alt="Comprobante" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer"></a></div>`
-    : '';
+  const comprobanteHtml = comprobanteThumb(o);
 
   const paraLlevar = o.modalidad === 'para_llevar';
   // Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante

@@ -63,9 +63,7 @@ function renderReservaCard(r, withActions) {
       <button class="btn btn-ghost btn-sm" onclick="asignarMesaReserva(${r.id})">Asignar</button>
     </div>` : '';
 
-  const comprobanteResHtml = r.comprobante_url
-    ? `<div style="margin-top:6px"><a href="${r.comprobante_url}" target="_blank" title="Ver comprobante"><img src="${r.comprobante_url}" alt="Comprobante" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer"></a></div>`
-    : '';
+  const comprobanteResHtml = comprobanteThumb(r);
 
   const sinMesa = r.modalidad === 'para_llevar' || r.modalidad === 'delivery';
   // Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante

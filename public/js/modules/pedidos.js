@@ -147,13 +147,7 @@ function renderKanbanCard(item, zona) {
     : renderKanbanReserva(item.datos, zona);
 }
 
-// Miniatura clicable del comprobante (mismo patrón que ordenes.js/reservas.js)
-// para que el owner pueda verificar el pago sin salir de la Cola del día.
-function comprobanteThumb(x) {
-  return x.comprobante_url
-    ? `<div style="margin-top:6px"><a href="${x.comprobante_url}" target="_blank" title="Ver comprobante"><img src="${x.comprobante_url}" alt="Comprobante" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer"></a></div>`
-    : '';
-}
+// comprobanteThumb() vive en utils.js — compartida con ordenes.js/reservas.js.
 
 function renderKanbanOrden(o, zona) {
   const minutos   = Math.floor((Date.now() - new Date(toUTC(o.created_at)).getTime()) / 60000);

@@ -322,6 +322,9 @@ En orden de impacto:
 | 14 | Notificaciones WhatsApp/SMS | Bajo | Alta | Fase 2 |
 | 15 | Métrica de visitas al menú por restaurante (dashboard admin) | Bajo (hoy) / Alto (a escala) | Media | Fase 2 — ver sección 15, "cuando inicie masivo" |
 | 16 | ~~Deep link real de Yape (requiere pasarela de pago afiliada)~~ | ~~Bajo~~ | ~~Alta~~ | ❌ Cerrado por diseño 2026-07-13 — inviable, complejidad no justificada; "Copiar número" es la solución definitiva |
+| 17 | ~~Pago obligatorio antes de crear la orden/reserva~~ | ~~Alto~~ | ~~Media~~ | ✅ Completado 2026-07-13 — ver detalle abajo |
+| 18 | Horario de atención configurable y estricto | Medio | Baja | Pendiente — ver detalle abajo |
+| 19 | Cola del día: cancelar pedido + mostrar todos los datos (modalidad) | **Alto** | Baja | Pendiente — ver detalle abajo |
 
 > **Nota flujo Caso B reservas (sin pago anticipado):** el cliente llega sin haber pagado → mozo marca `es_cliente_llego` y asigna mesa → envía a cocina manualmente → flujo normal → cobra al final → `es_full`. La UI mostrará badge "⚠️ Sin pago" en la tarjeta para que el mozo lo identifique.
 
@@ -362,6 +365,52 @@ Ver sección 15 para el detalle del modelo de negocio. Resumen técnico: registr
 **Decisión del usuario (2026-07-13):** inviable para el negocio actual — la complejidad de afiliarse a una pasarela (comisión por transacción, onboarding, integración server-side) no se justifica frente al flujo "Copiar número" que ya funciona bien. **Gap cerrado por diseño, no se implementará** salvo que cambie el contexto del negocio (ej. escala grande, restaurantes que ya usan pasarela). El flujo actual (número + botón "Copiar número", igual que Plin) queda como solución definitiva, no temporal.
 
 Fuentes: [Mercado Pago Developers — Yape Checkout API](https://www.mercadopago.com.pe/developers/es/docs/checkout-api-payments/integration-configuration/yape), [Culqi — Cargo único con Yape](https://docs.culqi.com/es/documentacion/pagos-online/cargo-unico/tokens-yape), [Izipay — Pago con Código Yape](https://developers.izipay.pe/products/pay-with-yape-code/), [ProntoPaga — Yape On File](https://docs.prontopaga.com/docs/yape-on-file-ocp)
+
+**Gap 17 — Pago obligatorio antes de crear la orden/reserva** ✅ *Completado 2026-07-13*
+
+**Problema real, confirmado en código:** `confirmarPedido()`/`confirmarReserva()` en `menu.html` llamaban primero a `POST /api/public/orders` (o `/reservations`) — el pedido **se creaba y ya entraba a la Cola del día como pendiente** — y solo después, si había métodos de pago configurados, se mostraba `showPagoStep()`. El pago nunca bloqueaba la creación: un cliente podía pedir y su orden/reserva viajaba a Cocina/Cola sin haber elegido siquiera un método de pago.
+
+**Flujo implementado (3 pasos, definido junto con el usuario):**
+```
+[Carrito] → tap "Ir a pagar" (nombre obligatorio, ver Gap nombre en features.md)
+     ↓
+[Pantalla de pago] — elegir método (si no hay Yape/Plin activo, Efectivo
+   queda como único/default, sigue mostrando la pantalla, no se salta)
+   → si Yape/Plin: adjuntar foto del comprobante
+   → tap "✓ Ya pagué" → SOLO valida (foto adjunta si aplica), no envía nada
+     ↓
+[Pantalla de repaso final] — resumen de ítems + total + nombre + método
+   elegido (+ miniatura de la foto si aplica), botón "← Volver" para
+   corregir el método sin perder nombre/ítems
+   → tap "✓ Confirmar pedido/reserva" → AHORA SÍ se crea la orden/reserva
+     y se le adjunta el pago, en la misma acción
+     ↓
+[¡Pedido enviado! 🎉]
+```
+
+Eliminar el pago en efectivo sigue siendo posible desde Configuración (toggle existente `efectivo_activo`) — no se tocó esa parte. Si el restaurante no tiene **ningún** método de pago activo, se mantiene el comportamiento anterior: se crea directo, sin pantalla de pago (no hay nada que gatear).
+
+**Decisión de arquitectura (con el usuario):** se evaluaron 2 opciones — fusionar creación+pago en un solo endpoint atómico, vs. mantener las 2 llamadas actuales (`POST /orders`/`/reservations` + `PATCH /pago/...`) pero disparadas juntas al confirmar en el repaso. Se eligió la segunda: **no se tocó `routes/orders.js` ni `routes/reservations.js`**, todo el cambio vive en `menu.html` (frontend). Queda una ventana muy chica (~200ms entre ambas llamadas) donde, si la conexión se corta justo ahí, la orden quedaría creada sin pago adjunto — mucho menos probable que el bug original (que dejaba esa ventana abierta indefinidamente, ya que el cliente podía abandonar el navegador después de crear pero antes de pagar) pero no 100% atómico. Riesgo aceptado explícitamente por el usuario a cambio de no tocar la lógica central de creación de órdenes/reservas.
+
+**Implementado — `public/menu.html`:**
+- `pagoPendiente` (nuevo estado global): guarda `{ tipo, payload, nombre, items, total, metodo, foto }` mientras el cliente resuelve el pago. Reemplaza a `pagoOrdenId`/`pagoTipo`/`pagoCodigoReserva`, que ya no tienen sentido (no existe id hasta el final).
+- `crearOrden(payload)` / `crearReserva(payload)` (nuevas, extraídas del POST que antes estaba inline).
+- `confirmarPedido()`/`confirmarReserva()`: si hay algún método de pago activo, arman el payload y abren `showPagoStep()` sin crear nada; si no hay ninguno, crean directo (comportamiento sin cambios para ese caso).
+- `showPagoStep()`: ya no recibe un id (no existe aún); muestra un resumen de ítems en vez de "Orden #X".
+- `enviarPago()`: ahora **solo valida** (foto adjunta para yape/plin) y avanza a `showRepasoStep()` — ya no llama al backend.
+- `showRepasoStep()` (nueva): pantalla `#repaso-screen` con resumen de ítems (renderizado limpio, sin los botones de quitar del carrito original — evita que tocarlos en el repaso desincronice lo que se va a enviar), nombre, método, miniatura de la foto si aplica.
+- `volverAPago()` (nueva): regresa a `#pago-screen` para corregir el método sin perder nombre/ítems (`pagoPendiente.payload`/`.nombre`/`.items` se conservan).
+- `confirmarEnvioFinal()` (nueva): el único punto del flujo donde el pedido pasa a existir de verdad — llama a `crearOrden`/`crearReserva`, obtiene el id real, y recién ahí hace el `PATCH` de pago con la foto.
+- Nueva pantalla `#repaso-screen` en el HTML (mismo patrón `.confirm-screen` + `overflow-y:auto` que `#pago-screen`/`#estado-screen`).
+- Etiqueta del botón de confirmar carrito pasa a "Ir a pagar →" cuando el restaurante tiene algún método de pago activo (se calcula una vez al cargar `pagoInfo`).
+
+**Gap 18 — Horario de atención configurable y estricto** *(anotado 2026-07-13, pendiente de implementar)*
+
+Hoy no existe ningún control de horario de atención — un cliente puede pedir/reservar a cualquier hora, sin que el sistema lo impida. El usuario pidió poder fijar un rango exacto (ej. 12pm–3pm) fuera del cual `menu.html` no permita pedir ni reservar. No confundir con el "análisis de hora pico" de reportería (`GET /api/reportes/hora-pico`), que es una métrica histórica, no una restricción operativa. Requiere: columnas de horario en `restaurantes` (ej. `hora_apertura`/`hora_cierre`, posiblemente por día de semana en una fase futura), validación en `routes/public.js` al crear orden/reserva, y mensaje claro en `menu.html` cuando el restaurante está cerrado.
+
+**Gap 19 — Cola del día: cancelar pedido + mostrar todos los datos** *(anotado 2026-07-13, pendiente de implementar)*
+
+Confirmado en código: `pedidos.js` (Cola del día) no tiene ninguna función para cancelar una orden/reserva — la única forma de cancelar es entrando a los paneles separados de Órdenes o Reservas. Además, el usuario pidió que la Cola muestre **todos los datos relevantes de un vistazo**, sobre todo la modalidad (en_local/para_llevar/delivery), para poder verificar rápido si un pedido es para comer en el local o para llevar sin tener que abrir cada tarjeta. Alcance: botón "✗ Cancelar" en `renderKanbanOrden()`/`renderKanbanReserva()` (mismo endpoint `PATCH /:id/estatus` con flag `es_cancelado` que ya usan Órdenes/Reservas) + agregar `badgeModalidad()` (ya existe en `ordenes.js`, reutilizable) a las tarjetas de la Cola si no está ya presente.
 
 ---
 

@@ -33,6 +33,11 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
+// El servidor corre detrás de Nginx (proxy_pass), que agrega X-Forwarded-For.
+// Sin esto, express-rate-limit no puede identificar la IP real del cliente
+// y tira ERR_ERL_UNEXPECTED_X_FORWARDED_FOR en cada request. Ver deploy.md §6.2.
+app.set('trust proxy', 1);
+
 // Seguridad: headers HTTP
 app.use(helmet({
   contentSecurityPolicy: {
@@ -135,7 +140,8 @@ app.get('/:slug', (req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error(`[ERROR] ${err.message}`);
+  console.error(`[ERROR] ${req.method} ${req.originalUrl} → ${err.message}`);
+  console.error(err.stack);
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 

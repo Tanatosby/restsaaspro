@@ -2,6 +2,26 @@
 
 ## Pendientes
 
+### ~~Nombre obligatorio en órdenes (paridad con reservas)~~ ✅ Completado 2026-07-13
+
+~~En reservas el nombre ya es obligatorio (`routes/public.js:307`, validado también en `confirmarReserva()` de `menu.html`). En órdenes es opcional...~~
+
+Backend (`routes/public.js`, `POST /orders`): agregado `if (!nombre_cliente?.trim()) return res.status(400)...`, mismo patrón que reservas. Frontend (`menu.html`): quitado "(opcional)" del label; `confirmarPedido()` valida el nombre antes de continuar (mismo patrón que `confirmarReserva()`). Verificado con `scripts/test-gate-pago.js` (Test 1): sin nombre no se crea la orden ni por UI ni pegándole directo a la API (400).
+
+### Estadísticas: "qué pidió la gente hoy" + fix del gráfico de barras chico
+*Anotado 2026-07-13, pendiente de implementar.*
+
+El usuario preguntó puntualmente: "¿cuántos platos voy hasta ahora?", "¿qué ha pedido la gente hoy?". Ya existe "Análisis de pedidos" en reportería (`reportes.js` → `loadPedidos()`, endpoint `GET /api/reportes/pedidos?tipo=&filtro=`) — un gráfico de barras por plato con Chart.js. Pero: (a) es un **acumulado histórico total**, sin filtro de fecha/"hoy" (confirmado en `contarPedidosPorPlato()`, `routes/reportes.js` — las queries SQL no tienen `WHERE fecha = ?`); (b) filtra de a una sección/categoría del menú a la vez, no da un resumen "todo lo pedido hoy" de un vistazo.
+
+**Gráfico chiquito — causa confirmada:** su contenedor (`#chart-pedidos-wrap`, `owner.html:557`) solo tiene `min-height:220px` sin `position:relative` ni alto fijo — a diferencia de `#chart-ganancias-wrap`/`#chart-demanda-wrap` que sí tienen `position:relative;height:260px`/`280px`. Chart.js en modo `responsive:true` necesita que el contenedor inmediato tenga `position:relative` + una altura explícita para dimensionarse bien; sin eso el canvas queda con el tamaño intrínseco por defecto, mucho más chico de lo esperado.
+
+**Alcance propuesto:** (1) fix rápido del contenedor (`position:relative;height:280px` en `#chart-pedidos-wrap`, igual que los otros 2 gráficos); (2) nuevo filtro de fecha (día actual por default, con opción de rango) en `GET /api/reportes/pedidos`; (3) evaluar una vista resumen "Hoy" que no requiera elegir sección/categoría manualmente — posible pestaña nueva o vista por defecto al abrir el panel Reportes.
+
+### Tamaño de letra ajustable / auto-configurable en el panel del owner
+*Anotado 2026-07-13, pendiente de implementar.*
+
+No existe hoy ningún control de tamaño de fuente en `owner.html` — el usuario pidió poder aumentar el tamaño de letra, idealmente que se autoconfigure según el dispositivo/pantalla de quien usa la app (dueño u operador). Es una feature de accesibilidad, relevante porque el sistema vive 100% en celulares de gama media (ver `vision_negocio.md` principio 1). Alcance a definir: control manual (ej. 3 tamaños: normal/grande/muy grande, persistido en `localStorage`, aplicado vía variable CSS `--font-scale` multiplicando los `font-size` base de `owner.css`) vs. detección automática por `prefers-contrast`/tamaño de viewport — a decidir antes de implementar.
+
 ### ~~Galerías de platos y menús — desktop apretado~~ ✅ Completado 2026-06-08
 
 ~~En desktop las galerías de Platos de menú, Platos a la carta y Menús del día se ven muy apretadas (cards de ~120px en fila) y dejan espacio vacío a la derecha del panel.~~

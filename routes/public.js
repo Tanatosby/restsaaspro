@@ -179,7 +179,7 @@ router.get('/carta', (req, res) => {
 // Body: {
 //   id_restaurante,
 //   mesa,
-//   nombre_cliente,   (opcional)
+//   nombre_cliente,   (obligatorio)
 //   carta_items:  [{ id_plato_carta, cantidad }],
 //   menu_items:   [{ id_componente, id_menu_dia, cantidad }]
 // }
@@ -196,6 +196,8 @@ router.post('/orders', (req, res) => {
 
   if (!id_restaurante)
     return res.status(400).json({ error: 'id_restaurante es requerido' });
+  if (!nombre_cliente?.trim())
+    return res.status(400).json({ error: 'El nombre es requerido' });
   if (!carta_items.length && !menu_items.length)
     return res.status(400).json({ error: 'La orden debe tener al menos un ítem' });
 
