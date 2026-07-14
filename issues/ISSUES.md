@@ -22,6 +22,7 @@ _(vacío)_
 
 | ID | Título | Fecha resolución | Solución |
 |----|--------|-----------------|---------|
+| [ISS-022](ISS-022-service-worker-cache-desactualizado.md) | Service Worker sirve `owner.html`/`owner.css` viejos aunque el deploy sea correcto | 2026-07-14 | `CACHE` en `sw.js` no se bumpeaba desde 2026-05-29 — el navegador nunca refrescaba el caché de `owner.html`/`css/owner.css`. Bumpeado a `menupro-v3`. Probablemente explica por qué varios fixes previos "no se veían". |
 | [ISS-021](ISS-021-comprobante-rompe-pwa.md) | Foto de comprobante en Cola no carga / rompe la app instalada | 2026-07-13 | `<a target="_blank">` sobre una PWA standalone instalada rompe el contenedor de la app (sobre todo en iOS). Reemplazado por modal in-app (`comprobanteThumb()` unificado en `utils.js`). |
 | [ISS-020](ISS-020-error-handler-sin-contexto.md) | Error handler global no loguea ruta ni stack trace | 2026-07-13 | `app.js` solo logueaba `err.message`. Ahora loguea `req.method`, `req.originalUrl` y `err.stack`. |
 | [ISS-019](ISS-019-trust-proxy.md) | `trust proxy` no configurado — rate-limiter falla en casi cada request | 2026-07-13 | Servidor detrás de Nginx sin `app.set('trust proxy', 1)`. Agregado en `app.js`. |

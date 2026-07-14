@@ -2,6 +2,20 @@
 
 ---
 
+## ✅ Sesión 2026-07-14 (parte 3) — ISS-022: Service Worker servía `owner.html` desactualizado
+
+**Prompt:** el usuario desplegó la sesión anterior a producción pero seguía sin ver la card nueva de "Tamaño de letra". Mandó captura (`issue_texto.png`) mostrando `owner.html` sin la card.
+
+**Diagnóstico:** `public/sw.js` cachea `owner.html`/`menu.html`/`css/owner.css` (están en `ASSETS`) con estrategia cache-primero — el navegador solo refresca ese caché cuando el contenido de `sw.js` mismo cambia. `CACHE = 'menupro-v2'` no se había bumpeado desde el commit `a4f8d7` (**2026-05-29**) — cualquier visitante desde esa fecha quedó con esas 3 páginas cacheadas de forma permanente, sin importar cuántos deploys posteriores se hicieran. Esto probablemente explica retroactivamente por qué varios fixes de sesiones anteriores (ISS-016 a ISS-021, Gap 17, Gap 18) parecían no funcionar tras desplegarse.
+
+**Fix:** `public/sw.js` → `CACHE = 'menupro-v3'`. Ver [ISS-022](issues/ISS-022-service-worker-cache-desactualizado.md) para el detalle completo y la recomendación de bumpear esta constante en cada deploy futuro que toque esos 3 archivos (o migrar a network-first/stale-while-revalidate).
+
+**Verificación:** Playwright — simulado el escenario exacto (caché `menupro-v2` con un `owner.html` viejo puesto a mano), registrado el `sw.js` nuevo, confirmado que el caché viejo se borra y el nuevo queda poblado con el HTML real actualizado; tras recargar con sesión de owner válida, los 3 botones `.font-scale-btn` aparecen en el DOM. **267/267 jest verde.**
+
+**Pendiente:** deploy a producción + avisar al usuario que además del `git pull`/`pm2 restart` puede necesitar cerrar y reabrir la PWA una vez para que el navegador note el `sw.js` nuevo.
+
+---
+
 ## ✅ Sesión 2026-07-14 (parte 2) — Tamaño de letra ajustable en el panel del owner
 
 **Prompt:** "ahora para aumentar el tamaño de letra" — siguiente ítem del backlog documentado en `features.md` (anotado 2026-07-13).
