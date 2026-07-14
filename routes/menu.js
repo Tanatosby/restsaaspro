@@ -835,7 +835,8 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
            yape_activo, yape_telefono, plin_activo, plin_telefono, efectivo_activo,
            minutos_preparacion, para_llevar_activo, delivery_activo,
            costo_tapper, tarifa_delivery, auto_merge_activo, slug,
-           minutos_cancelacion_reserva
+           minutos_cancelacion_reserva,
+           horario_activo, hora_apertura, hora_cierre, dias_atencion
     FROM restaurantes WHERE id = ?
   `).get(req.user.restaurant_id);
   if (!row) return res.status(404).json({ error: 'Restaurante no encontrado' });
@@ -857,6 +858,10 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
     auto_merge_activo:           row.auto_merge_activo            ?? 1,
     slug:                        row.slug                         || null,
     minutos_cancelacion_reserva: row.minutos_cancelacion_reserva  ?? 30,
+    horario_activo:              row.horario_activo               ?? 0,
+    hora_apertura:               row.hora_apertura                || '00:00',
+    hora_cierre:                 row.hora_cierre                  || '23:59',
+    dias_atencion:               row.dias_atencion                || '0,1,2,3,4,5,6',
   });
 });
 
@@ -929,6 +934,36 @@ router.patch('/config/minutos-cancelacion-reserva', authorizePermiso(), (req, re
     .run(minutos, req.user.restaurant_id);
 
   res.json({ minutos_cancelacion_reserva: minutos });
+});
+
+// PATCH /api/menu/config/horario — horario de atención (Gap 18)
+router.patch('/config/horario', authorizePermiso(), (req, res) => {
+  const { horario_activo, hora_apertura, hora_cierre, dias_atencion } = req.body;
+
+  const HORA_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  if (!HORA_REGEX.test(hora_apertura) || !HORA_REGEX.test(hora_cierre))
+    return res.status(400).json({ error: 'hora_apertura y hora_cierre deben tener formato HH:MM' });
+  if (hora_apertura >= hora_cierre)
+    return res.status(400).json({ error: 'La hora de apertura debe ser anterior a la hora de cierre' });
+
+  const dias = Array.isArray(dias_atencion) ? dias_atencion.map(Number) : [];
+  if (!dias.length || dias.some(d => isNaN(d) || d < 0 || d > 6))
+    return res.status(400).json({ error: 'dias_atencion debe tener al menos un día válido (0=Domingo a 6=Sábado)' });
+
+  const diasStr = [...new Set(dias)].sort().join(',');
+
+  db.prepare(`
+    UPDATE restaurantes
+    SET horario_activo = ?, hora_apertura = ?, hora_cierre = ?, dias_atencion = ?
+    WHERE id = ?
+  `).run(horario_activo ? 1 : 0, hora_apertura, hora_cierre, diasStr, req.user.restaurant_id);
+
+  res.json({
+    horario_activo: horario_activo ? 1 : 0,
+    hora_apertura,
+    hora_cierre,
+    dias_atencion: diasStr,
+  });
 });
 
 // PATCH /api/menu/config/pagos — guardar métodos de pago del restaurante

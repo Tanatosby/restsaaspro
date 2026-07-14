@@ -53,6 +53,18 @@ async function loadConfiguracion() {
     const mcEl = document.getElementById('cfg-minutos-cancelacion-reserva');
     if (mcEl) mcEl.value = cfg.minutos_cancelacion_reserva ?? 30;
 
+    // Horario de atención (Gap 18)
+    const haEl = document.getElementById('cfg-horario-activo');
+    const apEl = document.getElementById('cfg-hora-apertura');
+    const ciEl = document.getElementById('cfg-hora-cierre');
+    if (haEl) haEl.checked = !!cfg.horario_activo;
+    if (apEl) apEl.value   = cfg.hora_apertura || '00:00';
+    if (ciEl) ciEl.value   = cfg.hora_cierre   || '23:59';
+    const diasActivos = (cfg.dias_atencion || '0,1,2,3,4,5,6').split(',').map(Number);
+    document.querySelectorAll('.cfg-dia-check').forEach(chk => {
+      chk.checked = diasActivos.includes(Number(chk.value));
+    });
+
     // Modalidades y costos (Gap 4 + Gap 5)
     const plEl = document.getElementById('cfg-para-llevar-activo');
     const dlEl = document.getElementById('cfg-delivery-activo');
@@ -316,6 +328,25 @@ async function guardarMinutosCancelacionReserva() {
   try {
     await api('PATCH', '/api/menu/config/minutos-cancelacion-reserva', { minutos_cancelacion_reserva: minutos });
     toast('Ventana de cancelación guardada');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function guardarHorarioAtencion() {
+  const horario_activo = document.getElementById('cfg-horario-activo').checked;
+  const hora_apertura  = document.getElementById('cfg-hora-apertura').value;
+  const hora_cierre    = document.getElementById('cfg-hora-cierre').value;
+  const dias_atencion  = [...document.querySelectorAll('.cfg-dia-check:checked')].map(chk => Number(chk.value));
+
+  if (!hora_apertura || !hora_cierre)
+    return toast('Ingresa la hora de apertura y cierre', 'err');
+  if (hora_apertura >= hora_cierre)
+    return toast('La hora de apertura debe ser anterior a la de cierre', 'err');
+  if (!dias_atencion.length)
+    return toast('Selecciona al menos un día de atención', 'err');
+
+  try {
+    await api('PATCH', '/api/menu/config/horario', { horario_activo, hora_apertura, hora_cierre, dias_atencion });
+    toast('Horario de atención guardado');
   } catch(e) { toast(e.message, 'err'); }
 }
 

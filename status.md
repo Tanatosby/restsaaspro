@@ -2,6 +2,31 @@
 
 ---
 
+## ✅ Sesión 2026-07-14 — Gap 18: horario de atención configurable y estricto
+
+**Prompt:** siguiente ítem del backlog (Gap 18, anotado 2026-07-13). El usuario pidió que no se pueda registrar ninguna orden ni reserva antes de la hora de atención.
+
+**Decisiones de diseño (3 preguntas al usuario antes de implementar, vía AskUserQuestion):**
+1. Un solo rango horario para toda la semana **más** selección de días de atención (ej. Lun–Sáb, cerrado domingo) — no horarios distintos por día.
+2. Para reservas: se valida tanto el momento en que el cliente confirma (hora actual) **como** la `hora_llegada` futura si la especifica — no puede reservar para una hora fuera del horario de atención aunque sea otro día.
+3. En `menu.html`, el cliente sigue viendo la carta/menú con normalidad; solo se bloquea el envío final (con banner de aviso + botón deshabilitado).
+
+**Implementado:**
+- **BD** (`config/database.js`): migración idempotente — `restaurantes.horario_activo` (apagado por defecto, no rompe restaurantes existentes), `hora_apertura`/`hora_cierre` (TEXT 'HH:MM'), `dias_atencion` (TEXT, días JS `getDay()` separados por coma).
+- **`utils/horarioAtencion.js`** (nuevo): funciones puras `estadoHorario`, `validarHorarioAhora`, `validarHorarioReserva`, `mensajeHorario`. Límite conocido documentado: no soporta horarios que crucen la medianoche (asume apertura < cierre en el mismo día).
+- **`routes/public.js`**: `getRestaurante()` trae las nuevas columnas; `POST /orders` y `POST /reservations` bloquean con 400 si el restaurante está cerrado (reservas validan además la `hora_llegada` futura); `GET /restaurante/:id` expone `horario` (activo, apertura, cierre, días, `abierto_ahora`, mensaje) para que el cliente pinte el banner sin adivinar.
+- **`routes/menu.js`**: `GET /restaurante/config` expone los nuevos campos; nuevo `PATCH /config/horario` (valida formato HH:MM, apertura < cierre, días válidos).
+- **Frontend owner** (`public/owner.html` + `public/js/modules/config.js`): nueva card "🕐 Horario de atención" — toggle activar, inputs `type="time"`, checkboxes de días de la semana (mismo patrón que "Auto-preparación"/"Cancelación de reservas").
+- **Frontend cliente** (`public/menu.html`): banner "🕐 Cerrado — Atendemos..." cuando aplica; botones "Confirmar pedido"/"Confirmar reserva" deshabilitados con el mismo mensaje; guarda adicional dentro de `confirmarPedido()`/`confirmarReserva()` por si el horario cambia mientras el cliente tiene la página abierta (el backend valida igual, defensa en profundidad).
+
+**Tests:** `tests/horario-atencion.test.js` (13 casos sobre las funciones puras — rango horario, borde de cierre exclusivo, día no atendido, validación de `hora_llegada` futura). **267/267 jest verde** (254 previos + 13 nuevos). Verificación E2E real con Playwright (`scripts/test-horario-atencion.js`, nuevo, no forma parte de jest): 9/9 — restaurante cerrado bloquea backend (orden y reserva) y muestra banner + botón deshabilitado en `menu.html`; restaurante abierto permite crear y oculta el banner; reserva con `hora_llegada` fuera del rango configurado se bloquea aunque el momento de creación esté dentro de horario. Verificado además manualmente con `curl` contra servidor local (owner autenticado con JWT firmado localmente): GET/PATCH `/api/menu/config/horario` guardan y persisten correctamente; probado también guardar+recargar la card en `owner.html` con Playwright, confirmando que la UI lee lo persistido tras recargar.
+
+**Gap 18 cerrado** en `vision_negocio.md`.
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`), junto con los pendientes acumulados de sesiones anteriores (gate de pago obligatorio Gap 17, fixes ISS-018 a ISS-021). Siguiente ítem del backlog: Gap 19 (Cola del día: cancelar pedido + mostrar modalidad).
+
+---
+
 ## ✅ Sesión 2026-07-13 (parte 3) — Gap 17: gate de pago obligatorio + nombre obligatorio en órdenes
 
 **Prompt:** "comenzamos con el gate de pago obligatorio + nombre obligatorio" — siguiente ítem del backlog documentado en la sesión anterior.

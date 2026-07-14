@@ -480,6 +480,14 @@ db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_restaurantes_slug ON restaurantes
 // Migración idempotente: ventana de tiempo (minutos) para que el cliente pueda cancelar su reserva
 try { db.exec(`ALTER TABLE restaurantes ADD COLUMN minutos_cancelacion_reserva INTEGER DEFAULT 30`); } catch (_) {}
 
+// Migración idempotente: horario de atención (Gap 18)
+// horario_activo: apagado por defecto — no restringe a restaurantes existentes hasta que el owner lo active.
+// dias_atencion: días de la semana en que atiende, formato JS Date.getDay() (0=Domingo ... 6=Sábado).
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN horario_activo INTEGER DEFAULT 0`); } catch (_) {}
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN hora_apertura TEXT DEFAULT '00:00'`); } catch (_) {}
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN hora_cierre TEXT DEFAULT '23:59'`); } catch (_) {}
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN dias_atencion TEXT DEFAULT '0,1,2,3,4,5,6'`); } catch (_) {}
+
 // Tabla de suscripciones push (Gap 3 — Web Push)
 db.exec(`
   CREATE TABLE IF NOT EXISTS push_subscriptions (

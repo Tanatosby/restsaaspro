@@ -800,6 +800,53 @@
           </div>
         </div>
 
+        <!-- Horario de atención (Gap 18) -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">🕐 Horario de atención</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:14px;color:var(--muted)">Si lo activas, el sistema bloqueará pedidos y reservas fuera del horario y los días que elijas. El cliente verá un aviso de "Cerrado" en el menú.</p>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+              <input type="checkbox" id="cfg-horario-activo" style="width:18px;height:18px;accent-color:var(--accent)">
+              <span><strong>Activar horario estricto</strong></span>
+            </label>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+              <label style="font-size:14px;font-weight:600" for="cfg-hora-apertura">Abre</label>
+              <input type="time" id="cfg-hora-apertura" value="00:00"
+                style="font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <label style="font-size:14px;font-weight:600" for="cfg-hora-cierre">Cierra</label>
+              <input type="time" id="cfg-hora-cierre" value="23:59"
+                style="font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+            </div>
+            <div>
+              <span style="font-size:14px;font-weight:600;display:block;margin-bottom:0.5rem">Días de atención</span>
+              <div id="cfg-dias-atencion" style="display:flex;flex-wrap:wrap;gap:0.5rem">
+                <label style="display:flex;align-items:center;gap:6px;font-size:14px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="1" style="width:18px;height:18px;accent-color:var(--accent)"><span>Lun</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:14px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="2" style="width:18px;height:18px;accent-color:var(--accent)"><span>Mar</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:14px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="3" style="width:18px;height:18px;accent-color:var(--accent)"><span>Mié</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:14px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="4" style="width:18px;height:18px;accent-color:var(--accent)"><span>Jue</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:14px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="5" style="width:18px;height:18px;accent-color:var(--accent)"><span>Vie</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:14px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="6" style="width:18px;height:18px;accent-color:var(--accent)"><span>Sáb</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:14px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="0" style="width:18px;height:18px;accent-color:var(--accent)"><span>Dom</span>
+                </label>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="guardarHorarioAtencion()" style="align-self:flex-start">💾 Guardar</button>
+          </div>
+        </div>
+
         <!-- Auto-merge cuenta por mesa (Gap 8) -->
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-header"><span class="card-title">🔀 Auto-merge cuenta por mesa</span></div>

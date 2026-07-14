@@ -38,6 +38,8 @@
     </div>
     <!-- Mode label — sin opción de cambiar, fijo según URL -->
     <div id="mode-label" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.25rem"></div>
+    <!-- Banner de horario cerrado (Gap 18) -->
+    <div id="horario-cerrado-banner" style="display:none;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;margin-bottom:0.75rem"></div>
     <!-- Consultar reserva (siempre visible) -->
     <div style="text-align:right;margin-bottom:0.5rem">
       <button class="btn-consultar" onclick="showEstadoReserva(null)">
@@ -339,6 +341,7 @@
   // Pago state
   let modalidades          = { para_llevar: true, delivery: false }; // activas del restaurante
   let pagoInfo             = null; // { yape, plin, efectivo } del restaurante
+  let horarioInfo          = null; // { activo, apertura, cierre, dias, abierto_ahora, mensaje } del restaurante (Gap 18)
   // Orden/reserva armada en memoria mientras el cliente resuelve el pago —
   // no se crea nada en el backend hasta confirmarEnvioFinal(). Gate de pago
   // obligatorio (Gap 17, vision_negocio.md): antes el pedido se creaba de
@@ -400,7 +403,9 @@
       document.title = restData.nombre;
       pagoInfo    = restData.pagos       || null;
       modalidades = restData.modalidades || { para_llevar: true, delivery: false };
+      horarioInfo = restData.horario     || null;
       initModalidadSelectors();
+      actualizarEstadoHorario();
 
       // Si hay algún método de pago activo, el pago se resuelve ANTES de
       // crear el pedido/reserva — los botones reflejan que el siguiente
@@ -783,6 +788,26 @@ async function renderReservarContent() {
     );
   }
 
+  // Banner "Cerrado" + deshabilita el envío final mientras el restaurante
+  // esté fuera de su horario de atención (Gap 18). El cliente puede seguir
+  // viendo la carta/menú y armando su carrito con normalidad.
+  function actualizarEstadoHorario() {
+    const banner = document.getElementById('horario-cerrado-banner');
+    const cerrado = !!(horarioInfo && horarioInfo.activo && !horarioInfo.abierto_ahora);
+
+    if (banner) {
+      banner.style.display = cerrado ? 'block' : 'none';
+      banner.textContent   = cerrado ? `🕐 ${horarioInfo.mensaje}` : '';
+    }
+
+    ['btn-confirmar', 'btn-reservar'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.disabled = cerrado;
+    });
+    const resBarBtn = document.querySelector('.res-bar-btn');
+    if (resBarBtn) resBarBtn.disabled = cerrado;
+  }
+
   function getModalidadOrden() {
     const sel = document.querySelector('input[name="orden-modalidad"]:checked');
     return sel ? sel.value : 'en_local';
@@ -808,6 +833,8 @@ async function renderReservarContent() {
 
   async function confirmarPedido() {
     if (!cart.length) return;
+    if (horarioInfo && horarioInfo.activo && !horarioInfo.abierto_ahora)
+      return showMsg(horarioInfo.mensaje, true);
     const nombre = document.getElementById('nombre-cliente').value.trim();
     if (!nombre) return showMsg('Tu nombre es requerido', true);
 
@@ -905,6 +932,8 @@ async function renderReservarContent() {
   }
 
   async function confirmarReserva() {
+    if (horarioInfo && horarioInfo.activo && !horarioInfo.abierto_ahora)
+      return showMsg(horarioInfo.mensaje, true);
     const nombre   = document.getElementById('res-nombre').value.trim();
     const telefono = document.getElementById('res-telefono').value.trim();
     const fecha    = document.getElementById('res-fecha').value;

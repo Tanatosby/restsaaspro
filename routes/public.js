@@ -10,6 +10,7 @@ const { fechaLima, ahoraLima } = require('../utils/fecha');
 const { generarCodigoUnico } = require('../utils/codigoReserva');
 const { descontarStock, devolverStock, itemsMenuDeReserva } = require('../utils/stock');
 const { dentroDeVentanaCancelacion } = require('../utils/cancelacionReserva');
+const { estadoHorario, mensajeHorario, validarHorarioAhora, validarHorarioReserva } = require('../utils/horarioAtencion');
 const db      = require('../config/database');
 
 // Multer para comprobantes de pago (subidos por el cliente)
@@ -38,7 +39,8 @@ function getRestaurante(id) {
   return db.prepare(`
     SELECT id, nombre, foto_portada, color_primario, color_secundario,
            yape_activo, yape_telefono, plin_activo, plin_telefono, efectivo_activo,
-           para_llevar_activo, delivery_activo, costo_tapper, tarifa_delivery
+           para_llevar_activo, delivery_activo, costo_tapper, tarifa_delivery,
+           horario_activo, hora_apertura, hora_cierre, dias_atencion
     FROM restaurantes WHERE id = ? AND activo = 1
   `).get(id);
 }
@@ -68,6 +70,14 @@ router.get('/restaurante/:id', (req, res) => {
       delivery:        !!restaurante.delivery_activo,
       costo_tapper:    restaurante.costo_tapper    ?? 0,
       tarifa_delivery: restaurante.tarifa_delivery ?? 0,
+    },
+    horario: {
+      activo:       !!restaurante.horario_activo,
+      apertura:     restaurante.hora_apertura  || '00:00',
+      cierre:       restaurante.hora_cierre    || '23:59',
+      dias:         (restaurante.dias_atencion || '0,1,2,3,4,5,6').split(',').map(Number),
+      abierto_ahora: estadoHorario(restaurante, ahoraLima()).abierto,
+      mensaje:      restaurante.horario_activo ? mensajeHorario(restaurante) : null,
     },
   });
 });
@@ -209,6 +219,10 @@ router.post('/orders', (req, res) => {
   if (!rest)
     return res.status(404).json({ error: 'Restaurante no encontrado o inactivo' });
 
+  const horario = validarHorarioAhora(rest, ahoraLima());
+  if (!horario.permitido)
+    return res.status(400).json({ error: horario.error });
+
   const fecha = fechaLima();
 
   // Validar ítems de carta antes de insertar
@@ -319,6 +333,10 @@ router.post('/reservations', (req, res) => {
   const rest = getRestaurante(id_restaurante);
   if (!rest)
     return res.status(404).json({ error: 'Restaurante no encontrado o inactivo' });
+
+  const horario = validarHorarioReserva(rest, fecha, hora_llegada?.trim() || null, ahoraLima());
+  if (!horario.permitido)
+    return res.status(400).json({ error: horario.error });
 
   const MODALIDADES_RESERVA = ['en_local', 'para_llevar', 'delivery'];
   if (!MODALIDADES_RESERVA.includes(modalidad))
