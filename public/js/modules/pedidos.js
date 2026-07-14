@@ -150,12 +150,14 @@ function renderKanbanCard(item, zona) {
 // comprobanteThumb() vive en utils.js — compartida con ordenes.js/reservas.js.
 
 function renderKanbanOrden(o, zona) {
-  const minutos   = Math.floor((Date.now() - new Date(toUTC(o.created_at)).getTime()) / 60000);
-  const mesaTag   = o.mesa ? `· Mesa ${o.mesa} ` : '';
-  const items     = renderItemLines(o.carta_items, o.menu_items);
-  const btnAccion = btnOrden(o, zona);
-  const modBadge  = badgeModalidad(o.modalidad);
-  const pagoHtml  = o.metodo_pago ? `<div style="margin-top:4px">${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
+  const minutos    = Math.floor((Date.now() - new Date(toUTC(o.created_at)).getTime()) / 60000);
+  const mesaTag    = o.mesa ? `· Mesa ${o.mesa} ` : '';
+  const items      = renderItemLines(o.carta_items, o.menu_items);
+  const btnAccion  = btnOrden(o, zona);
+  // Cancelar: siempre disponible en cualquier etapa (mismo criterio que el panel de Órdenes).
+  const btnCancelar = `<button class="btn btn-danger btn-sm" onclick="accionRapidaOrden(${o.id},'es_cancelado')">✗ Cancelar</button>`;
+  const modBadge   = badgeModalidad(o.modalidad);
+  const pagoHtml   = o.metodo_pago ? `<div style="margin-top:4px">${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
 
   return `
     <div class="cola-card cola-orden">
@@ -169,18 +171,23 @@ function renderKanbanOrden(o, zona) {
       </div>
       ${items ? `<div class="cola-items">${items}</div>` : ''}
       ${pagoHtml}
-      ${btnAccion ? `<div class="order-actions" style="margin-top:0.5rem">${btnAccion}</div>` : ''}
+      <div class="order-actions" style="margin-top:0.5rem">${btnAccion}${btnCancelar}</div>
     </div>`;
 }
 
 function renderKanbanReserva(r, zona) {
-  const horaTag   = r.hora_llegada ? `🕐 ${r.hora_llegada} ` : '';
-  const mesaTag   = r.mesa ? `Mesa ${r.mesa} ` : '';
-  const codigo    = r.codigo ? `<span class="cola-codigo">🔑 ${r.codigo}</span>` : '';
-  const items     = renderItemLines(r.carta_items, r.menu_items);
-  const btnAccion = btnReserva(r, zona);
-  const modBadge  = badgeModalidad(r.modalidad);
-  const pagoHtml  = r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteThumb(r)}</div>` : '';
+  const horaTag    = r.hora_llegada ? `🕐 ${r.hora_llegada} ` : '';
+  const mesaTag    = r.mesa ? `Mesa ${r.mesa} ` : '';
+  const codigo     = r.codigo ? `<span class="cola-codigo">🔑 ${r.codigo}</span>` : '';
+  const items      = renderItemLines(r.carta_items, r.menu_items);
+  const btnAccion  = btnReserva(r, zona);
+  // Cancelar: se oculta una vez que el cliente ya llegó o la reserva ya se completó
+  // (mismo criterio que el panel de Reservas — no tiene sentido cancelar en ese punto).
+  const btnCancelar = (!r.es_cliente_llego && !r.es_full)
+    ? `<button class="btn btn-danger btn-sm" onclick="accionRapidaReserva(${r.id},'es_cancelado')">✗ Cancelar</button>`
+    : '';
+  const modBadge   = badgeModalidad(r.modalidad);
+  const pagoHtml   = r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteThumb(r)}</div>` : '';
 
   return `
     <div class="cola-card cola-reserva">
@@ -194,7 +201,7 @@ function renderKanbanReserva(r, zona) {
       </div>
       ${items ? `<div class="cola-items">${items}</div>` : ''}
       ${pagoHtml}
-      ${btnAccion ? `<div class="order-actions" style="margin-top:0.5rem">${btnAccion}</div>` : ''}
+      ${(btnAccion || btnCancelar) ? `<div class="order-actions" style="margin-top:0.5rem">${btnAccion}${btnCancelar}</div>` : ''}
     </div>`;
 }
 

@@ -2,6 +2,20 @@
 
 ---
 
+## ✅ Sesión 2026-07-14 (parte 4) — Gap 19: cancelar desde Cola del día
+
+**Prompt:** "la del botón de cancelar para que se pueda tener eso pendiente" — cierre del Gap 19 (la modalidad ya se mostraba en la Cola desde antes; solo faltaba cancelar).
+
+**Implementado:** `public/js/modules/pedidos.js` — botón "✗ Cancelar" agregado en `renderKanbanOrden()` (siempre visible, cualquier etapa) y `renderKanbanReserva()` (oculto si `es_cliente_llego` o `es_full`, mismo criterio que el panel de Reservas). Reutiliza `accionRapidaOrden()`/`accionRapidaReserva()`, ya existentes en el mismo archivo — mismo endpoint `PATCH /:id/estatus` que usan Órdenes/Reservas, sin cambios de backend (la devolución de stock ya la maneja ese endpoint).
+
+**Verificación:** Playwright contra servidor real — orden y reserva creadas vía API pública, canceladas desde la zona "Pendientes" de la Cola, confirmado el cambio de estatus en la BD (`cancelado`/`cancelada`); verificado además que en la zona "Por cobrar" el botón se mantiene para órdenes pero se oculta para reservas con cliente ya llegado. **267/267 jest verde** (sin tests nuevos — reutiliza endpoints ya cubiertos por la suite existente).
+
+**Gap 19 cerrado** en `vision_negocio.md`.
+
+**Pendiente:** deploy a producción (acumulado con Gap 17/18, tamaño de letra, ISS-018 a ISS-022). Siguiente en el backlog: Estadísticas de pedidos ("qué pidió la gente hoy" + fix del gráfico chico).
+
+---
+
 ## ✅ Sesión 2026-07-14 (parte 3) — ISS-022: Service Worker servía `owner.html` desactualizado
 
 **Prompt:** el usuario desplegó la sesión anterior a producción pero seguía sin ver la card nueva de "Tamaño de letra". Mandó captura (`issue_texto.png`) mostrando `owner.html` sin la card.
