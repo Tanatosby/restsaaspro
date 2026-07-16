@@ -1,4 +1,4 @@
-const CACHE = 'menupro-v3';
+const CACHE = 'menupro-v4';
 
 const ASSETS = [
   '/owner.html',

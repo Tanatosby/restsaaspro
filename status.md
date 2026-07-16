@@ -2,6 +2,29 @@
 
 ---
 
+## ✅ Sesión 2026-07-16 (parte 3) — Ícono de la PWA: "RA" → "MP"
+
+**Prompt:** "ahora sale RA en el logo de la app" — el ícono instalado en el celular mostraba un monograma
+placeholder de una marca anterior.
+
+**Diagnóstico:** `public/icons/icon-192.png`/`icon-512.png` tenían el monograma "RA" horneado en el PNG
+(no era texto en HTML/CSS — ni `login.html` ni `owner.html` tienen ese problema, ambos ya usan 🍽️ en
+`.brand-icon`). No existía ningún script versionado que generara esos íconos.
+
+**Fix:** `scripts/generate-app-icons.js` (nuevo) — usa Playwright (ya devDependency, mismo enfoque que
+`take-landing-screenshots.js`) para renderizar un `<div>` con los colores de marca ya establecidos
+(terracota `#c8692a` + círculo `#a0521e`) y el monograma "MP", capturado a 192×192 y 512×512 exactos.
+`public/sw.js`: `CACHE` bumpeado a `menupro-v4` — los íconos están en `ASSETS`, así que sin este bump los
+celulares con la PWA ya instalada seguirían viendo "RA" para siempre (mismo mecanismo que `ISS-022`).
+
+**Verificación:** dimensiones de los PNG confirmadas (192×192 / 512×512 exactos), inspección visual de
+ambos íconos. **283/283 jest verde** (sin tests nuevos — cambio de assets estáticos).
+
+**Pendiente:** deploy a producción + avisar que, igual que con `ISS-022`, los usuarios con la PWA ya
+instalada necesitan cerrar y reabrir la app una vez para que el navegador note el `sw.js` nuevo.
+
+---
+
 ## ✅ Sesión 2026-07-16 (parte 2) — Gap 21: notificaciones push ampliadas
 
 **Prompt:** implementar el Gap 21 anotado en la parte 1 de hoy — push de orden/reserva nueva + recordatorio

@@ -1,5 +1,14 @@
 # Features — Menú Pro
 
+## ~~Ícono de la PWA mostraba "RA" en vez de la marca~~ ✅ Completado 2026-07-16
+
+El usuario notó que el ícono instalado en el celular mostraba el monograma "RA" (placeholder de una marca
+anterior). `scripts/generate-app-icons.js` (nuevo, reutiliza Playwright como `take-landing-screenshots.js`)
+regenera `public/icons/icon-192.png`/`icon-512.png` con el monograma **"MP"** sobre los colores de marca ya
+establecidos (terracota `#c8692a` + círculo `#a0521e`). Bumpeado `sw.js` `CACHE` a `menupro-v4` — sin esto,
+los celulares con la PWA ya instalada seguirían viendo el ícono viejo indefinidamente (mismo problema que
+`ISS-022`). **283/283 jest verde** (sin tests nuevos, cambio de assets estáticos).
+
 ## Pendientes
 
 ### ~~Notificaciones push ampliadas (Gap 21)~~ ✅ Completado 2026-07-16
