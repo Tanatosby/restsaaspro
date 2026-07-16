@@ -327,7 +327,7 @@ En orden de impacto:
 | 18 | Horario de atención configurable y estricto | Medio | Baja | Pendiente — ver detalle abajo |
 | 19 | Cola del día: cancelar pedido + mostrar todos los datos (modalidad) | **Alto** | Baja | Pendiente — ver detalle abajo |
 | 20 | Módulo Pensionistas (saldo prepagado + login propio) | Medio | Alta | Anotado 2026-07-15 — ver detalle abajo y `pensionistas.md` |
-| 21 | Notificaciones push ampliadas (más allá de "hora de preparar") | **Alto** | Media | Anotado 2026-07-16 — confirmado por piloto #1 (ver `pilotos.md`) y `issues/ISS-025-push-no-llega.md` — ver detalle abajo |
+| 21 | ~~Notificaciones push ampliadas (más allá de "hora de preparar")~~ | ~~**Alto**~~ | ~~Media~~ | ✅ Completado 2026-07-16 — push de orden/reserva nueva + recordatorio de menú cada 8h — ver detalle abajo |
 | 22 | Aceptación de Términos y Condiciones (consentimiento de datos + disclosure de IA) | Medio | Baja-Media | Anotado 2026-07-16 — ver detalle abajo |
 
 > **Nota flujo Caso B reservas (sin pago anticipado):** el cliente llega sin haber pagado → mozo marca `es_cliente_llego` y asigna mesa → envía a cocina manualmente → flujo normal → cobra al final → `es_full`. La UI mostrará badge "⚠️ Sin pago" en la tarjeta para que el mozo lo identifique.
@@ -443,7 +443,7 @@ consumiendo ese saldo pedido a pedido, sin pasar por ningún flujo de pago (Yape
 ("fiado"); si el pensionista puede pedir cualquier plato del menú o el owner puede restringirlo;
 si la recarga de saldo la puede hacer solo el owner o también un mozo con permiso.
 
-**Gap 21 — Notificaciones push ampliadas** *(anotado 2026-07-16, sin implementar)*
+**Gap 21 — Notificaciones push ampliadas** ✅ *Completado 2026-07-16*
 
 Hoy el push (`utils/autoPreparacion.js` + `public/sw.js`) **solo** se dispara en un momento: "hora de
 preparar" (X minutos antes de la `hora_llegada` de una reserva confirmada). No existe ningún push para
@@ -458,6 +458,14 @@ en pantalla con el celular sin usar) apenas pasa algo relevante — ver `pilotos
 Ambas siempre condicionadas a que el dispositivo haya dado permiso de notificaciones — si no lo dio, simplemente no se envía nada, igual que el comportamiento actual de "hora de preparar".
 
 **Otros candidatos evaluados, fuera de alcance por ahora:** comprobante de pago pendiente de confirmar, plato listo en cocina (aviso al mozo). Quedan anotados para una futura vuelta si hace falta.
+
+**Implementado:**
+- `utils/pushNotificaciones.js` (nuevo): `enviarPushRestaurante(db, id_restaurante, payload, wpush)` genérico — extraído de la lógica que antes vivía solo en `autoPreparacion.js` (envío + limpieza de suscripciones vencidas 410). `autoPreparacion.js` ahora delega en él, sin cambios de comportamiento.
+- `routes/public.js`: tras `POST /orders` y `POST /reservations` exitosos, envía push "🆕 Nueva orden"/"🆕 Nueva reserva" con el nombre del cliente (y hora de llegada si aplica). `web-push` es un módulo singleton — ya viene configurado con las VAPID keys por `app.js`, así que no hace falta pasarlo por parámetros.
+- `utils/recordatorioMenu.js` (nuevo): job cada 30 min (`iniciarJob`), revisa restaurantes activos sin menú del día de hoy (`restaurantesSinMenuHoy`) y envía push solo si pasaron ≥8h desde el último aviso (`yaPasaron8Horas`, guardado en la nueva columna `restaurantes.ultimo_recordatorio_menu`). Arrancado en `app.js` junto al job de auto-preparación.
+- Migración idempotente: `restaurantes.ultimo_recordatorio_menu TEXT DEFAULT NULL`.
+- Tests: `tests/recordatorio-menu.test.js` (16 casos — throttle de 8h, detección de restaurantes sin menú, payload, múltiples restaurantes por tick). **283/283 jest verde.**
+- Verificado manualmente contra el servidor real: orden creada con éxito sin errores (el restaurante demo no tiene suscripciones push, así que `enviarPushRestaurante` no-opea limpio); servidor arranca sin errores con ambos jobs activos.
 
 Pendiente (relacionado pero separado): agregar feedback visible en Configuración sobre el estado de la
 suscripción push (activa/denegada/sin configurar), hoy 100% silenciosa (ver `ISS-025`).

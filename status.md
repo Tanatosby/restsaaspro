@@ -2,6 +2,41 @@
 
 ---
 
+## ✅ Sesión 2026-07-16 (parte 2) — Gap 21: notificaciones push ampliadas
+
+**Prompt:** implementar el Gap 21 anotado en la parte 1 de hoy — push de orden/reserva nueva + recordatorio
+de menú sin configurar cada 8h. Ejecutado paso a paso con aprobación entre cada uno.
+
+**Implementado:**
+1. Migración idempotente `restaurantes.ultimo_recordatorio_menu TEXT DEFAULT NULL` (`config/database.js`).
+2. `utils/pushNotificaciones.js` (nuevo): `enviarPushRestaurante(db, id_restaurante, payload, wpush)`
+   genérico, extraído de la lógica que antes vivía solo en `autoPreparacion.js` (envío + limpieza de
+   suscripciones vencidas 410). `autoPreparacion.js` refactorizado para delegar en él, sin cambiar su
+   comportamiento (verificado con sus 17 tests existentes, todos verdes).
+3. `routes/public.js`: tras `POST /orders` y `POST /reservations` exitosos, envía push "🆕 Nueva
+   orden"/"🆕 Nueva reserva". `web-push` es un módulo singleton ya configurado con las VAPID keys por
+   `app.js`, así que `routes/public.js` solo necesita requerirlo, sin pasarlo por parámetros.
+4. `utils/recordatorioMenu.js` (nuevo): job cada 30 min, detecta restaurantes activos sin menú del día de
+   hoy y envía push solo si pasaron ≥8h desde el último aviso (throttle vía la columna nueva). Funciones
+   puras testeables (`yaPasaron8Horas`, `restaurantesSinMenuHoy`) siguiendo el mismo patrón que
+   `autoPreparacion.js`/`horarioAtencion.js`.
+5. `app.js`: arrancado el nuevo job junto al de auto-preparación.
+
+**Tests:** `tests/recordatorio-menu.test.js` (16 casos nuevos — throttle de 8h con bordes exactos,
+detección de restaurantes sin menú activo/de otro día/inactivos, payload, múltiples restaurantes por
+tick, comportamiento sin wpush). **283/283 jest verde** (267 previos + 16 nuevos).
+
+**Verificación manual:** servidor real levantado en puerto de prueba — orden creada con éxito vía `curl`
+contra el restaurante demo (sin errores, sin suscripciones push activas por lo que el envío no-opea
+limpio); servidor arranca sin errores con ambos jobs corriendo. Orden de prueba eliminada al final.
+
+**Gap 21 cerrado** en `vision_negocio.md`/`features.md`.
+
+**Pendiente:** deploy a producción; feedback visible en Configuración sobre el estado de la suscripción
+push (relacionado con `ISS-025`, no implementado en esta sesión).
+
+---
+
 ## ✅ Sesión 2026-07-16 — Documentación: primera experiencia piloto + `pilotos.md` (nuevo)
 
 **Prompt:** el usuario contó que el restaurante piloto #1 usó la app lunes y martes (13-14 de julio), se

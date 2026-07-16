@@ -2,17 +2,19 @@
 
 ## Pendientes
 
-### Notificaciones push ampliadas (Gap 21)
-*Anotado 2026-07-16, pendiente de implementar. Ver Gap 21 en `vision_negocio.md`, `pilotos.md` y `issues/ISS-025-push-no-llega.md`.*
+### ~~Notificaciones push ampliadas (Gap 21)~~ ✅ Completado 2026-07-16
+*Ver Gap 21 en `vision_negocio.md`, `pilotos.md` y `issues/ISS-025-push-no-llega.md`.*
 
-Confirmado por el piloto #1: hoy el push solo existe para "hora de preparar" (`utils/autoPreparacion.js`).
-Alcance decidido con el usuario — 2 notificaciones nuevas:
-1. Push al crearse una orden walk-in o una reserva nueva (tiempo real, tipo WhatsApp).
-2. Recordatorio cada 8 horas si el menú del día de hoy no está configurado.
+Confirmado por el piloto #1: hasta ahora el push solo existía para "hora de preparar"
+(`utils/autoPreparacion.js`). 2 notificaciones nuevas:
+1. Push al crearse una orden walk-in o una reserva nueva (tiempo real, tipo WhatsApp) — `routes/public.js`.
+2. Recordatorio cada 8 horas si el menú del día de hoy no está configurado — nuevo job
+   `utils/recordatorioMenu.js` (tick cada 30 min, throttle de 8h vía `restaurantes.ultimo_recordatorio_menu`).
 
 Ambas condicionadas al permiso de notificaciones del dispositivo (si no se otorgó, no se envía nada, igual
-que el comportamiento actual). Pendiente de armar TODO técnico antes de implementar — ver conversación con
-el usuario para el detalle de arquitectura propuesta.
+que antes). Se extrajo `utils/pushNotificaciones.js` como helper genérico de envío, reutilizado por
+`autoPreparacion.js` (refactor sin cambio de comportamiento), `routes/public.js` y el job nuevo.
+Tests: `tests/recordatorio-menu.test.js` (16 casos). **283/283 jest verde.**
 
 ### Landing — disclosure de transparencia sobre IA
 *Anotado 2026-07-16, pendiente de implementar.*

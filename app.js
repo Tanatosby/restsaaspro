@@ -19,7 +19,8 @@ const usuariosRoutes     = require('./routes/usuarios');
 const { router: reportesRoutes } = require('./routes/reportes');
 const mesasRoutes        = require('./routes/mesas');
 const pushRoutes         = require('./routes/push');
-const { iniciarJob }     = require('./utils/autoPreparacion');
+const { iniciarJob }              = require('./utils/autoPreparacion');
+const { iniciarJob: iniciarJobRecordatorioMenu } = require('./utils/recordatorioMenu');
 
 
 // Configurar Web Push con las VAPID keys del .env
@@ -159,6 +160,9 @@ app.use((err, req, res, next) => {
 // Iniciar job de auto-preparación de reservas (Gap 3)
 const db = require('./config/database');
 iniciarJob(db, webpush);
+
+// Iniciar job de recordatorio de menú sin configurar, cada 8h (Gap 21)
+iniciarJobRecordatorioMenu(db, webpush);
 
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running  → http://localhost:${PORT}`);

@@ -2,6 +2,8 @@
 // Job que detecta reservas confirmadas próximas y las pasa automáticamente a "En cocina".
 // Lima siempre es UTC-5 (Perú no tiene horario de verano).
 
+const { enviarPushRestaurante: enviarPush } = require('./pushNotificaciones');
+
 const LIMA_OFFSET = '-5 hours';
 
 /**
@@ -29,37 +31,17 @@ function obtenerReservasParaPreparar(db) {
 }
 
 /**
- * Envía una notificación push a todos los dispositivos suscritos del restaurante.
- * wpush = módulo web-push (real o mock en tests).
- * Si un endpoint ya no es válido (410), se elimina de la BD.
+ * Envía la notificación push "hora de preparar" a todos los dispositivos
+ * suscritos del restaurante de la reserva. Delega el envío/limpieza genérico
+ * en utils/pushNotificaciones.js (compartido con Gap 21).
  */
 function enviarPushRestaurante(db, reserva, wpush) {
-  const suscripciones = db.prepare(`
-    SELECT id, subscription FROM push_subscriptions WHERE id_restaurante = ?
-  `).all(reserva.id_restaurante);
-
-  if (!suscripciones.length) return;
-
-  const payload = JSON.stringify({
+  enviarPush(db, reserva.id_restaurante, {
     title: '🍽 Hora de preparar',
     body:  `Reserva de ${reserva.nombre_cliente} — llega en ${reserva.minutos_preparacion} min`,
     icon:  '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-  });
-
-  for (const row of suscripciones) {
-    let sub;
-    try { sub = JSON.parse(row.subscription); } catch (_) { continue; }
-
-    wpush.sendNotification(sub, payload).catch(err => {
-      if (err.statusCode === 410) {
-        // El dispositivo ya no tiene la suscripción activa — limpiar
-        db.prepare(`DELETE FROM push_subscriptions WHERE id = ?`).run(row.id);
-      } else {
-        console.error(`[AutoPrep] Push error (sub ${row.id}):`, err.message);
-      }
-    });
-  }
+  }, wpush);
 }
 
 /**

@@ -6,11 +6,13 @@ const router  = express.Router();
 const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
+const webpush = require('web-push');
 const { fechaLima, ahoraLima } = require('../utils/fecha');
 const { generarCodigoUnico } = require('../utils/codigoReserva');
 const { descontarStock, devolverStock, itemsMenuDeReserva } = require('../utils/stock');
 const { dentroDeVentanaCancelacion } = require('../utils/cancelacionReserva');
 const { estadoHorario, mensajeHorario, validarHorarioAhora, validarHorarioReserva } = require('../utils/horarioAtencion');
+const { enviarPushRestaurante } = require('../utils/pushNotificaciones');
 const db      = require('../config/database');
 
 // Multer para comprobantes de pago (subidos por el cliente)
@@ -287,6 +289,13 @@ router.post('/orders', (req, res) => {
     throw e;
   }
 
+  enviarPushRestaurante(db, id_restaurante, {
+    title: '🆕 Nueva orden',
+    body:  `${nombre_cliente.trim()} — mesa ${mesa || 's/n'}`,
+    icon:  '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+  }, webpush);
+
   res.status(201).json({
     message: '¡Pedido enviado correctamente!',
     id_orden: ordenId
@@ -421,6 +430,13 @@ router.post('/reservations', (req, res) => {
     if (e.status === 409) return res.status(409).json({ error: e.message });
     throw e;
   }
+
+  enviarPushRestaurante(db, id_restaurante, {
+    title: '🆕 Nueva reserva',
+    body:  `${nombre_cliente.trim()}${hora_llegada?.trim() ? ' — llega ' + hora_llegada.trim() : ''}`,
+    icon:  '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+  }, webpush);
 
   res.status(201).json({
     message: '¡Reserva creada correctamente!',

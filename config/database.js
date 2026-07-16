@@ -499,6 +499,11 @@ db.exec(`
   )
 `);
 
+// Migración idempotente: recordatorio de menú sin configurar (Gap 21)
+// Guarda cuándo se envió el último push "no olvides configurar tu menú" para
+// no reenviarlo antes de que pasen 8 horas, aunque el job corra más seguido.
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN ultimo_recordatorio_menu TEXT DEFAULT NULL`); } catch (_) {}
+
 console.log('✅ Database ready');
 
 module.exports = db;
