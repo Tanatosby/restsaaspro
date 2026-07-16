@@ -2,6 +2,471 @@
 
 ---
 
+## ✅ Sesión 2026-07-15 — Análisis: módulo Pensionistas (documentación, sin implementar)
+
+**Prompt:** el usuario quiere un nuevo módulo para que los restaurantes asignen pensionistas — comensales
+recurrentes que pagan por adelantado (semana/mes) y consumen contra ese pago. Pidió primero un análisis
+arquitectónico en `pensionistas.md`, sin implementar. En una segunda vuelta afinó el diseño: saldo en
+**dinero** (no menús contados), gestión desde un módulo nuevo del owner "Pensionistas" (como crear
+usuarios, pero sin selector de rol), el pensionista tiene **login propio** para pedir, sus pedidos van
+en un espacio separado de Órdenes/Reservas pero aparecen con **tag "Pensionista"** (nombre y apellido
+visibles) en Cola del día y Cocina.
+
+**Análisis completo en `pensionistas.md` (nuevo).** Puntos clave de la arquitectura propuesta:
+- Rol nuevo `pensionista` en la tabla `roles`, reutilizando el JWT/login/cookie existente
+  (`routes/auth.js`, `middleware/authenticate.js`) — no se construye un sistema de auth paralelo.
+- 3 tablas nuevas: `pensionistas` (extiende `usuarios` 1-a-1 con apellido/teléfono/saldo),
+  `pensionista_movimientos` (ledger de recargas/consumos, evita disputas de "yo recargué y no aparece"),
+  `pedidos_pensionista` + items (deliberadamente separada de `ordenes`/`reservas`).
+- Cola del día y Cocina pasan de unificar 2 fuentes a 3 (`ordenes` + `reservas` + `pedidos_pensionista`),
+  con tag visual distintivo.
+- Reportería separada: recargas (ingreso real) vs. consumo (gasto del saldo ya cobrado), para no
+  contar el mismo dinero dos veces en "Ganancias".
+- Quedan 5 preguntas de negocio sin responder (documentadas en `pensionistas.md` §11) — la más
+  importante: ¿saldo insuficiente bloquea el pedido o se permite negativo ("fiado")?
+
+**Documentación actualizada:** `vision_negocio.md` (Gap 20, nuevo), `features.md` (entrada en Pendientes).
+
+**Pendiente:** decisión del usuario sobre las preguntas abiertas antes de armar el TODO list de
+implementación. Sin cambios de código en esta sesión.
+
+---
+
+## ✅ Sesión 2026-07-14 (parte 5) — ISS-023 + ISS-024: lentitud en horas pico
+
+**Prompt:** el usuario reportó lentitud al reabrir la app, notada especialmente con varios pedidos/en horas pico, más lentitud aparte al cargar imágenes del menú. Pidió poder auditar con una carga masiva simulada en vez de adivinar.
+
+**ISS-023 — Cola del día:** `pedidos.js` pedía `GET /api/reservations` **sin filtro** en cada poll de 15s — traía todo el historial de reservas (+ N+1 de ítems por cada una). Como `better-sqlite3` es síncrono, esa consulta bloqueaba el proceso Node entero mientras se resolvía, no solo la pantalla de quien la pidió — coincide con que se sienta peor en horas pico (más historial acumulado + más gente usando el sistema a la vez). `reservas.js` ya resolvía esto bien (5 llamadas por `flag`); se replicó el mismo patrón en `pedidos.js`.
+
+**Auditoría** (`scripts/audit-carga-cola.js`, nuevo — sembró 3000 reservas históricas realistas contra el restaurante piloto, midió, limpió los datos al final): **540ms → 38ms, 14.2× más rápido, 95% menos datos transferidos.**
+
+**ISS-024 — Imágenes del menú:** de paso, se encontró que `/uploads` se sirve sin ningún header de caché (`express.static` sin `max-age`) — cada carga de página vuelve a pedir cada foto al servidor, aunque nunca cambien (los nombres ya son versionados con timestamp desde ISS-015, así que cachearlas para siempre es seguro). Se agregó `Cache-Control: public, max-age=31536000, immutable` solo para `/uploads`, sin tocar el caché de `owner.html`/`css`/JS (deben seguir revalidando siempre).
+
+**Verificación:** `curl -I` confirma los headers correctos en ambos casos. **267/267 jest verde** en todo el proceso.
+
+**Pendiente:** deploy a producción (acumulado con todo lo de hoy: Gap 17/18/19, tamaño de letra, ISS-018 a ISS-024).
+
+---
+
+## ✅ Sesión 2026-07-14 (parte 4) — Gap 19: cancelar desde Cola del día
+
+**Prompt:** "la del botón de cancelar para que se pueda tener eso pendiente" — cierre del Gap 19 (la modalidad ya se mostraba en la Cola desde antes; solo faltaba cancelar).
+
+**Implementado:** `public/js/modules/pedidos.js` — botón "✗ Cancelar" agregado en `renderKanbanOrden()` (siempre visible, cualquier etapa) y `renderKanbanReserva()` (oculto si `es_cliente_llego` o `es_full`, mismo criterio que el panel de Reservas). Reutiliza `accionRapidaOrden()`/`accionRapidaReserva()`, ya existentes en el mismo archivo — mismo endpoint `PATCH /:id/estatus` que usan Órdenes/Reservas, sin cambios de backend (la devolución de stock ya la maneja ese endpoint).
+
+**Verificación:** Playwright contra servidor real — orden y reserva creadas vía API pública, canceladas desde la zona "Pendientes" de la Cola, confirmado el cambio de estatus en la BD (`cancelado`/`cancelada`); verificado además que en la zona "Por cobrar" el botón se mantiene para órdenes pero se oculta para reservas con cliente ya llegado. **267/267 jest verde** (sin tests nuevos — reutiliza endpoints ya cubiertos por la suite existente).
+
+**Gap 19 cerrado** en `vision_negocio.md`.
+
+**Pendiente:** deploy a producción (acumulado con Gap 17/18, tamaño de letra, ISS-018 a ISS-022). Siguiente en el backlog: Estadísticas de pedidos ("qué pidió la gente hoy" + fix del gráfico chico).
+
+---
+
+## ✅ Sesión 2026-07-14 (parte 3) — ISS-022: Service Worker servía `owner.html` desactualizado
+
+**Prompt:** el usuario desplegó la sesión anterior a producción pero seguía sin ver la card nueva de "Tamaño de letra". Mandó captura (`issue_texto.png`) mostrando `owner.html` sin la card.
+
+**Diagnóstico:** `public/sw.js` cachea `owner.html`/`menu.html`/`css/owner.css` (están en `ASSETS`) con estrategia cache-primero — el navegador solo refresca ese caché cuando el contenido de `sw.js` mismo cambia. `CACHE = 'menupro-v2'` no se había bumpeado desde el commit `a4f8d7` (**2026-05-29**) — cualquier visitante desde esa fecha quedó con esas 3 páginas cacheadas de forma permanente, sin importar cuántos deploys posteriores se hicieran. Esto probablemente explica retroactivamente por qué varios fixes de sesiones anteriores (ISS-016 a ISS-021, Gap 17, Gap 18) parecían no funcionar tras desplegarse.
+
+**Fix:** `public/sw.js` → `CACHE = 'menupro-v3'`. Ver [ISS-022](issues/ISS-022-service-worker-cache-desactualizado.md) para el detalle completo y la recomendación de bumpear esta constante en cada deploy futuro que toque esos 3 archivos (o migrar a network-first/stale-while-revalidate).
+
+**Verificación:** Playwright — simulado el escenario exacto (caché `menupro-v2` con un `owner.html` viejo puesto a mano), registrado el `sw.js` nuevo, confirmado que el caché viejo se borra y el nuevo queda poblado con el HTML real actualizado; tras recargar con sesión de owner válida, los 3 botones `.font-scale-btn` aparecen en el DOM. **267/267 jest verde.**
+
+**Pendiente:** deploy a producción + avisar al usuario que además del `git pull`/`pm2 restart` puede necesitar cerrar y reabrir la PWA una vez para que el navegador note el `sw.js` nuevo.
+
+---
+
+## ✅ Sesión 2026-07-14 (parte 2) — Tamaño de letra ajustable en el panel del owner
+
+**Prompt:** "ahora para aumentar el tamaño de letra" — siguiente ítem del backlog documentado en `features.md` (anotado 2026-07-13).
+
+**Decisiones de diseño (2 preguntas al usuario antes de implementar, vía AskUserQuestion):** 3 niveles fijos (Normal/Grande/Muy grande), control solo dentro de Configuración (no en el sidebar).
+
+**Mecanismo — diagnóstico técnico probado empíricamente antes de decidir:**
+1. `zoom` (probado primero por ser el cambio de menor alcance) **se descartó** — verificado con Playwright que rompe `grid-template-columns: repeat(auto-fill, minmax(...))` del Home: `.home-card` terminaba renderizando en fila (hasta 1270px de ancho en un viewport de 360px) en vez de apilarse en columna.
+2. Se optó por convertir mecánicamente los ~247 `font-size` en `px` de `owner.css` + `owner.html` + 9 módulos JS + 5 widgets a `rem` (script de migración temporal en el scratchpad, no versionado) y escalar con `--font-scale` sobre `html,body`.
+
+**Bug propio detectado y corregido en el camino (antes de commitear):** la primera pasada dividió cada `px` por 16 (el default del navegador) en vez de por 14 (la base real de `html,body{font-size:14px}` del proyecto desde antes de este cambio) — eso encogía **todo el panel ~12.5%** incluso en el nivel "Normal", y además dejaba los inputs marcados originalmente como 16px (regla obligatoria anti-zoom de iOS) por debajo del mínimo. Como los archivos migrados no estaban commiteados aún, se revirtieron con `git checkout` (Gap 18 de la sesión anterior ya estaba a salvo en el commit `ed4293f`) y se rehizo la conversión dividiendo por 14.
+
+**Implementado:**
+- `utils`/CSS: `html,body { font-size: calc(14px * var(--font-scale, 1)); }` — raíz en `px` absoluto (un `rem` en el propio elemento raíz se resolvería contra el default del navegador, no contra sí mismo, reintroduciendo el mismo bug).
+- Resto del CSS/JS convertido a `rem` relativo a esa raíz (script mecánico: `rem = px / 14`, redondeado a 6 decimales).
+- `public/owner.html`: script en `<head>` (mismo patrón que el tema claro/oscuro, aplicado antes del paint para evitar flash) — lee `localStorage['mp-font-scale']`, aplica `--font-scale`, expone `window.setFontScale(factor)`. Nueva card "🔤 Tamaño de letra" en Configuración con 3 botones.
+- `public/js/modules/config.js`: `loadConfiguracion()` marca el botón activo según `localStorage`.
+- `public/css/owner.css`: `.font-scale-btn`/`.font-scale-btn.active`.
+
+**Verificación con Playwright (JWT firmado localmente + sessionStorage simulado, sin adivinar contraseñas):** a escala Normal, cada elemento reproduce el `px` original exacto (`brand-icon` 20px, `.nav-item` 14px, 5 inputs muestreados incluidos los del horario de atención — todos en 16px, igual que antes); a 1.3 el root pasa a 18.2px y un input de 16px pasa a 20.8px (proporcional, nunca por debajo de 16px ya que los 3 niveles son siempre ≥100%); sin overflow horizontal en Home/Configuración/Cola del día en los 3 niveles (`scrollWidth === innerWidth` siempre). Persistencia confirmada tras recargar (aplicado antes del paint, sin flash). **267/267 jest verde** (sin cambios de backend).
+
+**Pendiente:** deploy a producción, acumulado con Gap 17/18 y los fixes ISS-018 a ISS-021.
+
+---
+
+## ✅ Sesión 2026-07-14 — Gap 18: horario de atención configurable y estricto
+
+**Prompt:** siguiente ítem del backlog (Gap 18, anotado 2026-07-13). El usuario pidió que no se pueda registrar ninguna orden ni reserva antes de la hora de atención.
+
+**Decisiones de diseño (3 preguntas al usuario antes de implementar, vía AskUserQuestion):**
+1. Un solo rango horario para toda la semana **más** selección de días de atención (ej. Lun–Sáb, cerrado domingo) — no horarios distintos por día.
+2. Para reservas: se valida tanto el momento en que el cliente confirma (hora actual) **como** la `hora_llegada` futura si la especifica — no puede reservar para una hora fuera del horario de atención aunque sea otro día.
+3. En `menu.html`, el cliente sigue viendo la carta/menú con normalidad; solo se bloquea el envío final (con banner de aviso + botón deshabilitado).
+
+**Implementado:**
+- **BD** (`config/database.js`): migración idempotente — `restaurantes.horario_activo` (apagado por defecto, no rompe restaurantes existentes), `hora_apertura`/`hora_cierre` (TEXT 'HH:MM'), `dias_atencion` (TEXT, días JS `getDay()` separados por coma).
+- **`utils/horarioAtencion.js`** (nuevo): funciones puras `estadoHorario`, `validarHorarioAhora`, `validarHorarioReserva`, `mensajeHorario`. Límite conocido documentado: no soporta horarios que crucen la medianoche (asume apertura < cierre en el mismo día).
+- **`routes/public.js`**: `getRestaurante()` trae las nuevas columnas; `POST /orders` y `POST /reservations` bloquean con 400 si el restaurante está cerrado (reservas validan además la `hora_llegada` futura); `GET /restaurante/:id` expone `horario` (activo, apertura, cierre, días, `abierto_ahora`, mensaje) para que el cliente pinte el banner sin adivinar.
+- **`routes/menu.js`**: `GET /restaurante/config` expone los nuevos campos; nuevo `PATCH /config/horario` (valida formato HH:MM, apertura < cierre, días válidos).
+- **Frontend owner** (`public/owner.html` + `public/js/modules/config.js`): nueva card "🕐 Horario de atención" — toggle activar, inputs `type="time"`, checkboxes de días de la semana (mismo patrón que "Auto-preparación"/"Cancelación de reservas").
+- **Frontend cliente** (`public/menu.html`): banner "🕐 Cerrado — Atendemos..." cuando aplica; botones "Confirmar pedido"/"Confirmar reserva" deshabilitados con el mismo mensaje; guarda adicional dentro de `confirmarPedido()`/`confirmarReserva()` por si el horario cambia mientras el cliente tiene la página abierta (el backend valida igual, defensa en profundidad).
+
+**Tests:** `tests/horario-atencion.test.js` (13 casos sobre las funciones puras — rango horario, borde de cierre exclusivo, día no atendido, validación de `hora_llegada` futura). **267/267 jest verde** (254 previos + 13 nuevos). Verificación E2E real con Playwright (`scripts/test-horario-atencion.js`, nuevo, no forma parte de jest): 9/9 — restaurante cerrado bloquea backend (orden y reserva) y muestra banner + botón deshabilitado en `menu.html`; restaurante abierto permite crear y oculta el banner; reserva con `hora_llegada` fuera del rango configurado se bloquea aunque el momento de creación esté dentro de horario. Verificado además manualmente con `curl` contra servidor local (owner autenticado con JWT firmado localmente): GET/PATCH `/api/menu/config/horario` guardan y persisten correctamente; probado también guardar+recargar la card en `owner.html` con Playwright, confirmando que la UI lee lo persistido tras recargar.
+
+**Gap 18 cerrado** en `vision_negocio.md`.
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`), junto con los pendientes acumulados de sesiones anteriores (gate de pago obligatorio Gap 17, fixes ISS-018 a ISS-021). Siguiente ítem del backlog: Gap 19 (Cola del día: cancelar pedido + mostrar modalidad).
+
+---
+
+## ✅ Sesión 2026-07-13 (parte 3) — Gap 17: gate de pago obligatorio + nombre obligatorio en órdenes
+
+**Prompt:** "comenzamos con el gate de pago obligatorio + nombre obligatorio" — siguiente ítem del backlog documentado en la sesión anterior.
+
+**Decisiones de diseño (2 preguntas al usuario antes de implementar, vía AskUserQuestion):**
+1. Restaurante con solo Efectivo activo (sin Yape/Plin): se mantiene la pantalla de pago normal, 2 taps (elegir método → confirmar) — no se auto-selecciona sin interacción.
+2. Flujo de pantallas: el usuario pidió explícitamente **invertir** el orden actual ("ahora primero confirma el pedido y luego paga, sería más bien al revés, primero paga y luego confirma") y, ante 2 mockups concretos, eligió el de **3 pasos con pantalla de repaso final** (pago → repaso con resumen → recién ahí se envía) en vez de que "Ya pagué" ya dispare el envío. Sobre la atomicidad backend, aceptó explícitamente el riesgo residual de mantener 2 llamadas (crear + adjuntar pago) en vez de fusionar en un endpoint único, para no tocar `routes/orders.js`/`routes/reservations.js`.
+
+**Implementado:**
+- **Backend** (`routes/public.js`, `POST /orders`): `nombre_cliente` pasa a ser obligatorio (400 si falta) — mismo patrón que reservas.
+- **Frontend** (`public/menu.html`) — reestructuración completa del flujo de pago:
+  - Nuevo estado `pagoPendiente` reemplaza a `pagoOrdenId`/`pagoTipo`/`pagoCodigoReserva` — el pedido/reserva vive solo en memoria del navegador hasta el paso final.
+  - `confirmarPedido()`/`confirmarReserva()`: si el restaurante tiene algún método de pago activo, ya no crean nada — arman el payload y abren la pantalla de pago. Si no hay ningún método activo, siguen creando directo (sin cambios para ese caso).
+  - `enviarPago()`: pasó de disparar el `PATCH` de pago a solo **validar** (foto adjunta obligatoria para yape/plin) y avanzar a la nueva pantalla de repaso.
+  - Nueva pantalla `#repaso-screen`: resumen de ítems (render limpio, sin los botones de quitar del carrito original), nombre, método de pago, miniatura del comprobante si aplica, botón "← Volver" (corrige el método sin perder nombre/ítems) y botón final "✓ Confirmar pedido/reserva".
+  - `confirmarEnvioFinal()` (nueva): único punto donde se crea la orden/reserva de verdad — `POST /orders`/`/reservations` seguido inmediatamente del `PATCH` de pago con la foto, en la misma acción de tap.
+  - Botón del carrito pasa a decir "Ir a pagar →" cuando hay algún método de pago activo (se define una vez al cargar la config del restaurante).
+
+**Tests:** nuevo `scripts/test-gate-pago.js` (Playwright, no forma parte de jest) — **24/24 checks verdes**, cubre: nombre obligatorio bloqueado en cliente y backend; la orden/reserva **no existe en la BD** ni al mostrar la pantalla de pago ni en el repaso (verificado con queries directas a SQLite entre cada paso); recién existe (con `metodo_pago`/`comprobante_url` ya adjuntos) al confirmar en el repaso; restaurante sin métodos de pago sigue creando directo; botón "← Volver" conserva nombre/ítems y refleja el método corregido. `npm test` **254/254 verde** antes y después (sin cambios de backend fuera de la validación de nombre).
+
+**Pendiente:** desplegar a producción junto con los 4 fixes de la sesión anterior (ISS-018 a ISS-021, aún no desplegados). Siguiente ítem del backlog: Gap 18 (horario de atención) o Gap 19 (Cola: cancelar + mostrar modalidad) — a definir con el usuario.
+
+---
+
+## ✅ Sesión 2026-07-13 (parte 2) — 4 fixes críticos + backlog documentado (8 pedidos del usuario)
+
+**Prompt:** el usuario trajo 8 issues/features de golpe (foto de comprobante rota en Cola, flujo de pago separado de la orden, pago en efectivo, horario de atención, nombre obligatorio, cancelar desde Cola, estadísticas de pedidos, tamaño de letra ajustable). Se pidió primero categorizar y documentar; en el camino, revisando código y logs de producción junto con el usuario, aparecieron 2 bugs críticos nuevos no reportados originalmente (botón de pago sin scroll, con capturas reales de una clienta afectada) y 2 bugs de infraestructura (detectados vía `pm2 logs`). El usuario aprobó implementar, probar y documentar el lote de 4 fixes ya diagnosticados; el resto queda documentado como backlog pendiente (ver `vision_negocio.md` Gaps 17-19 y `features.md`).
+
+**Implementado (4 fixes, todos verificados, sin romper nada — 254/254 jest verde):**
+1. **[ISS-018](issues/ISS-018-boton-pago-sin-scroll.md)** — `#pago-screen` sin `overflow-y` cortaba el botón "✓ Ya pagué" en celulares con poco alto disponible (capturas reales de una clienta). Fix: `overflow-y:auto` + `justify-content:flex-start`.
+2. **[ISS-019](issues/ISS-019-trust-proxy.md)** — `trust proxy` no configurado en `app.js`; el servidor detrás de Nginx generaba `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` en casi cada request (encontrado corriendo `pm2 logs` en producción junto con el usuario).
+3. **[ISS-020](issues/ISS-020-error-handler-sin-contexto.md)** — el error handler global solo logueaba `err.message`, sin ruta ni stack — imposible diagnosticar 500s en producción. Ahora loguea `req.method`, `req.originalUrl` y `err.stack`.
+4. **[ISS-021](issues/ISS-021-comprobante-rompe-pwa.md)** — la foto de comprobante en Cola del día "no cargaba" y la app se cerraba sola al volver: `owner.html` es una PWA instalada (standalone) y las miniaturas de comprobante usaban `<a target="_blank">`, que rompe el contenedor de una PWA standalone (sobre todo iOS). Reemplazado por un modal in-app nuevo, compartido entre `pedidos.js`/`ordenes.js`/`reservas.js` (de paso se eliminó una triplicación de código idéntico entre los 3 módulos).
+
+**Metodología de diagnóstico (vale la pena registrar):** para ISS-021 se descartaron 2 hipótesis con evidencia real antes de llegar a la causa — (a) límite de tamaño de Nginx/Multer (5MB): descartado revisando `ls -la` de los archivos reales en el servidor, todos bien por debajo del límite; (b) archivo faltante/corrupto: descartado, los archivos existen. La causa real solo apareció al pedirle al usuario una descripción más precisa del síntoma ("la app se cierra sola al querer reabrir") — coincide con el comportamiento documentado de `target="_blank"` en PWAs standalone instaladas.
+
+**Verificación:** `scripts/test-fixes-pago-comprobante.js` (nuevo, Playwright, no forma parte de jest) — Test 1 reproduce el viewport reducido real y confirma que el botón de pago es alcanzable con scroll; Test 2 crea una orden + pago con foto real vía API, loguea como owner, y confirma que la miniatura ya no usa `<a target="_blank">`, que tocarla abre el modal sin abrir pestañas nuevas, y que muestra la foto correcta. 10/10 checks verdes. `npm test` 254/254 verde antes y después de los 4 fixes.
+
+**Backlog documentado, sin implementar aún** (aprobado categorizar, no implementar todavía): ver `vision_negocio.md` Gap 17 (pago obligatorio antes de crear orden/reserva, con efectivo como default si no hay Yape/Plin), Gap 18 (horario de atención estricto configurable), Gap 19 (Cola del día: cancelar pedido + mostrar modalidad/todos los datos); `features.md` (nombre obligatorio en órdenes — paridad con reservas; estadísticas "qué pidió la gente hoy" + fix del gráfico de barras chico en reportería; tamaño de letra ajustable/auto en la pantalla del owner). El `FOREIGN KEY constraint failed` visto en los logs de producción no correlacionó con ISS-021 — queda abierto, a monitorear con el logging mejorado de ISS-020 la próxima vez que ocurra.
+
+**Pendiente:** desplegar los 4 fixes a producción (`git pull` + `pm2 restart menupro`), y decidir con el usuario el orden de implementación del backlog (Gap 17 es el de mayor impacto de negocio).
+
+---
+
+## ✅ Sesión 2026-07-13 — Fix: botón "Abrir Yape" abría página inexistente
+
+**Prompt:** el usuario reportó que en `menu.html`, al pagar con Yape, el botón "Abrir Yape" abría una página que no existe, afectando el flujo del cliente. Pidió arreglarlo o, si no había solución, eliminar el botón.
+
+**Diagnóstico:** el botón enlazaba a `https://yape.com.pe/cobrar?phone=XXXX`, un endpoint que no existe públicamente — Yape no ofrece un deep link web para abrir la app con un número pre-cargado sin integración de comercio afiliado. Era una asunción incorrecta documentada en `features.md`.
+
+**Fix — `public/menu.html`:** en `seleccionarMetodoPago('yape')`, reemplazado el `<a href="https://yape.com.pe/...">Abrir Yape</a>` por un botón "Copiar número 📋" (`navigator.clipboard.writeText`), igual patrón que ya usaba Plin. Texto de instrucción actualizado a "Abre tu app Yape, paga a este número y luego sube la foto del comprobante."
+
+**Docs actualizadas:** `features.md` (quitada referencia al deep link inexistente en 2 secciones), `issues/ISSUES.md` + nuevo `issues/ISS-017-boton-abrir-yape-roto.md`.
+
+**Deploy:** commit `93d48eb` pusheado a `main` y desplegado en producción el mismo día (`git pull` + `pm2 restart menupro`). Verificado: `pm2 status` → `online`, `curl /health` → `{"status":"ok"}`. Fix activo en producción.
+
+**Investigación adicional (mismo día):** el usuario pidió investigar si existe un deep link real de Yape. Búsqueda web confirma que sí existe (`https://www.yape.com.pe/app/checkout/approval_code`), pero es dinámico — se genera server-side por una pasarela de pago afiliada (Mercado Pago, Culqi, Izipay, ProntoPaga), válido ~15 min por transacción, y requiere afiliación del restaurante como comercio + llamada a API + costo por transacción. No es un link estático armable solo con el número de teléfono.
+
+**Decisión del usuario:** inviable — la complejidad de afiliarse a una pasarela no se justifica todavía. **Gap 16 cerrado por diseño** en `vision_negocio.md`. El flujo "Copiar número" (igual que Plin) queda como solución **definitiva**, no temporal.
+
+---
+
+## 🚀 Sesión 2026-07-09 (parte 6) — Deploy a producción
+
+**Acción:** `git pull origin main` + `pm2 restart menupro` en el servidor (`147.182.135.252`, `menupro-prod`). El pull trajo varios commits acumulados (el servidor estaba atrasado desde la sesión del 2026-07-03) hasta `902f04f`, incluyendo `utils/verificacionPago.js` como archivo nuevo.
+
+**Verificado:** `pm2 status` → `online`; `curl http://localhost:3000/health` → `{"status":"ok"}`.
+
+**Commits desplegados** (quedan resueltos los "Pendiente: deploy a producción" de las sesiones correspondientes):
+- `902f04f` — fix(cola): comprobante y badge de pago visibles en Cola del día
+- `a20e8ea` — feat(reservas): cancelación por el cliente + fix(pagos): flujo seguro de verificación (foto obligatoria yape/plin, gate `confirmar-pago`, eliminado "Pagar más tarde")
+- `da15152` — fix(plato-picker): imágenes más grandes y fix de overlap por grid comprimido
+- `52a0ddf` — mejora en workflow de creación de menú
+
+**Producción queda al día con `main`.** Sigue pendiente en el servidor: correr el sembrado del restaurante demo (`deploy.md` §10.1) si aún no se hizo, y confirmar visualmente desde el celular que "Por cobrar" muestra la miniatura del comprobante.
+
+---
+
+## ✅ Sesión 2026-07-09 (parte 5) — Fix: comprobante de pago invisible en Cola del día
+
+**Prompt:** el usuario reportó (con capturas en `issues/`: `Efectivo_sin_comprobacion.png`, `sin_confirmacion_depago.png`, `solo_se_puede_ver_en_reservas.png`) que al verificar un pago desde "Cola del día" → "Por cobrar" no podía ver la foto del comprobante — tenía que saltar a Órdenes/Reservas para verla y volver, relentizando el flujo.
+
+**Diagnóstico:** `public/js/modules/ordenes.js` y `reservas.js` ya pintaban `badgePago(o)` + una miniatura clicable de `comprobante_url` en sus cards. `public/js/modules/pedidos.js` (Cola del día) no — `renderKanbanOrden()`/`renderKanbanReserva()` solo mostraban ítems y el botón de acción, sin rastro del pago. El botón "✓ Confirmar pago" ya funcionaba correctamente ahí (gate de la sesión de pagos anterior); el problema era solo de visualización.
+
+**Fix — `public/js/modules/pedidos.js`:** nuevo helper `comprobanteThumb(x)` (mismo patrón que ordenes.js/reservas.js) + `badgePago(x)` (global, ya cargado antes que pedidos.js en `owner.html`) insertados en `renderKanbanOrden()` y `renderKanbanReserva()`, debajo de los ítems y antes del botón de acción.
+
+**Verificación:** Playwright a 360px contra servidor local — reserva real (id 31, Plin, con comprobante) movida temporalmente a estado "cliente llegó" para verla en "Por cobrar", capturada mostrando badge + miniatura + "✓ Confirmar pago" sin salir de la Cola, 0 errores de consola, sin overflow. Reserva revertida a su estado original tras la prueba. **254/254 jest verde** (sin cambios de backend, no se agregaron tests nuevos — es un cambio de renderizado puro que reutiliza funciones/campos ya cubiertos).
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`), junto con los pendientes de sesiones anteriores.
+
+---
+
+## ✅ Sesión 2026-07-09 — Implementado: cancelar reserva desde el lado del cliente
+
+**Prompt:** implementar el gap anotado en la sesión 2026-07-06, con ventana de tiempo en minutos para cancelar, default **30 minutos**, configurable por el owner.
+
+**Decisión del usuario (pregunta directa):** si la reserva no tiene `hora_llegada` (el cliente no la especificó al reservar), se permite cancelar **siempre** (sin límite de horario) mientras el estatus siga siendo cancelable — no tiene sentido calcular "faltan 30 min" sin una hora de referencia.
+
+**Backend:**
+- `config/database.js`: migración idempotente `restaurantes.minutos_cancelacion_reserva INTEGER DEFAULT 30`.
+- `utils/fecha.js`: nuevo helper `ahoraLima()` (fecha/hora actual de Lima como Date "naive", comparable contra `fecha`+`hora_llegada` de la reserva sin conversión real de timezone).
+- `utils/cancelacionReserva.js` (nuevo): función pura `dentroDeVentanaCancelacion(fecha, hora_llegada, minutosLimite, ahora)` — sin `hora_llegada` siempre permite; si faltan menos minutos que el límite, bloquea con mensaje (distingue "faltan menos de N minutos" vs "la hora ya pasó").
+- `routes/public.js`: nuevo `PATCH /api/public/reserva/:codigo/cancelar` — busca por código (actúa como token, sin auth), valida no esté ya `es_full`/`es_cancelado`, aplica la ventana de tiempo, y en transacción cancela + devuelve stock (`devolverStock`/`itemsMenuDeReserva` de `utils/stock.js`, reutilizados del flujo del owner).
+- `routes/menu.js`: `minutos_cancelacion_reserva` agregado a `GET /restaurante/config`; nuevo `PATCH /config/minutos-cancelacion-reserva` (valida 0–1440).
+
+**Frontend:**
+- `public/owner.html` + `public/js/modules/config.js`: nueva card "✗ Cancelación de reservas por el cliente" en el panel Configuración (mismo patrón que "Auto-preparación de reservas"), con input de minutos y botón Guardar.
+- `public/menu.html`: botón "✗ Cancelar reserva" en `renderEstadoReserva()` — oculto si la reserva ya está `es_full`/`es_cancelado`, con `confirm()` antes de llamar al endpoint y recarga automática del estado tras cancelar.
+
+**Tests:** nuevo `tests/cancelar-reserva-cliente.test.js` (7 casos sobre la función pura + devolución de stock real). **248/248 jest verde.** Verificado además manualmente contra el servidor local con `curl`: reserva sin hora → cancela sin restricción; reserva con hora dentro de la ventana → bloqueada con mensaje; fuera de la ventana → cancela y devuelve stock; reserva ya cancelada → rechazada; código inexistente → 404.
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`).
+
+---
+
+## ✅ Sesión 2026-07-09 (parte 2) — Fix: flujo de pago inseguro
+
+**Prompt:** el usuario notó que la foto de comprobante es opcional (debería ser obligatoria) y que "pagar más tarde" ya no permite pagar después (rompe el flujo automatizado, se vuelve manual). Preguntó: "¿Cómo verificamos luego los pagos?".
+
+**Diagnóstico (verificado leyendo `routes/public.js`, `routes/orders.js`, `routes/reservations.js`, `ordenes.js`, `reservas.js`):**
+1. `handlePago()` en `routes/public.js` guardaba `comprobante_url = req.file ? ... : null` — foto opcional.
+2. `skipPago()` en `menu.html` cerraba el flujo de pago sin registrar `metodo_pago`/`estado_pago` y sin ningún camino de vuelta.
+3. **El hallazgo clave:** `PATCH /:id/confirmar-pago` (orders.js y reservations.js) existe en el backend pero **no está conectado a ningún botón** en `owner.html`. El único control real que usa el owner es "💰 Cobrar/Completar" (`PATCH /:id/estatus` con flag `es_pagado`/`es_full`), que **pisa automáticamente `estado_pago = 'pagado'`** sin mirar el comprobante, sin importar el método, incluso si el cliente nunca pasó por el flujo de pago. `vision_negocio.md` sección 7 nunca contempló "pagar más tarde" — solo Yape/Plin+foto o Efectivo.
+
+**Recomendación dada y aprobada por el usuario:** eliminar "Pagar más tarde" por completo (Efectivo ya cubre el pago diferido legítimo), hacer la foto obligatoria para Yape/Plin, y conectar el endpoint muerto `confirmar-pago` como gate real antes de poder cobrar/completar.
+
+**Implementado:**
+- `routes/public.js`: foto obligatoria para yape/plin en `handlePago()`.
+- `utils/verificacionPago.js` (nuevo): función pura `requiereConfirmarPagoAntes(metodo_pago, estado_pago)`.
+- `routes/orders.js` / `routes/reservations.js`: `PATCH /:id/estatus` bloquea (400) `es_pagado`/`es_full` si el pago digital no está `confirmado`.
+- `public/menu.html`: eliminado botón "Pagar más tarde" y `skipPago()`; `enviarPago()` valida foto en cliente.
+- `public/js/modules/ordenes.js`, `reservas.js`, `pedidos.js`: nuevo botón "✓ Confirmar pago" que reemplaza "💰 Cobrar/Completar" mientras el pago digital no esté confirmado.
+
+**Tests:** `tests/verificacion-pago.test.js` (6 casos). **254/254 jest verde.** Verificado manualmente contra servidor local con `curl` (sesión de owner simulada con JWT firmado localmente): yape sin foto → 400; con foto → OK; completar sin confirmar → 400; confirmar → OK; completar tras confirmar → OK.
+
+**Documentado:** nuevo `flujo-pago.md` (diagrama completo del flujo cliente + owner), `vision_negocio.md` sección 7 y 12 actualizadas, `features.md`.
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`) — mismo pendiente que la sesión anterior, se puede desplegar junto.
+
+---
+
+## 📋 Sesión 2026-07-09 (parte 3) — Anotado: métrica de visitas al menú (ingreso indirecto por publicidad)
+
+**Prompt:** idea del usuario para cuando el sistema arranque en modo masivo — medir cuántas personas ven el menú de cada restaurante en un dashboard del admin, como base para evaluar a futuro una opción de publicidad dentro de las páginas de menú (ingreso indirecto para restaurantes pequeños con tráfico agregado).
+
+**Acción (solo documentación, sin código, tal como pidió el usuario):**
+- `vision_negocio.md`: nueva sección **15. Modelo de Ingreso Indirecto — Publicidad** con la motivación de negocio completa y las preguntas de producto sin resolver (page views vs. visitantes únicos, visibilidad del dato para el owner vs. solo admin, privacidad). Nuevo **Gap 15** en la tabla de la sección 13.
+- `features.md`: nuevo **C6 — Métrica de visitas al menú por restaurante** en el Roadmap (Tier C), con boceto técnico de alto nivel (tabla `visitas_menu`, endpoint en `routes/admin.js`, card en `dashboard.html`) marcado explícitamente como no vinculante — las decisiones de producto van primero.
+
+**Sin cambios de código.** Queda anotado para retomar cuando haya varios restaurantes activos con tráfico real que justifique la conversación de venta de publicidad.
+
+---
+
+## 📋 Sesión 2026-07-09 (parte 4) — Anotado: módulo de blog/noticias de la empresa
+
+**Prompt:** el usuario quiere un módulo en el dashboard admin para publicar actualizaciones sobre la evolución de Menú Pro como empresa (primera prueba piloto, avances semanales, hitos) — "build in public" para generar confianza con prospectos. Pidió solo documentación por ahora.
+
+**Acción:** `features.md` → nuevo **C7 — Módulo de blog/noticias de la empresa** en el Roadmap (Tier C), con boceto técnico (tabla `posts_blog`, endpoints admin + público de solo lectura, página pública nueva o sección en `landing.html`) y las decisiones de producto pendientes (editor simple vs. rich text, fotos, URL propia vs. sección de landing). **Sin cambios de código.**
+
+---
+
+## 📋 Sesión 2026-07-06 — Gap detectado: el cliente no puede cancelar su reserva
+
+**Prompt:** el usuario preguntó si el cliente puede cancelar su reserva actualmente (no confundir con órdenes).
+
+**Diagnóstico (solo investigación, sin cambios de código):** confirmado que **no puede**. `routes/public.js` solo expone `POST /reservations` (crear), `PATCH /pago/reserva/:id` (pago) y `GET /reserva/:codigo` (consultar estado, usado por `showEstadoReserva` en `menu.html`). El único endpoint que cancela (`PATCH /api/reservations/:id/estatus` → `es_cancelado`, con devolución de stock) vive en `routes/reservations.js` y está protegido con `authorizePermiso()` — solo owner/staff desde `owner.html`. `ISS-006` (resuelto 2026-05-23) se revisó pero trata otro tema (botones de avance de estado en el panel del owner), no cubre este gap.
+
+**Acción:** agregado a `features.md` (Prioridad Alta — Features funcionales) el feature pendiente **"Cancelar reserva desde el lado del cliente"**, con alcance propuesto: endpoint público `PATCH /api/public/reserva/:codigo/cancelar` (misma regla de estados cancelables + devolución de stock que ya usa el owner) + botón "✗ Cancelar reserva" en la pantalla de estado de `menu.html`. Queda pendiente decidir si aplica ventana de tiempo límite para cancelar. Sin implementación aún — el usuario pidió dejarlo solo anotado por ahora.
+
+---
+
+## 🖼️ Sesión 2026-07-03 (parte 2) — Imágenes más grandes + fix de overlap real en el PlatoPicker
+
+**Prompt 1:** en Menú del día → Configurar secciones → "＋ Platos", las fotos de los platos aparecían muy pequeñas y las cards se sentían apretadas al seleccionar.
+
+**Cambio 1:** `.pp-img`/`.pp-placeholder` en `public/js/widgets/plato-picker.js` 80×80px → **100×100px** (placeholder emoji a 32px), grid `minmax(130px → 150px, 1fr)`, `.pp-name max-width` 110px → 130px.
+
+**Prompt 2 (bug real, con captura):** el usuario reportó que el borde naranja de selección "sobrepasa su propio margen" — las cards de secciones con muchos platos (con fotos reales) aparecían literalmente superpuestas entre filas.
+
+**Diagnóstico:** no era un problema de bordes ni de tamaño de imagen — con ≤2 platos (sin necesidad de scroll) el picker se veía perfecto, pero con suficientes platos para necesitar scroll interno, `.pp-img`/`.pp-placeholder` colapsaban a una fracción de 100px (75px en fotos con aspect ratio horizontal, 45px en placeholders), y las cards de una fila se montaban sobre la fila anterior. Causa raíz: `.pp-grid` es hijo flex de `.pp-sheet` (`overflow: hidden`, `max-height: 80vh`) y se le permite encoger (correcto, para poder hacer scroll interno); pero al no declarar `grid-auto-rows`, Chrome calculaba el alto de las filas del grid en función del alto YA COMPRIMIDO del contenedor en vez de basarse en el contenido, comprimiendo las cards en lugar de dejarlas desbordar con scroll.
+
+**Fix:** una línea — `grid-auto-rows: min-content;` en `.pp-grid`. Fuerza a que cada fila se dimensione por el contenido real de sus cards (100px de imagen + texto), sin importar cuánto se haya comprimido el contenedor scrolleable; el exceso ahora se resuelve con scroll (como estaba previsto), no con superposición.
+
+**Verificación:** reproducido con fotos reales de `public/uploads/platos-menu/` (no con placeholders, que no mostraban el bug) vía Playwright a 411×823px — confirmado el overlap antes del fix y su desaparición después, con `getComputedStyle`/`getBoundingClientRect` mostrando 100×100px consistente en las 9 cards tras el cambio. `scripts/test-menu-wizard.js` 51/51 verde, 0 errores de consola.
+
+---
+
+## 🚀 Sesión 2026-07-03 — Inicio de pruebas piloto con usuario real
+
+**Hito:** hoy **03/07/2026** arrancaron las pruebas en producción con una usuaria real: **Karina** (`karina@menupro.tech`), dueña del restaurante piloto (slug `karinamenu`, ver `features.md` #URLs por slug), ingresando desde su celular a `https://menupro.tech`.
+
+**Incidente durante la sesión:** Karina no pudo ingresar desde un celular con su correo original. Diagnóstico vía SSH al servidor (`147.182.135.252`):
+- `pm2 logs menupro` y `/var/log/nginx/access.log` (incluyendo rotados) **sin ninguna traza del intento** → el request nunca llegó al servidor. Descarta bug de la app (rate limit, credenciales rechazadas, etc.); el problema fue del lado del cliente (typo de correo, autocompletado, o similar).
+- De paso se confirmó que el log de Nginx recibe tráfico constante de bots de escaneo automatizado (rutas PHP/Laravel/ThinkPHP tipo `eval-stdin.php`, `pearcmd`) — todo `404`, ruido de fondo normal de cualquier IP pública, la app Node.js no es vulnerable a esos payloads. No requiere acción.
+- **Resuelto por workaround:** Karina creó una cuenta con otro correo y pudo ingresar sin problema desde el mismo celular. Si más adelante quiere recuperar el correo original, hay que resetear contraseña vía admin (`deploy.md` §8.4).
+
+**Deploy de sesiones anteriores:** el usuario desplegó manualmente en el servidor (`git pull` + `pm2 restart menupro`) los cambios de la sesión 2026-07-02 (stock por plato + flujo v2 del menú del día) fuera de esta sesión de Claude Code. Producción queda al día con la última versión de `main`.
+
+---
+
+## 📦 Sesión 2026-07-02 (parte 3) — Stock por plato del menú del día
+
+**Prompt:** "los restaurantes preparan porciones contadas (ej: solo 25 arroz con pollo), ¿se puede agregar?". Decisiones del usuario: (1) stock **por menú** — si el plato está en 2 menús, el owner reparte porciones entre ambos (más fácil de controlar para él); (2) descuento **al crear** el pedido, devolución al cancelar.
+
+**BD — `config/database.js`:** migración idempotente: `stock_inicial` y `stock_restante` (INTEGER NULL) en `componentes_menu_dia`. **NULL = sin control** → el restaurante que no cuenta porciones no ve fricción nueva.
+
+**Backend:**
+- **`utils/stock.js` (nuevo):** `descontarStock(db, items)` — UPDATE con guard `stock_restante >= n` (dos pedidos simultáneos no se llevan la última porción); si no alcanza lanza error 409 ("Solo quedan N porciones de X" / "Ya no quedan porciones de X") y la transacción del caller revierte todo. `devolverStock`, `itemsMenuDeOrden`, `itemsMenuDeReserva`.
+- **`routes/public.js`:** POST /orders y /reservations descuentan dentro de su transacción (409 al cliente si no alcanza). GET /menu filtra `stock_restante IS NULL OR > 0` (mismo tratamiento que agotado).
+- **`routes/orders.js`:** POST / (mozo/owner) refactorizado a validar-primero + transacción con descuento (de paso elimina órdenes huérfanas si un ítem era inválido). PATCH /:id/estatus y el endpoint de cocina devuelven stock al pasar a `es_cancelado`.
+- **`routes/reservations.js`:** POST / en transacción con descuento; PATCH /:id/estatus devuelve stock al cancelar (incluye no-show).
+- **`routes/menu.js`:** GET /menus-dia expone `stock_inicial`/`stock_restante` por plato. Nuevo `PATCH /menus-dia/:id/secciones/:sid/platos/:cid/stock` body `{ stock: n|null }` — fija inicial y restante al valor; null quita el control. Copiar menú replica `stock_inicial` y arranca con la olla llena (`restante = inicial`).
+- **Nota:** el auto-merge (Gap 8) copia ítems directamente en BD → NO re-descuenta (correcto: es la misma comida ya descontada por la reserva).
+
+**Frontend — `public/owner.html` (acordeón v2):** badge en la fila del plato: "quedan N" (ámbar si ≤5), "Sin stock" (rojo) en 0; nada si no hay control. Acción "📦 Stock" en el ⋯ → FormModal numérico ("Porciones disponibles hoy — vacío = sin límite") → PATCH + recarga. CSS `.mc-badge-mini.ambar`.
+
+**Tests:** `tests/stock-platos.test.js` (11 casos, prueba las funciones REALES de utils/stock.js contra BD en memoria: descuento por cantidad, NULL ilimitado, 409 con rollback total de la orden, carrera por la última porción, devolución, filtro público, fijar/quitar stock, copia con olla llena). **241/241 jest verde.** E2E full-stack en Playwright: 11/11 (fijar desde UI → badge → pedido público descuenta → 409 → oculto del QR → "Sin stock" → cancelar devuelve). `scripts/test-menu-wizard.js` re-verificado: 51/51.
+
+**Docs:** features.md (fila en Implementados), vision_negocio.md (sección 12 + fecha). **Pendiente:** commit + deploy a producción. Fase 2 futura: stock en carta, aviso "¡quedan 3!" al cliente, reporte cociné-vs-vendí (merma).
+
+---
+
+## 📦 Sesión 2026-07-02 (parte 2) — IMPLEMENTACIÓN Flujo Menú del Día v2
+
+**Prompt:** "está fino fino, dale" (aprobación del mockup `demo_flujo_menu.html` y del plan de `flujo-menuv2.md`).
+
+**Backend — `routes/menu.js`:**
+- `POST /menus-dia` acepta `heredar_secciones: true` → en una transacción, copia las secciones (`id_seccion_menu` + `requerido`, SIN platos) del menú más reciente del restaurante (`ORDER BY dia DESC, created_at DESC, id DESC`). Respuesta incluye `secciones_heredadas: N`.
+
+**Frontend — `public/owner.html`:**
+- **Hub eliminado**: `renderConfigHub`, `renderConfigCliente`, `irConfigCliente/Secciones`, `renderConfigSubview` y `configSubview` borrados. `abrirConfigMenu(menuId, opciones)` aterriza directo en las secciones; `configBack` cierra en 1 tap.
+- **`renderConfigSecciones()` reescrito como acordeón vertical** (`mcSeccionAcordeon`): secciones apiladas con cabecera (nombre + badge "N platos"/"⚠ sin platos" + chevron), colapso persistente entre re-renders (`mcSecCerradas`), filas de plato con acciones detrás del ⋯ (Agotado/Portada/Quitar), «＋ Platos» por sección, pie con Obligatoria/Quitar, «＋ Agregar sección» al final. Toggles del cliente como fila compacta arriba (`.mc-cli-compact`). Hint ✨ de herencia cuando `configRecienCreado`.
+- **Alta rápida de sección (1 tap)**: `abrirAddSeccion` lista las secciones libres del catálogo con botones Obligatoria/Opcional → `confirmarAddSeccionRapida`. El mini-wizard de 2 pasos fue eliminado.
+- **`abrirPicker` multi**: pre-marcado con los platos de la sección; `aplicarSeleccionPlatos` hace POST por agregado y DELETE por quitado + toast "N agregados · M quitados ✓".
+
+**Frontend — `public/js/widgets/plato-picker.js`:** modo `multi: true` con `selectedIds`, `title` y `onConfirm(ids)`. Checks en cards, badge "ya asignado", contador en header, footer dinámico "Guardar (N nuevos · quitar M) ✓". Modo simple intacto.
+
+**Frontend — `public/js/widgets/menu-wizard.js`:** botón final «Crear y agregar platos →»; `crear()` envía `heredar_secciones: true` y encadena a `onConfigure(id, { recienCreado: true })` (ya no vuelve a la galería).
+
+**CSS — `public/css/owner.css`:** bloque del carrusel `.mc-sec-gallery`/`.mc-sec-card` reemplazado por estilos del acordeón (`.mc-acc`, `.mc-sec*`, `.mc-plato*`, `.mc-cli-compact`, `.mc-hint`, `.mc-add-sec`, `.mc-addsec-row`); CSS muerto `.mc-cli` viejo eliminado (`.mc-hub-*` se conserva — lo usan los hubs de navegación). Desktop: `.mw-config` a columna de 560px centrada.
+
+**Tests:**
+- Nuevo `tests/heredar-secciones.test.js` (8 casos: herencia con flag requerido, sin platos, sin flag = clásico, sin menús previos, el más reciente, scope por restaurante, fuente intacta, validaciones). **230/230 jest verde.**
+- `scripts/test-menu-wizard.js` reescrito para el flujo v2 (navegación por `showPanel/switchTab` — las tabs viejas están ocultas desde el rediseño Home; asserts de encadenado, acordeón, picker multi, sin hub; ignora 404 de `/uploads/` en dev). **51/51 E2E a 360px, 0 errores de consola.**
+- Nota: los 404 locales eran fotos seed pre-ISS-015 (`plato_1.jpg`, `plato_4.png`, carta `plato_3.jpg`) que no existen en esta laptop (uploads fuera de git) — no es bug de la app.
+
+**Pendiente:** deploy a producción (`git pull` + `pm2 restart menupro`). El mockup `public/demo_flujo_menu.html` puede borrarse cuando el usuario ya no lo necesite.
+
+---
+
+## 📦 Sesión 2026-07-02 — Análisis del flujo de armado del menú del día (doc `flujo-menuv2.md`)
+
+**Prompt:** "El flujo de creación de menú del día aún se siente difícil: eliges platos para entrada y bien, pero al agregar para segundo el carrusel se queda fijado en entrada y hay que deslizar a la derecha a buscar segundo. Analizar el flujo y crear `flujo-menuv2.md` con ideas."
+
+**Diagnóstico (sin cambios de código en esta sesión):**
+- **Causa técnica del "rebote":** cada acción (agregar plato, toggles) llama `recargarModalConfig()` → `innerHTML` reconstruye toda la galería de secciones → el carrusel horizontal (`.mc-sec-gallery`) renace con `scrollLeft = 0` y aterriza siempre en la primera sección.
+- **Causa de diseño:** carrusel horizontal (patrón de vitrina) usado para una tarea de checklist; hub de 2 opciones agrega un nivel para llegar a los platos; mini-wizard de secciones repite 5 taps/sección cada día aunque la estructura casi nunca cambia (confirmado por el usuario); PlatoPicker de a un plato.
+
+**Entregable — `flujo-menuv2.md` (raíz del proyecto):** propuesta v2 en 4 cambios: (A) secciones como lista vertical acordeón en vez de carrusel, (B) PlatoPicker multi-selección con pre-marcado, (C) eliminar el hub (⚙ Configurar aterriza directo en secciones, toggles cliente como fila compacta), (D) heredar secciones del último menú al crear + botón «Crear y agregar platos →». Estimación: ~31 taps + swipes → ~15 taps (−52%) para un menú típico. Plan en 4 fases independientes (Fase 0 = hotfix `scrollIntoView` opcional). **Pendiente: decisión del usuario sobre qué fases implementar.**
+
+**Entregable 2 — `public/demo_flujo_menu.html` (mockup navegable):** demo autocontenida (HTML + JS vanilla, datos de mentira, sin backend) del flujo v2 completo: galería → wizard 3 pasos con «Crear y agregar platos →» → acordeón vertical con secciones heredadas (hint ✨) → picker multi-selección con pre-marcado y footer dinámico ("Guardar (3 nuevos · quitar 1) ✓") → sheet de agregar sección en 1 tap. Incluye contador de taps en el banner para comparar contra los ~31 del flujo actual. Se abre con doble clic o en `/demo_flujo_menu.html` del servidor (probable en celular vía LAN). Verificado con Playwright a 360px: 0 overflow, 0 errores de consola, flujo completo (menú + 3 entradas + 4 segundos) = 18 taps. **Es solo mockup — borrar cuando se implemente la v2 real.**
+
+---
+
+## 📦 Sesión 2026-06-15 — Feature: copiar menú del día a otra fecha
+
+**Prompt:** "que el menú creado se pueda replicar/copiar a otro día para solo hacer modificaciones simples".
+
+**Backend — `routes/menu.js`:**
+- Nuevo endpoint `POST /api/menu/menus-dia/:id/copiar` con body `{ dia: 'YYYY-MM-DD' }`.
+- Copia en una transacción: menú (`nombre`, `precio`, `elegible`, `activo`, `id_plato_portada`), sus `menu_secciones` (conservando flag `requerido`) y todos sus `componentes_menu_dia` (con la fecha destino). Valida pertenencia al restaurante y formato de fecha. Devuelve `{ id, dia, nombre }` con status 201.
+
+**Tests — `tests/copiar-menu.test.js`:** 7 casos: copia completa, original intacto, portada copiada, fecha destino con menús existentes, 404 de otro restaurante, 400 con fechas inválidas (4 variantes), menú sin secciones.
+
+**Frontend — `public/js/widgets/menu-wizard.js`:**
+- Botón "📋 Copiar a otro día" en cada card de la galería.
+- Al tocar: aparece un picker de fecha (pre-cargado con mañana, mínimo hoy) + botón "Copiar ✓" y "✕".
+- Al confirmar: POST al endpoint, toast "Menú copiado al [fecha] ✓", navega automáticamente a la fecha destino y recarga la galería.
+
+**Tests:** 222/222 verde. Sin cambios de DB (no requiere migración).
+
+---
+
+## 📦 Sesión 2026-06-15 — Deploy a producción + fix ISS-016
+
+**Prompts:** Deploy del estado actual del branch main a producción; luego fix de toggles "Cliente elige/Fijo" y "Visible/Oculto" que no actualizaban la UI.
+
+**Deploy:**
+- `git pull origin main && pm2 restart menupro` en el servidor (`147.182.135.252`).
+- Commits desplegados: `72c1194` (galerías desktop full-width + botón instalar Android) + `c8c65cd` (ISS-015 foto plato versionada).
+- ISS-015 queda resuelto en producción a partir de esta sesión.
+- PM2: `online`, 13.1 MB memoria.
+
+**ISS-016 — Fix toggles config menú del día (`public/owner.html`):**
+- **Síntoma:** al tocar "Cliente elige"/"Visible" en la sub-vista "Configuración para el cliente", el toast aparecía (PATCH OK) pero el botón no cambiaba de texto ni estilo hasta recargar la página.
+- **Causa raíz:** `toggleElegibleMenu` y `toggleActivoMenu` llamaban solo `loadMenusDia()` → `MenuWizard.reload()`, que re-renderiza la **galería** (oculta cuando la config está abierta). La vista de config (`#mc-body`) no se refrescaba.
+- **Fix:** agregar `recargarModalConfig()` después de `loadMenusDia()` en ambas funciones. `recargarModalConfig()` ya tiene guard `if (!configMenuId) return`, así que es no-op fuera de la config. 2 líneas de cambio.
+
+**Issues:** ISS-015 → Resuelto (desplegado). ISS-016 → Resuelto.
+**Sin cambios de backend. Sin tests afectados (cambio solo frontend).**
+
+---
+
+## 📦 Sesión 2026-06-08 — Fix botón "Instalar app" no aparece en Android producción
+
+**Prompt:** "No aparece el botón de descargar app en mi celular" (producción `menupro.tech`).
+
+**Diagnóstico:**
+`beforeinstallprompt` en Android Chrome **puede no dispararse** aunque el sitio esté en HTTPS, si el usuario descartó el prompt antes (Chrome lo suprime por meses) o si Chrome lo suprimió internamente. En ese caso `installable()` devolvía `false` y el botón permanecía oculto indefinidamente, sin ningún fallback.
+
+**Fix — `public/js/widgets/pwa-install.js`:**
+- Nueva función `isMobileHTTPS()`: detecta Android/mobile en HTTPS.
+- `installable()` ahora retorna `true` si `isMobileHTTPS()`, incluso sin `deferred` — el botón siempre aparece en producción móvil.
+- `prompt()`: cuando `deferred` es null y no es iOS, llama a `showAndroidHelp()` (instrucciones manuales: ⋮ → "Instalar app").
+- Nueva función `showAndroidHelp()`: modal bottom-sheet reutilizando los estilos `.pwa-ios` del instructivo de iOS.
+- Nueva función `injectHelpStyles()`: extrae la inyección del `<style>` para que tanto iOS como Android la compartan (antes iOS inyectaba los estilos y Android los usaba sin inyectarlos → modal sin estilos).
+- Sin cambios de backend.
+
+---
+
+## 📦 Sesión 2026-06-08 — Desktop: galerías de platos y menús usan todo el ancho del panel
+
+**Prompt:** "No me gusta cómo se ve desde desktop — muy apretado" + captura `no_me_gusta.png`. Luego: replicar fix para la zona de Menú del día.
+
+**Diagnóstico:**
+Dos bugs de CSS se combinaban para dar el resultado "apretado":
+1. **`max-width: 680px` en `.mw`** (inyectado por `menu-wizard.js` en desktop) → el contenedor de la galería se cortaba en 680px dejando espacio vacío a la derecha del panel.
+2. **Problema de cascada:** `menu-wizard.js` inyecta un `<style>` en `<head>` en tiempo de ejecución, **después** de que `owner.css` carga. Como ambos selectores (`.mw-menus { display: flex }` del widget y `.pm-plate-gallery { display: grid }` de owner.css) tienen la misma especificidad (0,1,0), el inyectado ganaba siempre → las cards quedaban en una fila horizontal de 5 elementos muy angostos (~120px c/u) en lugar del grid de 2 columnas esperado.
+
+**Fix — `public/css/owner.css`:**
+- Reemplazado el bloque `@media (min-width: 768px) { .pm-plate-gallery, .pc-plate-gallery { ... } }` por selectores con ID de mount (`#platos-menu-mount`, `#platos-carta-mount`) que tienen especificidad (1,1,0) → ganan sobre el widget siempre.
+- Agregado bloque nuevo para `#menu-wizard-mount` con la misma lógica.
+- `max-width: none` en el `.mw` de cada mount → el contenedor llena todo el ancho del panel.
+- `grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))` → grid responsivo: ~4 columnas en 1280px, 2 columnas en pantalla chica desktop.
+- `.mw-wizard { max-width: 560px; margin: auto }` → el wizard de "Crear menú" (3 pasos) queda centrado y no se estira.
+- Sin cambios de backend ni de JS. Solo CSS.
+
+**Resultado:** las tres galerías (Platos de menú, Platos a la carta, Menús del día) usan todo el ancho disponible del panel en desktop, sin espacio vacío a la derecha. Cards cómodas de ≥240px. Verificado por el usuario: "está excelente".
+
+---
+
 ## 📦 Sesión 2026-06-06 — Deploy a producción + limpieza de uploads en git
 
 **Prompt:** "Quiero actualizar mi servidor desplegado" → configurar acceso SSH y desplegar; luego sacar uploads de git; luego documentar dos pendientes.

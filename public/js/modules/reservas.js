@@ -57,25 +57,29 @@ function renderReservaCard(r, withActions) {
 
   const mesaSelector = (withActions && !r.es_full && !r.es_cancelado) ? `
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem">
-      <span style="font-size:12px;color:var(--muted)">Mesa:</span>
+      <span style="font-size:0.857143rem;color:var(--muted)">Mesa:</span>
       <input type="number" id="mesa-res-${r.id}" value="${r.mesa || ''}" min="1" placeholder="N° mesa"
-        style="width:80px;border:1px solid var(--border);border-radius:5px;padding:3px 6px;font-size:12px;background:var(--bg)" />
+        style="width:80px;border:1px solid var(--border);border-radius:5px;padding:3px 6px;font-size:0.857143rem;background:var(--bg)" />
       <button class="btn btn-ghost btn-sm" onclick="asignarMesaReserva(${r.id})">Asignar</button>
     </div>` : '';
 
-  const comprobanteResHtml = r.comprobante_url
-    ? `<div style="margin-top:6px"><a href="${r.comprobante_url}" target="_blank" title="Ver comprobante"><img src="${r.comprobante_url}" alt="Comprobante" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer"></a></div>`
-    : '';
+  const comprobanteResHtml = comprobanteThumb(r);
 
   const sinMesa = r.modalidad === 'para_llevar' || r.modalidad === 'delivery';
+  // Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante
+  // antes de poder completar la reserva (el backend también lo bloquea).
+  const requiereConfirmar = ['yape', 'plin'].includes(r.metodo_pago) && r.estado_pago !== 'confirmado';
+  const btnCompletar = requiereConfirmar
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoReserva(${r.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="cambiarEstatusReservaFlag(${r.id},'es_full')">💰 Completar</button>`;
   const actions = withActions ? `
     <div class="order-actions">
       ${r.es_inicial      ? `<button class="btn btn-success btn-sm"  onclick="cambiarEstatusReservaFlag(${r.id},'es_confirmada')">✓ Confirmar</button>` : ''}
       ${r.es_confirmada   ? `<button class="btn btn-primary btn-sm"  onclick="cambiarEstatusReservaFlag(${r.id},'es_en_cocina')">🍳 A cocina</button>` : ''}
       ${r.es_en_cocina    ? `<button class="btn btn-primary btn-sm"  onclick="cambiarEstatusReservaFlag(${r.id},'es_listo')">✅ Listo</button>` : ''}
       ${r.es_listo && !sinMesa ? `<button class="btn btn-primary btn-sm"  onclick="cambiarEstatusReservaFlag(${r.id},'es_cliente_llego')">🍽 Entregado</button>` : ''}
-      ${r.es_listo && sinMesa  ? `<button class="btn btn-success btn-sm" onclick="cambiarEstatusReservaFlag(${r.id},'es_full')">💰 Completar</button>` : ''}
-      ${r.es_cliente_llego ? `<button class="btn btn-success btn-sm" onclick="cambiarEstatusReservaFlag(${r.id},'es_full')">💰 Completar</button>` : ''}
+      ${r.es_listo && sinMesa  ? btnCompletar : ''}
+      ${r.es_cliente_llego ? btnCompletar : ''}
       ${!r.es_cliente_llego && !r.es_full ? `<button class="btn btn-danger btn-sm" onclick="cambiarEstatusReservaFlag(${r.id},'es_cancelado')">Cancelar</button>` : ''}
     </div>` : '';
 
@@ -84,17 +88,17 @@ function renderReservaCard(r, withActions) {
       <div class="order-card-header">
         <div>
           <strong>${esc(r.nombre_cliente)}</strong>
-          ${r.mesa ? `<span style="font-size:12px;color:var(--muted)"> · Mesa ${r.mesa}</span>` : ''}
-          ${r.telefono_cliente ? `<span style="font-size:12px;color:var(--muted)"> · ${esc(r.telefono_cliente)}</span>` : ''}
+          ${r.mesa ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${r.mesa}</span>` : ''}
+          ${r.telefono_cliente ? `<span style="font-size:0.857143rem;color:var(--muted)"> · ${esc(r.telefono_cliente)}</span>` : ''}
           ${badgeModalidad(r.modalidad)}
-          ${r.codigo ? `<div style="font-family:monospace;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.1em;margin-top:3px">🔑 ${r.codigo}</div>` : ''}
+          ${r.codigo ? `<div style="font-family:monospace;font-size:0.928571rem;font-weight:700;color:var(--accent);letter-spacing:.1em;margin-top:3px">🔑 ${r.codigo}</div>` : ''}
         </div>
         ${badgeEst(r.estatus)}
       </div>
       <div class="order-meta">
         <span>📅 ${fDate(r.fecha)}</span>
-        ${r.hora_llegada ? `<span style="color:var(--primary);font-size:11px;font-weight:600">🕐 ${r.hora_llegada}</span>` : ''}
-        <span style="color:var(--muted);font-size:11px">Creada ${fDT(r.created_at)}</span>
+        ${r.hora_llegada ? `<span style="color:var(--primary);font-size:0.785714rem;font-weight:600">🕐 ${r.hora_llegada}</span>` : ''}
+        <span style="color:var(--muted);font-size:0.785714rem">Creada ${fDT(r.created_at)}</span>
         ${r.es_full && r.total > 0
           ? `<span style="color:var(--accent);font-weight:700">S/ ${Number(r.total).toFixed(2)}</span>`
           : `<span style="color:var(--muted)">S/ 0.00</span>`}
@@ -102,7 +106,7 @@ function renderReservaCard(r, withActions) {
       ${r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteResHtml}</div>` : ''}
       ${tieneItems
         ? `<div class="order-items">${cartaLines}${menuLines}</div>`
-        : `<div style="font-size:11px;color:var(--muted);margin-bottom:0.5rem">Sin ítems registrados</div>`}
+        : `<div style="font-size:0.785714rem;color:var(--muted);margin-bottom:0.5rem">Sin ítems registrados</div>`}
       ${mesaSelector}
       ${actions}
     </div>`;
@@ -112,6 +116,14 @@ async function cambiarEstatusReserva(id, estatus) {
   try {
     await api('PATCH', `/api/reservations/${id}/estatus`, { estatus });
     toast(`Reserva #${id} → ${estatus}`);
+    loadReservasActivas();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function confirmarPagoReserva(id) {
+  try {
+    await api('PATCH', `/api/reservations/${id}/confirmar-pago`);
+    toast(`Pago de la reserva #${id} confirmado ✓`);
     loadReservasActivas();
   } catch(e) { toast(e.message, 'err'); }
 }

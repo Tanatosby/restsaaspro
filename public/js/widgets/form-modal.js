@@ -50,26 +50,26 @@
 }
 .fm-title { font-family: var(--font-display, Georgia, serif); font-weight: 700; font-size: 1.15rem; }
 .fm-close {
-  background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted, #888);
+  background: none; border: none; font-size:1.428571rem; cursor: pointer; color: var(--muted, #888);
   width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
 }
 .fm-close:hover { background: var(--bg, rgba(0,0,0,.05)); }
 .fm-body { padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
 .fm-field { display: flex; flex-direction: column; gap: 0.3rem; }
-.fm-field label { font-size: 12px; font-weight: 700; color: var(--muted, #777); text-transform: uppercase; letter-spacing: .02em; }
+.fm-field label { font-size:0.857143rem; font-weight: 700; color: var(--muted, #777); text-transform: uppercase; letter-spacing: .02em; }
 .fm-field input, .fm-field select, .fm-field textarea {
-  font-size: 16px; font-family: inherit; color: var(--text, #1a1410);
+  font-size:1.142857rem; font-family: inherit; color: var(--text, #1a1410);
   background: var(--bg, #fff); border: 1px solid var(--border, rgba(0,0,0,.15));
   border-radius: var(--r-sm, 7px); padding: 10px 12px; min-height: 44px; width: 100%;
   outline: none; transition: border-color .15s ease;
 }
 .fm-field textarea { min-height: 72px; resize: vertical; }
 .fm-field input:focus, .fm-field select:focus, .fm-field textarea:focus { border-color: var(--accent, #c8692a); }
-.fm-error { color: var(--danger, #dc3545); font-size: 13px; }
+.fm-error { color: var(--danger, #dc3545); font-size:0.928571rem; }
 .fm-error:empty { display: none; }
 .fm-footer { display: flex; gap: 0.6rem; justify-content: flex-end; padding: 0.9rem 1.25rem 1.1rem; flex-wrap: wrap; }
 .fm-btn {
-  min-height: 44px; padding: 0 18px; border-radius: var(--r-sm, 7px); font-size: 14px; font-weight: 600;
+  min-height: 44px; padding: 0 18px; border-radius: var(--r-sm, 7px); font-size:1rem; font-weight: 600;
   cursor: pointer; border: 1px solid transparent; transition: all .15s ease;
 }
 .fm-btn:active { transform: scale(.97); }

@@ -166,6 +166,8 @@ router.get('/menus-dia', (req, res) => {
         SELECT
           cmd.id      AS id_componente,
           cmd.agotado,
+          cmd.stock_inicial,
+          cmd.stock_restante,
           pm.id       AS id_plato,
           pm.nombre,
           pm.descripcion,
@@ -185,31 +187,61 @@ router.get('/menus-dia', (req, res) => {
 });
 
 // POST /api/menu/menus-dia
+// Body opcional: heredar_secciones: true → copia las secciones (con su flag
+// requerido, SIN platos) del menú más reciente del restaurante. La estructura
+// casi nunca cambia entre días, así el owner no la re-arma cada mañana (flujo v2).
 router.post('/menus-dia', authorizePermiso(), (req, res) => {
-  const { nombre, elegible, dia, precio } = req.body;
+  const { nombre, elegible, dia, precio, heredar_secciones } = req.body;
 
   if (!dia)
     return res.status(400).json({ error: 'La fecha del menú es requerida' });
   if (!precio || isNaN(precio))
     return res.status(400).json({ error: 'El precio es requerido' });
 
-  const { lastInsertRowid } = db.prepare(`
-    INSERT INTO menus_dia (nombre, elegible, dia, precio, id_restaurante)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(
-    nombre?.trim() || 'Menú del día',
-    elegible ? 1 : 0,
-    dia,
-    parseFloat(precio),
-    req.user.restaurant_id
-  );
+  const rid = req.user.restaurant_id;
+
+  const resultado = db.transaction(() => {
+    // Fuente de herencia: el menú más reciente ANTES de insertar el nuevo
+    const fuente = heredar_secciones
+      ? db.prepare(`
+          SELECT id FROM menus_dia
+          WHERE id_restaurante = ?
+          ORDER BY dia DESC, created_at DESC, id DESC
+          LIMIT 1
+        `).get(rid)
+      : null;
+
+    const { lastInsertRowid } = db.prepare(`
+      INSERT INTO menus_dia (nombre, elegible, dia, precio, id_restaurante)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      nombre?.trim() || 'Menú del día',
+      elegible ? 1 : 0,
+      dia,
+      parseFloat(precio),
+      rid
+    );
+
+    let heredadas = 0;
+    if (fuente) {
+      const secciones = db.prepare(`
+        SELECT id_seccion_menu, requerido FROM menu_secciones WHERE id_menu_dia = ?
+      `).all(fuente.id);
+      const ins = db.prepare(`
+        INSERT INTO menu_secciones (id_menu_dia, id_seccion_menu, requerido) VALUES (?, ?, ?)
+      `);
+      for (const s of secciones) { ins.run(lastInsertRowid, s.id_seccion_menu, s.requerido); heredadas++; }
+    }
+    return { id: lastInsertRowid, heredadas };
+  })();
 
   res.status(201).json({
-    id:      lastInsertRowid,
+    id:      resultado.id,
     nombre:  nombre?.trim() || 'Menú del día',
     elegible: elegible ? 1 : 0,
     dia,
-    precio:  parseFloat(precio)
+    precio:  parseFloat(precio),
+    secciones_heredadas: resultado.heredadas
   });
 });
 
@@ -308,6 +340,50 @@ router.delete('/menus-dia/:id', authorizePermiso(), (req, res) => {
   })();
 
   res.json({ message: `Menú "${menu.nombre}" eliminado` });
+});
+
+// POST /api/menu/menus-dia/:id/copiar — duplica un menú a otra fecha
+// Body: { dia: 'YYYY-MM-DD' }
+router.post('/menus-dia/:id/copiar', authorizePermiso(), (req, res) => {
+  const { dia } = req.body;
+  if (!dia || !/^\d{4}-\d{2}-\d{2}$/.test(dia))
+    return res.status(400).json({ error: 'Fecha inválida (YYYY-MM-DD)' });
+
+  const rid = req.user.restaurant_id;
+  const fuente = db.prepare(`
+    SELECT id, nombre, elegible, precio, activo, id_plato_portada
+    FROM menus_dia WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, rid);
+  if (!fuente) return res.status(404).json({ error: 'Menú no encontrado' });
+
+  const secciones = db.prepare(`
+    SELECT id_seccion_menu, requerido FROM menu_secciones WHERE id_menu_dia = ?
+  `).all(fuente.id);
+
+  const nuevoId = db.transaction(() => {
+    const { lastInsertRowid } = db.prepare(`
+      INSERT INTO menus_dia (nombre, elegible, dia, precio, activo, id_plato_portada, id_restaurante)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(fuente.nombre, fuente.elegible, dia, fuente.precio, fuente.activo,
+           fuente.id_plato_portada, rid);
+
+    const insSeccion   = db.prepare(`INSERT INTO menu_secciones (id_menu_dia, id_seccion_menu, requerido) VALUES (?, ?, ?)`);
+    // El stock se copia como stock_inicial y el restante arranca completo (día nuevo, olla nueva)
+    const insComponente = db.prepare(`INSERT INTO componentes_menu_dia (id_menu_dia, dia, id_seccion_menu, id_plato_menu, id_restaurante, stock_inicial, stock_restante) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+
+    for (const sec of secciones) {
+      insSeccion.run(lastInsertRowid, sec.id_seccion_menu, sec.requerido);
+      const componentes = db.prepare(`
+        SELECT id_plato_menu, stock_inicial FROM componentes_menu_dia
+        WHERE id_menu_dia = ? AND id_seccion_menu = ?
+      `).all(fuente.id, sec.id_seccion_menu);
+      for (const c of componentes)
+        insComponente.run(lastInsertRowid, dia, sec.id_seccion_menu, c.id_plato_menu, rid, c.stock_inicial, c.stock_inicial);
+    }
+    return lastInsertRowid;
+  })();
+
+  res.status(201).json({ id: nuevoId, dia, nombre: fuente.nombre });
 });
 
 // ─────────────────────────────────────────────────────
@@ -478,6 +554,37 @@ router.patch('/menus-dia/:id/secciones/:seccionId/platos/:componenteId/agotado',
     .run(agotado ? 1 : 0, componente.id);
 
   res.json({ message: 'Plato actualizado', agotado: agotado ? 1 : 0 });
+});
+
+// PATCH /api/menu/menus-dia/:id/secciones/:seccionId/platos/:componenteId/stock
+// Fija el stock del plato en ESTE menú ("hoy tengo N porciones").
+// Body: { stock: <número ≥ 0 | null> } — null/'' quita el control (ilimitado).
+// Fijar stock resetea inicial y restante al mismo valor.
+router.patch('/menus-dia/:id/secciones/:seccionId/platos/:componenteId/stock', authorizePermiso(), (req, res) => {
+  const menu = db.prepare(`
+    SELECT id FROM menus_dia WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, req.user.restaurant_id);
+  if (!menu) return res.status(404).json({ error: 'Menú no encontrado' });
+
+  const componente = db.prepare(`
+    SELECT id FROM componentes_menu_dia
+    WHERE id = ? AND id_menu_dia = ? AND id_seccion_menu = ?
+  `).get(req.params.componenteId, req.params.id, req.params.seccionId);
+  if (!componente) return res.status(404).json({ error: 'Componente no encontrado' });
+
+  const { stock } = req.body;
+  let valor = null;
+  if (stock !== null && stock !== undefined && stock !== '') {
+    const n = Number(stock);
+    if (!Number.isInteger(n) || n < 0)
+      return res.status(400).json({ error: 'El stock debe ser un número entero ≥ 0 (o null para quitar el control)' });
+    valor = n;
+  }
+
+  db.prepare(`UPDATE componentes_menu_dia SET stock_inicial = ?, stock_restante = ? WHERE id = ?`)
+    .run(valor, valor, componente.id);
+
+  res.json({ message: valor === null ? 'Control de stock quitado' : `Stock fijado en ${valor}`, stock: valor });
 });
 
 // DELETE /api/menu/menus-dia/:id/secciones/:seccionId/platos/:componenteId
@@ -727,26 +834,34 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
     SELECT nombre, foto_portada, color_primario, color_secundario,
            yape_activo, yape_telefono, plin_activo, plin_telefono, efectivo_activo,
            minutos_preparacion, para_llevar_activo, delivery_activo,
-           costo_tapper, tarifa_delivery, auto_merge_activo
+           costo_tapper, tarifa_delivery, auto_merge_activo, slug,
+           minutos_cancelacion_reserva,
+           horario_activo, hora_apertura, hora_cierre, dias_atencion
     FROM restaurantes WHERE id = ?
   `).get(req.user.restaurant_id);
   if (!row) return res.status(404).json({ error: 'Restaurante no encontrado' });
   res.json({
-    nombre:               row.nombre,
-    foto_portada:         row.foto_portada         || null,
-    color_primario:       row.color_primario        || '#c8692a',
-    color_secundario:     row.color_secundario      || '#1a6090',
-    yape_activo:          row.yape_activo           ?? 0,
-    yape_telefono:        row.yape_telefono         || '',
-    plin_activo:          row.plin_activo           ?? 0,
-    plin_telefono:        row.plin_telefono         || '',
-    efectivo_activo:      row.efectivo_activo       ?? 0,
-    minutos_preparacion:  row.minutos_preparacion   ?? 20,
-    para_llevar_activo:   row.para_llevar_activo    ?? 1,
-    delivery_activo:      row.delivery_activo       ?? 0,
-    costo_tapper:         row.costo_tapper          ?? 0,
-    tarifa_delivery:      row.tarifa_delivery       ?? 0,
-    auto_merge_activo:    row.auto_merge_activo     ?? 1,
+    nombre:                      row.nombre,
+    foto_portada:                row.foto_portada                || null,
+    color_primario:              row.color_primario               || '#c8692a',
+    color_secundario:            row.color_secundario             || '#1a6090',
+    yape_activo:                 row.yape_activo                  ?? 0,
+    yape_telefono:               row.yape_telefono                || '',
+    plin_activo:                 row.plin_activo                  ?? 0,
+    plin_telefono:               row.plin_telefono                || '',
+    efectivo_activo:             row.efectivo_activo              ?? 0,
+    minutos_preparacion:         row.minutos_preparacion          ?? 20,
+    para_llevar_activo:          row.para_llevar_activo           ?? 1,
+    delivery_activo:             row.delivery_activo              ?? 0,
+    costo_tapper:                row.costo_tapper                 ?? 0,
+    tarifa_delivery:             row.tarifa_delivery              ?? 0,
+    auto_merge_activo:           row.auto_merge_activo            ?? 1,
+    slug:                        row.slug                         || null,
+    minutos_cancelacion_reserva: row.minutos_cancelacion_reserva  ?? 30,
+    horario_activo:              row.horario_activo               ?? 0,
+    hora_apertura:               row.hora_apertura                || '00:00',
+    hora_cierre:                 row.hora_cierre                  || '23:59',
+    dias_atencion:               row.dias_atencion                || '0,1,2,3,4,5,6',
   });
 });
 
@@ -776,6 +891,27 @@ router.patch('/config/auto-merge', authorizePermiso(), (req, res) => {
   res.json({ auto_merge_activo: activo });
 });
 
+// PATCH /api/menu/config/slug — guardar URL personalizada del restaurante
+router.patch('/config/slug', authorizePermiso(), (req, res) => {
+  const slug = (req.body.slug || '').toLowerCase().trim();
+  if (!slug) {
+    db.prepare(`UPDATE restaurantes SET slug = NULL WHERE id = ?`).run(req.user.restaurant_id);
+    return res.json({ slug: null });
+  }
+  if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(slug))
+    return res.status(400).json({ error: 'El slug debe tener entre 3 y 30 caracteres: solo letras minúsculas, números y guiones (no puede empezar ni terminar con guión)' });
+  const RESERVADOS = ['menu', 'login', 'owner', 'kitchen', 'admin', 'manuales', 'api', 'uploads', 'health'];
+  if (RESERVADOS.includes(slug))
+    return res.status(400).json({ error: `"${slug}" es una palabra reservada del sistema` });
+  try {
+    db.prepare(`UPDATE restaurantes SET slug = ? WHERE id = ?`).run(slug, req.user.restaurant_id);
+    res.json({ slug });
+  } catch (e) {
+    if (e.message.includes('UNIQUE')) return res.status(409).json({ error: 'Ese nombre ya está en uso por otro restaurante' });
+    throw e;
+  }
+});
+
 // PATCH /api/menu/config/minutos-preparacion — tiempo de anticipación por restaurante
 router.patch('/config/minutos-preparacion', authorizePermiso(), (req, res) => {
   const minutos = parseInt(req.body.minutos_preparacion, 10);
@@ -786,6 +922,48 @@ router.patch('/config/minutos-preparacion', authorizePermiso(), (req, res) => {
     .run(minutos, req.user.restaurant_id);
 
   res.json({ minutos_preparacion: minutos });
+});
+
+// PATCH /api/menu/config/minutos-cancelacion-reserva — ventana de tiempo para que el cliente cancele su reserva
+router.patch('/config/minutos-cancelacion-reserva', authorizePermiso(), (req, res) => {
+  const minutos = parseInt(req.body.minutos_cancelacion_reserva, 10);
+  if (isNaN(minutos) || minutos < 0 || minutos > 1440)
+    return res.status(400).json({ error: 'minutos_cancelacion_reserva debe ser un número entre 0 y 1440' });
+
+  db.prepare(`UPDATE restaurantes SET minutos_cancelacion_reserva = ? WHERE id = ?`)
+    .run(minutos, req.user.restaurant_id);
+
+  res.json({ minutos_cancelacion_reserva: minutos });
+});
+
+// PATCH /api/menu/config/horario — horario de atención (Gap 18)
+router.patch('/config/horario', authorizePermiso(), (req, res) => {
+  const { horario_activo, hora_apertura, hora_cierre, dias_atencion } = req.body;
+
+  const HORA_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  if (!HORA_REGEX.test(hora_apertura) || !HORA_REGEX.test(hora_cierre))
+    return res.status(400).json({ error: 'hora_apertura y hora_cierre deben tener formato HH:MM' });
+  if (hora_apertura >= hora_cierre)
+    return res.status(400).json({ error: 'La hora de apertura debe ser anterior a la hora de cierre' });
+
+  const dias = Array.isArray(dias_atencion) ? dias_atencion.map(Number) : [];
+  if (!dias.length || dias.some(d => isNaN(d) || d < 0 || d > 6))
+    return res.status(400).json({ error: 'dias_atencion debe tener al menos un día válido (0=Domingo a 6=Sábado)' });
+
+  const diasStr = [...new Set(dias)].sort().join(',');
+
+  db.prepare(`
+    UPDATE restaurantes
+    SET horario_activo = ?, hora_apertura = ?, hora_cierre = ?, dias_atencion = ?
+    WHERE id = ?
+  `).run(horario_activo ? 1 : 0, hora_apertura, hora_cierre, diasStr, req.user.restaurant_id);
+
+  res.json({
+    horario_activo: horario_activo ? 1 : 0,
+    hora_apertura,
+    hora_cierre,
+    dias_atencion: diasStr,
+  });
 });
 
 // PATCH /api/menu/config/pagos — guardar métodos de pago del restaurante

@@ -14,28 +14,28 @@ async function loadPlanoMesas() {
   try {
     const mesas = await api('GET', '/api/mesas/estado');
     if (!mesas.length) {
-      grid.innerHTML = `<div style="color:var(--muted);font-size:13px">No hay mesas configuradas. Ve a <strong>Configuración → Mesas</strong> para agregar.</div>`;
+      grid.innerHTML = `<div style="color:var(--muted);font-size:0.928571rem">No hay mesas configuradas. Ve a <strong>Configuración → Mesas</strong> para agregar.</div>`;
       return;
     }
     grid.innerHTML = mesas.map(m => renderMesaChip(m)).join('');
   } catch(e) {
-    grid.innerHTML = `<div style="color:var(--danger);font-size:13px">${e.message}</div>`;
+    grid.innerHTML = `<div style="color:var(--danger);font-size:0.928571rem">${e.message}</div>`;
   }
 }
 
 function renderMesaChip(m) {
   const c = MESA_COLORES[m.estado];
   const detalle = m.estado === 'ocupada' && m.orden
-    ? `<div style="font-size:10px;margin-top:4px;color:${c.text}">
+    ? `<div style="font-size:0.714286rem;margin-top:4px;color:${c.text}">
          ${m.orden.nombre_cliente ? esc(m.orden.nombre_cliente) + '<br>' : ''}
          <span style="font-weight:700">${m.orden.estatus}</span>
        </div>`
     : m.estado === 'reservada' && m.reserva
-    ? `<div style="font-size:10px;margin-top:4px;color:${c.text}">
+    ? `<div style="font-size:0.714286rem;margin-top:4px;color:${c.text}">
          ${esc(m.reserva.nombre_cliente)}<br>
          <span style="font-weight:700">reservada</span>
        </div>`
-    : `<div style="font-size:10px;margin-top:4px;color:${c.text}">libre</div>`;
+    : `<div style="font-size:0.714286rem;margin-top:4px;color:${c.text}">libre</div>`;
 
   return `
     <div style="
@@ -43,8 +43,8 @@ function renderMesaChip(m) {
       padding:12px 16px;min-width:90px;text-align:center;cursor:default;
       transition:transform .15s;
     " title="Mesa ${m.numero} · ${m.capacidad} personas">
-      <div style="font-size:22px;font-weight:800;color:${c.text}">M${m.numero}</div>
-      <div style="font-size:10px;color:${c.text};opacity:0.75">${m.capacidad} personas</div>
+      <div style="font-size:1.571429rem;font-weight:800;color:${c.text}">M${m.numero}</div>
+      <div style="font-size:0.714286rem;color:${c.text};opacity:0.75">${m.capacidad} personas</div>
       ${detalle}
     </div>`;
 }

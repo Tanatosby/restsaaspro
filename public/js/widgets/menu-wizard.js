@@ -30,12 +30,19 @@
   const STYLE = `
 .mw {
   width: 100%;
-  /* Dimensiones de las cards de galería (menús Y secciones, las heredan por cascada).
-     Parametrizadas en un solo lugar para experimentar / revertir fácil.
-     Valores previos (con peek de la siguiente): --mw-card-w: 82%; --mw-card-maxw: 320px; --mw-card-h: 360px; */
-  --mw-card-w: 100%;      /* ancho (flex-basis): 100% = se ve una sola card, sin peek */
-  --mw-card-maxw: 100%;   /* tope de ancho */
-  --mw-card-h: 480px;     /* alto mínimo de la card */
+  /* Desktop: una card full-width, más alta para mostrar todos los controles */
+  --mw-card-w: 100%;
+  --mw-card-maxw: 100%;
+  --mw-card-h: 480px;
+}
+/* Mobile: cards compactas del mismo ancho que la card del cliente (200px),
+   con peek de la siguiente — igual a la experiencia del comensal */
+@media (max-width: 639px) {
+  .mw {
+    --mw-card-w: 200px;
+    --mw-card-maxw: 200px;
+    --mw-card-h: 300px;
+  }
 }
 .mw[hidden], .mw [hidden] { display: none !important; }
 
@@ -47,14 +54,14 @@
 .mw-nav-day {
   flex: 0 0 auto; width: 44px; height: 44px; border-radius: 10px;
   border: 1px solid var(--border, rgba(0,0,0,.15)); background: var(--surface, #fff);
-  color: var(--text, #1a1410); font-size: 16px; cursor: pointer;
+  color: var(--text, #1a1410); font-size:1.142857rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
 .mw-nav-day:active { transform: scale(.96); }
 .mw-date {
   flex: 1; min-width: 0; box-sizing: border-box;
   border: 1px solid var(--border, rgba(0,0,0,.15)); border-radius: 10px;
-  padding: 0 0.75rem; height: 44px; font-size: 16px;
+  padding: 0 0.75rem; height: 44px; font-size:1.142857rem;
   background: var(--bg, #f5f1ed); color: var(--text, #1a1410); outline: none;
 }
 .mw-date:focus { border-color: var(--primary, #c8692a); }
@@ -62,12 +69,12 @@
   width: 100%; min-height: 48px; border-radius: 10px;
   border: 1px solid var(--primary, #c8692a);
   background: var(--primary, #c8692a); color: #fff;
-  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-size:1.071429rem; font-weight: 700; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 6px;
   transition: transform .1s, opacity .15s;
 }
 .mw-create-btn:active { transform: scale(.99); }
-.mw-gal-caption { font-size: 13px; color: var(--text-2, #555); font-weight: 600; }
+.mw-gal-caption { font-size:0.928571rem; color: var(--text-2, #555); font-weight: 600; }
 
 /* Galería horizontal de cards retrato */
 .mw-menus {
@@ -115,10 +122,10 @@
 .mw-menu-card.has-photo .mw-toggle-hint { color: rgba(255,255,255,.88); }
 .mw-menu-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .mw-menu-name { font-weight: 700; font-size: 1.15rem; font-family: var(--font-display, Georgia, serif); }
-.mw-menu-meta { font-size: 13px; color: var(--muted, #888); }
+.mw-menu-meta { font-size:0.928571rem; color: var(--muted, #888); }
 .mw-pills { display: flex; flex-wrap: wrap; gap: 4px; }
 .mw-pill {
-  font-size: 11px; padding: 2px 8px; border-radius: 6px;
+  font-size:0.785714rem; padding: 2px 8px; border-radius: 6px;
   background: var(--bg, #f5f1ed); border: 1px solid var(--border, rgba(0,0,0,.1));
   color: var(--text-2, #555);
 }
@@ -127,25 +134,25 @@
 .mw-toggle-group { display: flex; align-items: center; gap: 8px; }
 .mw-toggle {
   flex: 0 0 auto;
-  font-size: 13px; padding: 0 10px; min-height: 38px; border-radius: 8px;
+  font-size:0.928571rem; padding: 0 10px; min-height: 38px; border-radius: 8px;
   cursor: pointer; border: 1px solid; background: transparent;
 }
-.mw-toggle-hint { font-size: 12px; color: var(--muted, #888); line-height: 1.25; }
+.mw-toggle-hint { font-size:0.857143rem; color: var(--muted, #888); line-height: 1.25; }
 .mw-menu-actions { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
-.mw-menu-actions .mw-btn { min-height: 44px; font-size: 14px; }
+.mw-menu-actions .mw-btn { min-height: 44px; font-size:1rem; }
 .mw-empty-card {
   flex: 0 0 var(--mw-card-w, 100%); max-width: var(--mw-card-maxw, 100%); min-height: var(--mw-card-h, 480px);
   scroll-snap-align: start; box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 0.5rem; text-align: center; color: var(--muted, #888); font-size: 14px;
+  gap: 0.5rem; text-align: center; color: var(--muted, #888); font-size:1rem;
   border: 1px dashed var(--border, rgba(0,0,0,.2)); border-radius: var(--r, 14px);
   padding: 1.1rem; background: var(--bg, #f5f1ed);
 }
 .mw-empty-emoji { font-size: 2.5rem; }
-.mw-hint { font-size: 12px; color: var(--muted, #888); text-align: center; }
+.mw-hint { font-size:0.857143rem; color: var(--muted, #888); text-align: center; }
 
 /* ── Wizard de creación (3 pasos) ──────────────────────────── */
-.mw-wiz-head { font-size: 13px; font-weight: 700; color: var(--text-2, #555); margin-bottom: 0.6rem; }
+.mw-wiz-head { font-size:0.928571rem; font-weight: 700; color: var(--text-2, #555); margin-bottom: 0.6rem; }
 .mw-progress { display: flex; align-items: center; gap: 6px; margin: 0 0 0.75rem; padding: 0 2px; }
 .mw-dot { flex: 1; height: 4px; border-radius: 4px; background: var(--border, rgba(0,0,0,.12)); transition: background .25s; }
 .mw-dot.done { background: var(--primary, #c8692a); }
@@ -159,20 +166,20 @@
   padding: 1.25rem; min-height: 340px; display: flex; flex-direction: column;
 }
 .mw-step-label {
-  font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  font-size:0.857143rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
   color: var(--primary, #c8692a); margin-bottom: 0.35rem;
 }
 .mw-title { font-family: var(--font-display, Georgia, serif); font-size: 1.25rem; font-weight: 700; line-height: 1.25; margin: 0 0 1rem; }
 .mw-body { flex: 1; display: flex; flex-direction: column; gap: 0.85rem; }
 .mw-field { display: flex; flex-direction: column; gap: 0.35rem; }
-.mw-field label { font-size: 13px; font-weight: 600; color: var(--text-2, #555); }
+.mw-field label { font-size:0.928571rem; font-weight: 600; color: var(--text-2, #555); }
 .mw-input {
   width: 100%; box-sizing: border-box; border: 1px solid var(--border, rgba(0,0,0,.15));
-  border-radius: 10px; padding: 0 0.85rem; height: 48px; font-size: 16px;
+  border-radius: 10px; padding: 0 0.85rem; height: 48px; font-size:1.142857rem;
   background: var(--bg, #f5f1ed); color: var(--text, #1a1410); outline: none; transition: border-color .15s;
 }
 .mw-input:focus { border-color: var(--primary, #c8692a); }
-.mw-err { color: var(--danger, #c0392b); font-size: 13px; min-height: 1em; }
+.mw-err { color: var(--danger, #c0392b); font-size:0.928571rem; min-height: 1em; }
 /* Figura decorativa de los pasos Título y Precio */
 .mw-hero { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; margin: 0.25rem 0 0.4rem; text-align: center; }
 .mw-hero-emoji {
@@ -180,7 +187,7 @@
   display: flex; align-items: center; justify-content: center;
   background: var(--accent-glow-soft, rgba(200,105,42,.10));
 }
-.mw-hero-sub { font-size: 13px; color: var(--muted, #888); }
+.mw-hero-sub { font-size:0.928571rem; color: var(--muted, #888); }
 .mw-choices { display: flex; flex-direction: column; gap: 0.75rem; }
 .mw-choice {
   display: flex; align-items: flex-start; gap: 0.75rem; text-align: left;
@@ -192,14 +199,14 @@
 }
 .mw-choice:active { transform: scale(.99); }
 .mw-choice.sel { border-color: var(--primary, #c8692a); background: var(--accent-glow-soft, rgba(200,105,42,.08)); }
-.mw-choice-emoji { font-size: 26px; line-height: 1; }
+.mw-choice-emoji { font-size:1.857143rem; line-height: 1; }
 .mw-choice-txt { display: flex; flex-direction: column; gap: 2px; }
-.mw-choice-name { font-weight: 700; font-size: 15px; }
-.mw-choice-desc { font-size: 13px; color: var(--muted, #888); }
+.mw-choice-name { font-weight: 700; font-size:1.071429rem; }
+.mw-choice-desc { font-size:0.928571rem; color: var(--muted, #888); }
 .mw-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
 .mw-btn {
   flex: 1; min-width: 0; min-height: 48px; border-radius: 10px;
-  border: 1px solid var(--border, rgba(0,0,0,.15)); font-size: 15px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--border, rgba(0,0,0,.15)); font-size:1.071429rem; font-weight: 600; cursor: pointer;
   background: var(--bg, #f5f1ed); color: var(--text, #1a1410);
   display: flex; align-items: center; justify-content: center; gap: 6px; transition: transform .1s, opacity .15s;
 }
@@ -214,7 +221,7 @@
 .mw-cfg-head .mw-btn { flex: 0 0 auto; min-width: 0; padding: 0 0.9rem; }
 .mw-cfg-titlebar { padding: 0 2px; }
 .mw-cfg-title { font-family: var(--font-display, Georgia, serif); font-weight: 700; font-size: 1.2rem; line-height: 1.2; }
-.mw-cfg-meta { font-size: 12px; color: var(--muted, #888); margin-top: 2px; }
+.mw-cfg-meta { font-size:0.857143rem; color: var(--muted, #888); margin-top: 2px; }
 .mw-cfg-body { display: flex; flex-direction: column; }
 
 @media (prefers-reduced-motion: reduce) { .mw-track { transition: none; } }
@@ -378,7 +385,7 @@
         </div>
         <div class="mw-actions">
           <button class="mw-btn mw-btn-ghost" data-act="to-precio-back">← Atrás</button>
-          <button class="mw-btn mw-btn-primary" data-act="crear" disabled>Crear menú ✓</button>
+          <button class="mw-btn mw-btn-primary" data-act="crear" disabled>Crear y agregar platos →</button>
         </div>
       </div>
     </div>`;
@@ -491,6 +498,14 @@
       <div class="mw-pills">${secs}</div>
       <div class="mw-menu-actions">
         <button class="mw-btn mw-btn-primary" data-cfg="${m.id}">⚙ Configurar</button>
+        <div class="mw-copy-row" id="mw-copy-row-${m.id}" style="display:none">
+          <input class="mw-date mw-copy-input" type="date" id="mw-copy-date-${m.id}" aria-label="Fecha destino">
+          <div style="display:flex;gap:6px">
+            <button class="mw-btn mw-btn-primary" style="flex:1" data-copy-ok="${m.id}">Copiar ✓</button>
+            <button class="mw-btn" style="flex:0 0 44px" data-copy-cancel="${m.id}">✕</button>
+          </div>
+        </div>
+        <button class="mw-btn" data-copy-open="${m.id}">📋 Copiar a otro día</button>
         <button class="mw-btn" data-del="${m.id}" style="color:var(--danger,#c0392b)">Eliminar</button>
       </div>
     </div>`;
@@ -498,7 +513,7 @@
 
   // Delegación de acciones de la galería → handlers globales de owner.html
   function wireMenuActions() {
-    host.querySelector('#mw-menus-list').addEventListener('click', (e) => {
+    host.querySelector('#mw-menus-list').addEventListener('click', async (e) => {
       const cfg = e.target.closest('[data-cfg]');
       if (cfg) { if (opts.onConfigure) opts.onConfigure(Number(cfg.dataset.cfg)); return; }
       const del = e.target.closest('[data-del]');
@@ -508,6 +523,55 @@
         const id = Number(tg.dataset.id), cur = Number(tg.dataset.cur);
         if (tg.dataset.toggle === 'elegible') window.toggleElegibleMenu?.(id, cur);
         else window.toggleActivoMenu?.(id, cur);
+        return;
+      }
+      // Abrir picker de fecha para copiar
+      const copyOpen = e.target.closest('[data-copy-open]');
+      if (copyOpen) {
+        const id  = copyOpen.dataset.copyOpen;
+        const row = host.querySelector(`#mw-copy-row-${id}`);
+        const inp = host.querySelector(`#mw-copy-date-${id}`);
+        if (!row) return;
+        const mañana = shiftDay(state.dia || todayLima(), 1);
+        inp.value = mañana;
+        inp.min   = todayLima();
+        row.style.display = 'flex';
+        row.style.flexDirection = 'column';
+        row.style.gap = '6px';
+        copyOpen.style.display = 'none';
+        inp.focus();
+        return;
+      }
+      // Cancelar picker
+      const copyCancel = e.target.closest('[data-copy-cancel]');
+      if (copyCancel) {
+        const id  = copyCancel.dataset.copyCancel;
+        host.querySelector(`#mw-copy-row-${id}`).style.display = 'none';
+        host.querySelector(`[data-copy-open="${id}"]`).style.display = '';
+        return;
+      }
+      // Confirmar copia
+      const copyOk = e.target.closest('[data-copy-ok]');
+      if (copyOk) {
+        const id  = Number(copyOk.dataset.copyOk);
+        const inp = host.querySelector(`#mw-copy-date-${id}`);
+        const dia = inp?.value;
+        if (!dia) { toast('Elige una fecha destino', 'err'); return; }
+        copyOk.disabled = true;
+        try {
+          const res = await api('POST', `/api/menu/menus-dia/${id}/copiar`, { dia });
+          toast(`Menú copiado al ${fDate(dia)} ✓`);
+          // Navegar a la fecha destino y recargar
+          state.dia = dia;
+          const fechaInput = host.querySelector('#mw-fecha');
+          if (fechaInput) fechaInput.value = dia;
+          await fetchMenus();
+          renderMenus();
+        } catch (err) {
+          toast(err.message, 'err');
+          copyOk.disabled = false;
+        }
+        return;
       }
     });
   }
@@ -562,15 +626,20 @@
     const btn = host.querySelector('[data-act="crear"]');
     btn.disabled = true;
     try {
-      await api('POST', '/api/menu/menus-dia', {
+      // heredar_secciones: el menú nace con la estructura del último menú
+      // (sin platos) — el owner solo agrega los platos de hoy (flujo v2).
+      const nuevo = await api('POST', '/api/menu/menus-dia', {
         nombre: (state.nombre || '').trim() || 'Menú del día',
         precio: state.precio,
         dia: state.dia,
         elegible: state.elegible,
+        heredar_secciones: true,
       });
-      toast('Menú creado');
+      toast(nuevo.secciones_heredadas ? 'Menú creado ✓ — secciones heredadas' : 'Menú creado ✓');
       await fetchMenus();
-      closeWizard();     // vuelve a la galería con el menú nuevo listado
+      closeWizard();     // deja la galería fresca detrás
+      // Encadena directo al armado de platos (sin volver a pasar por ⚙ Configurar)
+      if (opts.onConfigure) opts.onConfigure(nuevo.id, { recienCreado: true });
     } catch (e) {
       setErr('mw-err-crear', e.message);
       btn.disabled = false;

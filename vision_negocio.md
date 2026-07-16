@@ -2,7 +2,7 @@
 
 > Este documento es la brújula del proyecto. Debe leerse al inicio de cada sesión de desarrollo
 > para garantizar que cada decisión técnica va en la dirección correcta.
-> Última actualización: 2026-05-23
+> Última actualización: 2026-07-09
 
 ---
 
@@ -166,8 +166,10 @@ El panel de cocina muestra **reservas y órdenes juntas** en una sola lista orde
 ## 7. Flujo de Pago
 
 ### Reservas pagadas por adelantado
-- Pago al momento de reservar (Yape/Plin + foto de comprobante, o Efectivo marcado como "pagará al recoger")
-- Al llegar: solo verificación, no hay cobro adicional (salvo órdenes extras en mesa)
+- Pago al momento de reservar: **Yape/Plin + foto de comprobante obligatoria** (es la única evidencia de una transferencia digital — sin foto no se puede verificar, así que el sistema no acepta el pago sin ella), o **Efectivo** marcado como "pagará al recoger" (no requiere foto — se cobra en persona).
+- **No existe un "pagar más tarde"** — el cliente siempre sale del flujo con un método definido. Efectivo ya cubre el caso de pago diferido de forma legítima; un tercer estado "sin definir" solo generaba pedidos/reservas sin ningún rastro de pago y sin forma de retomarlos.
+- **Verificación humana antes de completar:** si el método fue Yape/Plin, el owner debe revisar el comprobante y tocar "✓ Confirmar pago" (`PATCH /:id/confirmar-pago`) antes de poder marcar la orden/reserva como pagada/completada — el sistema bloquea ese paso si no se confirmó primero. Efectivo no pasa por este paso (se cobra y completa en el mismo momento).
+- Al llegar: solo verificación, no hay cobro adicional (salvo órdenes extras en mesa).
 
 ### Reservas "pagar al llegar"
 - Riesgo de no-show → el cliente puede **cancelar hasta 30 minutos antes** de su hora de llegada
@@ -271,13 +273,15 @@ El dueño define su política (configurable por restaurante):
 - Auth + roles (owner, cocinero, mozo, admin) con permisos granulares
 - Menú del día: secciones, platos, fijo vs elegible, múltiples menús por día
 - Toggle visible/oculto por menú, platos agotados
+- **Flujo de armado v2 del menú del día** (2026-07-02): acordeón vertical de secciones, picker multi-selección, herencia de secciones del último menú, «Crear y agregar platos →» — el menú diario se arma en ~15 taps (ver `flujo-menuv2.md`)
+- **Stock por plato del menú** (2026-07-02): el owner fija "hoy tengo 25 arroz con pollo" por plato y POR MENÚ (si el plato está en 2 menús, reparte porciones entre ambos — decisión del negocio). Cada pedido descuenta al crearse; cancelar devuelve; en 0 el plato desaparece del QR solo. Opcional: sin stock fijado, todo funciona como antes
 - Platos a la carta: categorías, precios, toggle activo/inactivo, fotos
 - Órdenes: creación, flujo completo de estatus, historial, descarga Excel
 - Reservas: creación, confirmación, hora de llegada, flujo completo (Confirmar → Cocina → Listo → Cliente llegó → Completar), asignación de mesa, historial, descarga Excel
 - Plano de mesas visual con estado en tiempo real
 - Panel de cocina con polling y alerta de sonido — órdenes + reservas en preparación unificadas (ISS-008 resuelto 2026-05-23)
 - Cola del día unificada: órdenes + reservas activas ordenadas por urgencia (`pedidos.js`)
-- Pagos Fase 1: Yape/Plin/Efectivo, foto de comprobante, confirmación manual
+- **Pagos Fase 1 (endurecido 2026-07-09):** Yape/Plin/Efectivo, foto de comprobante **obligatoria** en pagos digitales, confirmación manual del owner **bloqueante** (no se puede completar una orden/reserva pagada por Yape/Plin sin que el owner confirme el comprobante primero) — ver `flujo-pago.md`
 - Reportes: curva de clientes, análisis de pedidos, ganancias, descarga Excel
 - Configuración visual: foto de portada, colores, QR del menú
 - Panel admin: gestión de restaurantes, usuarios y estatus
@@ -316,6 +320,12 @@ En orden de impacto:
 | 12 | Sistema de cuentas de cliente (híbrido anónimo + login) | Bajo | Alta | Fase 2 |
 | 13 | Cupones y créditos por cancelación | Bajo | Media | Fase 2 |
 | 14 | Notificaciones WhatsApp/SMS | Bajo | Alta | Fase 2 |
+| 15 | Métrica de visitas al menú por restaurante (dashboard admin) | Bajo (hoy) / Alto (a escala) | Media | Fase 2 — ver sección 15, "cuando inicie masivo" |
+| 16 | ~~Deep link real de Yape (requiere pasarela de pago afiliada)~~ | ~~Bajo~~ | ~~Alta~~ | ❌ Cerrado por diseño 2026-07-13 — inviable, complejidad no justificada; "Copiar número" es la solución definitiva |
+| 17 | ~~Pago obligatorio antes de crear la orden/reserva~~ | ~~Alto~~ | ~~Media~~ | ✅ Completado 2026-07-13 — ver detalle abajo |
+| 18 | Horario de atención configurable y estricto | Medio | Baja | Pendiente — ver detalle abajo |
+| 19 | Cola del día: cancelar pedido + mostrar todos los datos (modalidad) | **Alto** | Baja | Pendiente — ver detalle abajo |
+| 20 | Módulo Pensionistas (saldo prepagado + login propio) | Medio | Alta | Anotado 2026-07-15 — ver detalle abajo y `pensionistas.md` |
 
 > **Nota flujo Caso B reservas (sin pago anticipado):** el cliente llega sin haber pagado → mozo marca `es_cliente_llego` y asigna mesa → envía a cocina manualmente → flujo normal → cobra al final → `es_full`. La UI mostrará badge "⚠️ Sin pago" en la tarjeta para que el mozo lo identifique.
 
@@ -345,6 +355,91 @@ Cuando una reserva se cancela, el sistema emite un cupón de descuento o crédit
 **Gap 14 — Notificaciones WhatsApp/SMS** *(Fase 2)*
 Mensajes automáticos al cliente: confirmación de reserva, pedido listo, delivery en camino. Requiere integrar Twilio o Meta WhatsApp Business API (con costo por mensaje). Web Push (Gap 3) ya cubre las notificaciones al owner/mozo/cocinero — este gap es para el cliente final.
 
+**Gap 15 — Métrica de visitas al menú por restaurante** *(Fase 2 — "cuando inicie masivo")*
+Ver sección 15 para el detalle del modelo de negocio. Resumen técnico: registrar cada carga de `GET /api/public/menu` (o de la carga inicial de `menu.html`) por restaurante y por día, y mostrar el conteo en un dashboard nuevo del panel admin (`routes/admin.js` + `public/admin/dashboard.html`). A definir antes de implementar: ¿se cuenta cada request (page views) o visitantes únicos por sesión/día (requeriría un identificador anónimo, ej. cookie o hash de IP+user-agent, con las implicancias de privacidad que eso trae); retención de los datos (¿cuánto tiempo se guardan?); si el owner del restaurante puede ver su propio número o es información exclusiva del admin de la plataforma.
+
+**Gap 16 — Investigar deep link real de la app Yape**
+`https://yape.com.pe/cobrar?phone=XXXX` (usado hasta el 2026-07-13, ver [ISS-017](issues/ISS-017-boton-abrir-yape-roto.md)) no era un endpoint real — abría una página inexistente y fue removido.
+
+**Investigación 2026-07-13 (vía búsqueda web):** Yape sí tiene un deep link real y documentado: `https://www.yape.com.pe/app/checkout/approval_code`. Pero **no es un link estático armable desde el frontend con solo el número de teléfono** — es un link *dinámico*, generado del lado del servidor por una pasarela de pago afiliada (Mercado Pago, Culqi, Izipay, ProntoPaga — funcionalidades llamadas "Yape Código de Pago" / "Yape On File"), válido solo ~15 minutos por transacción, y requiere: (1) el restaurante afiliado como comercio a una de esas pasarelas, (2) una llamada server-side a su API para generar el `approval_code` por cada cobro, (3) el monto y datos de la transacción ya definidos antes de abrir el link. Es decir, no es "abrir Yape con el número precargado" como se asumió originalmente — es una integración completa de pasarela de pago, con costo por transacción y proceso de afiliación como comercio.
+
+**Decisión del usuario (2026-07-13):** inviable para el negocio actual — la complejidad de afiliarse a una pasarela (comisión por transacción, onboarding, integración server-side) no se justifica frente al flujo "Copiar número" que ya funciona bien. **Gap cerrado por diseño, no se implementará** salvo que cambie el contexto del negocio (ej. escala grande, restaurantes que ya usan pasarela). El flujo actual (número + botón "Copiar número", igual que Plin) queda como solución definitiva, no temporal.
+
+Fuentes: [Mercado Pago Developers — Yape Checkout API](https://www.mercadopago.com.pe/developers/es/docs/checkout-api-payments/integration-configuration/yape), [Culqi — Cargo único con Yape](https://docs.culqi.com/es/documentacion/pagos-online/cargo-unico/tokens-yape), [Izipay — Pago con Código Yape](https://developers.izipay.pe/products/pay-with-yape-code/), [ProntoPaga — Yape On File](https://docs.prontopaga.com/docs/yape-on-file-ocp)
+
+**Gap 17 — Pago obligatorio antes de crear la orden/reserva** ✅ *Completado 2026-07-13*
+
+**Problema real, confirmado en código:** `confirmarPedido()`/`confirmarReserva()` en `menu.html` llamaban primero a `POST /api/public/orders` (o `/reservations`) — el pedido **se creaba y ya entraba a la Cola del día como pendiente** — y solo después, si había métodos de pago configurados, se mostraba `showPagoStep()`. El pago nunca bloqueaba la creación: un cliente podía pedir y su orden/reserva viajaba a Cocina/Cola sin haber elegido siquiera un método de pago.
+
+**Flujo implementado (3 pasos, definido junto con el usuario):**
+```
+[Carrito] → tap "Ir a pagar" (nombre obligatorio, ver Gap nombre en features.md)
+     ↓
+[Pantalla de pago] — elegir método (si no hay Yape/Plin activo, Efectivo
+   queda como único/default, sigue mostrando la pantalla, no se salta)
+   → si Yape/Plin: adjuntar foto del comprobante
+   → tap "✓ Ya pagué" → SOLO valida (foto adjunta si aplica), no envía nada
+     ↓
+[Pantalla de repaso final] — resumen de ítems + total + nombre + método
+   elegido (+ miniatura de la foto si aplica), botón "← Volver" para
+   corregir el método sin perder nombre/ítems
+   → tap "✓ Confirmar pedido/reserva" → AHORA SÍ se crea la orden/reserva
+     y se le adjunta el pago, en la misma acción
+     ↓
+[¡Pedido enviado! 🎉]
+```
+
+Eliminar el pago en efectivo sigue siendo posible desde Configuración (toggle existente `efectivo_activo`) — no se tocó esa parte. Si el restaurante no tiene **ningún** método de pago activo, se mantiene el comportamiento anterior: se crea directo, sin pantalla de pago (no hay nada que gatear).
+
+**Decisión de arquitectura (con el usuario):** se evaluaron 2 opciones — fusionar creación+pago en un solo endpoint atómico, vs. mantener las 2 llamadas actuales (`POST /orders`/`/reservations` + `PATCH /pago/...`) pero disparadas juntas al confirmar en el repaso. Se eligió la segunda: **no se tocó `routes/orders.js` ni `routes/reservations.js`**, todo el cambio vive en `menu.html` (frontend). Queda una ventana muy chica (~200ms entre ambas llamadas) donde, si la conexión se corta justo ahí, la orden quedaría creada sin pago adjunto — mucho menos probable que el bug original (que dejaba esa ventana abierta indefinidamente, ya que el cliente podía abandonar el navegador después de crear pero antes de pagar) pero no 100% atómico. Riesgo aceptado explícitamente por el usuario a cambio de no tocar la lógica central de creación de órdenes/reservas.
+
+**Implementado — `public/menu.html`:**
+- `pagoPendiente` (nuevo estado global): guarda `{ tipo, payload, nombre, items, total, metodo, foto }` mientras el cliente resuelve el pago. Reemplaza a `pagoOrdenId`/`pagoTipo`/`pagoCodigoReserva`, que ya no tienen sentido (no existe id hasta el final).
+- `crearOrden(payload)` / `crearReserva(payload)` (nuevas, extraídas del POST que antes estaba inline).
+- `confirmarPedido()`/`confirmarReserva()`: si hay algún método de pago activo, arman el payload y abren `showPagoStep()` sin crear nada; si no hay ninguno, crean directo (comportamiento sin cambios para ese caso).
+- `showPagoStep()`: ya no recibe un id (no existe aún); muestra un resumen de ítems en vez de "Orden #X".
+- `enviarPago()`: ahora **solo valida** (foto adjunta para yape/plin) y avanza a `showRepasoStep()` — ya no llama al backend.
+- `showRepasoStep()` (nueva): pantalla `#repaso-screen` con resumen de ítems (renderizado limpio, sin los botones de quitar del carrito original — evita que tocarlos en el repaso desincronice lo que se va a enviar), nombre, método, miniatura de la foto si aplica.
+- `volverAPago()` (nueva): regresa a `#pago-screen` para corregir el método sin perder nombre/ítems (`pagoPendiente.payload`/`.nombre`/`.items` se conservan).
+- `confirmarEnvioFinal()` (nueva): el único punto del flujo donde el pedido pasa a existir de verdad — llama a `crearOrden`/`crearReserva`, obtiene el id real, y recién ahí hace el `PATCH` de pago con la foto.
+- Nueva pantalla `#repaso-screen` en el HTML (mismo patrón `.confirm-screen` + `overflow-y:auto` que `#pago-screen`/`#estado-screen`).
+- Etiqueta del botón de confirmar carrito pasa a "Ir a pagar →" cuando el restaurante tiene algún método de pago activo (se calcula una vez al cargar `pagoInfo`).
+
+**Gap 18 — Horario de atención configurable y estricto** *(anotado 2026-07-13, implementado y cerrado 2026-07-14)*
+
+Antes no existía ningún control de horario de atención — un cliente podía pedir/reservar a cualquier hora. Ahora el owner puede fijar un rango horario (ej. 12:00–15:00) + los días de la semana en que atiende; fuera de eso, `routes/public.js` bloquea con 400 tanto `POST /orders` como `POST /reservations` (las reservas además validan que la `hora_llegada` futura, si se especifica, caiga dentro del horario). `menu.html` muestra un banner "Cerrado" y deshabilita el botón de confirmar sin bloquear la navegación de la carta/menú. Configuración en `owner.html` → Configuración → "🕐 Horario de atención". No confundir con el "análisis de hora pico" de reportería (`GET /api/reportes/hora-pico`), que sigue siendo una métrica histórica, no una restricción operativa. Límite conocido: no soporta horarios que crucen la medianoche (asume `hora_apertura < hora_cierre` en el mismo día); horarios distintos por día de la semana (no solo días on/off) quedan como posible fase futura. Ver detalle técnico en `status.md` (sesión 2026-07-14).
+
+**Gap 19 — Cola del día: cancelar pedido + mostrar todos los datos** *(anotado 2026-07-13, cerrado 2026-07-14)*
+
+La modalidad (`badgeModalidad()`) ya se mostraba en las tarjetas de la Cola. Faltaba cancelar directo desde ahí sin entrar a los paneles separados de Órdenes/Reservas — agregado botón "✗ Cancelar" en `renderKanbanOrden()`/`renderKanbanReserva()`, reutilizando `accionRapidaOrden()`/`accionRapidaReserva()` (mismo endpoint `PATCH /:id/estatus` con flag `es_cancelado` que ya usan Órdenes/Reservas — la devolución de stock ya la maneja el backend, sin cambios). Mismo criterio de visibilidad que esos paneles: en órdenes siempre disponible; en reservas se oculta una vez que el cliente ya llegó o la reserva ya se completó.
+
+**Gap 20 — Módulo Pensionistas (saldo prepagado + login propio)** *(anotado 2026-07-15, sin implementar)*
+
+Un pensionista es un comensal recurrente al que el restaurante le administra un **saldo prepagado
+en dinero** (no menús contados) — paga por adelantado (semana/mes, a criterio del restaurante) y va
+consumiendo ese saldo pedido a pedido, sin pasar por ningún flujo de pago (Yape/Plin/Efectivo).
+
+**Piezas centrales del diseño (análisis completo en `pensionistas.md`):**
+- El owner da de alta al pensionista desde un módulo nuevo ("Pensionistas", separado del panel
+  "Usuarios") indicando nombre, apellido, teléfono, credenciales de login y saldo inicial.
+- El pensionista tiene **login propio** — reutiliza el sistema de auth existente (JWT + rol nuevo
+  `pensionista` en la tabla `roles`) en vez de construir un sistema paralelo. Entra a una pantalla
+  mobile-first propia (`pensionista.html`), pide del menú del día/carta del restaurante, y el
+  sistema descuenta el total de su saldo automáticamente — sin pantalla de pago.
+- Sus pedidos viven en una **tabla y flujo completamente separados** de `ordenes` y `reservas`
+  (`pedidos_pensionista`) — nunca se confunden con el pedido de una mesa walk-in. Pero sí aparecen
+  **en la Cola del día y en Cocina**, unificados junto con órdenes y reservas, con un tag visual
+  distintivo ("🪪 Pensionista") mostrando nombre y apellido completo — el personal necesita
+  ubicarlos igual que a cualquier otro pedido activo.
+- Reportería: las recargas de saldo (dinero real entrando) y el consumo (gasto del saldo ya
+  cobrado) se reportan por separado de "Ganancias" de órdenes/reservas, para no contar el mismo
+  dinero dos veces.
+
+**Decisiones pendientes de validar con el usuario antes de implementar** (detalle en
+`pensionistas.md` sección 11): si el saldo insuficiente bloquea el pedido o permite negativo
+("fiado"); si el pensionista puede pedir cualquier plato del menú o el owner puede restringirlo;
+si la recarga de saldo la puede hacer solo el owner o también un mozo con permiso.
+
 ---
 
 ## 14. Decisiones Pendientes de Validar en Producción
@@ -352,3 +447,24 @@ Mensajes automáticos al cliente: confirmación de reserva, pedido listo, delive
 - ¿El cocinero presiona "plato listo" o el mozo actualiza al escuchar la campana? → implementar botón del cocinero primero, evaluar con uso real
 - ¿Cuánto tiempo antes prepara cada restaurante sus reservas? → configurable por owner (default: 20 min)
 - ¿Los clientes usan más "pagar ahora" o "pagar al llegar"? → observar con datos reales
+
+---
+
+## 15. Modelo de Ingreso Indirecto — Publicidad (idea, sin implementar)
+
+> Anotado 2026-07-09, a partir de una idea del usuario. Sin diseño ni implementación aún — queda documentado para retomarlo "cuando inicie masivo" (múltiples restaurantes activos y con tráfico real).
+
+**La idea:** Menú Pro no le cobra directamente al comensal — el ingreso hoy es 100% B2B (lo que paga cada restaurante por usar el sistema). Pero si el sistema junta muchos restaurantes activos, cada uno con su propio flujo de comensales viendo su menú QR, la suma de ese tráfico agregado tiene valor: es una audiencia local, geolocalizada por barrio/ciudad, ya segmentada por "gente que está por comer en este momento". Ese tráfico se podría vender como espacio publicitario dentro de las páginas de menú (`menu.html`) — un ingreso indirecto que no depende de subirle la cuota al restaurante.
+
+**Ejemplo del propio usuario:** si cada restaurante recibe ~100 visitas, 10 restaurantes ya representan ~1000 personas — una audiencia agregada interesante para anunciantes locales (proveedores, otros negocios del barrio, marcas de bebidas/insumos), aunque cada restaurante individualmente sea un negocio pequeño.
+
+**Por qué "indirecto":** no es el modelo de negocio principal (que sigue siendo la suscripción/cuota del restaurante) — es una fuente de ingreso adicional que solo se vuelve viable con escala (muchos restaurantes, tráfico agregado suficiente para interesar a un anunciante). No tiene sentido activarlo con 1-8 restaurantes piloto.
+
+**Prerequisito de este feature (Gap 15, sección 13):** antes de poder vender publicidad hace falta poder *medir* el tráfico — de ahí que el primer paso concreto sea la métrica de visitas al menú en el dashboard admin, no la publicidad en sí. Sin ese dato, no hay forma de saber si la idea es viable ni qué precio cobrar.
+
+**Preguntas a resolver antes de diseñar la implementación (deliberadamente sin responder todavía):**
+- ¿Qué se cuenta? Page views (cada carga) vs. visitantes únicos (requiere un identificador anónimo por sesión/día).
+- ¿Cómo se ve en el dashboard admin? ¿Por restaurante, por ciudad, agregado total?
+- ¿El owner del restaurante ve su propio número, o es solo visibilidad del admin de la plataforma (para no filtrar información competitiva entre restaurantes)?
+- ¿Cuándo se activa la conversación de venta de publicidad? (ej. umbral mínimo de restaurantes activos o de tráfico agregado mensual)
+- Implicancias de privacidad si se decide trackear visitantes únicos (el sistema hoy es 100% anónimo del lado del cliente — sección 9).

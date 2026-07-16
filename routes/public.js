@@ -6,8 +6,11 @@ const router  = express.Router();
 const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
-const { fechaLima } = require('../utils/fecha');
+const { fechaLima, ahoraLima } = require('../utils/fecha');
 const { generarCodigoUnico } = require('../utils/codigoReserva');
+const { descontarStock, devolverStock, itemsMenuDeReserva } = require('../utils/stock');
+const { dentroDeVentanaCancelacion } = require('../utils/cancelacionReserva');
+const { estadoHorario, mensajeHorario, validarHorarioAhora, validarHorarioReserva } = require('../utils/horarioAtencion');
 const db      = require('../config/database');
 
 // Multer para comprobantes de pago (subidos por el cliente)
@@ -36,7 +39,8 @@ function getRestaurante(id) {
   return db.prepare(`
     SELECT id, nombre, foto_portada, color_primario, color_secundario,
            yape_activo, yape_telefono, plin_activo, plin_telefono, efectivo_activo,
-           para_llevar_activo, delivery_activo, costo_tapper, tarifa_delivery
+           para_llevar_activo, delivery_activo, costo_tapper, tarifa_delivery,
+           horario_activo, hora_apertura, hora_cierre, dias_atencion
     FROM restaurantes WHERE id = ? AND activo = 1
   `).get(id);
 }
@@ -67,6 +71,14 @@ router.get('/restaurante/:id', (req, res) => {
       costo_tapper:    restaurante.costo_tapper    ?? 0,
       tarifa_delivery: restaurante.tarifa_delivery ?? 0,
     },
+    horario: {
+      activo:       !!restaurante.horario_activo,
+      apertura:     restaurante.hora_apertura  || '00:00',
+      cierre:       restaurante.hora_cierre    || '23:59',
+      dias:         (restaurante.dias_atencion || '0,1,2,3,4,5,6').split(',').map(Number),
+      abierto_ahora: estadoHorario(restaurante, ahoraLima()).abierto,
+      mensaje:      restaurante.horario_activo ? mensajeHorario(restaurante) : null,
+    },
   });
 });
 
@@ -88,10 +100,12 @@ router.get('/menu', (req, res) => {
   const fecha = dia || fechaLima();
 
   const menus = db.prepare(`
-    SELECT id, nombre, elegible, dia, precio
-    FROM menus_dia
-    WHERE id_restaurante = ? AND dia = ? AND activo = 1
-    ORDER BY created_at ASC
+    SELECT md.id, md.nombre, md.elegible, md.dia, md.precio,
+           pm.url_foto AS url_foto_portada
+    FROM menus_dia md
+    LEFT JOIN platos_menu pm ON pm.id = md.id_plato_portada
+    WHERE md.id_restaurante = ? AND md.dia = ? AND md.activo = 1
+    ORDER BY md.created_at ASC
   `).all(restaurante, fecha);
 
   // Para cada menú traer secciones y platos
@@ -119,6 +133,7 @@ router.get('/menu', (req, res) => {
         FROM componentes_menu_dia cmd
         JOIN platos_menu pm ON cmd.id_plato_menu = pm.id
         WHERE cmd.id_menu_dia = ? AND cmd.id_seccion_menu = ? AND cmd.agotado = 0
+          AND (cmd.stock_restante IS NULL OR cmd.stock_restante > 0)
         ORDER BY pm.nombre ASC
       `).all(menu.id, s.id_seccion);
 
@@ -174,7 +189,7 @@ router.get('/carta', (req, res) => {
 // Body: {
 //   id_restaurante,
 //   mesa,
-//   nombre_cliente,   (opcional)
+//   nombre_cliente,   (obligatorio)
 //   carta_items:  [{ id_plato_carta, cantidad }],
 //   menu_items:   [{ id_componente, id_menu_dia, cantidad }]
 // }
@@ -191,6 +206,8 @@ router.post('/orders', (req, res) => {
 
   if (!id_restaurante)
     return res.status(400).json({ error: 'id_restaurante es requerido' });
+  if (!nombre_cliente?.trim())
+    return res.status(400).json({ error: 'El nombre es requerido' });
   if (!carta_items.length && !menu_items.length)
     return res.status(400).json({ error: 'La orden debe tener al menos un ítem' });
 
@@ -201,6 +218,10 @@ router.post('/orders', (req, res) => {
   const rest = getRestaurante(id_restaurante);
   if (!rest)
     return res.status(404).json({ error: 'Restaurante no encontrado o inactivo' });
+
+  const horario = validarHorarioAhora(rest, ahoraLima());
+  if (!horario.permitido)
+    return res.status(400).json({ error: horario.error });
 
   const fecha = fechaLima();
 
@@ -229,33 +250,42 @@ router.post('/orders', (req, res) => {
 
   const cargo_modalidad = modalidad === 'para_llevar' ? (rest.costo_tapper ?? 0) : 0;
 
-  // Todo válido — insertar en transacción
-  const ordenId = db.transaction(() => {
-    const { lastInsertRowid } = db.prepare(`
-      INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, modalidad, cargo_modalidad)
-      VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_inicial = 1), ?, ?)
-    `).run(mesa || null, nombre_cliente?.trim() || null, fecha, id_restaurante, modalidad, cargo_modalidad);
+  // Todo válido — insertar en transacción (si el stock no alcanza, revierte todo)
+  let ordenId;
+  try {
+    ordenId = db.transaction(() => {
+      const { lastInsertRowid } = db.prepare(`
+        INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, modalidad, cargo_modalidad)
+        VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_inicial = 1), ?, ?)
+      `).run(mesa || null, nombre_cliente?.trim() || null, fecha, id_restaurante, modalidad, cargo_modalidad);
 
-    // Ítems de carta
-    const stmtCarta = db.prepare(`
-      INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)
-      SELECT ?, id, ?, precio FROM platos_carta WHERE id = ?
-    `);
-    for (const item of carta_items) {
-      stmtCarta.run(lastInsertRowid, item.cantidad || 1, item.id_plato_carta);
-    }
+      // Ítems de carta
+      const stmtCarta = db.prepare(`
+        INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)
+        SELECT ?, id, ?, precio FROM platos_carta WHERE id = ?
+      `);
+      for (const item of carta_items) {
+        stmtCarta.run(lastInsertRowid, item.cantidad || 1, item.id_plato_carta);
+      }
 
-    // Ítems de menú
-    const stmtMenu = db.prepare(`
-      INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad)
-      VALUES (?, ?, ?, ?)
-    `);
-    for (const item of menu_items) {
-      stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
-    }
+      // Ítems de menú
+      const stmtMenu = db.prepare(`
+        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad)
+        VALUES (?, ?, ?, ?)
+      `);
+      for (const item of menu_items) {
+        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
+      }
 
-    return lastInsertRowid;
-  })();
+      // Descuenta stock de los platos con control; lanza 409 si no alcanza
+      descontarStock(db, menu_items);
+
+      return lastInsertRowid;
+    })();
+  } catch (e) {
+    if (e.status === 409) return res.status(409).json({ error: e.message });
+    throw e;
+  }
 
   res.status(201).json({
     message: '¡Pedido enviado correctamente!',
@@ -304,6 +334,10 @@ router.post('/reservations', (req, res) => {
   if (!rest)
     return res.status(404).json({ error: 'Restaurante no encontrado o inactivo' });
 
+  const horario = validarHorarioReserva(rest, fecha, hora_llegada?.trim() || null, ahoraLima());
+  if (!horario.permitido)
+    return res.status(400).json({ error: horario.error });
+
   const MODALIDADES_RESERVA = ['en_local', 'para_llevar', 'delivery'];
   if (!MODALIDADES_RESERVA.includes(modalidad))
     return res.status(400).json({ error: 'modalidad inválida' });
@@ -339,9 +373,11 @@ router.post('/reservations', (req, res) => {
   if (modalidad === 'para_llevar') cargo_modalidad_res = rest.costo_tapper    ?? 0;
   if (modalidad === 'delivery')    cargo_modalidad_res = (rest.costo_tapper ?? 0) + (rest.tarifa_delivery ?? 0);
 
-  // Insertar en transacción
-  const { reservaId, codigo } = db.transaction(() => {
-    const codigoNuevo = generarCodigoUnico(db);
+  // Insertar en transacción (si el stock no alcanza, revierte todo)
+  let reservaId, codigo;
+  try {
+    ({ reservaId, codigo } = db.transaction(() => {
+      const codigoNuevo = generarCodigoUnico(db);
 
     const { lastInsertRowid } = db.prepare(`
       INSERT INTO reservas (nombre_cliente, telefono_cliente, fecha, hora_llegada, mesa, id_restaurante, id_estatus, codigo, modalidad, cargo_modalidad)
@@ -375,8 +411,16 @@ router.post('/reservations', (req, res) => {
       stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
     }
 
+    // Descuenta stock de los platos con control; lanza 409 si no alcanza.
+    // La reserva descuenta del stock del componente de SU fecha (el menú es de esa fecha).
+    descontarStock(db, menu_items);
+
     return { reservaId: lastInsertRowid, codigo: codigoNuevo };
-  })();
+    })());
+  } catch (e) {
+    if (e.status === 409) return res.status(409).json({ error: e.message });
+    throw e;
+  }
 
   res.status(201).json({
     message: '¡Reserva creada correctamente!',
@@ -387,8 +431,10 @@ router.post('/reservations', (req, res) => {
 
 // ─────────────────────────────────────────────────────
 // PATCH /api/public/pago/orden/:id
-// El cliente marca su pago como enviado y sube foto del comprobante
-// Body: multipart/form-data — metodo_pago ('yape'|'plin'|'efectivo'), foto (opcional)
+// El cliente marca su pago como enviado y sube foto del comprobante.
+// La foto es OBLIGATORIA para yape/plin (es la única evidencia de una
+// transferencia digital); efectivo no la requiere (se paga en persona).
+// Body: multipart/form-data — metodo_pago ('yape'|'plin'|'efectivo'), foto
 // ─────────────────────────────────────────────────────
 function handlePago(tabla, idField) {
   return (req, res) => {
@@ -398,6 +444,8 @@ function handlePago(tabla, idField) {
       const { metodo_pago } = req.body;
       if (!['yape', 'plin', 'efectivo'].includes(metodo_pago))
         return res.status(400).json({ error: 'metodo_pago inválido' });
+      if (['yape', 'plin'].includes(metodo_pago) && !req.file)
+        return res.status(400).json({ error: 'Debes adjuntar la foto del comprobante' });
 
       const row = db.prepare(`SELECT id, estado_pago FROM ${tabla} WHERE id = ?`).get(req.params.id);
       if (!row) return res.status(404).json({ error: 'Registro no encontrado' });
@@ -465,6 +513,47 @@ router.get('/reserva/:codigo', (req, res) => {
   `).all(reserva.id);
 
   res.json({ ...reserva, carta_items, menu_items });
+});
+
+// ─────────────────────────────────────────────────────
+// PATCH /api/public/reserva/:codigo/cancelar
+// El cliente cancela su propia reserva con su código (actúa como token).
+// Sujeto a la ventana de tiempo del restaurante (minutos_cancelacion_reserva,
+// default 30) respecto a la hora_llegada. Si la reserva no tiene hora_llegada
+// (el cliente no la especificó), se permite cancelar sin límite de horario
+// mientras el estatus siga siendo cancelable.
+// ─────────────────────────────────────────────────────
+router.patch('/reserva/:codigo/cancelar', (req, res) => {
+  const reserva = db.prepare(`
+    SELECT r.id, r.fecha, r.hora_llegada, r.id_restaurante,
+           er.nombre AS estatus_actual, er.es_full, er.es_cancelado
+    FROM reservas r
+    JOIN estatus_reserva er ON r.id_estatus = er.id
+    WHERE r.codigo = ?
+  `).get(req.params.codigo);
+
+  if (!reserva)
+    return res.status(404).json({ error: 'Reserva no encontrada. Verifica tu código.' });
+
+  if (reserva.es_full || reserva.es_cancelado)
+    return res.status(400).json({ error: `No se puede cancelar una reserva ${reserva.estatus_actual}` });
+
+  const rest = db.prepare(`SELECT minutos_cancelacion_reserva FROM restaurantes WHERE id = ?`)
+    .get(reserva.id_restaurante);
+  const minutosLimite = rest?.minutos_cancelacion_reserva ?? 30;
+
+  const ventana = dentroDeVentanaCancelacion(reserva.fecha, reserva.hora_llegada, minutosLimite, ahoraLima());
+  if (!ventana.permitido)
+    return res.status(400).json({ error: ventana.error });
+
+  const cancelado = db.prepare(`SELECT id FROM estatus_reserva WHERE es_cancelado = 1`).get();
+
+  db.transaction(() => {
+    db.prepare(`UPDATE reservas SET id_estatus = ? WHERE id = ?`).run(cancelado.id, reserva.id);
+    devolverStock(db, itemsMenuDeReserva(db, reserva.id));
+  })();
+
+  res.json({ message: 'Reserva cancelada correctamente', estatus: 'cancelada' });
 });
 
 module.exports = router;

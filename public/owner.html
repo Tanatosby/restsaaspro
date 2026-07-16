@@ -37,6 +37,23 @@
       }
       document.documentElement.setAttribute('data-theme', t);
     } catch (e) {}
+
+    // Tamaño de letra ajustable (Configuración → 🔤 Tamaño de letra) —
+    // aplicado antes del paint para evitar flash. Ver comentario en owner.css
+    // sobre por qué esto usa --font-scale y no font-size en % desde JS.
+    try {
+      var fs = parseFloat(localStorage.getItem('mp-font-scale'));
+      if (![1, 1.15, 1.3].includes(fs)) fs = 1;
+      document.documentElement.style.setProperty('--font-scale', fs);
+    } catch (e) {}
+    window.setFontScale = function (factor) {
+      document.documentElement.style.setProperty('--font-scale', factor);
+      try { localStorage.setItem('mp-font-scale', factor); } catch (e) {}
+      document.querySelectorAll('.font-scale-btn').forEach(function (b) {
+        b.classList.toggle('active', parseFloat(b.dataset.scale) === factor);
+      });
+    };
+
     window.toggleTheme = function () {
       var cur  = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
       var next = cur === 'dark' ? 'light' : 'dark';
@@ -286,7 +303,7 @@
                 <div class="field"><label for="md-precio">Precio S/ *</label><input id="md-precio" type="number" step="0.01" min="0" placeholder="0.00" /></div>
                 <div class="field"><label for="md-fecha">Fecha *</label><input id="md-fecha" type="date" /></div>
                 <div class="field" style="justify-content:flex-end;padding-top:1.4rem">
-                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;text-transform:none;letter-spacing:0">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.857143rem;text-transform:none;letter-spacing:0">
                     <input type="checkbox" id="md-elegible" style="width:auto" />
                     Cliente elige por sección
                   </label>
@@ -303,7 +320,7 @@
             <div class="card-header">
               <span class="card-title">Menús configurados</span>
               <div style="display:flex;gap:8px;align-items:center">
-                <input type="date" id="filter-md-fecha" aria-label="Filtrar por fecha" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:16px;background:var(--bg)" onchange="loadMenusDia()" />
+                <input type="date" id="filter-md-fecha" aria-label="Filtrar por fecha" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:1.142857rem;background:var(--bg)" onchange="loadMenusDia()" />
                 <button class="btn btn-ghost btn-sm" onclick="document.getElementById('filter-md-fecha').value='';loadMenusDia()">Ver todos</button>
               </div>
             </div>
@@ -381,9 +398,9 @@
             <button class="btn btn-ghost btn-sm" onclick="loadPlanoMesas()">↻ Actualizar</button>
           </div>
           <div id="plano-leyenda" style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
-            <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:#d1fae5;border:1px solid #6ee7b7;display:inline-block"></span>Libre</span>
-            <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:#fee2e2;border:1px solid #fca5a5;display:inline-block"></span>Ocupada</span>
-            <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:3px;background:#fef3c7;border:1px solid #fcd34d;display:inline-block"></span>Reservada</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:0.857143rem"><span style="width:12px;height:12px;border-radius:3px;background:#d1fae5;border:1px solid #6ee7b7;display:inline-block"></span>Libre</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:0.857143rem"><span style="width:12px;height:12px;border-radius:3px;background:#fee2e2;border:1px solid #fca5a5;display:inline-block"></span>Ocupada</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:0.857143rem"><span style="width:12px;height:12px;border-radius:3px;background:#fef3c7;border:1px solid #fcd34d;display:inline-block"></span>Reservada</span>
           </div>
           <div id="plano-mesas-grid" style="display:flex;flex-wrap:wrap;gap:1rem"></div>
         </div>
@@ -712,12 +729,12 @@
           <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
             <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
               <div>
-                <label for="cfg-mesa-numero" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">N° mesa</label>
-                <input type="number" id="cfg-mesa-numero" min="1" placeholder="ej: 5" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:16px;background:var(--bg)" />
+                <label for="cfg-mesa-numero" style="font-size:0.857143rem;font-weight:600;display:block;margin-bottom:4px">N° mesa</label>
+                <input type="number" id="cfg-mesa-numero" min="1" placeholder="ej: 5" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:1.142857rem;background:var(--bg)" />
               </div>
               <div>
-                <label for="cfg-mesa-capacidad" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Capacidad</label>
-                <input type="number" id="cfg-mesa-capacidad" min="1" value="4" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:16px;background:var(--bg)" />
+                <label for="cfg-mesa-capacidad" style="font-size:0.857143rem;font-weight:600;display:block;margin-bottom:4px">Capacidad</label>
+                <input type="number" id="cfg-mesa-capacidad" min="1" value="4" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:1.142857rem;background:var(--bg)" />
               </div>
               <button class="btn btn-primary btn-sm" onclick="crearMesa()">+ Agregar mesa</button>
             </div>
@@ -729,20 +746,20 @@
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-header"><span class="card-title">Métodos de pago</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:1.25rem">
-            <p style="font-size:12px;color:var(--muted)">Los métodos activos aparecerán en el menú del cliente al momento de confirmar su pedido.</p>
+            <p style="font-size:0.857143rem;color:var(--muted)">Los métodos activos aparecerán en el menú del cliente al momento de confirmar su pedido.</p>
 
             <!-- Yape -->
             <div style="display:flex;flex-direction:column;gap:0.5rem">
               <div style="display:flex;align-items:center;gap:0.75rem">
                 <label class="toggle-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
                   <input type="checkbox" id="pago-yape-activo" style="width:18px;height:18px;accent-color:var(--accent)">
-                  <span style="font-weight:600;font-size:14px">💚 Yape</span>
+                  <span style="font-weight:600;font-size:1rem">💚 Yape</span>
                 </label>
               </div>
               <div style="display:flex;align-items:center;gap:8px;padding-left:26px">
-                <span style="font-size:13px;color:var(--muted);white-space:nowrap">Número:</span>
+                <span style="font-size:0.928571rem;color:var(--muted);white-space:nowrap">Número:</span>
                 <input type="tel" id="pago-yape-telefono" aria-label="Número de Yape" placeholder="9XXXXXXXX" maxlength="9"
-                  style="flex:1;max-width:180px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:16px;background:var(--bg);color:var(--text)">
+                  style="flex:1;max-width:180px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:1.142857rem;background:var(--bg);color:var(--text)">
               </div>
             </div>
 
@@ -751,13 +768,13 @@
               <div style="display:flex;align-items:center;gap:0.75rem">
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                   <input type="checkbox" id="pago-plin-activo" style="width:18px;height:18px;accent-color:var(--accent)">
-                  <span style="font-weight:600;font-size:14px">🔵 Plin</span>
+                  <span style="font-weight:600;font-size:1rem">🔵 Plin</span>
                 </label>
               </div>
               <div style="display:flex;align-items:center;gap:8px;padding-left:26px">
-                <span style="font-size:13px;color:var(--muted);white-space:nowrap">Número:</span>
+                <span style="font-size:0.928571rem;color:var(--muted);white-space:nowrap">Número:</span>
                 <input type="tel" id="pago-plin-telefono" aria-label="Número de Plin" placeholder="9XXXXXXXX" maxlength="9"
-                  style="flex:1;max-width:180px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:16px;background:var(--bg);color:var(--text)">
+                  style="flex:1;max-width:180px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:1.142857rem;background:var(--bg);color:var(--text)">
               </div>
             </div>
 
@@ -765,7 +782,7 @@
             <div style="display:flex;align-items:center;gap:0.75rem">
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                 <input type="checkbox" id="pago-efectivo-activo" style="width:18px;height:18px;accent-color:var(--accent)">
-                <span style="font-weight:600;font-size:14px">💵 Efectivo</span>
+                <span style="font-weight:600;font-size:1rem">💵 Efectivo</span>
               </label>
             </div>
 
@@ -777,26 +794,73 @@
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-header"><span class="card-title">🛵 Modalidades de pedido</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
-            <p style="font-size:14px;color:var(--muted)">Las modalidades activas estarán disponibles para los clientes al hacer su pedido o reserva desde el menú QR.</p>
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+            <p style="font-size:1rem;color:var(--muted)">Las modalidades activas estarán disponibles para los clientes al hacer su pedido o reserva desde el menú QR.</p>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:1rem">
               <input type="checkbox" id="cfg-para-llevar-activo" style="width:18px;height:18px;accent-color:var(--accent)">
               <span><strong>🥡 Para llevar</strong> — el cliente recoge en el local</span>
             </label>
             <div style="display:flex;align-items:center;gap:10px;padding-left:28px">
-              <label for="cfg-costo-tapper" style="font-size:13px;color:var(--muted);white-space:nowrap">Costo tapper (S/):</label>
+              <label for="cfg-costo-tapper" style="font-size:0.928571rem;color:var(--muted);white-space:nowrap">Costo tapper (S/):</label>
               <input type="number" id="cfg-costo-tapper" min="0" step="0.10" placeholder="0.00"
-                style="width:90px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:14px;background:var(--bg)">
+                style="width:90px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:1rem;background:var(--bg)">
             </div>
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:1rem">
               <input type="checkbox" id="cfg-delivery-activo" style="width:18px;height:18px;accent-color:var(--accent)">
               <span><strong>🛵 Delivery</strong> — el restaurante lleva el pedido a domicilio</span>
             </label>
             <div style="display:flex;align-items:center;gap:10px;padding-left:28px">
-              <label for="cfg-tarifa-delivery" style="font-size:13px;color:var(--muted);white-space:nowrap">Tarifa delivery (S/):</label>
+              <label for="cfg-tarifa-delivery" style="font-size:0.928571rem;color:var(--muted);white-space:nowrap">Tarifa delivery (S/):</label>
               <input type="number" id="cfg-tarifa-delivery" min="0" step="0.50" placeholder="0.00"
-                style="width:90px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:14px;background:var(--bg)">
+                style="width:90px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:1rem;background:var(--bg)">
             </div>
             <button class="btn btn-primary btn-sm" onclick="guardarModalidades()" style="align-self:flex-start">💾 Guardar modalidades</button>
+          </div>
+        </div>
+
+        <!-- Horario de atención (Gap 18) -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">🕐 Horario de atención</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:1rem;color:var(--muted)">Si lo activas, el sistema bloqueará pedidos y reservas fuera del horario y los días que elijas. El cliente verá un aviso de "Cerrado" en el menú.</p>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:1rem">
+              <input type="checkbox" id="cfg-horario-activo" style="width:18px;height:18px;accent-color:var(--accent)">
+              <span><strong>Activar horario estricto</strong></span>
+            </label>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+              <label style="font-size:1rem;font-weight:600" for="cfg-hora-apertura">Abre</label>
+              <input type="time" id="cfg-hora-apertura" value="00:00"
+                style="font-size:1.142857rem;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <label style="font-size:1rem;font-weight:600" for="cfg-hora-cierre">Cierra</label>
+              <input type="time" id="cfg-hora-cierre" value="23:59"
+                style="font-size:1.142857rem;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+            </div>
+            <div>
+              <span style="font-size:1rem;font-weight:600;display:block;margin-bottom:0.5rem">Días de atención</span>
+              <div id="cfg-dias-atencion" style="display:flex;flex-wrap:wrap;gap:0.5rem">
+                <label style="display:flex;align-items:center;gap:6px;font-size:1rem;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="1" style="width:18px;height:18px;accent-color:var(--accent)"><span>Lun</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:1rem;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="2" style="width:18px;height:18px;accent-color:var(--accent)"><span>Mar</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:1rem;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="3" style="width:18px;height:18px;accent-color:var(--accent)"><span>Mié</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:1rem;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="4" style="width:18px;height:18px;accent-color:var(--accent)"><span>Jue</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:1rem;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="5" style="width:18px;height:18px;accent-color:var(--accent)"><span>Vie</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:1rem;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="6" style="width:18px;height:18px;accent-color:var(--accent)"><span>Sáb</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:1rem;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:44px;cursor:pointer">
+                  <input type="checkbox" class="cfg-dia-check" value="0" style="width:18px;height:18px;accent-color:var(--accent)"><span>Dom</span>
+                </label>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="guardarHorarioAtencion()" style="align-self:flex-start">💾 Guardar</button>
           </div>
         </div>
 
@@ -804,8 +868,8 @@
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-header"><span class="card-title">🔀 Auto-merge cuenta por mesa</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
-            <p style="font-size:14px;color:var(--muted)">Al marcar que el cliente llegó, el sistema fusiona automáticamente los ítems de la reserva en la orden activa de esa mesa.</p>
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+            <p style="font-size:1rem;color:var(--muted)">Al marcar que el cliente llegó, el sistema fusiona automáticamente los ítems de la reserva en la orden activa de esa mesa.</p>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:1rem">
               <input type="checkbox" id="cfg-auto-merge-activo" style="width:18px;height:18px;accent-color:var(--accent)">
               <span><strong>Activar auto-merge</strong> — unir reserva + orden de la mesa automáticamente</span>
             </label>
@@ -817,14 +881,29 @@
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-header"><span class="card-title">⏱ Auto-preparación de reservas</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
-            <p style="font-size:14px;color:var(--muted)">El sistema enviará automáticamente las reservas confirmadas a cocina con esta anticipación antes de la hora de llegada del cliente.</p>
+            <p style="font-size:1rem;color:var(--muted)">El sistema enviará automáticamente las reservas confirmadas a cocina con esta anticipación antes de la hora de llegada del cliente.</p>
             <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-              <label style="font-size:14px;font-weight:600" for="cfg-minutos-preparacion">Preparar con</label>
+              <label style="font-size:1rem;font-weight:600" for="cfg-minutos-preparacion">Preparar con</label>
               <input type="number" id="cfg-minutos-preparacion" min="1" max="180" value="20"
-                style="width:80px;font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
-              <span style="font-size:14px">minutos de anticipación</span>
+                style="width:80px;font-size:1.142857rem;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <span style="font-size:1rem">minutos de anticipación</span>
             </div>
             <button class="btn btn-primary btn-sm" onclick="guardarMinutosPreparacion()" style="align-self:flex-start">💾 Guardar</button>
+          </div>
+        </div>
+
+        <!-- Ventana de cancelación de reservas (cliente) -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">✗ Cancelación de reservas por el cliente</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:1rem;color:var(--muted)">El cliente puede cancelar su propia reserva desde la pantalla de estado, siempre que falten al menos estos minutos para la hora de llegada. Si la reserva no tiene hora especificada, puede cancelarla en cualquier momento.</p>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+              <label style="font-size:1rem;font-weight:600" for="cfg-minutos-cancelacion-reserva">Bloquear cancelación si faltan menos de</label>
+              <input type="number" id="cfg-minutos-cancelacion-reserva" min="0" max="1440" value="30"
+                style="width:80px;font-size:1.142857rem;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <span style="font-size:1rem">minutos</span>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="guardarMinutosCancelacionReserva()" style="align-self:flex-start">💾 Guardar</button>
           </div>
         </div>
 
@@ -840,7 +919,29 @@
               </label>
               <button class="btn btn-ghost btn-sm" id="btn-eliminar-foto" onclick="eliminarFotoRestaurante()" style="display:none">🗑 Eliminar foto</button>
             </div>
-            <p style="font-size:12px;color:var(--muted)">Aparecerá como banner en la página del menú del cliente. Máx. 2 MB — jpg, png o webp.</p>
+            <p style="font-size:0.857143rem;color:var(--muted)">Aparecerá como banner en la página del menú del cliente. Máx. 2 MB — jpg, png o webp.</p>
+          </div>
+        </div>
+
+        <!-- URL personalizada -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">URL personalizada</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:0.75rem">
+            <p style="font-size:0.857143rem;color:var(--muted)">Elige el nombre único de tu restaurante en el link del menú. Solo letras minúsculas, números y guiones. Mínimo 3 caracteres.</p>
+            <div>
+              <label style="font-size:0.785714rem;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Tu URL</label>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <span style="font-size:1rem;color:var(--muted);white-space:nowrap">menupro.tech/</span>
+                <input id="config-slug" type="text" placeholder="karinamenu" maxlength="30"
+                       style="flex:1;min-width:120px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:1.142857rem;background:var(--bg);color:var(--text)"
+                       oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')" />
+                <button class="btn btn-primary btn-sm" onclick="guardarSlug()">Guardar</button>
+              </div>
+            </div>
+            <div id="config-slug-preview" style="display:none;font-size:0.928571rem;color:var(--muted)">
+              Tu link: <a id="config-slug-url" href="#" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600"></a>
+              <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:0.785714rem;margin-left:4px" onclick="copiarSlugUrl()">Copiar</button>
+            </div>
           </div>
         </div>
 
@@ -848,14 +949,14 @@
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-header"><span class="card-title">Código QR del menú</span></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
-            <p style="font-size:12px;color:var(--muted)">Escanea este QR para ver el menú como lo ve el cliente, o descárgalo para imprimirlo.</p>
+            <p style="font-size:0.857143rem;color:var(--muted)">Escanea este QR para ver el menú como lo ve el cliente, o descárgalo para imprimirlo.</p>
             <div style="display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap">
               <div id="qr-canvas-wrap" style="background:#fff;padding:12px;border-radius:10px;border:1px solid var(--border);display:inline-block"></div>
               <div style="display:flex;flex-direction:column;gap:0.75rem;justify-content:center">
                 <div>
-                  <label for="qr-link-input" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Link del menú</label>
+                  <label for="qr-link-input" style="font-size:0.785714rem;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Link del menú</label>
                   <div style="display:flex;gap:6px;align-items:center">
-                    <input id="qr-link-input" readonly aria-label="Link del menú" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:16px;background:var(--bg);color:var(--text);min-width:0" />
+                    <input id="qr-link-input" readonly aria-label="Link del menú" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:1.142857rem;background:var(--bg);color:var(--text);min-width:0" />
                     <button class="btn btn-ghost btn-sm" onclick="copiarLinkQR()">Copiar</button>
                   </div>
                 </div>
@@ -864,10 +965,10 @@
             </div>
             <!-- QRs por mesa -->
             <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.25rem">
-              <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">QR por mesa</label>
+              <label style="font-size:0.785714rem;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">QR por mesa</label>
               <div style="display:flex;gap:8px;align-items:center;margin-bottom:0.75rem">
-                <span style="font-size:13px">Número de mesas:</span>
-                <input type="number" id="qr-num-mesas" aria-label="Número de mesas" value="10" min="1" max="100" style="width:70px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:16px;background:var(--bg)" />
+                <span style="font-size:0.928571rem">Número de mesas:</span>
+                <input type="number" id="qr-num-mesas" aria-label="Número de mesas" value="10" min="1" max="100" style="width:70px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:1.142857rem;background:var(--bg)" />
                 <button class="btn btn-ghost btn-sm" onclick="generarQRsMesas()">Generar</button>
               </div>
               <div id="qr-mesas-grid" style="display:flex;flex-wrap:wrap;gap:1rem"></div>
@@ -881,23 +982,36 @@
           <div class="card-body" style="display:flex;flex-direction:column;gap:1.25rem">
             <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
               <div style="flex:1;min-width:180px">
-                <label for="config-color-primario" style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Color primario</label>
-                <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Botones, etiquetas, acento principal</p>
+                <label for="config-color-primario" style="font-size:0.928571rem;font-weight:600;display:block;margin-bottom:4px">Color primario</label>
+                <p style="font-size:0.785714rem;color:var(--muted);margin-bottom:8px">Botones, etiquetas, acento principal</p>
                 <div style="display:flex;align-items:center;gap:8px">
                   <input type="color" id="config-color-primario" value="#c8692a" style="width:40px;height:36px;border:none;border-radius:8px;cursor:pointer;padding:2px">
-                  <span id="config-color-primario-hex" style="font-size:13px;font-family:monospace;color:var(--text)">#c8692a</span>
+                  <span id="config-color-primario-hex" style="font-size:0.928571rem;font-family:monospace;color:var(--text)">#c8692a</span>
                 </div>
               </div>
               <div style="flex:1;min-width:180px">
-                <label for="config-color-secundario" style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Color secundario</label>
-<p style="font-size:11px;color:var(--muted);margin-bottom:8px">Gráficas, detalles secundarios</p>
+                <label for="config-color-secundario" style="font-size:0.928571rem;font-weight:600;display:block;margin-bottom:4px">Color secundario</label>
+<p style="font-size:0.785714rem;color:var(--muted);margin-bottom:8px">Gráficas, detalles secundarios</p>
                 <div style="display:flex;align-items:center;gap:8px">
                   <input type="color" id="config-color-secundario" value="#1a6090" style="width:40px;height:36px;border:none;border-radius:8px;cursor:pointer;padding:2px">
-                  <span id="config-color-secundario-hex" style="font-size:13px;font-family:monospace;color:var(--text)">#1a6090</span>
+                  <span id="config-color-secundario-hex" style="font-size:0.928571rem;font-family:monospace;color:var(--text)">#1a6090</span>
                 </div>
               </div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="guardarConfigColores()" style="align-self:flex-start">💾 Guardar colores</button>
+          </div>
+        </div>
+
+        <!-- Tamaño de letra ajustable -->
+        <div class="card" style="margin-top:1.25rem">
+          <div class="card-header"><span class="card-title">🔤 Tamaño de letra</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:1rem;color:var(--muted)">Ajusta el tamaño de letra de este panel en este dispositivo. La preferencia queda guardada solo en este celular.</p>
+            <div style="display:flex;gap:0.5rem">
+              <button class="font-scale-btn" data-scale="1"    onclick="setFontScale(1)">Normal</button>
+              <button class="font-scale-btn" data-scale="1.15" onclick="setFontScale(1.15)">Grande</button>
+              <button class="font-scale-btn" data-scale="1.3"  onclick="setFontScale(1.3)">Muy grande</button>
+            </div>
           </div>
         </div>
       </div>
@@ -910,29 +1024,35 @@
 <div id="modal-cambiar-pwd" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:1rem">
   <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;width:100%;max-width:380px;box-shadow:var(--shadow)">
     <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:16px;font-weight:700;color:var(--text)">Cambiar contraseña</span>
-      <button onclick="cerrarModalCambiarPassword()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1;padding:2px 6px">✕</button>
+      <span style="font-size:1.142857rem;font-weight:700;color:var(--text)">Cambiar contraseña</span>
+      <button onclick="cerrarModalCambiarPassword()" style="background:none;border:none;font-size:1.428571rem;color:var(--muted);cursor:pointer;line-height:1;padding:2px 6px">✕</button>
     </div>
     <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem">
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label for="pwd-actual" style="font-size:12px;font-weight:600;color:var(--text-2)">Contraseña actual</label>
-        <input id="pwd-actual" type="password" placeholder="Tu contraseña actual" style="border:1px solid var(--border-2);border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%">
+        <label for="pwd-actual" style="font-size:0.857143rem;font-weight:600;color:var(--text-2)">Contraseña actual</label>
+        <input id="pwd-actual" type="password" placeholder="Tu contraseña actual" style="border:1px solid var(--border-2);border-radius:8px;padding:10px 12px;font-size:1.142857rem;font-family:inherit;color:var(--text);outline:none;width:100%">
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label for="pwd-nueva" style="font-size:12px;font-weight:600;color:var(--text-2)">Contraseña nueva</label>
-        <input id="pwd-nueva" type="password" placeholder="Mínimo 8 caracteres" style="border:1px solid var(--border-2);border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%">
+        <label for="pwd-nueva" style="font-size:0.857143rem;font-weight:600;color:var(--text-2)">Contraseña nueva</label>
+        <input id="pwd-nueva" type="password" placeholder="Mínimo 8 caracteres" style="border:1px solid var(--border-2);border-radius:8px;padding:10px 12px;font-size:1.142857rem;font-family:inherit;color:var(--text);outline:none;width:100%">
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label for="pwd-confirmar" style="font-size:12px;font-weight:600;color:var(--text-2)">Confirmar contraseña nueva</label>
-        <input id="pwd-confirmar" type="password" placeholder="Repite la contraseña nueva" style="border:1px solid var(--border-2);border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%">
+        <label for="pwd-confirmar" style="font-size:0.857143rem;font-weight:600;color:var(--text-2)">Confirmar contraseña nueva</label>
+        <input id="pwd-confirmar" type="password" placeholder="Repite la contraseña nueva" style="border:1px solid var(--border-2);border-radius:8px;padding:10px 12px;font-size:1.142857rem;font-family:inherit;color:var(--text);outline:none;width:100%">
       </div>
-      <div id="pwd-error" style="display:none;background:var(--danger-bg);border:1px solid rgba(192,57,43,0.25);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--danger)"></div>
+      <div id="pwd-error" style="display:none;background:var(--danger-bg);border:1px solid rgba(192,57,43,0.25);border-radius:6px;padding:8px 12px;font-size:0.928571rem;color:var(--danger)"></div>
     </div>
     <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
-      <button onclick="cerrarModalCambiarPassword()" style="background:none;border:1px solid var(--border-2);border-radius:8px;padding:10px 18px;font-size:14px;font-family:inherit;color:var(--text-2);cursor:pointer;min-height:44px">Cancelar</button>
-      <button onclick="guardarNuevaPassword()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;font-family:inherit;color:#fff;cursor:pointer;min-height:44px">Guardar</button>
+      <button onclick="cerrarModalCambiarPassword()" style="background:none;border:1px solid var(--border-2);border-radius:8px;padding:10px 18px;font-size:1rem;font-family:inherit;color:var(--text-2);cursor:pointer;min-height:44px">Cancelar</button>
+      <button onclick="guardarNuevaPassword()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 18px;font-size:1rem;font-weight:700;font-family:inherit;color:#fff;cursor:pointer;min-height:44px">Guardar</button>
     </div>
   </div>
+</div>
+
+<!-- ── Modal de comprobante de pago (evita target="_blank", rompe la PWA instalada) ── -->
+<div class="comprobante-modal" id="comprobante-modal" onclick="cerrarComprobante(event)">
+  <button class="comprobante-modal-close" onclick="cerrarComprobante()" aria-label="Cerrar">✕</button>
+  <img class="comprobante-modal-img" id="comprobante-modal-img" src="" alt="Comprobante de pago">
 </div>
 
 <div id="toast"></div>
@@ -1186,7 +1306,7 @@ async function loadSecciones() {
             <span class="sec-chip-name">${esc(s.nombre)}</span>
             <button class="sec-chip-del" onclick="eliminarSeccion(${s.id},'${esc(s.nombre)}')" aria-label="Eliminar ${esc(s.nombre)}">×</button>
           </div>`).join('')
-      : `<p style="font-size:14px;color:var(--muted);margin:0">Sin secciones aún. Crea la primera arriba.</p>`;
+      : `<p style="font-size:1rem;color:var(--muted);margin:0">Sin secciones aún. Crea la primera arriba.</p>`;
     mount.innerHTML = `
       <div class="sec-gallery">
         <button class="sec-create-btn" onclick="abrirCrearSeccion()">＋ Crear sección</button>
@@ -1315,7 +1435,8 @@ async function eliminarFotoPlatoMenu(id) {
 // ── Menús del día ─────────────────────────────────────────
 let configMenuId   = null; // ID del menú abierto en la vista de config
 let configMenuData = null; // objeto menú actual en la vista de config
-let configSubview  = 'hub'; // sub-vista de config: 'hub' | 'cliente' | 'secciones'
+let configRecienCreado = false; // muestra el hint "secciones heredadas" tras crear (flujo v2)
+let mcSecCerradas = new Set();  // id_seccion colapsadas en el acordeón (persisten entre re-renders)
 
 async function loadMenusDia() {
   // El widget MenuWizard reemplaza el listado clásico: delegamos el refresco.
@@ -1330,9 +1451,11 @@ async function loadMenusDia() {
   } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
 }
 
-function abrirConfigMenu(menuId) {
+// opciones.recienCreado → muestra el hint "secciones heredadas" (flujo v2).
+function abrirConfigMenu(menuId, opciones) {
   configMenuId = menuId;
-  configSubview = 'hub';   // siempre se entra por el hub de 2 opciones
+  configRecienCreado = !!(opciones && opciones.recienCreado);
+  mcSecCerradas = new Set();   // todas las secciones abiertas al entrar
   // La configuración ya no es un modal: es una vista inline del widget MenuWizard.
   if (window.MenuWizard && MenuWizard.isMounted()) MenuWizard.showConfig();
   document.addEventListener('keydown', _mcEsc);
@@ -1341,18 +1464,15 @@ function abrirConfigMenu(menuId) {
 
 function cerrarConfigMenu() {
   document.removeEventListener('keydown', _mcEsc);
-  configMenuId = null; configMenuData = null; configSubview = 'hub';
+  configMenuId = null; configMenuData = null; configRecienCreado = false;
   if (window.MenuWizard && MenuWizard.isMounted()) MenuWizard.showGallery();
   loadMenusDia();
 }
 
-// "← Volver" contextual: baja un nivel (sub-vista → hub → galería de menús).
-function configBack() {
-  if (configSubview && configSubview !== 'hub') { configSubview = 'hub'; renderConfigSubview(); }
-  else cerrarConfigMenu();
-}
+// "← Volver": la config es una sola vista (ya no hay hub) → cierra directo.
+function configBack() { cerrarConfigMenu(); }
 
-// Esc: si estás en una sub-vista vuelve al hub; en el hub cierra la config.
+// Esc cierra la config.
 function _mcEsc(e) { if (e.key === 'Escape') configBack(); }
 
 async function recargarModalConfig() {
@@ -1366,112 +1486,111 @@ async function recargarModalConfig() {
     document.getElementById('mc-title').textContent = m.nombre;
     document.getElementById('mc-meta').textContent  =
       `${fDate(m.dia)} · S/ ${Number(m.precio).toFixed(2)} · ${m.elegible ? 'Cliente elige' : 'Fijo'} · ${m.activo !== 0 ? 'Visible' : 'Oculto'}`;
-    renderConfigSubview();
+    renderConfigSecciones(m);
   } catch(e) { toast('Error al cargar el menú', 'err'); }
 }
 
-// Dispatcher de la vista de config según la sub-vista activa.
-function renderConfigSubview() {
-  const m = configMenuData;
-  if (!m) return;
-  if (configSubview === 'cliente')   return renderConfigCliente(m);
-  if (configSubview === 'secciones') return renderConfigSecciones(m);
-  return renderConfigHub(m);
-}
-
-function irConfigCliente()   { configSubview = 'cliente';   renderConfigSubview(); }
-function irConfigSecciones() { configSubview = 'secciones'; renderConfigSubview(); }
-
-// Hub: 2 cards medianas con emoji + botón grande.
-function renderConfigHub(m) {
-  const body = document.getElementById('mc-body');
-  if (!body) return;
-  body.innerHTML = `
-    <div class="mc-hub">
-      <button class="mc-hub-card" onclick="irConfigCliente()">
-        <span class="mc-hub-emoji">🧑‍🍳</span>
-        <span class="mc-hub-title">Configuración para el cliente</span>
-        <span class="mc-hub-desc">Cómo recibe su plato (fijo o a elección) y si el menú se muestra en el QR.</span>
-        <span class="mc-hub-cta">Abrir →</span>
-      </button>
-      <button class="mc-hub-card" onclick="irConfigSecciones()">
-        <span class="mc-hub-emoji">🍽️</span>
-        <span class="mc-hub-title">Secciones del menú</span>
-        <span class="mc-hub-desc">Entradas, fondos, postres… y los platos de cada sección.</span>
-        <span class="mc-hub-cta">Ir a secciones →</span>
-      </button>
-    </div>`;
-}
-
-// Configuración para el cliente: los toggles que antes estaban en la card del menú.
-function renderConfigCliente(m) {
+// Vista de armado v2 (flujo-menuv2.md): toggles del cliente en fila compacta
+// + acordeón VERTICAL de secciones. Reemplaza al hub + carrusel horizontal:
+// todas las secciones visibles apiladas, el scroll de página sobrevive al re-render.
+function renderConfigSecciones(m) {
   const body = document.getElementById('mc-body');
   if (!body) return;
   const activo = m.activo !== 0;
+
+  const hint = (configRecienCreado && m.secciones.length) ? `
+    <div class="mc-hint">
+      <span style="font-size:1.428571rem">✨</span>
+      <span>Tu menú ya tiene las secciones de siempre — <b>solo agrega los platos de hoy</b>.</span>
+      <button class="mc-hint-close" onclick="cerrarHintHerencia()" aria-label="Cerrar aviso">✕</button>
+    </div>` : '';
+
+  const secs = m.secciones.map(s => mcSeccionAcordeon(m, s)).join('');
+
   body.innerHTML = `
-    <div class="mc-cli">
-      <div class="mc-cli-row">
-        <div class="mc-cli-q">¿Cómo recibe su plato el cliente?</div>
-        <button class="mc-cli-toggle" onclick="toggleElegibleMenu(${m.id},${m.elegible?1:0})"
-          style="${m.elegible?'color:var(--primary);border-color:var(--primary)':'color:var(--muted);border-color:var(--border)'}"
-        >${m.elegible ? 'Cliente elige' : 'Fijo'}</button>
-        <div class="mc-cli-hint">${m.elegible ? 'Arma su plato eligiendo en cada sección (entrada, fondo…).' : 'Todos reciben los mismos platos.'}</div>
-      </div>
-      <div class="mc-cli-row">
-        <div class="mc-cli-q">¿Se muestra en el menú del cliente (QR)?</div>
-        <button class="mc-cli-toggle" onclick="toggleActivoMenu(${m.id},${activo?1:0})"
-          style="${activo?'color:var(--success);border-color:var(--success)':'color:var(--danger);border-color:var(--danger)'}"
-        >${activo ? '● Visible' : '○ Oculto'}</button>
-        <div class="mc-cli-hint">${activo ? 'Aparece en el menú QR del cliente.' : 'No se muestra al cliente.'}</div>
+    <div class="mc-cli-compact">
+      <button class="mc-cli-btn ${m.elegible ? 'on' : ''}" onclick="toggleElegibleMenu(${m.id},${m.elegible?1:0})">
+        ${m.elegible ? '✅ Cliente elige' : '🍽️ Menú fijo'}
+        <small>${m.elegible ? 'elige por sección' : 'mismos platos p/ todos'}</small>
+      </button>
+      <button class="mc-cli-btn ${activo ? 'vis' : 'hid'}" onclick="toggleActivoMenu(${m.id},${activo?1:0})">
+        ${activo ? '● Visible' : '○ Oculto'}
+        <small>${activo ? 'aparece en el QR' : 'no se muestra'}</small>
+      </button>
+    </div>
+    ${hint}
+    <div class="mc-acc">
+      ${secs || `<div class="mc-empty-sec"><div style="font-size:2.5rem">🍽️</div><div>Este menú aún no tiene secciones.</div><div style="font-size:0.857143rem">Agrega una abajo para empezar.</div></div>`}
+    </div>
+    <button class="mc-add-sec" onclick="abrirAddSeccion(${m.id})">＋ Agregar sección</button>`;
+}
+
+// Una sección del acordeón: cabecera (nombre + badge estado + chevron) y
+// cuerpo con filas de platos (acciones detrás del ⋯), ＋ Platos y pie.
+function mcSeccionAcordeon(m, s) {
+  const abierta = !mcSecCerradas.has(s.id_seccion);
+  const n = s.platos.length;
+  const badge = n
+    ? `<span class="mc-sec-badge ok">${n} plato${n > 1 ? 's' : ''}</span>`
+    : `<span class="mc-sec-badge warn">⚠ sin platos</span>`;
+
+  const filas = s.platos.map(p => {
+    // Badge de stock: NULL = sin control (no se muestra nada)
+    const tieneStock = p.stock_restante !== null && p.stock_restante !== undefined;
+    const badgeStock = !tieneStock ? ''
+      : p.stock_restante <= 0 ? '<span class="mc-badge-mini rojo">Sin stock</span>'
+      : `<span class="mc-badge-mini ${p.stock_restante <= 5 ? 'ambar' : ''}">quedan ${p.stock_restante}</span>`;
+    return `
+    <div class="mc-plato-row ${p.agotado ? 'agotado' : ''}">
+      <span class="mc-plato-nom">
+        <span class="mc-plato-txt">${esc(p.nombre)}</span>
+        ${m.id_plato_portada === p.id_plato ? '<span class="mc-badge-mini">📷 Portada</span>' : ''}
+        ${p.agotado ? '<span class="mc-badge-mini rojo">Agotado</span>' : ''}
+        ${badgeStock}
+      </span>
+      <button class="mc-dots" onclick="toggleAccionesPlato(this)" aria-label="Más acciones">⋯</button>
+    </div>
+    <div class="mc-plato-acts">
+      <button class="mc-mini-act" onclick="abrirStockPlato(${m.id},${s.id_seccion},${p.id_componente},${tieneStock ? p.stock_restante : 'null'})">📦 Stock</button>
+      <button class="mc-mini-act" onclick="toggleAgotadoPlato(${m.id},${s.id_seccion},${p.id_componente},${p.agotado?1:0})">${p.agotado ? '✔ Disponible' : '⛔ Agotado'}</button>
+      ${p.url_foto ? `<button class="mc-mini-act" onclick="setPortada(${m.id},${p.id_plato})">📷 ${m.id_plato_portada === p.id_plato ? 'Quitar portada' : 'Portada'}</button>` : ''}
+      <button class="mc-mini-act danger" onclick="eliminarComponente(${m.id},${s.id_seccion},${p.id_componente})">✕ Quitar</button>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="mc-sec ${abierta ? 'open' : ''}">
+      <button class="mc-sec-head" onclick="toggleSeccionAcordeon(${s.id_seccion})">
+        <span class="mc-sec-nombre">${esc(s.nombre_seccion)}</span>
+        ${badge}
+        <span class="mc-chev">▼</span>
+      </button>
+      <div class="mc-sec-body">
+        ${filas || '<div class="mc-sec-vacia">Aún no tiene platos.</div>'}
+        <button class="mc-add-platos" onclick="abrirPicker(${m.id},${s.id_seccion})">＋ Platos</button>
+        <div class="mc-sec-foot">
+          <button class="${s.requerido ? 'req-on' : ''}" onclick="toggleRequeridoSeccion(${m.id},${s.id_seccion},${s.requerido?1:0})">${s.requerido ? '✅ Obligatoria' : '⏭ Opcional'}</button>
+          <button onclick="eliminarSeccionDeMenu(${m.id},${s.id_seccion},'${esc(s.nombre_seccion)}')">Quitar sección</button>
+        </div>
       </div>
     </div>`;
 }
 
-function renderConfigSecciones(m) {
-  const body = document.getElementById('mc-body');
+function toggleSeccionAcordeon(idSeccion) {
+  if (mcSecCerradas.has(idSeccion)) mcSecCerradas.delete(idSeccion);
+  else mcSecCerradas.add(idSeccion);
+  if (configMenuData) renderConfigSecciones(configMenuData);
+}
 
-  // Cada sección es una card retrato (mismo tamaño que las cards de menús),
-  // dentro de un carrusel horizontal .mc-sec-gallery.
-  const secCards = m.secciones.map(s => `
-    <div class="mc-sec-card">
-      <div class="mc-sec-header">
-        <span class="mc-sec-name">${esc(s.nombre_seccion)}</span>
-        <button onclick="toggleRequeridoSeccion(${m.id},${s.id_seccion},${s.requerido?1:0})"
-          style="font-size:13px;padding:0 10px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${s.requerido?'color:var(--primary);border-color:var(--primary)':'color:var(--muted);border-color:var(--border)'}"
-        >${s.requerido ? 'Obligatoria' : 'Opcional'}</button>
-      </div>
-      <div class="mc-sec-platos">
-        ${s.platos.length
-          ? s.platos.map(p => `
-            <div class="mc-plato-row" style="${p.agotado?'opacity:0.5':''}">
-              <span style="${p.agotado?'text-decoration:line-through;color:var(--muted)':''}">${esc(p.nombre)}</span>
-              <div style="display:flex;gap:4px">
-                ${p.url_foto ? `<button onclick="setPortada(${m.id},${p.id_plato})" title="Usar su foto como portada del menú"
-                  style="font-size:13px;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${m.id_plato_portada===p.id_plato?'color:var(--primary);border-color:var(--primary)':'color:var(--muted);border-color:var(--border)'}"
-                >📷${m.id_plato_portada===p.id_plato?' Portada':''}</button>
-                ` : ''}<button onclick="toggleAgotadoPlato(${m.id},${s.id_seccion},${p.id_componente},${p.agotado?1:0})"
-                  style="font-size:13px;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${p.agotado?'color:var(--danger);border-color:var(--danger)':'color:var(--success);border-color:var(--success)'}"
-                >${p.agotado?'Agotado':'Disponible'}</button>
-                <button onclick="eliminarComponente(${m.id},${s.id_seccion},${p.id_componente})"
-                  class="btn btn-danger" style="padding:0 8px;font-size:13px">✕</button>
-              </div>
-            </div>`).join('')
-          : '<div style="font-size:13px;color:var(--muted);padding:4px 0">Sin platos asignados</div>'
-        }
-      </div>
-      <div class="mc-sec-foot">
-        <button class="btn btn-ghost btn-sm" style="width:100%" onclick="abrirPicker(${m.id},${s.id_seccion})">＋ Agregar plato</button>
-        <button class="btn btn-danger btn-sm" style="width:100%" onclick="eliminarSeccionDeMenu(${m.id},${s.id_seccion},'${esc(s.nombre_seccion)}')">Quitar sección</button>
-      </div>
-    </div>`).join('');
+// Expande/colapsa la fila de acciones de un plato (botón ⋯).
+function toggleAccionesPlato(btn) {
+  const acts = btn.closest('.mc-plato-row')?.nextElementSibling;
+  if (acts) acts.classList.toggle('open');
+}
 
-  const gallery = secCards
-    ? `<div class="mc-sec-gallery">${secCards}</div>`
-    : `<div class="mc-sec-gallery"><div class="mc-empty-sec"><div style="font-size:2.5rem">🍽️</div><div>Este menú aún no tiene secciones.</div><div style="font-size:12px">Agrega una abajo para empezar.</div></div></div>`;
-
-  body.innerHTML = `
-    <button class="mw-create-btn" style="margin-bottom:0.6rem" onclick="abrirAddSeccion(${m.id})">＋ Agregar sección</button>
-    ${gallery}`;
+function cerrarHintHerencia() {
+  configRecienCreado = false;
+  if (configMenuData) renderConfigSecciones(configMenuData);
 }
 
 function editarNombreMenu() {
@@ -1496,8 +1615,8 @@ function renderMenuCard(m) {
   const activo = m.activo !== 0;
   const nSecs  = m.secciones.length;
   const secPreview = nSecs
-    ? m.secciones.map(s => `<span style="font-size:11px;padding:2px 6px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text-2)">${esc(s.nombre_seccion)}</span>`).join('')
-    : `<span style="font-size:11px;color:var(--muted)">Sin secciones</span>`;
+    ? m.secciones.map(s => `<span style="font-size:0.785714rem;padding:2px 6px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text-2)">${esc(s.nombre_seccion)}</span>`).join('')
+    : `<span style="font-size:0.785714rem;color:var(--muted)">Sin secciones</span>`;
 
   return `
     <div class="card" style="margin-bottom:0.75rem;${activo ? '' : 'opacity:0.6'}" id="menu-card-${m.id}">
@@ -1505,15 +1624,15 @@ function renderMenuCard(m) {
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
             <span class="card-title">${esc(m.nombre)}</span>
-            <span style="font-size:11px;color:var(--muted)">${fDate(m.dia)} · S/ ${Number(m.precio).toFixed(2)}</span>
+            <span style="font-size:0.785714rem;color:var(--muted)">${fDate(m.dia)} · S/ ${Number(m.precio).toFixed(2)}</span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${secPreview}</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
             <button onclick="toggleElegibleMenu(${m.id},${m.elegible?1:0})"
-              style="font-size:13px;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${m.elegible?'color:var(--primary);border-color:var(--primary)':'color:var(--muted);border-color:var(--border)'}"
+              style="font-size:0.928571rem;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${m.elegible?'color:var(--primary);border-color:var(--primary)':'color:var(--muted);border-color:var(--border)'}"
             >${m.elegible ? 'Cliente elige' : 'Fijo'}</button>
             <button onclick="toggleActivoMenu(${m.id},${activo?1:0})"
-              style="font-size:13px;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${activo?'color:var(--success);border-color:var(--success)':'color:var(--danger);border-color:var(--danger)'}"
+              style="font-size:0.928571rem;padding:0 8px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;min-height:36px;${activo?'color:var(--success);border-color:var(--success)':'color:var(--danger);border-color:var(--danger)'}"
             >${activo ? '● Visible' : '○ Oculto'}</button>
           </div>
         </div>
@@ -1553,95 +1672,59 @@ async function eliminarMenuDia(id) {
   } catch(e) { toast(e.message, 'err'); }
 }
 
-// ── Mini-wizard "Agregar sección" (carrusel de 2 pasos, estilo del MenuWizard) ──
-// Se renderiza dentro de #mc-body (vista config del widget), reutilizando las
-// clases .mw-* globales que inyecta el widget. Paso 1: elegir sección · Paso 2: obligatoria.
-let _asMenuId = null, _asStep = 0, _asSel = null, _asReq = null;
-
+// ── "＋ Agregar sección" — alta rápida de 1 tap (flujo v2) ──
+// Lista las secciones del catálogo que el menú aún no usa; tocar
+// «Obligatoria» u «Opcional» la agrega de inmediato (sin wizard de pasos).
 function abrirAddSeccion(menuId) {
-  _asMenuId = menuId; _asStep = 0; _asSel = null; _asReq = null;
-  renderAddSeccionWizard();
-}
-
-function renderAddSeccionWizard() {
   const body = document.getElementById('mc-body');
   if (!body) return;
-  const opciones = seccionesCache.map(s => `
-    <button class="mw-choice" data-as-sel="${s.id}" onclick="selAddSeccion(${s.id})">
-      <span class="mw-choice-emoji">📋</span>
-      <span class="mw-choice-txt"><span class="mw-choice-name">${esc(s.nombre)}</span></span>
-    </button>`).join('');
+  const usadas = new Set((configMenuData?.secciones || []).map(s => s.id_seccion));
+  const libres = seccionesCache.filter(s => !usadas.has(s.id));
+
+  const filas = libres.map(s => `
+    <div class="mc-addsec-row">
+      <span class="mc-addsec-nombre">${esc(s.nombre)}</span>
+      <button class="mc-mini-act primaria" onclick="confirmarAddSeccionRapida(${menuId},${s.id},1)">Obligatoria</button>
+      <button class="mc-mini-act" onclick="confirmarAddSeccionRapida(${menuId},${s.id},0)">Opcional</button>
+    </div>`).join('');
+
+  const vacio = seccionesCache.length
+    ? 'Ya usaste todas las secciones de tu catálogo 🎉'
+    : 'No hay secciones en tu catálogo. Créalas primero en «Secciones».';
 
   body.innerHTML = `
-    <div class="mw-wiz-head">Nueva sección</div>
-    <div class="mw-progress"><div class="mw-dot" data-asd="0"></div><div class="mw-dot" data-asd="1"></div></div>
-    <div class="mw-viewport"><div class="mw-track" id="as-track">
-      <div class="mw-slide">
-        <div class="mw-card">
-          <div class="mw-step-label">Paso 1 de 2</div>
-          <h3 class="mw-title">Selecciona una sección</h3>
-          <div class="mw-body">
-            <div class="mw-choices">
-              ${opciones || '<div style="font-size:13px;color:var(--muted)">No hay secciones en tu catálogo. Créalas primero en «Secciones».</div>'}
-            </div>
-          </div>
-          <div class="mw-actions">
-            <button class="mw-btn mw-btn-ghost" onclick="recargarModalConfig()">✕ Cancelar</button>
-            <button class="mw-btn mw-btn-primary" id="as-next" onclick="addSecGoto(1)" disabled>Siguiente →</button>
-          </div>
-        </div>
-      </div>
-      <div class="mw-slide">
-        <div class="mw-card">
-          <div class="mw-step-label">Paso 2 de 2</div>
-          <h3 class="mw-title">¿Esta sección es obligatoria?</h3>
-          <div class="mw-body">
-            <div class="mw-choices">
-              <button class="mw-choice" data-as-req="1" onclick="reqAddSeccion(1)">
-                <span class="mw-choice-emoji">✅</span>
-                <span class="mw-choice-txt">
-                  <span class="mw-choice-name">Obligatoria</span>
-                  <span class="mw-choice-desc">El cliente debe elegir un plato de esta sección.</span>
-                </span>
-              </button>
-              <button class="mw-choice" data-as-req="0" onclick="reqAddSeccion(0)">
-                <span class="mw-choice-emoji">⏭️</span>
-                <span class="mw-choice-txt">
-                  <span class="mw-choice-name">Opcional</span>
-                  <span class="mw-choice-desc">El cliente puede saltar esta sección.</span>
-                </span>
-              </button>
-            </div>
-            <div class="mw-err" id="as-err"></div>
-          </div>
-          <div class="mw-actions">
-            <button class="mw-btn mw-btn-ghost" onclick="addSecGoto(0)">← Atrás</button>
-            <button class="mw-btn mw-btn-primary" id="as-add" onclick="confirmarAddSeccion()" disabled>＋ Agregar sección ✓</button>
-          </div>
-        </div>
-      </div>
-    </div></div>`;
-  addSecGoto(0);
+    <div class="mw-wiz-head">Agregar sección</div>
+    <p style="font-size:0.928571rem;color:var(--muted);margin:0 0 0.75rem">Toca «Obligatoria» u «Opcional» y la sección queda agregada al menú.</p>
+    ${filas || `<div class="mc-empty-sec" style="padding:1.5rem 1rem">${vacio}</div>`}
+    <button class="mw-btn mw-btn-ghost" style="width:100%;margin-top:0.75rem" onclick="recargarModalConfig()">← Volver</button>`;
 }
 
-function selAddSeccion(id) {
-  _asSel = id;
-  document.querySelectorAll('#mc-body [data-as-sel]').forEach(b => b.classList.toggle('sel', Number(b.dataset.asSel) === id));
-  const next = document.getElementById('as-next'); if (next) next.disabled = false;
+async function confirmarAddSeccionRapida(menuId, idSeccion, requerido) {
+  try {
+    await api('POST', `/api/menu/menus-dia/${menuId}/secciones`, { id_seccion_menu: idSeccion, requerido });
+    toast(`Sección agregada (${requerido ? 'obligatoria' : 'opcional'})`);
+    recargarModalConfig();
+  } catch(e) { toast(e.message, 'err'); }
 }
 
-function reqAddSeccion(req) {
-  _asReq = req;
-  document.querySelectorAll('#mc-body [data-as-req]').forEach(b => b.classList.toggle('sel', Number(b.dataset.asReq) === req));
-  const add = document.getElementById('as-add'); if (add) add.disabled = false;
-}
-
-function addSecGoto(step) {
-  if (step === 1 && _asSel == null) return;
-  _asStep = step;
-  const track = document.getElementById('as-track');
-  if (track) track.style.transform = `translateX(-${step * 100}%)`;
-  document.querySelectorAll('#mc-body [data-asd]').forEach(d => d.classList.toggle('done', Number(d.dataset.asd) <= step));
+// Fija cuántas porciones hay HOY de un plato en este menú (control de stock).
+// Vacío = quitar el control (ilimitado, comportamiento clásico). Cada pedido
+// descuenta; al llegar a 0 el plato desaparece del QR del cliente solo.
+function abrirStockPlato(menuId, seccionId, componenteId, actual) {
+  FormModal.open({
+    title: '📦 Stock del plato',
+    fields: [
+      { name: 'stock', label: 'Porciones disponibles hoy (vacío = sin límite)', type: 'number',
+        value: (actual === null || actual === undefined) ? '' : actual, min: '0', step: '1' },
+    ],
+    submitLabel: 'Guardar',
+    onSubmit: async (vals) => {
+      const stock = (vals.stock === '' || vals.stock === null || vals.stock === undefined) ? null : Number(vals.stock);
+      const r = await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/stock`, { stock });
+      toast(r.message || 'Stock actualizado');
+      recargarModalConfig();
+    },
+  });
 }
 
 // Define (o quita, si ya lo era) el plato cuya foto es la portada del menú.
@@ -1655,34 +1738,44 @@ async function setPortada(menuId, platoId) {
   } catch(e) { toast(e.message, 'err'); }
 }
 
-async function confirmarAddSeccion() {
-  if (_asSel == null) return addSecGoto(0);
-  if (_asReq == null) return setErr('as-err', 'Elige si es obligatoria u opcional.');
-  const btn = document.getElementById('as-add'); if (btn) btn.disabled = true;
-  try {
-    await api('POST', `/api/menu/menus-dia/${_asMenuId}/secciones`, { id_seccion_menu: _asSel, requerido: _asReq });
-    toast('Sección agregada');
-    recargarModalConfig();   // re-renderiza la galería de secciones
-  } catch(e) {
-    setErr('as-err', e.message);
-    if (btn) btn.disabled = false;
-  }
-}
-
+// Picker multi-selección (flujo v2): se abre pre-marcado con los platos ya
+// asignados a la sección. Marcar agrega, desmarcar quita — todo en una visita.
 function abrirPicker(menuId, seccionId) {
   if (!platoMenuCache.length) return toast('Carga primero el catálogo de platos', 'err');
+  const sec = (configMenuData?.secciones || []).find(s => s.id_seccion === seccionId);
+  const actuales = (sec?.platos || []).map(p => p.id_plato);
   PlatoPicker.open({
-    platos:   platoMenuCache,
-    onSelect: (plato) => agregarComponente(menuId, seccionId, plato.id),
+    platos:      platoMenuCache,
+    multi:       true,
+    selectedIds: actuales,
+    title:       sec ? `Platos para «${sec.nombre_seccion}»` : 'Elegir platos',
+    onConfirm:   (ids) => aplicarSeleccionPlatos(menuId, seccionId, actuales, ids),
   });
 }
 
-async function agregarComponente(menuId, seccionId, platoId) {
-  if (!platoId) return toast('Selecciona un plato', 'err');
+// Aplica la diferencia entre la selección anterior y la nueva:
+// POST por cada plato marcado nuevo, DELETE por cada desmarcado.
+async function aplicarSeleccionPlatos(menuId, seccionId, antes, despues) {
+  const sec = (configMenuData?.secciones || []).find(s => s.id_seccion === seccionId);
+  const agregar = despues.filter(id => !antes.includes(id));
+  const quitar  = antes.filter(id => !despues.includes(id));
+  if (!agregar.length && !quitar.length) return;
   try {
-    await api('POST', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos`, { id_plato_menu: platoId });
-    toast('Plato agregado'); recargarModalConfig();
-  } catch(e) { toast(e.message, 'err'); }
+    for (const pid of agregar)
+      await api('POST', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos`, { id_plato_menu: pid });
+    for (const pid of quitar) {
+      const comp = (sec?.platos || []).find(p => p.id_plato === pid);
+      if (comp) await api('DELETE', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${comp.id_componente}`);
+    }
+    const partes = [];
+    if (agregar.length) partes.push(`${agregar.length} agregado${agregar.length > 1 ? 's' : ''}`);
+    if (quitar.length)  partes.push(`${quitar.length} quitado${quitar.length > 1 ? 's' : ''}`);
+    toast(partes.join(' · ') + ' ✓');
+    recargarModalConfig();
+  } catch(e) {
+    toast(e.message, 'err');
+    recargarModalConfig();   // deja la vista consistente con lo que sí se aplicó
+  }
 }
 
 async function eliminarSeccionDeMenu(menuId, seccionId, nombreSeccion) {
@@ -1716,6 +1809,7 @@ async function toggleElegibleMenu(menuId, elegibleActual) {
     await api('PATCH', `/api/menu/menus-dia/${menuId}/elegible`, { elegible: nuevoElegible });
     toast(nuevoElegible ? 'Menú cambiado a: Cliente elige' : 'Menú cambiado a: Fijo');
     loadMenusDia();
+    recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
 }
 
@@ -1725,6 +1819,7 @@ async function toggleActivoMenu(menuId, activoActual) {
     await api('PATCH', `/api/menu/menus-dia/${menuId}/activo`, { activo: nuevoActivo });
     toast(nuevoActivo ? 'Menú visible en QR' : 'Menú oculto del QR');
     loadMenusDia();
+    recargarModalConfig();
   } catch(e) { toast(e.message, 'err'); }
 }
 
@@ -1785,7 +1880,7 @@ async function loadCategorias() {
             <span class="sec-chip-name">${esc(c.nombre)}</span>
             <button class="sec-chip-del" onclick="eliminarCategoria(${c.id},'${esc(c.nombre)}')" aria-label="Eliminar ${esc(c.nombre)}">×</button>
           </div>`).join('')
-      : `<p style="font-size:14px;color:var(--muted);margin:0">Sin categorías aún. Crea la primera arriba.</p>`;
+      : `<p style="font-size:1rem;color:var(--muted);margin:0">Sin categorías aún. Crea la primera arriba.</p>`;
     mount.innerHTML = `
       <div class="sec-gallery">
         <button class="sec-create-btn" onclick="abrirCrearCategoria()">＋ Crear categoría</button>
@@ -2130,7 +2225,7 @@ document.getElementById('md-fecha').value = hoy;
 // Monta el asistente carrusel de menús del día (widget MenuWizard)
 if (window.MenuWizard) {
   MenuWizard.mount(document.getElementById('menu-wizard-mount'), {
-    onConfigure: (menuId) => abrirConfigMenu(menuId),
+    onConfigure: (menuId, opciones) => abrirConfigMenu(menuId, opciones),
   });
 }
 updateSoundButton();

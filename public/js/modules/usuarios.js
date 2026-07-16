@@ -40,7 +40,7 @@ async function loadUsuarios() {
           <td style="text-align:right">
             ${u.rol !== 'owner'
               ? `<button class="btn btn-danger" onclick="eliminarUsuario(${u.id},'${esc(u.nombre)}')">Eliminar</button>`
-              : '<span style="font-size:11px;color:var(--muted)">owner</span>'
+              : '<span style="font-size:0.785714rem;color:var(--muted)">owner</span>'
             }
           </td>
         </tr>`;
@@ -48,7 +48,7 @@ async function loadUsuarios() {
         if (u.rol === 'owner') return mainRow;
 
         const checkboxes = PERMISOS_DEF.map(p =>
-          `<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;white-space:nowrap">
+          `<label style="display:flex;align-items:center;gap:5px;font-size:0.857143rem;cursor:pointer;white-space:nowrap">
             <input type="checkbox" id="perm-${u.id}-${p.key}" value="${p.key}"
               ${permisos.includes(p.key) ? 'checked' : ''} />
             ${p.label}
@@ -57,7 +57,7 @@ async function loadUsuarios() {
 
         const permRow = `<tr>
           <td colspan="4" style="background:var(--bg);padding:0.75rem 1rem;border-top:none">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:0.5rem">Permisos de acceso</div>
+            <div style="font-size:0.785714rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:0.5rem">Permisos de acceso</div>
             <div style="display:flex;flex-wrap:wrap;gap:0.5rem 1.5rem;margin-bottom:0.75rem">${checkboxes}</div>
             <button class="btn btn-primary btn-sm" onclick="guardarPermisos(${u.id})">Guardar permisos</button>
           </td>

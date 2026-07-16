@@ -2,25 +2,66 @@
 
 ## Pendientes
 
-### ~~Cambios en desktop~~ ✅ Completado 2026-06-05
+### Módulo Pensionistas (saldo prepagado + login propio)
+*Anotado 2026-07-15, pendiente de implementar. Ver Gap 20 en `vision_negocio.md` y análisis completo en `pensionistas.md`.*
+
+Comensales recurrentes con saldo prepagado en dinero, administrado por el owner. El pensionista
+tiene login propio (nuevo rol `pensionista`, reutiliza el JWT/auth existente) y pide desde una
+pantalla mobile-first dedicada (`pensionista.html`) sin pasar por pago — el sistema descuenta el
+total de su saldo en el momento. Sus pedidos viven en tablas separadas de `ordenes`/`reservas`
+(`pensionistas`, `pensionista_movimientos`, `pedidos_pensionista`) pero aparecen unificados en
+Cola del día y Cocina con tag "🪪 Pensionista". Reportería separada (recargas vs. consumo) para no
+duplicar el ingreso ya contado al momento de la recarga. Quedan 3 decisiones de negocio por validar
+con el usuario antes de implementar (saldo insuficiente, alcance del menú, quién recarga) — ver
+`pensionistas.md` sección 11.
+
+### ~~Nombre obligatorio en órdenes (paridad con reservas)~~ ✅ Completado 2026-07-13
+
+~~En reservas el nombre ya es obligatorio (`routes/public.js:307`, validado también en `confirmarReserva()` de `menu.html`). En órdenes es opcional...~~
+
+Backend (`routes/public.js`, `POST /orders`): agregado `if (!nombre_cliente?.trim()) return res.status(400)...`, mismo patrón que reservas. Frontend (`menu.html`): quitado "(opcional)" del label; `confirmarPedido()` valida el nombre antes de continuar (mismo patrón que `confirmarReserva()`). Verificado con `scripts/test-gate-pago.js` (Test 1): sin nombre no se crea la orden ni por UI ni pegándole directo a la API (400).
+
+### Estadísticas: "qué pidió la gente hoy" + fix del gráfico de barras chico
+*Anotado 2026-07-13, pendiente de implementar.*
+
+El usuario preguntó puntualmente: "¿cuántos platos voy hasta ahora?", "¿qué ha pedido la gente hoy?". Ya existe "Análisis de pedidos" en reportería (`reportes.js` → `loadPedidos()`, endpoint `GET /api/reportes/pedidos?tipo=&filtro=`) — un gráfico de barras por plato con Chart.js. Pero: (a) es un **acumulado histórico total**, sin filtro de fecha/"hoy" (confirmado en `contarPedidosPorPlato()`, `routes/reportes.js` — las queries SQL no tienen `WHERE fecha = ?`); (b) filtra de a una sección/categoría del menú a la vez, no da un resumen "todo lo pedido hoy" de un vistazo.
+
+**Gráfico chiquito — causa confirmada:** su contenedor (`#chart-pedidos-wrap`, `owner.html:557`) solo tiene `min-height:220px` sin `position:relative` ni alto fijo — a diferencia de `#chart-ganancias-wrap`/`#chart-demanda-wrap` que sí tienen `position:relative;height:260px`/`280px`. Chart.js en modo `responsive:true` necesita que el contenedor inmediato tenga `position:relative` + una altura explícita para dimensionarse bien; sin eso el canvas queda con el tamaño intrínseco por defecto, mucho más chico de lo esperado.
+
+**Alcance propuesto:** (1) fix rápido del contenedor (`position:relative;height:280px` en `#chart-pedidos-wrap`, igual que los otros 2 gráficos); (2) nuevo filtro de fecha (día actual por default, con opción de rango) en `GET /api/reportes/pedidos`; (3) evaluar una vista resumen "Hoy" que no requiera elegir sección/categoría manualmente — posible pestaña nueva o vista por defecto al abrir el panel Reportes.
+
+### ~~Tamaño de letra ajustable en el panel del owner~~ ✅ Completado 2026-07-14
+
+~~No existe hoy ningún control de tamaño de fuente en `owner.html`...~~
+
+**Decisión de alcance:** 3 niveles fijos (Normal/Grande/Muy grande), control manual dentro de Configuración (no en el sidebar), sin auto-detección.
+
+**Diagnóstico técnico previo:** `zoom` (probado primero por ser el cambio de menor alcance) se descartó — rompe `grid-template-columns: repeat(auto-fill, minmax(...))` del Home (`.home-card` terminaba render como fila de 3-4 cards muy por fuera del viewport en vez de apilarse). Se optó por convertir mecánicamente los ~247 `font-size` en `px` de `owner.css` + `owner.html` + 9 módulos JS + 5 widgets a `rem` (script de migración temporal, no versionado), y escalar con la variable `--font-scale` sobre `html,body`.
+
+**Bug propio detectado y corregido en el camino:** la primera pasada dividió cada `px` por 16 (el default del navegador) en vez de por 14 (la base real declarada en `html,body{font-size:14px}` desde antes de este cambio) — eso encogía **todo el panel ~12.5%** incluso en el nivel "Normal". Se revirtió (los archivos no estaban commiteados aún) y se rehizo dividiendo por 14; verificado con Playwright que a escala Normal cada elemento reproduce el px original exacto (`brand-icon` 20px, `.nav-item` 14px, inputs a 16px — igual que antes del cambio), y que a 1.15/1.3 escala proporcionalmente sin overflow horizontal en Home/Configuración/Cola del día (`scrollWidth === innerWidth` en los 3 niveles). Como los 3 niveles son siempre ≥100%, ningún input cae nunca por debajo de los 16px obligatorios contra el zoom automático de iOS.
+
+**Implementado:** `--font-scale` (1/1.15/1.3) en `html,body` vía `calc(14px * var(--font-scale,1))` (raíz en `px` absoluto — un `rem` en el propio elemento raíz se resolvería contra el default del navegador, no contra sí mismo). Persistencia en `localStorage` (`mp-font-scale`, por dispositivo, no viaja al backend), aplicado antes del paint (mismo patrón que el tema claro/oscuro) para evitar flash. Card "🔤 Tamaño de letra" en Configuración con 3 botones.
+
+### ~~Galerías de platos y menús — desktop apretado~~ ✅ Completado 2026-06-08
+
+~~En desktop las galerías de Platos de menú, Platos a la carta y Menús del día se ven muy apretadas (cards de ~120px en fila) y dejan espacio vacío a la derecha del panel.~~
+
+**Causa raíz (doble bug de CSS):**
+1. `.mw { max-width: 680px }` inyectado por `menu-wizard.js` → cortaba el contenedor dejando vacío a la derecha.
+2. Problema de cascada: el `<style>` inyectado por el widget carga después de `owner.css` → `.mw-menus { display: flex }` del widget pisaba el `display: grid` de `owner.css` (misma especificidad 0,1,0).
+
+**Fix en `public/css/owner.css`:** selectores con ID de mount (`#platos-menu-mount`, `#platos-carta-mount`, `#menu-wizard-mount`) con especificidad (1,1,0) que siempre ganan sobre el widget. `max-width: none` elimina el límite de 680px. `grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))` da grid responsivo (~4 col en 1280px). `.mw-wizard` centrado con `max-width: 560px`. Solo CSS, sin cambios de backend.
+
+### ~~Cambios en desktop (menu.html)~~ ✅ Completado 2026-06-05
 
 ~~En desktop la parte de menú se ve mal, se debe crear una tarjeta para desktop que no sea tan ancha.~~
 
 Media query `@media (min-width: 680px)` en `menu.css` → columna centrada de 460px. Hero, header, content, res-panel, cart-bar, res-bar y drawer quedan contenidos en esa columna. Solo CSS + una línea JS (`body.classList.add('has-hero')`). Sin cambios de backend.
 
 
-### Actualizar landing con nuevas fotos del sistema 📸
+### ~~Actualizar landing con nuevas fotos del sistema~~ ✅ Completado 2026-06-15
 
-La landing pública (`public/landing.html`) muestra capturas/imágenes del sistema que **quedaron desactualizadas** respecto a la UI actual (owner renovado con hubs/Home, menu-wizard, photo-editor, cards de configuración — desplegado 2026-06-06).
-
-**Tarea:** tomar nuevas capturas del sistema en su estado actual y reemplazar las imágenes de la landing para que reflejen la versión real que ven los clientes.
-
-- Revisar qué imágenes usa hoy la landing (hero, secciones de features, demo).
-- Capturas mobile-first (es donde vive el sistema) y, si aplica, desktop.
-- Optimizar peso de las imágenes (conexión móvil — ver regla mobile-first en CLAUDE.md).
-- Recordar que los assets pesados del bot de la landing están en `.gitignore`; si se regeneran, subirlos por `scp` (ver `deploy.md` §16).
-
-**Estado:** ⏳ Pendiente. Tarea de contenido/marketing, no bloqueante.
+Script `scripts/take-landing-screenshots.js`: arranca el servidor local, seedea datos demo, sube fotos de platos reales (de `landing/bot/assets/`) vía API, y toma las 7 capturas con Playwright a 390×844px (2× pixel ratio) — guardadas en `public/landing/screenshots/`. Sin intervención manual. Las imágenes reflejan la UI actual: Home con hubs, menú QR con fotos de platos, cocina, cola del día, plano de mesas y reportes.
 
 
 ### Cambio en Flujo total : 
@@ -302,6 +343,33 @@ Panel Kanban en `owner.html` con 4 tabs: **Pendientes / En Cocina / Listos / Por
 #### ~~Bug: reservas con roles de usuario~~ ✅ Resuelto 2026-05-25
 7 endpoints usaban `authorize('owner','mozo')` en vez de `authorizePermiso()`. Un cocinero con permiso `reservas_activas` recibía 403 al intentar confirmar/cambiar estatus. Ver ISS-012.
 
+#### ~~Cancelar reserva desde el lado del cliente~~ ✅ Completado 2026-07-09
+El cliente ahora puede cancelar su propia reserva desde `menu.html` con su código, sin necesidad de llamar al restaurante.
+
+- **Backend:** `PATCH /api/public/reserva/:codigo/cancelar` (`routes/public.js`) — valida que la reserva no esté ya `es_full`/`es_cancelado` (misma regla que el endpoint del owner), reutiliza `devolverStock`/`itemsMenuDeReserva` de `utils/stock.js` para devolver el stock reservado.
+- **Ventana de tiempo:** nueva columna `restaurantes.minutos_cancelacion_reserva` (default **30**, migración idempotente en `config/database.js`), configurable por el owner. Función pura `dentroDeVentanaCancelacion(fecha, hora_llegada, minutosLimite, ahora)` en `utils/cancelacionReserva.js` — bloquea la cancelación si faltan menos minutos que el límite para la `hora_llegada`. **Si la reserva no tiene hora_llegada** (el cliente no la especificó), se permite cancelar en cualquier momento — decisión del usuario, ya que sin hora exacta no se puede calcular "faltan N minutos".
+- **Config del owner:** nueva card "✗ Cancelación de reservas por el cliente" en el panel Configuración (`owner.html` + `public/js/modules/config.js`), mismo patrón que "Auto-preparación de reservas". Nuevo endpoint `PATCH /api/menu/config/minutos-cancelacion-reserva` (0–1440 min) + incluido en `GET /api/menu/restaurante/config`.
+- **Frontend cliente:** botón "✗ Cancelar reserva" en `renderEstadoReserva()` de `menu.html`, oculto cuando el estado ya es `es_full`/`es_cancelado`, con `confirm()` antes de enviar.
+- **Tests:** `tests/cancelar-reserva-cliente.test.js` (7 casos: sin hora → siempre permitido, dentro/fuera de ventana, borde exacto, hora ya pasada, límite 0, devolución de stock real). **248/248 jest verde.**
+- Verificado manualmente contra el servidor local (curl): crear reserva → cancelar sin hora (OK) → cancelar ya cancelada (bloqueado) → hora dentro de la ventana (bloqueado con mensaje) → hora fuera de la ventana (OK) → código inexistente (404).
+
+#### ~~Fix: flujo de pago inseguro (foto opcional + "pagar más tarde" sin retorno + confirmación manual muerta)~~ ✅ Completado 2026-07-09
+Diagnóstico completo y flujo real documentado en `flujo-pago.md`. Tres problemas encontrados en la misma sesión, los dos primeros reportados por el usuario y el tercero detectado al investigar:
+1. La foto del comprobante era opcional en `handlePago()` (`routes/public.js`) — el cliente podía marcar "Ya pagué con Yape" sin adjuntar nada.
+2. El botón "Pagar más tarde" (`skipPago()` en `menu.html`) cerraba el flujo sin registrar ningún dato y sin dejar forma de volver a pagar — no estaba contemplado en `vision_negocio.md`.
+3. El endpoint `PATCH /:id/confirmar-pago` (orders.js y reservations.js) existía en el backend pero **no estaba conectado a ningún botón** — el único control real del owner era "💰 Cobrar/Completar", que pisaba `estado_pago = 'pagado'` sin mirar nunca el comprobante.
+
+**Decisión del usuario:** eliminar "Pagar más tarde" por completo — Efectivo ya cubre el caso legítimo de pago diferido.
+
+**Fix:**
+- `routes/public.js`: `handlePago()` rechaza (400) pagos yape/plin sin foto.
+- `utils/verificacionPago.js` (nuevo): `requiereConfirmarPagoAntes(metodo_pago, estado_pago)` — true solo para yape/plin no confirmados.
+- `routes/orders.js` / `routes/reservations.js`: `PATCH /:id/estatus` bloquea (400) la transición a `es_pagado`/`es_full` si el pago digital no fue confirmado.
+- `public/menu.html`: botón "Pagar más tarde" y `skipPago()` eliminados; `enviarPago()` valida la foto en cliente antes de enviar.
+- `public/js/modules/ordenes.js`, `reservas.js`, `pedidos.js`: nuevo botón "✓ Confirmar pago" (llama al endpoint ya existente `confirmar-pago`) que reemplaza a "💰 Cobrar/Completar" mientras el pago digital no esté confirmado.
+- **Tests:** `tests/verificacion-pago.test.js` (6 casos sobre la función pura). **254/254 jest verde.**
+- Verificado manualmente contra el servidor local con `curl` (JWT firmado localmente para simular sesión de owner): yape sin foto → 400; yape con foto → OK; completar sin confirmar → 400 con mensaje claro; confirmar pago → OK; completar tras confirmar → OK.
+
 ---
 
 ### ~~Prioridad Alta~~
@@ -481,7 +549,7 @@ Cada restaurante configura sus propios datos de cobro en el panel de Configuraci
 ##### Métodos de pago
 
 ###### Yape
-- **Cómo funciona:** El cliente ordena desde su propio celular, así que mostrarle un QR en pantalla no sirve (no puede escanearse a sí mismo). La solución correcta es un **botón "Pagar con Yape"** que genera un deep link del tipo `https://yape.com.pe/cobrar?phone=9XXXXXXXX` — al tocarlo, el celular abre la app de Yape directamente con el número del restaurante pre-cargado. El cliente solo ingresa el monto y confirma. El QR como imagen solo tiene sentido en desktop (donde el cliente sí puede escanearlo con su celular) o impreso físicamente en la mesa.
+- **Cómo funciona:** El cliente ordena desde su propio celular, así que mostrarle un QR en pantalla no sirve (no puede escanearse a sí mismo). ⚠️ No existe un deep link web público de Yape para abrir la app con un número pre-cargado (`https://yape.com.pe/cobrar?phone=...` no es un endpoint real — se probó y da error 404). La solución actual es mostrar el número de Yape del restaurante con un **botón "Copiar número"**, igual que Plin: el cliente copia el número, abre su propia app Yape manualmente, paga y confirma. El QR como imagen solo tiene sentido en desktop (donde el cliente sí puede escanearlo con su celular) o impreso físicamente en la mesa.
 - **Configuración por restaurante:**
   - Número de teléfono Yape (campo `yape_telefono TEXT`) — con esto se genera el link automáticamente, sin subir nada
   - Toggle "Habilitar Yape" (`yape_activo INTEGER DEFAULT 0`)
@@ -572,7 +640,7 @@ La Fase 1 está en desarrollo. Lo que ya existe en el código:
 
 **Frontend `menu.html` (ya implementado):**
 - Paso de pago tras confirmar orden/reserva: botones Yape / Plin / Efectivo
-- Deep link a Yape: `https://yape.com.pe/cobrar?phone=XXXX`
+- Yape: número + botón "Copiar número" (igual que Plin — no existe deep link web público de Yape)
 - Upload de foto comprobante (opcional) + preview
 - Botón "Ya pagué" → `PATCH /api/public/pago/...`
 
@@ -836,12 +904,42 @@ Exponer endpoints REST documentados (OpenAPI/Swagger) para que los restaurantes 
 - **Schema:** tabla `api_keys` con `id_restaurante`, `key_hash`, `permisos`, `activo`
 - **Complejidad:** alta (auth adicional, rate limiting por key, documentación)
 
+#### C6 — Métrica de visitas al menú por restaurante (dashboard admin) — anotado 2026-07-09
+Idea del usuario: no implementar todavía — recién tiene sentido "cuando inicie masivo" (varios restaurantes activos con tráfico real). Ver `vision_negocio.md` sección 15 para el detalle completo de la motivación de negocio (ingreso indirecto vía publicidad dentro de `menu.html`, usando el tráfico agregado de todos los restaurantes como audiencia local vendible).
+- **Objetivo del admin de la plataforma:** saber cuántas personas ven el menú de cada restaurante, para (a) evaluar si el tráfico agregado justifica vender espacio publicitario, y (b) tener el dato antes de cotizarle a un anunciante.
+- **A definir antes de implementar** (decisiones de producto, no técnicas):
+  - ¿Se cuenta cada carga de página (page views) o visitantes únicos por sesión/día? Lo segundo requiere un identificador anónimo (cookie o hash) con las implicancias de privacidad correspondientes — el sistema hoy es 100% anónimo del lado cliente (sección 9 de `vision_negocio.md`).
+  - ¿El dato es visible solo para el admin de la plataforma, o también para el owner de cada restaurante (riesgo: filtra info competitiva entre restaurantes si se muestra mal)?
+  - ¿Cuánto tiempo se retienen los datos crudos vs. agregados?
+- **Boceto técnico (sin comprometer diseño final):** tabla nueva `visitas_menu` (o similar) con `id_restaurante`, `fecha`, `contador` — incrementada en `GET /api/public/menu` o en la carga inicial de `menu.html`; nuevo endpoint en `routes/admin.js` (ej. `GET /api/admin/restaurantes/:id/visitas` o resumen agregado); nueva card/gráfica en `public/admin/dashboard.html`.
+- **Complejidad:** media (la métrica en sí es simple; lo que hay que resolver es el diseño de privacidad/alcance antes de tocar código).
+
+#### C7 — Módulo de blog/noticias de la empresa (dashboard admin) — anotado 2026-07-09
+Idea del usuario: un módulo dentro del panel admin (`public/admin/dashboard.html`) para que Pedro, como fundador, publique actualizaciones sobre la evolución de la empresa — no del restaurante de un cliente, sino de Menú Pro como producto/negocio. Ejemplos que dio el usuario: "ya tengo mi primera prueba piloto", "una semana después, así van las pruebas", anuncios de nuevas features, hitos. Por ahora **solo documentación, sin implementar**.
+
+**Para qué sirve (contexto de negocio):** construir confianza pública con prospectos y restaurantes piloto mostrando avance real y transparencia — el tipo de "build in public" que ayuda a vender el producto a los próximos restaurantes sin depender de marketing pagado. Complementa la landing (`public/landing.html`), que hoy es estática.
+
+**Boceto técnico (sin comprometer diseño final):**
+- **Schema:** tabla nueva `posts_blog` — `id`, `titulo`, `contenido` (markdown o HTML simple), `slug`, `publicado` (bool), `created_at`, `id_usuario_admin` (autor).
+- **Backend:** `routes/admin.js` (o un `routes/blog.js` separado) — `POST/GET/PATCH/DELETE /api/admin/blog` protegido con `authorize('admin')` (mismo patrón que el resto de `admin.js`); endpoint público de solo lectura `GET /api/public/blog` (o similar) para listar los posts publicados, sin autenticación.
+- **Frontend admin:** nueva sección en `dashboard.html` — lista de posts + editor (título, contenido, toggle publicado/borrador) con `FormModal` u otro patrón ya usado en el proyecto.
+- **Frontend público:** página nueva, ej. `public/blog.html` o una sección dentro de `landing.html`, que liste los posts publicados (más reciente primero) — mobile-first como el resto del sistema.
+- **Decisiones a tomar antes de implementar:**
+  - ¿Editor de texto simple (textarea) o con formato (markdown/rich text)? Empezar simple es razonable dado el volumen bajo de posts esperado.
+  - ¿Los posts llevan fotos/imágenes? Si sí, reutilizar el patrón de upload ya existente (`multer` + carpeta en `public/uploads/`).
+  - ¿Viven en una URL propia (`menupro.tech/blog`) o como sección scrolleable de la landing? Afecta SEO y si se linkean posts individuales.
+- **Complejidad:** media-baja (CRUD simple, sin lógica de negocio compleja — el esfuerzo real está en el editor/UI, no en el backend).
+
 ---
 
 ## Implementados
 
 | Feature | Fecha | Descripción |
 |---------|-------|-------------|
+| Cancelar desde Cola del día (Gap 19) | 2026-07-14 | Botón "✗ Cancelar" en las tarjetas de `renderKanbanOrden()`/`renderKanbanReserva()` — antes había que entrar a Órdenes/Reservas por separado para cancelar. Reutiliza `accionRapidaOrden()`/`accionRapidaReserva()` (mismo endpoint `PATCH /:id/estatus`, sin cambios de backend — la devolución de stock ya la maneja). Mismo criterio de visibilidad que esos paneles: en órdenes siempre disponible; en reservas se oculta si el cliente ya llegó o ya se completó. La modalidad (`badgeModalidad()`) ya se mostraba desde antes. 267/267 jest verde (sin tests nuevos, reutiliza endpoints ya cubiertos); verificado con Playwright en las 4 zonas. |
+| Horario de atención configurable y estricto (Gap 18) | 2026-07-14 | El owner fija un rango horario (ej. 12:00–15:00) + los días de la semana en que atiende (`restaurantes.horario_activo`/`hora_apertura`/`hora_cierre`/`dias_atencion`, apagado por defecto). `POST /orders` y `POST /reservations` bloquean con 400 fuera de ese horario (`utils/horarioAtencion.js`); las reservas además validan la `hora_llegada` futura si el cliente la especifica. `menu.html` muestra banner "Cerrado" + deshabilita el botón de confirmar sin bloquear la carta/menú. Config en `owner.html` → "🕐 Horario de atención". Límite conocido: no soporta horario que cruce medianoche. Tests `horario-atencion.test.js` (13) → 267/267 jest; E2E `scripts/test-horario-atencion.js` (9/9). |
+| Stock por plato del menú del día | 2026-07-02 | Columnas `stock_inicial`/`stock_restante` en `componentes_menu_dia` (NULL = sin control, opcional por plato). El stock es **por menú**: si el mismo plato está en 2 menús, cada uno lleva su cuenta (decisión del usuario — reparte sus porciones). Owner fija "hoy tengo 25" desde el ⋯ del acordeón (📦 Stock, FormModal); badge "quedan N" (ámbar ≤5, "Sin stock" en 0). **Descuento al crear** orden/reserva (público y owner, transaccional con guard `restante >= n` → 409 "Solo quedan N porciones de X" y revierte todo); menú fijo descuenta todos sus componentes (ya viajan como items). **Devolución al cancelar** (PATCH estatus órdenes/reservas + cancel desde cocina). Al llegar a 0 el plato desaparece del menú QR (mismo filtro que agotado); el toggle manual de agotado sigue independiente. Copiar menú replica `stock_inicial` con la olla llena; herencia de secciones no arrastra stock (nace sin platos). Nuevo `utils/stock.js` + endpoint `PATCH …/platos/:componenteId/stock`. Tests `stock-platos.test.js` (11) → 241/241 jest; E2E full-stack 11/11. Fase 2 futura: stock en carta, aviso "¡quedan 3!" al cliente, reporte cociné-vs-vendí. |
+| Flujo Menú del Día v2 — acordeón + picker multi + herencia de secciones | 2026-07-02 | Rediseño del armado del menú (ver `flujo-menuv2.md`): (1) la vista de config es un **acordeón vertical** de secciones (badges "N platos"/"⚠ sin platos", acciones de plato tras ⋯) — reemplaza al carrusel horizontal que rebotaba a la primera sección tras cada acción; (2) **hub eliminado**: ⚙ Configurar aterriza directo en las secciones, toggles del cliente como fila compacta; (3) **PlatoPicker multi-selección** con pre-marcado (marcar agrega, desmarcar quita, footer "Guardar (N nuevos · quitar M) ✓"); (4) **herencia de secciones**: `POST /menus-dia` con `heredar_secciones: true` copia la estructura (sin platos) del menú más reciente; el wizard cierra con «Crear y agregar platos →» y encadena directo al armado con hint ✨; (5) alta de sección en **1 tap** (Obligatoria/Opcional) reemplaza al mini-wizard de 2 pasos. ~31 taps + swipes → ~15 taps por menú típico. Tests: `heredar-secciones.test.js` (8) → 230/230 jest; E2E `test-menu-wizard.js` reescrito → 51/51 a 360px. Mockup previo en `public/demo_flujo_menu.html`. |
 | Botón Instalar PWA + widget `PwaInstall` | 2026-05-30 | Botón "📲 Instalar app" en `owner.html` (sidebar) y `login.html`. Widget `pwa-install.js`: captura `beforeinstallprompt`, instructivo iOS, se oculta si ya instalada. E2E `scripts/test-pwa-install.js`. Comensal-installable + URLs por slug quedan como features futuras. |
 | Editar platos + widget `FormModal` + fix scroll Menús del día | 2026-05-30 | Botón ✏️ por fila para editar platos de menú (nombre+desc) y carta (nombre+precio+desc+categoría) vía widget `FormModal` (modal de formulario genérico por esquema). Backend `PATCH /platos-menu/:id` y `/platos-carta/:id`. Fix de layout: `.card-header` con `flex-wrap` para que el botón "Eliminar" de los menús del día no se corte en 360px. Tests `editar-platos.test.js` (10) + E2E. 207/207 verde. |
 | Sistema de widgets + `PhotoEditor` | 2026-05-30 | Filosofía de **componentes de UI reutilizables autocontenidos** (ver `widgets.md`). Primer widget `public/js/widgets/photo-editor.js`: en `owner.html` (Platos de menú y Carta) la miniatura de cada plato es clicable → visor de imagen en grande con **recorte 1:1** + Cambiar + Eliminar; placeholder vacío → recortador directo. Recortador propio en canvas (arrastrar + zoom táctil, exporta JPEG 800×800), sin dependencias, no toca CSP. Prueba E2E `scripts/test-photo-editor.js` (8/8 verde). Siguiente: widget `PhotoViewer` solo-lectura para migrar el modal de `menu.html`. |

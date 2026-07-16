@@ -1,10 +1,10 @@
 /**
- * Smoke E2E del widget MenuWizard (owner.html → Menús del día).
- * Modelo: GALERÍA (vista principal) + WIZARD de 3 pasos lanzado desde "＋ Crear menú".
- * Verifica: montaje, galería visible por defecto, selector de fecha (◀ ▶), botón crear,
- * wizard de 3 pasos (título → precio → ¿fijo o elige?) que hereda la fecha, creación,
- * vuelta a la galería con el menú nuevo como card retrato, ⚙ Configurar abre el modal,
- * sin overflow de página a 360px, 0 errores de consola.
+ * Smoke E2E del widget MenuWizard (owner.html → Menús del día) — flujo v2.
+ * Modelo: GALERÍA + WIZARD de 3 pasos + vista de ARMADO (acordeón vertical).
+ * Verifica: montaje, galería, selector de fecha (◀ ▶), wizard de 3 pasos que
+ * hereda la fecha, «Crear y agregar platos →» encadena al armado con secciones
+ * heredadas, acordeón (colapsar/expandir, badges), picker multi-selección,
+ * alta rápida de sección (1 tap), sin hub, sin overflow a 360px, 0 errores.
  *
  * Uso: PORT=3399 node scripts/test-menu-wizard.js
  */
@@ -25,7 +25,13 @@ function check(cond, msg) {
   const ctx = await browser.newContext({ viewport: { width: 360, height: 740 } });
   const page = await ctx.newPage();
   const errors = [];
-  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', m => {
+    if (m.type() !== 'error') return;
+    // Fotos de /uploads pueden faltar en dev (uploads fuera de git) — no es error de la app
+    const url = (m.location() && m.location().url) || '';
+    if (/\/uploads\//.test(url) && /Failed to load resource/.test(m.text())) return;
+    errors.push(m.text());
+  });
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
 
   try {
@@ -39,8 +45,10 @@ function check(cond, msg) {
     console.log('Login OK →', page.url());
 
     // ── Ir a Menús del día ──
-    await page.click('#tab-md-menus');
-    await page.waitForTimeout(400);
+    // Desde el rediseño Home (hubs), las tabs viejas están ocultas (display:none):
+    // se navega con las funciones globales showPanel/switchTab.
+    await page.evaluate(() => { showPanel('menu-dia'); switchTab('md', 'menus'); });
+    await page.waitForTimeout(600);
 
     // ── Galería como vista principal ──
     check(await page.locator('#menu-wizard-mount .mw').count() > 0, 'Widget MenuWizard montado');
@@ -86,27 +94,92 @@ function check(cond, msg) {
     check(await page.locator('[data-act="crear"]').isDisabled(), 'Botón "Crear" deshabilitado antes de elegir');
     await page.click('.mw-choice[data-elegible="1"]');
     check(!(await page.locator('[data-act="crear"]').isDisabled()), 'Botón "Crear" habilitado tras elegir');
+    check(/agregar platos/i.test(await page.locator('[data-act="crear"]').innerText()), 'Botón final dice "Crear y agregar platos →"');
 
-    // Crear → vuelve a la galería con el menú nuevo
+    // ── Crear → encadena DIRECTO a la vista de armado (flujo v2) ──
     await page.click('[data-act="crear"]');
     await page.waitForTimeout(900);
-    check(await page.locator('#mw-gallery').isVisible(), 'Vuelve a la galería tras crear');
+    check(await page.locator('#mw-config').isVisible(), 'Tras crear encadena a la vista de armado (config)');
     check(await page.locator('#mw-wizard').isHidden(), 'Wizard se cierra tras crear');
-    check(await page.locator('#mw-menus-list .mw-menu-card').count() > 0, 'Galería muestra al menos 1 menú');
-    const cardText = await page.locator('#mw-menus-list .mw-menu-card').first().innerText();
-    check(cardText.includes('18.50'), 'Card de la galería muestra el precio');
+    check((await page.locator('#mc-title').innerText()).includes(nombre), 'La vista de armado muestra el menú recién creado');
 
-    // Card retrato: más alta que ancha
+    // ── Vista de armado v2: toggles compactos + acordeón vertical ──
+    check(await page.locator('#mc-body .mc-cli-compact .mc-cli-btn').count() === 2, 'Fila compacta con los 2 toggles del cliente (sin hub)');
+    check(await page.locator('#mc-body .mc-acc').count() > 0, 'Secciones renderizadas como lista vertical (acordeón)');
+    check(await page.locator('#mc-body .mc-add-sec').isVisible(), 'Botón "＋ Agregar sección" al final de la lista');
+
+    const nSecs = await page.locator('#mc-body .mc-sec').count();
+    if (nSecs > 0) {
+      // Herencia de secciones: el menú nace con la estructura del último menú
+      check(true, `Secciones heredadas del último menú (${nSecs})`);
+      check(await page.locator('#mc-body .mc-hint').count() > 0, 'Hint "✨ solo agrega los platos de hoy" visible tras crear');
+      check(await page.locator('#mc-body .mc-sec-badge.warn').count() > 0, 'Secciones heredadas marcan "⚠ sin platos"');
+
+      // El acordeón colapsa/expande al tocar la cabecera
+      await page.locator('#mc-body .mc-sec-head').first().click();
+      await page.waitForTimeout(300);
+      check(!(await page.locator('#mc-body .mc-sec').first().evaluate(el => el.classList.contains('open'))), 'Tocar la cabecera colapsa la sección');
+      await page.locator('#mc-body .mc-sec-head').first().click();
+      await page.waitForTimeout(300);
+      check(await page.locator('#mc-body .mc-sec').first().evaluate(el => el.classList.contains('open')), 'Tocar de nuevo la expande');
+
+      // ── Picker multi-selección: marcar 2 platos y confirmar una vez ──
+      await page.locator('#mc-body .mc-add-platos').first().click();
+      await page.waitForTimeout(400);
+      check(await page.locator('.pp-overlay.open').count() > 0, '"＋ Platos" abre el PlatoPicker');
+      check(await page.locator('.pp-foot.show').count() > 0, 'Picker en modo multi (footer de confirmación visible)');
+      const nPlatosCat = await page.locator('.pp-grid .pp-card').count();
+      if (nPlatosCat >= 2) {
+        await page.locator('.pp-grid .pp-card').nth(0).click();
+        await page.locator('.pp-grid .pp-card').nth(1).click();
+        check(await page.locator('.pp-grid .pp-card.sel').count() === 2, 'Dos platos marcados sin cerrar el picker');
+        check(/2 nuevos/.test(await page.locator('.pp-confirm').innerText()), 'Footer dice "Guardar (2 nuevos) ✓"');
+        await page.click('.pp-confirm');
+        await page.waitForTimeout(700);
+        check(await page.locator('#mc-body .mc-plato-row').count() >= 2, 'Los 2 platos aparecen en la sección tras confirmar');
+        check(/2 platos/.test(await page.locator('#mc-body .mc-sec-badge').first().innerText()), 'Badge de la sección pasa a "2 platos"');
+        // Acciones del plato detrás del ⋯
+        await page.locator('#mc-body .mc-dots').first().click();
+        await page.waitForTimeout(200);
+        check(await page.locator('#mc-body .mc-plato-acts.open').count() > 0, 'El ⋯ expande las acciones del plato');
+      } else {
+        await page.click('.pp-close');
+        console.log('  ⚠️  Catálogo con <2 platos — picker multi omitido');
+      }
+    } else {
+      console.log('  ⚠️  Sin menús previos con secciones — herencia vacía (tolerado)');
+      // ── Alta rápida de sección (1 tap) ──
+      await page.click('#mc-body .mc-add-sec');
+      await page.waitForTimeout(400);
+      const filas = await page.locator('#mc-body .mc-addsec-row').count();
+      if (filas > 0) {
+        await page.locator('#mc-body .mc-addsec-row .mc-mini-act.primaria').first().click();
+        await page.waitForTimeout(700);
+        check(await page.locator('#mc-body .mc-sec').count() > 0, 'Alta rápida: 1 tap agrega la sección al acordeón');
+      } else {
+        console.log('  ⚠️  Sin secciones libres en el catálogo (omitido)');
+      }
+    }
+
+    // ── Sin overflow horizontal de página a 360px (vista de armado) ──
+    const overflowCfg = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+    check(overflowCfg, 'Sin overflow horizontal en la vista de armado a 360px');
+
+    // "← Volver" regresa a la galería (un solo nivel — ya no hay hub)
+    await page.click('[data-act="cfg-back"]');
+    await page.waitForTimeout(500);
+    check(await page.locator('#mw-gallery').isVisible(), '"← Volver" regresa a la galería en 1 tap');
+    check(await page.locator('#mw-config').isHidden(), 'Vista de armado oculta tras volver');
+
+    // ── Galería: el menú nuevo aparece como card retrato ──
+    check(await page.locator('#mw-menus-list .mw-menu-card').count() > 0, 'Galería muestra al menos 1 menú');
+    const newCardLoc = page.locator('#mw-menus-list .mw-menu-card', { hasText: nombre });
+    check(await newCardLoc.count() > 0, 'El menú recién creado aparece en la galería');
+    check((await newCardLoc.first().innerText()).includes('18.50'), 'Card de la galería muestra el precio');
     const box = await page.locator('#mw-menus-list .mw-menu-card').first().boundingBox();
     check(box && box.height > box.width, `Card es retrato (${Math.round(box.width)}×${Math.round(box.height)})`);
 
-    // Explicaciones de los toggles (Cliente elige / Visible)
-    check(await page.locator('#mw-menus-list .mw-toggle-hint').first().isVisible(), 'Card muestra explicación de los toggles');
-    // El menú recién creado no tiene platos → sin foto → watermark que llena el aire
-    const newCardLoc = page.locator('#mw-menus-list .mw-menu-card', { hasText: nombre });
-    check(await newCardLoc.locator('.mw-menu-watermark').count() > 0, 'Card sin foto muestra watermark (emoji)');
-
-    // ── Sin overflow horizontal de página a 360px ──
+    // ── Sin overflow horizontal de página a 360px (galería) ──
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
     check(overflow, 'Sin overflow horizontal de página a 360px');
 
@@ -114,52 +187,16 @@ function check(cond, msg) {
     const menusScrollable = await page.locator('#mw-menus-list').evaluate(el => el.scrollWidth >= el.clientWidth);
     check(menusScrollable, 'La galería es un carrusel horizontal');
 
-    // ── ⚙ Configurar abre la vista de configuración INLINE (ya no es modal) ──
-    // Configuramos el menú recién creado (sin secciones) para no duplicar secciones de los seeds.
-    const newCard = page.locator('#mw-menus-list .mw-menu-card', { hasText: nombre });
-    await newCard.locator('[data-cfg]').click();
+    // ── ⚙ Configurar desde la galería aterriza DIRECTO en el acordeón (sin hub) ──
+    await newCardLoc.first().locator('[data-cfg]').click();
     await page.waitForTimeout(400);
-    check(await page.locator('#mw-config').isVisible(), '⚙ Configurar abre la vista de configuración inline');
-    check(await page.locator('#mw-gallery').isHidden(), 'Galería oculta dentro de configuración');
-    check((await page.locator('#mc-title').innerText()).trim().length > 0, 'Configuración muestra el título del menú');
-    check(await page.locator('#mc-body .mc-sec-gallery').count() > 0, 'Configuración renderiza una galería de secciones');
-    // Solo botón "Agregar sección" + secciones (sin barra de select inline)
-    check(await page.locator('#mc-body .mw-create-btn').count() > 0, 'Config tiene el botón "＋ Agregar sección"');
-    check(await page.locator('#mc-body #mc-sel-sec').count() === 0, 'Ya no hay select inline de sección en la galería');
-
-    // "Agregar sección" abre el mini-wizard de 2 pasos
-    await page.click('#mc-body .mw-create-btn');
-    await page.waitForTimeout(400);
-    check(await page.locator('#as-track').count() > 0, '"Agregar sección" abre el wizard de 2 pasos');
-    check(((await page.locator('#mc-body .mw-step-label').first().textContent()) || '').includes('Paso 1 de 2'), 'Wizard de sección arranca en Paso 1 de 2');
-
-    const asOpts = await page.locator('#mc-body [data-as-sel]').count();
-    if (asOpts > 0) {
-      // Paso 1: elegir una sección
-      await page.locator('#mc-body [data-as-sel]').first().click();
-      check(!(await page.locator('#as-next').isDisabled()), 'Paso 1: "Siguiente" se habilita al elegir sección');
-      await page.click('#as-next');
-      await page.waitForTimeout(450);
-      const asX = await page.locator('#as-track').evaluate(el => el.style.transform);
-      check(/-100%/.test(asX), `Desliza al paso 2 (${asX})`);
-      // Paso 2: obligatoria con emojis
-      check(await page.locator('[data-as-req="1"] .mw-choice-emoji').isVisible(), 'Paso 2 (obligatoria) muestra opciones con emoji');
-      await page.click('[data-as-req="1"]');
-      check(!(await page.locator('#as-add').isDisabled()), 'Paso 2: "Agregar" se habilita al elegir');
-      await page.click('#as-add');
-      await page.waitForTimeout(700);
-      check(await page.locator('#mc-body .mc-sec-card').count() > 0, 'La sección agregada aparece como card retrato');
-      const sbox = await page.locator('#mc-body .mc-sec-card').first().boundingBox();
-      check(sbox && sbox.height > sbox.width, `Card de sección es retrato (${Math.round(sbox.width)}×${Math.round(sbox.height)})`);
-    } else {
-      console.log('  ⚠️  Sin secciones en el catálogo para probar el alta (omitido)');
-    }
-
-    // "← Volver" regresa a la galería
+    check(await page.locator('#mw-config').isVisible(), '⚙ Configurar abre la vista de armado inline');
+    check(await page.locator('#mc-body .mc-acc').count() > 0, 'Aterriza directo en el acordeón de secciones (sin hub)');
+    check(await page.locator('#mc-body .mc-hub-card').count() === 0, 'El hub de 2 opciones ya no existe');
+    check(await page.locator('#mc-body .mc-hint').count() === 0, 'El hint de herencia NO aparece al reabrir (solo tras crear)');
     await page.click('[data-act="cfg-back"]');
     await page.waitForTimeout(400);
-    check(await page.locator('#mw-gallery').isVisible(), '"← Volver" regresa a la galería');
-    check(await page.locator('#mw-config').isHidden(), 'Vista de configuración oculta tras volver');
+    check(await page.locator('#mw-gallery').isVisible(), 'Volver desde ⚙ regresa a la galería');
 
     check(errors.length === 0, `0 errores de consola${errors.length ? ' → ' + errors.join(' | ') : ''}`);
 

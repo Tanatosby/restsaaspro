@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════
 // MÓDULO: COLA DEL DÍA — KANBAN
 // Órdenes + reservas activas agrupadas por zona/etapa.
-// Hace polling cada 15 s mientras el panel está activo.
+// Hace polling cada 30 s mientras el panel está activo.
 // Globals requeridos (owner.html): detectNuevasOrdenes(),
 //   detectNuevasReservas(), cambiarEstatusOrdenFlag(),
 //   cambiarEstatusReservaFlag(), badgeEst(), toUTC()
@@ -15,7 +15,7 @@ let _zonaActiva = 'pendientes';
 function initPedidosPoll() {
   stopPedidosPoll();
   loadColaDia();
-  _pedidosPollTimer = setInterval(loadColaDia, 15000);
+  _pedidosPollTimer = setInterval(loadColaDia, 30000);
 }
 
 function stopPedidosPoll() {
@@ -42,13 +42,22 @@ function switchZona(zona) {
 
 async function loadColaDia() {
   try {
-    const [ordenes, reservas] = await Promise.all([
+    // GET /api/reservations sin filtro trae TODO el historial del restaurante
+    // (con una consulta N+1 de ítems por cada una) — con el tiempo se vuelve
+    // cada vez más pesado y bloquea el proceso entero (better-sqlite3 es
+    // síncrono). Igual que reservas.js, se piden solo los 5 estados activos
+    // (los otros 2 son es_full/es_cancelado — no interesan acá).
+    const [ordenes, pendientes, confirmadas, enCocina, listas, llegaron] = await Promise.all([
       api('GET', '/api/orders/activas'),
-      api('GET', '/api/reservations'),
+      api('GET', '/api/reservations?flag=es_inicial'),
+      api('GET', '/api/reservations?flag=es_confirmada'),
+      api('GET', '/api/reservations?flag=es_en_cocina'),
+      api('GET', '/api/reservations?flag=es_listo'),
+      api('GET', '/api/reservations?flag=es_cliente_llego'),
     ]);
+    const reservasActivas = [...pendientes, ...confirmadas, ...enCocina, ...listas, ...llegaron];
 
     detectNuevasOrdenes(ordenes);
-    const reservasActivas = reservas.filter(r => !r.es_full && !r.es_cancelado);
     detectNuevasReservas(reservasActivas);
 
     // Clasificar por zona
@@ -147,12 +156,17 @@ function renderKanbanCard(item, zona) {
     : renderKanbanReserva(item.datos, zona);
 }
 
+// comprobanteThumb() vive en utils.js — compartida con ordenes.js/reservas.js.
+
 function renderKanbanOrden(o, zona) {
-  const minutos   = Math.floor((Date.now() - new Date(toUTC(o.created_at)).getTime()) / 60000);
-  const mesaTag   = o.mesa ? `· Mesa ${o.mesa} ` : '';
-  const items     = renderItemLines(o.carta_items, o.menu_items);
-  const btnAccion = btnOrden(o, zona);
-  const modBadge  = badgeModalidad(o.modalidad);
+  const minutos    = Math.floor((Date.now() - new Date(toUTC(o.created_at)).getTime()) / 60000);
+  const mesaTag    = o.mesa ? `· Mesa ${o.mesa} ` : '';
+  const items      = renderItemLines(o.carta_items, o.menu_items);
+  const btnAccion  = btnOrden(o, zona);
+  // Cancelar: siempre disponible en cualquier etapa (mismo criterio que el panel de Órdenes).
+  const btnCancelar = `<button class="btn btn-danger btn-sm" onclick="accionRapidaOrden(${o.id},'es_cancelado')">✗ Cancelar</button>`;
+  const modBadge   = badgeModalidad(o.modalidad);
+  const pagoHtml   = o.metodo_pago ? `<div style="margin-top:4px">${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
 
   return `
     <div class="cola-card cola-orden">
@@ -165,17 +179,24 @@ function renderKanbanOrden(o, zona) {
         <span class="cola-tiempo">${minutos} min</span>
       </div>
       ${items ? `<div class="cola-items">${items}</div>` : ''}
-      ${btnAccion ? `<div class="order-actions" style="margin-top:0.5rem">${btnAccion}</div>` : ''}
+      ${pagoHtml}
+      <div class="order-actions" style="margin-top:0.5rem">${btnAccion}${btnCancelar}</div>
     </div>`;
 }
 
 function renderKanbanReserva(r, zona) {
-  const horaTag   = r.hora_llegada ? `🕐 ${r.hora_llegada} ` : '';
-  const mesaTag   = r.mesa ? `Mesa ${r.mesa} ` : '';
-  const codigo    = r.codigo ? `<span class="cola-codigo">🔑 ${r.codigo}</span>` : '';
-  const items     = renderItemLines(r.carta_items, r.menu_items);
-  const btnAccion = btnReserva(r, zona);
-  const modBadge  = badgeModalidad(r.modalidad);
+  const horaTag    = r.hora_llegada ? `🕐 ${r.hora_llegada} ` : '';
+  const mesaTag    = r.mesa ? `Mesa ${r.mesa} ` : '';
+  const codigo     = r.codigo ? `<span class="cola-codigo">🔑 ${r.codigo}</span>` : '';
+  const items      = renderItemLines(r.carta_items, r.menu_items);
+  const btnAccion  = btnReserva(r, zona);
+  // Cancelar: se oculta una vez que el cliente ya llegó o la reserva ya se completó
+  // (mismo criterio que el panel de Reservas — no tiene sentido cancelar en ese punto).
+  const btnCancelar = (!r.es_cliente_llego && !r.es_full)
+    ? `<button class="btn btn-danger btn-sm" onclick="accionRapidaReserva(${r.id},'es_cancelado')">✗ Cancelar</button>`
+    : '';
+  const modBadge   = badgeModalidad(r.modalidad);
+  const pagoHtml   = r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteThumb(r)}</div>` : '';
 
   return `
     <div class="cola-card cola-reserva">
@@ -188,27 +209,40 @@ function renderKanbanReserva(r, zona) {
         <span class="cola-tiempo">${horaTag}${mesaTag}</span>
       </div>
       ${items ? `<div class="cola-items">${items}</div>` : ''}
-      ${btnAccion ? `<div class="order-actions" style="margin-top:0.5rem">${btnAccion}</div>` : ''}
+      ${pagoHtml}
+      ${(btnAccion || btnCancelar) ? `<div class="order-actions" style="margin-top:0.5rem">${btnAccion}${btnCancelar}</div>` : ''}
     </div>`;
 }
 
 // ── Botones de acción rápida ──────────────────────────────
 
+// Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante
+// antes de poder cobrar/completar (el backend también lo bloquea).
+function requiereConfirmarPago(x) {
+  return ['yape', 'plin'].includes(x.metodo_pago) && x.estado_pago !== 'confirmado';
+}
+
 function btnOrden(o, zona) {
   const paraLlevar = o.modalidad === 'para_llevar';
+  const btnCobrar = requiereConfirmarPago(o)
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoOrden(${o.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="accionRapidaOrden(${o.id},'es_pagado')">💰 Cobrar</button>`;
   if (zona === 'pendientes' && o.es_inicial)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_en_cocina')">🍳 A cocina</button>`;
   if (zona === 'listos' && o.es_listo && !paraLlevar)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">🍽 Entregar</button>`;
   if (zona === 'listos' && o.es_listo && paraLlevar)
-    return `<button class="btn btn-success btn-sm" onclick="accionRapidaOrden(${o.id},'es_pagado')">💰 Cobrar</button>`;
+    return btnCobrar;
   if (zona === 'cobrar' && o.es_entregado)
-    return `<button class="btn btn-success btn-sm" onclick="accionRapidaOrden(${o.id},'es_pagado')">💰 Cobrar</button>`;
+    return btnCobrar;
   return '';
 }
 
 function btnReserva(r, zona) {
   const sinMesa = r.modalidad === 'para_llevar' || r.modalidad === 'delivery';
+  const btnCompletar = requiereConfirmarPago(r)
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoReserva(${r.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_full')">💰 Completar</button>`;
   if (zona === 'pendientes' && r.es_confirmada)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_en_cocina')">🍳 A cocina</button>`;
   if (zona === 'pendientes' && r.es_inicial)
@@ -216,9 +250,9 @@ function btnReserva(r, zona) {
   if (zona === 'listos' && r.es_listo && !sinMesa)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_cliente_llego')">🍽 Entregado</button>`;
   if (zona === 'listos' && r.es_listo && sinMesa)
-    return `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_full')">💰 Completar</button>`;
+    return btnCompletar;
   if (zona === 'cobrar' && r.es_cliente_llego)
-    return `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_full')">💰 Completar</button>`;
+    return btnCompletar;
   return '';
 }
 

@@ -356,6 +356,11 @@ try { db.exec(`ALTER TABLE menus_dia ADD COLUMN id_plato_portada INTEGER DEFAULT
 // Migración idempotente: columna agotado en componentes_menu_dia
 try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN agotado INTEGER DEFAULT 0`); } catch (_) {}
 
+// Migración idempotente: stock por plato del menú del día (NULL = sin control).
+// stock_inicial = porciones cocinadas hoy; stock_restante baja con cada pedido.
+try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN stock_inicial  INTEGER DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN stock_restante INTEGER DEFAULT NULL`); } catch (_) {}
+
 // Migración idempotente: hora de llegada en reservas
 try { db.exec(`ALTER TABLE reservas ADD COLUMN hora_llegada TEXT DEFAULT NULL`); } catch (_) {}
 
@@ -466,6 +471,22 @@ try { db.exec(`ALTER TABLE reservas  ADD COLUMN cargo_modalidad REAL DEFAULT 0`)
 
 // Migración idempotente: auto-merge cuenta por mesa (Gap 8)
 try { db.exec(`ALTER TABLE restaurantes ADD COLUMN auto_merge_activo INTEGER DEFAULT 1`); } catch (_) {}
+
+// Migración idempotente: slug único por restaurante (URL personalizada)
+// SQLite no admite UNIQUE en ALTER TABLE ADD COLUMN — se agrega la columna y luego el índice por separado
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN slug TEXT`); } catch (_) {}
+db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_restaurantes_slug ON restaurantes(slug) WHERE slug IS NOT NULL`);
+
+// Migración idempotente: ventana de tiempo (minutos) para que el cliente pueda cancelar su reserva
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN minutos_cancelacion_reserva INTEGER DEFAULT 30`); } catch (_) {}
+
+// Migración idempotente: horario de atención (Gap 18)
+// horario_activo: apagado por defecto — no restringe a restaurantes existentes hasta que el owner lo active.
+// dias_atencion: días de la semana en que atiende, formato JS Date.getDay() (0=Domingo ... 6=Sábado).
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN horario_activo INTEGER DEFAULT 0`); } catch (_) {}
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN hora_apertura TEXT DEFAULT '00:00'`); } catch (_) {}
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN hora_cierre TEXT DEFAULT '23:59'`); } catch (_) {}
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN dias_atencion TEXT DEFAULT '0,1,2,3,4,5,6'`); } catch (_) {}
 
 // Tabla de suscripciones push (Gap 3 — Web Push)
 db.exec(`

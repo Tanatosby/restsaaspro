@@ -49,6 +49,22 @@ async function loadConfiguracion() {
     const mpEl = document.getElementById('cfg-minutos-preparacion');
     if (mpEl) mpEl.value = cfg.minutos_preparacion ?? 20;
 
+    // Ventana de cancelación de reservas (cliente)
+    const mcEl = document.getElementById('cfg-minutos-cancelacion-reserva');
+    if (mcEl) mcEl.value = cfg.minutos_cancelacion_reserva ?? 30;
+
+    // Horario de atención (Gap 18)
+    const haEl = document.getElementById('cfg-horario-activo');
+    const apEl = document.getElementById('cfg-hora-apertura');
+    const ciEl = document.getElementById('cfg-hora-cierre');
+    if (haEl) haEl.checked = !!cfg.horario_activo;
+    if (apEl) apEl.value   = cfg.hora_apertura || '00:00';
+    if (ciEl) ciEl.value   = cfg.hora_cierre   || '23:59';
+    const diasActivos = (cfg.dias_atencion || '0,1,2,3,4,5,6').split(',').map(Number);
+    document.querySelectorAll('.cfg-dia-check').forEach(chk => {
+      chk.checked = diasActivos.includes(Number(chk.value));
+    });
+
     // Modalidades y costos (Gap 4 + Gap 5)
     const plEl = document.getElementById('cfg-para-llevar-activo');
     const dlEl = document.getElementById('cfg-delivery-activo');
@@ -63,9 +79,51 @@ async function loadConfiguracion() {
     const amEl = document.getElementById('cfg-auto-merge-activo');
     if (amEl) amEl.checked = cfg.auto_merge_activo ?? true;
 
-    generarQR();
+    // Slug / URL personalizada
+    const slugEl = document.getElementById('config-slug');
+    if (slugEl) slugEl.value = cfg.slug || '';
+    actualizarSlugPreview(cfg.slug || null);
+
+    generarQR(cfg.slug || null);
     loadMesasConfig();
+
+    // Tamaño de letra ajustable — preferencia por dispositivo (localStorage, no viaja al backend)
+    let scaleActual = parseFloat(localStorage.getItem('mp-font-scale'));
+    if (![1, 1.15, 1.3].includes(scaleActual)) scaleActual = 1;
+    document.querySelectorAll('.font-scale-btn').forEach(btn => {
+      btn.classList.toggle('active', parseFloat(btn.dataset.scale) === scaleActual);
+    });
   } catch(e) { toast(e.message, 'err'); }
+}
+
+function actualizarSlugPreview(slug) {
+  const preview = document.getElementById('config-slug-preview');
+  const urlEl   = document.getElementById('config-slug-url');
+  if (!preview || !urlEl) return;
+  if (slug) {
+    const href = `${window.location.origin}/${slug}`;
+    urlEl.textContent = href;
+    urlEl.href = href;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+async function guardarSlug() {
+  const slug = (document.getElementById('config-slug')?.value || '').trim();
+  try {
+    const res = await api('PATCH', '/api/menu/config/slug', { slug });
+    actualizarSlugPreview(res.slug || null);
+    generarQR(res.slug || null);
+    toast(res.slug ? `URL guardada: menupro.tech/${res.slug}` : 'URL personalizada eliminada');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function copiarSlugUrl() {
+  const urlEl = document.getElementById('config-slug-url');
+  if (!urlEl) return;
+  navigator.clipboard.writeText(urlEl.textContent).then(() => toast('Link copiado'));
 }
 
 async function guardarConfigPagos() {
@@ -126,16 +184,16 @@ async function loadMesasConfig() {
   try {
     const mesas = await api('GET', '/api/mesas');
     if (!mesas.length) {
-      el.innerHTML = '<span style="font-size:12px;color:var(--muted)">Sin mesas configuradas</span>';
+      el.innerHTML = '<span style="font-size:0.857143rem;color:var(--muted)">Sin mesas configuradas</span>';
       return;
     }
     el.innerHTML = mesas.map(m => `
-      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:0.928571rem">
         <span style="font-weight:700">Mesa ${m.numero}</span>
-        <span style="color:var(--muted);font-size:11px">${m.capacidad} personas</span>
-        <button onclick="eliminarMesa(${m.id}, ${m.numero})" style="margin-left:4px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 2px" title="Eliminar">✕</button>
+        <span style="color:var(--muted);font-size:0.785714rem">${m.capacidad} personas</span>
+        <button onclick="eliminarMesa(${m.id}, ${m.numero})" style="margin-left:4px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.928571rem;padding:0 2px" title="Eliminar">✕</button>
       </div>`).join('');
-  } catch(e) { el.innerHTML = `<span style="color:var(--danger);font-size:12px">${e.message}</span>`; }
+  } catch(e) { el.innerHTML = `<span style="color:var(--danger);font-size:0.857143rem">${e.message}</span>`; }
 }
 
 async function crearMesa() {
@@ -162,12 +220,14 @@ async function eliminarMesa(id, numero) {
 // ── QR del menú ──────────────────────────────────────────
 let _qrInstance = null;
 
-function generarQR() {
+function generarQR(slug) {
   const wrap = document.getElementById('qr-canvas-wrap');
   const linkInput = document.getElementById('qr-link-input');
   if (!wrap) return;
 
-  const url = `${window.location.origin}/menu.html?restaurante=${session.restaurant_id}`;
+  const url = slug
+    ? `${window.location.origin}/${slug}`
+    : `${window.location.origin}/menu?restaurante=${session.restaurant_id}`;
   linkInput.value = url;
   wrap.innerHTML = '';
 
@@ -199,9 +259,12 @@ function descargarQR() {
 function generarQRsMesas() {
   const n = parseInt(document.getElementById('qr-num-mesas').value) || 10;
   const grid = document.getElementById('qr-mesas-grid');
+  const slug = document.getElementById('config-slug')?.value.trim() || null;
   grid.innerHTML = '';
   for (let i = 1; i <= n; i++) {
-    const url = `${window.location.origin}/menu.html?restaurante=${session.restaurant_id}&mesa=${i}`;
+    const url = slug
+      ? `${window.location.origin}/${slug}/${i}`
+      : `${window.location.origin}/menu?restaurante=${session.restaurant_id}&mesa=${i}`;
     const wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px';
 
@@ -212,7 +275,7 @@ function generarQRsMesas() {
     new QRCode(canvasWrap, { text: url, width: 110, height: 110, colorDark: '#1a1612', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
 
     const label = document.createElement('span');
-    label.style.cssText = 'font-size:12px;font-weight:700;color:var(--text)';
+    label.style.cssText = 'font-size:0.857143rem;font-weight:700;color:var(--text)';
     label.textContent = `Mesa ${i}`;
 
     const btn = document.createElement('button');
@@ -262,6 +325,35 @@ async function guardarMinutosPreparacion() {
   try {
     await api('PATCH', '/api/menu/config/minutos-preparacion', { minutos_preparacion: minutos });
     toast('Tiempo de preparación guardado');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function guardarMinutosCancelacionReserva() {
+  const minutos = parseInt(document.getElementById('cfg-minutos-cancelacion-reserva').value, 10);
+  if (isNaN(minutos) || minutos < 0 || minutos > 1440)
+    return toast('Ingresa un valor entre 0 y 1440 minutos', 'err');
+  try {
+    await api('PATCH', '/api/menu/config/minutos-cancelacion-reserva', { minutos_cancelacion_reserva: minutos });
+    toast('Ventana de cancelación guardada');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function guardarHorarioAtencion() {
+  const horario_activo = document.getElementById('cfg-horario-activo').checked;
+  const hora_apertura  = document.getElementById('cfg-hora-apertura').value;
+  const hora_cierre    = document.getElementById('cfg-hora-cierre').value;
+  const dias_atencion  = [...document.querySelectorAll('.cfg-dia-check:checked')].map(chk => Number(chk.value));
+
+  if (!hora_apertura || !hora_cierre)
+    return toast('Ingresa la hora de apertura y cierre', 'err');
+  if (hora_apertura >= hora_cierre)
+    return toast('La hora de apertura debe ser anterior a la de cierre', 'err');
+  if (!dias_atencion.length)
+    return toast('Selecciona al menos un día de atención', 'err');
+
+  try {
+    await api('PATCH', '/api/menu/config/horario', { horario_activo, hora_apertura, hora_cierre, dias_atencion });
+    toast('Horario de atención guardado');
   } catch(e) { toast(e.message, 'err'); }
 }
 

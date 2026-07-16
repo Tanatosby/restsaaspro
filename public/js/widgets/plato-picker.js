@@ -3,10 +3,19 @@
  * Widget reutilizable autocontenido. Hereda tokens del tema con fallbacks.
  * Mobile-first: touch targets ≥44px, scroll vertical en grilla, Esc cierra.
  *
- * Uso:
+ * Uso (modo simple — un plato y cierra):
  *   PlatoPicker.open({
  *     platos:   [...],              // array de { id, nombre, url_foto, descripcion? }
  *     onSelect: (plato) => { ... } // callback con el objeto plato elegido
+ *   });
+ *
+ * Uso (modo multi — flujo v2: marcar/desmarcar varios y confirmar una vez):
+ *   PlatoPicker.open({
+ *     platos:      [...],
+ *     multi:       true,
+ *     selectedIds: [1, 5],           // pre-marcados (los ya asignados a la sección)
+ *     title:       'Platos para «Segundo»',
+ *     onConfirm:   (ids) => { ... }  // array final de ids seleccionados
  *   });
  *   PlatoPicker.close();
  */
@@ -16,6 +25,8 @@
 
   let overlay = null;
   let current = null;
+  let sel = new Set();      // selección viva (modo multi)
+  let inicial = new Set();  // selección al abrir (para el label "N nuevos · quitar M")
 
   const STYLE = `
 .pp-overlay {
@@ -50,7 +61,7 @@
   font-weight: 700; font-size: 1.1rem;
 }
 .pp-close {
-  background: none; border: none; font-size: 20px; cursor: pointer;
+  background: none; border: none; font-size:1.428571rem; cursor: pointer;
   color: var(--muted, #888);
   min-width: 44px; min-height: 44px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -65,7 +76,7 @@
   border: 1px solid var(--border, rgba(0,0,0,.15));
   border-radius: 8px;
   padding: 0 0.75rem;
-  font-size: 16px;
+  font-size:1.142857rem;
   height: 44px;
   background: var(--bg, #f5f1ed);
   color: var(--text, #1a1410);
@@ -74,7 +85,8 @@
 .pp-search:focus { border-color: var(--accent, #c8692a); }
 .pp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-auto-rows: min-content;
   gap: 0.75rem;
   padding: 0.75rem 1.25rem 1.25rem;
   overflow-y: auto;
@@ -96,31 +108,64 @@
 .pp-card:hover { border-color: var(--accent, #c8692a); box-shadow: 0 2px 10px rgba(200,105,42,.15); }
 .pp-card:active { transform: scale(.97); }
 .pp-img {
-  width: 80px; height: 80px;
+  width: 100px; height: 100px;
   border-radius: var(--r, 10px);
   object-fit: cover;
   display: block;
 }
 .pp-placeholder {
-  width: 80px; height: 80px;
+  width: 100px; height: 100px;
   border-radius: var(--r, 10px);
   background: var(--surface, #eee);
   display: flex; align-items: center; justify-content: center;
-  font-size: 28px; color: var(--muted, #aaa);
+  font-size:2.285714rem; color: var(--muted, #aaa);
   border: 1px solid var(--border, rgba(0,0,0,.1));
 }
 .pp-name {
-  font-size: 12px; font-weight: 600;
+  font-size:0.857143rem; font-weight: 600;
   color: var(--text, #1a1410);
   line-height: 1.3;
-  max-width: 110px;
+  max-width: 130px;
   word-break: break-word;
 }
 .pp-empty {
   grid-column: 1 / -1;
   text-align: center; padding: 2rem;
-  color: var(--muted, #888); font-size: 13px;
+  color: var(--muted, #888); font-size:0.928571rem;
 }
+/* ── Modo multi-selección ── */
+.pp-card { position: relative; }
+.pp-card.sel {
+  border-color: var(--accent, #c8692a);
+  background: var(--accent-glow-soft, rgba(200,105,42,.08));
+}
+.pp-check {
+  position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--accent, #c8692a); color: #fff;
+  font-size:0.928571rem; line-height: 22px; text-align: center; display: none;
+}
+.pp-card.sel .pp-check { display: block; }
+.pp-ya {
+  position: absolute; top: 6px; left: 6px; font-size:0.678571rem; font-weight: 700;
+  color: var(--muted, #888); background: var(--surface, #fff);
+  border: 1px solid var(--border, rgba(0,0,0,.1));
+  border-radius: 6px; padding: 2px 5px;
+}
+.pp-count { font-size:0.928571rem; font-weight: 700; color: var(--accent, #c8692a); white-space: nowrap; }
+.pp-foot {
+  display: none; flex-shrink: 0;
+  padding: 10px 1.25rem calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border, rgba(0,0,0,.1));
+  background: var(--surface, #fff);
+}
+.pp-foot.show { display: block; }
+.pp-confirm {
+  width: 100%; min-height: 48px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--accent, #c8692a);
+  background: var(--accent, #c8692a); color: #fff;
+  font-size:1.071429rem; font-weight: 700;
+}
+.pp-confirm:active { transform: scale(.99); }
 `;
 
   function injectStyle() {
@@ -143,12 +188,16 @@
       <div class="pp-sheet">
         <div class="pp-header">
           <span class="pp-title">Elegir plato</span>
+          <span class="pp-count"></span>
           <button class="pp-close" aria-label="Cerrar">✕</button>
         </div>
         <div class="pp-search-wrap">
           <input class="pp-search" type="search" placeholder="Buscar plato…" autocomplete="off" aria-label="Buscar plato">
         </div>
         <div class="pp-grid"></div>
+        <div class="pp-foot">
+          <button class="pp-confirm">Listo ✓</button>
+        </div>
       </div>
     `;
 
@@ -156,6 +205,12 @@
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
     overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
     overlay.querySelector('.pp-search').addEventListener('input', (e) => renderCards(e.target.value.trim()));
+    overlay.querySelector('.pp-confirm').addEventListener('click', () => {
+      const cb = current && current.onConfirm;
+      const ids = [...sel];
+      close();
+      if (cb) cb(ids);
+    });
 
     document.body.appendChild(overlay);
   }
@@ -171,8 +226,11 @@
       return;
     }
 
+    const multi = !!current.multi;
     grid.innerHTML = filtered.map(p => `
-      <button class="pp-card" data-id="${p.id}" aria-label="${esc(p.nombre)}">
+      <button class="pp-card ${multi && sel.has(p.id) ? 'sel' : ''}" data-id="${p.id}" aria-label="${esc(p.nombre)}">
+        ${multi && inicial.has(p.id) ? '<span class="pp-ya">ya asignado</span>' : ''}
+        ${multi ? '<span class="pp-check">✓</span>' : ''}
         ${p.url_foto
           ? `<img class="pp-img" src="${p.url_foto}" alt="${esc(p.nombre)}" loading="lazy">`
           : `<div class="pp-placeholder">🍽️</div>`}
@@ -182,11 +240,31 @@
 
     grid.querySelectorAll('.pp-card').forEach(btn => {
       btn.addEventListener('click', () => {
-        const plato = platos.find(p => p.id === Number(btn.dataset.id));
+        const id = Number(btn.dataset.id);
+        if (multi) {
+          // Marcar/desmarcar sin cerrar — se confirma todo junto en el footer
+          sel.has(id) ? sel.delete(id) : sel.add(id);
+          btn.classList.toggle('sel', sel.has(id));
+          updateFooter();
+          return;
+        }
+        const plato = platos.find(p => p.id === id);
         if (plato && current.onSelect) current.onSelect(plato);
         close();
       });
     });
+  }
+
+  // Contador del header + label dinámico del botón de confirmación (modo multi)
+  function updateFooter() {
+    if (!overlay || !current || !current.multi) return;
+    overlay.querySelector('.pp-count').textContent = sel.size ? `${sel.size} ✓` : '';
+    const nuevos   = [...sel].filter(id => !inicial.has(id)).length;
+    const quitados = [...inicial].filter(id => !sel.has(id)).length;
+    const partes = [];
+    if (nuevos)   partes.push(`${nuevos} nuevo${nuevos > 1 ? 's' : ''}`);
+    if (quitados) partes.push(`quitar ${quitados}`);
+    overlay.querySelector('.pp-confirm').textContent = partes.length ? `Guardar (${partes.join(' · ')}) ✓` : 'Listo ✓';
   }
 
   function esc(str) {
@@ -196,8 +274,13 @@
   function open(opts) {
     buildDOM();
     current = opts;
+    sel     = new Set(opts.multi ? (opts.selectedIds || []) : []);
+    inicial = new Set(sel);
+    overlay.querySelector('.pp-title').textContent = opts.title || (opts.multi ? 'Elegir platos' : 'Elegir plato');
+    overlay.querySelector('.pp-foot').classList.toggle('show', !!opts.multi);
     overlay.querySelector('.pp-search').value = '';
     renderCards('');
+    updateFooter();
     overlay.classList.add('open');
     overlay.querySelector('.pp-search').focus();
   }
@@ -206,6 +289,7 @@
     if (!overlay) return;
     overlay.classList.remove('open');
     current = null;
+    sel = new Set(); inicial = new Set();
   }
 
   window.PlatoPicker = { open, close };

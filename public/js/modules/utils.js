@@ -32,3 +32,22 @@ const setErr   = (id, msg) => { const el = document.getElementById(id); el.textC
 function emptyState(icon, text) {
   return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div></div>`;
 }
+
+// ── Comprobante de pago (foto) — compartido por ordenes.js/reservas.js/pedidos.js ──
+// No usar <a target="_blank">: dentro de la PWA instalada (standalone) rompe la
+// app en iOS/Android al intentar abrir una pestaña nueva. Se abre en modal in-app.
+function comprobanteThumb(x) {
+  if (!x.comprobante_url) return '';
+  return `<div style="margin-top:6px" onclick="verComprobante('${esc(x.comprobante_url)}')">
+    <img src="${esc(x.comprobante_url)}" alt="Comprobante" title="Ver comprobante" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer">
+  </div>`;
+}
+function verComprobante(url) {
+  document.getElementById('comprobante-modal-img').src = url;
+  document.getElementById('comprobante-modal').classList.add('show');
+}
+function cerrarComprobante(event) {
+  if (event && event.currentTarget && event.target !== event.currentTarget) return;
+  document.getElementById('comprobante-modal').classList.remove('show');
+  document.getElementById('comprobante-modal-img').src = '';
+}

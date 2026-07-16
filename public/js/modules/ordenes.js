@@ -7,17 +7,17 @@
 function badgeModalidad(modalidad) {
   if (!modalidad || modalidad === 'en_local') return '';
   if (modalidad === 'para_llevar')
-    return `<span style="font-size:11px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:20px;font-weight:600">🥡 Para llevar</span>`;
+    return `<span style="font-size:0.785714rem;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:20px;font-weight:600">🥡 Para llevar</span>`;
   if (modalidad === 'delivery')
-    return `<span style="font-size:11px;background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:20px;font-weight:600">🛵 Delivery</span>`;
+    return `<span style="font-size:0.785714rem;background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:20px;font-weight:600">🛵 Delivery</span>`;
   return '';
 }
 
 function badgePago(o) {
   if (!o.metodo_pago) return '';
   const metodoLabel = { yape: '💚 Yape', plin: '🔵 Plin', efectivo: '💵 Efectivo' }[o.metodo_pago] || o.metodo_pago;
-  if (o.estado_pago === 'confirmado') return `<span style="font-size:11px;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-weight:600">${metodoLabel} · ✓ Confirmado</span>`;
-  if (o.estado_pago === 'enviado')    return `<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-weight:600">${metodoLabel} · Pendiente confirmación</span>`;
+  if (o.estado_pago === 'confirmado') return `<span style="font-size:0.785714rem;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-weight:600">${metodoLabel} · ✓ Confirmado</span>`;
+  if (o.estado_pago === 'enviado')    return `<span style="font-size:0.785714rem;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-weight:600">${metodoLabel} · Pendiente confirmación</span>`;
   return '';
 }
 
@@ -88,18 +88,22 @@ function renderOrdenCard(o, withActions) {
     `<div class="order-item-line">📋 [${esc(i.seccion)}] ${esc(i.plato)} x${i.cantidad}</div>`
   ).join('');
 
-  const comprobanteHtml = o.comprobante_url
-    ? `<div style="margin-top:6px"><a href="${o.comprobante_url}" target="_blank" title="Ver comprobante"><img src="${o.comprobante_url}" alt="Comprobante" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer"></a></div>`
-    : '';
+  const comprobanteHtml = comprobanteThumb(o);
 
   const paraLlevar = o.modalidad === 'para_llevar';
+  // Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante
+  // antes de poder cobrar/completar (el backend también lo bloquea).
+  const requiereConfirmar = ['yape', 'plin'].includes(o.metodo_pago) && o.estado_pago !== 'confirmado';
+  const btnCobrar = (label, flag) => requiereConfirmar
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoOrden(${o.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'${flag}')">${label}</button>`;
   const actions = withActions ? `
     <div class="order-actions">
       ${o.es_inicial   ? `<button class="btn btn-primary btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_en_cocina')">→ Preparando</button>` : ''}
       ${o.es_en_cocina ? `<button class="btn btn-primary btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_listo')">→ Listo</button>` : ''}
       ${o.es_listo && !paraLlevar ? `<button class="btn btn-primary btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_entregado')">🍽 Entregar</button>` : ''}
-      ${o.es_listo && paraLlevar  ? `<button class="btn btn-success btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_pagado')">💰 Cobrar</button>` : ''}
-      ${o.es_entregado ? `<button class="btn btn-success btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_pagado')">✓ Completado</button>` : ''}
+      ${o.es_listo && paraLlevar  ? btnCobrar('💰 Cobrar', 'es_pagado') : ''}
+      ${o.es_entregado ? btnCobrar('✓ Completado', 'es_pagado') : ''}
       <button class="btn btn-danger" onclick="cambiarEstatusOrdenFlag(${o.id},'es_cancelado')">Cancelar</button>
     </div>` : '';
 
@@ -108,8 +112,8 @@ function renderOrdenCard(o, withActions) {
       <div class="order-card-header">
         <div>
           <strong>#${o.numero_dia ?? o.id}</strong>
-          ${o.mesa ? `<span style="font-size:12px;color:var(--muted)"> · Mesa ${o.mesa}</span>` : ''}
-          ${o.nombre_cliente ? `<span style="font-size:12px;color:var(--muted)"> · ${esc(o.nombre_cliente)}</span>` : ''}
+          ${o.mesa ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${o.mesa}</span>` : ''}
+          ${o.nombre_cliente ? `<span style="font-size:0.857143rem;color:var(--muted)"> · ${esc(o.nombre_cliente)}</span>` : ''}
           ${badgeModalidad(o.modalidad)}
         </div>
         ${badgeEst(o.estatus)}
@@ -128,6 +132,14 @@ async function cambiarEstatusOrden(id, estatus) {
   try {
     await api('PATCH', `/api/orders/${id}/estatus`, { estatus });
     toast(`Orden #${id} → ${estatus}`);
+    loadOrdenesActivas();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function confirmarPagoOrden(id) {
+  try {
+    await api('PATCH', `/api/orders/${id}/confirmar-pago`);
+    toast(`Pago de la orden #${id} confirmado ✓`);
     loadOrdenesActivas();
   } catch(e) { toast(e.message, 'err'); }
 }

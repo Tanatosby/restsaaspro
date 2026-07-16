@@ -33,6 +33,11 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
+// El servidor corre detrás de Nginx (proxy_pass), que agrega X-Forwarded-For.
+// Sin esto, express-rate-limit no puede identificar la IP real del cliente
+// y tira ERR_ERL_UNEXPECTED_X_FORWARDED_FOR en cada request. Ver deploy.md §6.2.
+app.set('trust proxy', 1);
+
 // Seguridad: headers HTTP
 app.use(helmet({
   contentSecurityPolicy: {
@@ -65,6 +70,17 @@ app.use(logger);
 app.use(express.json());
 app.use(cookieParser());
 
+// /uploads (fotos de platos, comprobantes, portada) usa nombres versionados
+// con Date.now() en cada subida (ver ISS-015/comentario en routes/menu.js) —
+// una URL nunca cambia de contenido, así que cachearla "para siempre" en el
+// navegador es seguro y evita re-descargar cada foto en cada carga de página.
+// El resto de /public (owner.html, menu.html, JS, CSS) NO lleva max-age
+// acá — deben revalidarse en cada visita para no quedar desactualizados
+// (ISS-022 ya cubre el caso del Service Worker instalado).
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
+  maxAge: '1y',
+  immutable: true,
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 // Screenshots del bot para los manuales (fuera de public/)
 app.use('/bot-screenshots', express.static(path.join(__dirname, 'landing', 'bot', 'output', 'screenshots')));
@@ -115,8 +131,28 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
 });
 
+// Rutas por slug: /:slug y /:slug/:mesa
+// Se resuelven aquí, después de todas las rutas fijas, para no interferir.
+app.get('/:slug/:mesa', (req, res, next) => {
+  const { slug, mesa } = req.params;
+  if (!/^\d+$/.test(mesa)) return next();
+  const db = require('./config/database');
+  const rest = db.prepare(`SELECT id FROM restaurantes WHERE slug = ? AND activo = 1`).get(slug);
+  if (!rest) return next();
+  res.redirect(`/menu?restaurante=${rest.id}&mesa=${mesa}`);
+});
+
+app.get('/:slug', (req, res, next) => {
+  const { slug } = req.params;
+  const db = require('./config/database');
+  const rest = db.prepare(`SELECT id FROM restaurantes WHERE slug = ? AND activo = 1`).get(slug);
+  if (!rest) return next();
+  res.redirect(`/menu?restaurante=${rest.id}`);
+});
+
 app.use((err, req, res, next) => {
-  console.error(`[ERROR] ${err.message}`);
+  console.error(`[ERROR] ${req.method} ${req.originalUrl} → ${err.message}`);
+  console.error(err.stack);
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
