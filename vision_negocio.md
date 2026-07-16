@@ -265,6 +265,7 @@ El dueño define su política (configurable por restaurante):
 6. **Módulos sobre monolito**: la lógica JS vive en archivos de módulo separados (`public/js/modules/`). `owner.html` es un orquestador delgado. Cada feature nueva nace como módulo propio.
 7. **CSS custom ahora, Tailwind en producción**: todo el proyecto usa CSS custom extraído a `public/css/owner.css`. La migración a Tailwind es progresiva — módulo por módulo — durante las primeras semanas en producción. Los features nuevos del cliente (menu.html y nuevas páginas) pueden adoptar Tailwind antes.
 8. **Zonas visuales por estado**: las vistas de pedidos activos (órdenes + reservas) se organizan en zonas/columnas por fase (Pendientes → En Cocina → Listos → Cliente llegó → Cobrar). En móvil: tabs con badge de cantidad. Elimina la necesidad de leer estado por estado en una lista — el personal ve de un vistazo qué hay en cada etapa.
+9. **Transparencia sobre IA** *(anotado 2026-07-16)*: la landing pública debe decir en algún lugar visible que la aplicación fue desarrollada con Inteligencia Artificial, pero diseñada y monitoreada por una persona — no ocultar cómo se construye el producto ni tampoco dar la impresión de que no hay una persona detrás validando el trabajo. Copy concreto pendiente de redactar — ver entrada en `features.md`.
 
 ---
 
@@ -326,6 +327,8 @@ En orden de impacto:
 | 18 | Horario de atención configurable y estricto | Medio | Baja | Pendiente — ver detalle abajo |
 | 19 | Cola del día: cancelar pedido + mostrar todos los datos (modalidad) | **Alto** | Baja | Pendiente — ver detalle abajo |
 | 20 | Módulo Pensionistas (saldo prepagado + login propio) | Medio | Alta | Anotado 2026-07-15 — ver detalle abajo y `pensionistas.md` |
+| 21 | Notificaciones push ampliadas (más allá de "hora de preparar") | **Alto** | Media | Anotado 2026-07-16 — confirmado por piloto #1 (ver `pilotos.md`) y `issues/ISS-025-push-no-llega.md` — ver detalle abajo |
+| 22 | Aceptación de Términos y Condiciones (consentimiento de datos + disclosure de IA) | Medio | Baja-Media | Anotado 2026-07-16 — ver detalle abajo |
 
 > **Nota flujo Caso B reservas (sin pago anticipado):** el cliente llega sin haber pagado → mozo marca `es_cliente_llego` y asigna mesa → envía a cocina manualmente → flujo normal → cobra al final → `es_full`. La UI mostrará badge "⚠️ Sin pago" en la tarjeta para que el mozo lo identifique.
 
@@ -439,6 +442,39 @@ consumiendo ese saldo pedido a pedido, sin pasar por ningún flujo de pago (Yape
 `pensionistas.md` sección 11): si el saldo insuficiente bloquea el pedido o permite negativo
 ("fiado"); si el pensionista puede pedir cualquier plato del menú o el owner puede restringirlo;
 si la recarga de saldo la puede hacer solo el owner o también un mozo con permiso.
+
+**Gap 21 — Notificaciones push ampliadas** *(anotado 2026-07-16, sin implementar)*
+
+Hoy el push (`utils/autoPreparacion.js` + `public/sw.js`) **solo** se dispara en un momento: "hora de
+preparar" (X minutos antes de la `hora_llegada` de una reserva confirmada). No existe ningún push para
+otros eventos operativos. El restaurante piloto #1 esperaba un aviso tipo WhatsApp/Temu (suena + aparece
+en pantalla con el celular sin usar) apenas pasa algo relevante — ver `pilotos.md` y
+`issues/ISS-025-push-no-llega.md` para el diagnóstico completo.
+
+**Alcance decidido con el usuario (2026-07-16) — 2 notificaciones nuevas:**
+1. **Orden o reserva nueva**: push apenas se crea una orden walk-in o una reserva, para que el owner/mozo se entere en tiempo real (tipo WhatsApp), sin depender de tener `owner.html` abierto.
+2. **Recordatorio de menú sin configurar, cada 8 horas**: aviso periódico si el restaurante no tiene el menú del día de hoy configurado — apunta directo al patrón visto en el piloto #1 (no configuró el menú y no hay ningún recordatorio activo hoy).
+
+Ambas siempre condicionadas a que el dispositivo haya dado permiso de notificaciones — si no lo dio, simplemente no se envía nada, igual que el comportamiento actual de "hora de preparar".
+
+**Otros candidatos evaluados, fuera de alcance por ahora:** comprobante de pago pendiente de confirmar, plato listo en cocina (aviso al mozo). Quedan anotados para una futura vuelta si hace falta.
+
+Pendiente (relacionado pero separado): agregar feedback visible en Configuración sobre el estado de la
+suscripción push (activa/denegada/sin configurar), hoy 100% silenciosa (ver `ISS-025`).
+
+**Gap 22 — Aceptación de Términos y Condiciones (consentimiento de datos + disclosure de IA)** *(anotado 2026-07-16, sin implementar)*
+
+Antes de operar, el owner debe aceptar explícitamente unos Términos y Condiciones que cubran dos cosas:
+1. **Consentimiento de datos**: autorización para recopilar y almacenar los datos del restaurante (menú, precios, platos, pedidos, clientes, etc. — lo que el sistema ya guarda hoy).
+2. **Disclosure de IA**: aviso de que la aplicación fue desarrollada con Inteligencia Artificial, con ayuda funcional de una persona en el diseño y la ingeniería de prompts.
+
+Es un punto de contacto distinto (y activo) del principio 9 de la sección 11 — ese es copy pasivo en la landing pública; este gap es un **checkbox/pantalla de aceptación real** que el owner debe confirmar, probablemente en el alta del restaurante o en el primer login.
+
+**Decisiones pendientes de validar antes de implementar:**
+- ¿Dónde vive el checkbox — registro inicial del restaurante, primer login del owner, o ambos?
+- ¿Se requiere re-aceptación si el texto de los T&C cambia más adelante (versión de T&C)?
+- ¿Aplica solo al owner, o también a mozo/cocinero al crear su usuario?
+- Texto legal completo — a redactar.
 
 ---
 

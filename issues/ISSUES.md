@@ -16,7 +16,9 @@ _(vacío)_
 
 ## Fix pendiente (diagnosticado, sin implementar)
 
-_(vacío)_
+| ID | Título | Módulo | Prioridad |
+|----|--------|--------|-----------|
+| [ISS-025](ISS-025-push-no-llega.md) | Notificaciones push no llegan / no existe aviso de "pedido nuevo" | `sw.js`, `push.js`, `autoPreparacion.js` | 🟡 Media-Alta |
 
 ## Resueltos
 

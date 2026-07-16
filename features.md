@@ -2,6 +2,37 @@
 
 ## Pendientes
 
+### Notificaciones push ampliadas (Gap 21)
+*Anotado 2026-07-16, pendiente de implementar. Ver Gap 21 en `vision_negocio.md`, `pilotos.md` y `issues/ISS-025-push-no-llega.md`.*
+
+Confirmado por el piloto #1: hoy el push solo existe para "hora de preparar" (`utils/autoPreparacion.js`).
+Alcance decidido con el usuario — 2 notificaciones nuevas:
+1. Push al crearse una orden walk-in o una reserva nueva (tiempo real, tipo WhatsApp).
+2. Recordatorio cada 8 horas si el menú del día de hoy no está configurado.
+
+Ambas condicionadas al permiso de notificaciones del dispositivo (si no se otorgó, no se envía nada, igual
+que el comportamiento actual). Pendiente de armar TODO técnico antes de implementar — ver conversación con
+el usuario para el detalle de arquitectura propuesta.
+
+### Landing — disclosure de transparencia sobre IA
+*Anotado 2026-07-16, pendiente de implementar.*
+
+`public/landing.html` debe decir en algún lugar visible que la aplicación fue desarrollada con
+Inteligencia Artificial, pero diseñada y monitoreada por una persona. Ver principio 9 en
+`vision_negocio.md` sección 11. Copy concreto y ubicación (¿footer? ¿sección "Quién lo hace"?) pendientes
+de definir.
+
+### Aceptación de Términos y Condiciones (consentimiento de datos + disclosure de IA)
+*Anotado 2026-07-16, pendiente de implementar. Ver Gap 22 en `vision_negocio.md`.*
+
+Distinto del punto anterior (que es copy pasivo en la landing pública): acá el owner debe **aceptar
+activamente** unos Términos y Condiciones antes de operar, que cubran (1) consentimiento para la
+recopilación de datos del restaurante y (2) aviso de que la app fue desarrollada con Inteligencia
+Artificial, con ayuda funcional de una persona en el diseño y la ingeniería de prompts. Quedan sin
+definir: dónde vive el checkbox (registro vs. primer login), si aplica también a mozo/cocinero, si se
+requiere re-aceptación ante cambios de los términos, y el texto legal completo — ver detalle en
+`vision_negocio.md`.
+
 ### Módulo Pensionistas (saldo prepagado + login propio)
 *Anotado 2026-07-15, pendiente de implementar. Ver Gap 20 en `vision_negocio.md` y análisis completo en `pensionistas.md`.*
 

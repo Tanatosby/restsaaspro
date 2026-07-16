@@ -2,6 +2,45 @@
 
 ---
 
+## ✅ Sesión 2026-07-16 — Documentación: primera experiencia piloto + `pilotos.md` (nuevo)
+
+**Prompt:** el usuario contó que el restaurante piloto #1 usó la app lunes y martes (13-14 de julio), se
+quejó de que era difícil y dejó de usarla miércoles/jueves. Pidió opinión, documentarlo, y qué dudas
+plantear. En mensajes siguientes agregó quejas concretas (letra chica, sin notificaciones tipo
+WhatsApp/Temu, lentitud, botón de pago no se veía) y el timeline completo desde el primer contacto
+(2026-07-02).
+
+**Análisis:** cruzando el timeline contra `status.md`/`issues/` ya existentes, casi todas las quejas
+coinciden con bugs reales activos exactamente esos días: `ISS-018` (botón de pago sin scroll, resuelto el
+mismo 13 de julio que ella empezó), tamaño de letra ajustable (no existía hasta el 14), `ISS-023` (Cola
+lenta en horas pico, resuelto el 14). Hallazgo clave: `ISS-022` (Service Worker con caché desactualizado
+desde el 29 de mayo, resuelto el 14) requiere que el usuario cierre y reabra la PWA una vez para ver
+cualquier fix — nadie se lo indicó a ella, por lo que es probable que **nunca haya visto la versión
+corregida** durante sus 2 días de prueba. Reencuadre: no parece resistencia al cambio pura, sino una prueba
+real hecha en el peor momento posible, con fixes que pudieron no haberle llegado al celular.
+
+Sobre notificaciones: confirmado en código que el push **solo** existe para "hora de preparar" (X min antes
+de una reserva confirmada, `utils/autoPreparacion.js`) — no hay ningún push al crear un pedido/reserva
+nuevo, que es lo que ella parece esperar (comparación con WhatsApp/Temu). Además la suscripción push es
+100% silenciosa (`owner.html`, sin feedback visible, catch vacío) — imposible saber desde la UI si está
+activa, denegada, o si faltan las VAPID keys de producción.
+
+**Documentación creada/actualizada:**
+- `pilotos.md` (nuevo) — timeline completo, tabla de quejas cruzadas contra estado técnico real,
+  reencuadre, aprendizajes para pilotos futuros, plantilla para próximos pilotos.
+- `issues/ISS-025-push-no-llega.md` (nuevo) — diagnóstico de por qué no llega el push (trigger inexistente
+  + suscripción silenciosa), decisión de producto pendiente (¿agregar push de "pedido nuevo"?).
+- `issues/ISSUES.md` — nueva sección "Fix pendiente" con ISS-025.
+
+**Pendiente (no requiere código todavía):**
+- Volver a hablar con la dueña y forzar cierre+reapertura (o reinstalo) de la PWA antes de cualquier
+  conclusión sobre su interés real.
+- Confirmar VAPID keys reales cargadas en el `.env` de producción.
+- Decidir con el usuario si se construye el push de "pedido/reserva nueva" (gap de producto nuevo).
+- Sin cambios de código en esta sesión.
+
+---
+
 ## ✅ Sesión 2026-07-15 — Análisis: módulo Pensionistas (documentación, sin implementar)
 
 **Prompt:** el usuario quiere un nuevo módulo para que los restaurantes asignen pensionistas — comensales
