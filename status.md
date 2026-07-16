@@ -2,6 +2,36 @@
 
 ---
 
+## ✅ Sesión 2026-07-15 — Análisis: módulo Pensionistas (documentación, sin implementar)
+
+**Prompt:** el usuario quiere un nuevo módulo para que los restaurantes asignen pensionistas — comensales
+recurrentes que pagan por adelantado (semana/mes) y consumen contra ese pago. Pidió primero un análisis
+arquitectónico en `pensionistas.md`, sin implementar. En una segunda vuelta afinó el diseño: saldo en
+**dinero** (no menús contados), gestión desde un módulo nuevo del owner "Pensionistas" (como crear
+usuarios, pero sin selector de rol), el pensionista tiene **login propio** para pedir, sus pedidos van
+en un espacio separado de Órdenes/Reservas pero aparecen con **tag "Pensionista"** (nombre y apellido
+visibles) en Cola del día y Cocina.
+
+**Análisis completo en `pensionistas.md` (nuevo).** Puntos clave de la arquitectura propuesta:
+- Rol nuevo `pensionista` en la tabla `roles`, reutilizando el JWT/login/cookie existente
+  (`routes/auth.js`, `middleware/authenticate.js`) — no se construye un sistema de auth paralelo.
+- 3 tablas nuevas: `pensionistas` (extiende `usuarios` 1-a-1 con apellido/teléfono/saldo),
+  `pensionista_movimientos` (ledger de recargas/consumos, evita disputas de "yo recargué y no aparece"),
+  `pedidos_pensionista` + items (deliberadamente separada de `ordenes`/`reservas`).
+- Cola del día y Cocina pasan de unificar 2 fuentes a 3 (`ordenes` + `reservas` + `pedidos_pensionista`),
+  con tag visual distintivo.
+- Reportería separada: recargas (ingreso real) vs. consumo (gasto del saldo ya cobrado), para no
+  contar el mismo dinero dos veces en "Ganancias".
+- Quedan 5 preguntas de negocio sin responder (documentadas en `pensionistas.md` §11) — la más
+  importante: ¿saldo insuficiente bloquea el pedido o se permite negativo ("fiado")?
+
+**Documentación actualizada:** `vision_negocio.md` (Gap 20, nuevo), `features.md` (entrada en Pendientes).
+
+**Pendiente:** decisión del usuario sobre las preguntas abiertas antes de armar el TODO list de
+implementación. Sin cambios de código en esta sesión.
+
+---
+
 ## ✅ Sesión 2026-07-14 (parte 5) — ISS-023 + ISS-024: lentitud en horas pico
 
 **Prompt:** el usuario reportó lentitud al reabrir la app, notada especialmente con varios pedidos/en horas pico, más lentitud aparte al cargar imágenes del menú. Pidió poder auditar con una carga masiva simulada en vez de adivinar.

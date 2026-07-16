@@ -325,6 +325,7 @@ En orden de impacto:
 | 17 | ~~Pago obligatorio antes de crear la orden/reserva~~ | ~~Alto~~ | ~~Media~~ | ✅ Completado 2026-07-13 — ver detalle abajo |
 | 18 | Horario de atención configurable y estricto | Medio | Baja | Pendiente — ver detalle abajo |
 | 19 | Cola del día: cancelar pedido + mostrar todos los datos (modalidad) | **Alto** | Baja | Pendiente — ver detalle abajo |
+| 20 | Módulo Pensionistas (saldo prepagado + login propio) | Medio | Alta | Anotado 2026-07-15 — ver detalle abajo y `pensionistas.md` |
 
 > **Nota flujo Caso B reservas (sin pago anticipado):** el cliente llega sin haber pagado → mozo marca `es_cliente_llego` y asigna mesa → envía a cocina manualmente → flujo normal → cobra al final → `es_full`. La UI mostrará badge "⚠️ Sin pago" en la tarjeta para que el mozo lo identifique.
 
@@ -411,6 +412,33 @@ Antes no existía ningún control de horario de atención — un cliente podía 
 **Gap 19 — Cola del día: cancelar pedido + mostrar todos los datos** *(anotado 2026-07-13, cerrado 2026-07-14)*
 
 La modalidad (`badgeModalidad()`) ya se mostraba en las tarjetas de la Cola. Faltaba cancelar directo desde ahí sin entrar a los paneles separados de Órdenes/Reservas — agregado botón "✗ Cancelar" en `renderKanbanOrden()`/`renderKanbanReserva()`, reutilizando `accionRapidaOrden()`/`accionRapidaReserva()` (mismo endpoint `PATCH /:id/estatus` con flag `es_cancelado` que ya usan Órdenes/Reservas — la devolución de stock ya la maneja el backend, sin cambios). Mismo criterio de visibilidad que esos paneles: en órdenes siempre disponible; en reservas se oculta una vez que el cliente ya llegó o la reserva ya se completó.
+
+**Gap 20 — Módulo Pensionistas (saldo prepagado + login propio)** *(anotado 2026-07-15, sin implementar)*
+
+Un pensionista es un comensal recurrente al que el restaurante le administra un **saldo prepagado
+en dinero** (no menús contados) — paga por adelantado (semana/mes, a criterio del restaurante) y va
+consumiendo ese saldo pedido a pedido, sin pasar por ningún flujo de pago (Yape/Plin/Efectivo).
+
+**Piezas centrales del diseño (análisis completo en `pensionistas.md`):**
+- El owner da de alta al pensionista desde un módulo nuevo ("Pensionistas", separado del panel
+  "Usuarios") indicando nombre, apellido, teléfono, credenciales de login y saldo inicial.
+- El pensionista tiene **login propio** — reutiliza el sistema de auth existente (JWT + rol nuevo
+  `pensionista` en la tabla `roles`) en vez de construir un sistema paralelo. Entra a una pantalla
+  mobile-first propia (`pensionista.html`), pide del menú del día/carta del restaurante, y el
+  sistema descuenta el total de su saldo automáticamente — sin pantalla de pago.
+- Sus pedidos viven en una **tabla y flujo completamente separados** de `ordenes` y `reservas`
+  (`pedidos_pensionista`) — nunca se confunden con el pedido de una mesa walk-in. Pero sí aparecen
+  **en la Cola del día y en Cocina**, unificados junto con órdenes y reservas, con un tag visual
+  distintivo ("🪪 Pensionista") mostrando nombre y apellido completo — el personal necesita
+  ubicarlos igual que a cualquier otro pedido activo.
+- Reportería: las recargas de saldo (dinero real entrando) y el consumo (gasto del saldo ya
+  cobrado) se reportan por separado de "Ganancias" de órdenes/reservas, para no contar el mismo
+  dinero dos veces.
+
+**Decisiones pendientes de validar con el usuario antes de implementar** (detalle en
+`pensionistas.md` sección 11): si el saldo insuficiente bloquea el pedido o permite negativo
+("fiado"); si el pensionista puede pedir cualquier plato del menú o el owner puede restringirlo;
+si la recarga de saldo la puede hacer solo el owner o también un mozo con permiso.
 
 ---
 

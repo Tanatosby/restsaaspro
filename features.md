@@ -2,6 +2,19 @@
 
 ## Pendientes
 
+### Módulo Pensionistas (saldo prepagado + login propio)
+*Anotado 2026-07-15, pendiente de implementar. Ver Gap 20 en `vision_negocio.md` y análisis completo en `pensionistas.md`.*
+
+Comensales recurrentes con saldo prepagado en dinero, administrado por el owner. El pensionista
+tiene login propio (nuevo rol `pensionista`, reutiliza el JWT/auth existente) y pide desde una
+pantalla mobile-first dedicada (`pensionista.html`) sin pasar por pago — el sistema descuenta el
+total de su saldo en el momento. Sus pedidos viven en tablas separadas de `ordenes`/`reservas`
+(`pensionistas`, `pensionista_movimientos`, `pedidos_pensionista`) pero aparecen unificados en
+Cola del día y Cocina con tag "🪪 Pensionista". Reportería separada (recargas vs. consumo) para no
+duplicar el ingreso ya contado al momento de la recarga. Quedan 3 decisiones de negocio por validar
+con el usuario antes de implementar (saldo insuficiente, alcance del menú, quién recarga) — ver
+`pensionistas.md` sección 11.
+
 ### ~~Nombre obligatorio en órdenes (paridad con reservas)~~ ✅ Completado 2026-07-13
 
 ~~En reservas el nombre ya es obligatorio (`routes/public.js:307`, validado también en `confirmarReserva()` de `menu.html`). En órdenes es opcional...~~
