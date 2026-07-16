@@ -2,7 +2,7 @@
 
 - **Módulo:** MENÚ DEL DÍA / CARTA (fotos de platos)
 - **Fecha:** 2026-06-06
-- **Estado:** 🟠 Diagnosticado — fix pendiente de implementar
+- **Estado:** 🟢 Fix implementado y desplegado a producción (2026-06-06) — pendiente de verificación funcional del owner
 - **Prioridad:** Alta (el owner no puede actualizar las fotos de sus platos)
 
 ## Síntoma
