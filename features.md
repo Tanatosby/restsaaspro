@@ -1,5 +1,41 @@
 # Features — Menú Pro
 
+## ~~Sesión persistente — entrar sin iniciar sesión, como WhatsApp~~ ✅ Completado 2026-08-10
+*Ver [ISS-027](issues/ISS-027-sesion-se-pierde.md) y §3.2 de `conversacion_opues10082026.md`.*
+
+La barrera de adopción más cara del proyecto: el piloto #2 no lograba ni iniciar sesión. Eran **dos**
+causas, y la segunda era la real — la sesión vivía en `sessionStorage`, que el navegador borra al cerrar
+la PWA, así que subir el `expiresIn` solo no habría arreglado nada.
+
+Sesión de **30 días** con renovación deslizante vía `GET /api/auth/me` (nuevo), sesión movida a
+`localStorage` con migración automática desde la anterior, `sameSite: 'lax'` (con `strict` la PWA no
+manda la cookie al abrir desde el ícono) y splash antes del primer paint en `login.html`. **El admin del
+SaaS queda acotado a 1 día** — usa el mismo endpoint de login y no debe heredar los 30 días.
+`utils/sesion.js` (nuevo) concentra las reglas como funciones puras. Tests:
+`tests/sesion-persistente.test.js` (19 casos). **317/317 jest verde.**
+
+## ~~Cola del día trabada: pedidos que no avanzan de etapa~~ ✅ Completado 2026-08-10
+*Ver [ISS-026](issues/ISS-026-cola-carrera-doble-tap.md).*
+
+Reportado como "lentitud con 2-3 pedidos", pero era una **carrera entre el poll y los taps**: sin guard
+de botón (el doble tap producía el error falso *"No se puede cambiar una orden pagado"* sobre una acción
+que sí había funcionado), sin token de secuencia (las respuestas de polls viejos repintaban el estado
+anterior y el pedido reaparecía) y sin feedback inmediato.
+
+Fix en `pedidos.js`: guard por ítem, token de secuencia, actualización optimista con reversión.
+`utils/colaDia.js` (nuevo) + **`GET /api/orders/cola`** reemplazan las 6 requests con N+1 por 1 llamada
+con consultas fijas. Tests: `tests/cola-dia.test.js` (15 casos) + `scripts/test-cola-carrera.js`
+(Playwright, 21/21).
+
+## ~~Cierre de caja — pedidos de días anteriores sin cerrar~~ ✅ Completado 2026-08-10
+
+Salió de ISS-026: `total` solo se escribe al cobrar y Ganancias suma `WHERE total IS NOT NULL`, así que
+**un pedido que nunca se cerró no aparece en las Ganancias, nunca**. La Cola ahora muestra solo hoy, pero
+lo viejo no se oculta: un banner avisa cuántos quedaron abiertos y un modal permite marcarlos "💰 Se
+cobró" (entra a Ganancias) o "✗ No se concretó" (cancela y devuelve stock). Nuevo
+`GET /api/orders/sin-cerrar`. Decisión del usuario entre 4 opciones; se descartó el auto-cierre nocturno
+— nada que involucre dinero se cierra solo.
+
 ## ~~Ícono de la PWA mostraba "RA" en vez de la marca~~ ✅ Completado 2026-07-16
 
 El usuario notó que el ícono instalado en el celular mostraba el monograma "RA" (placeholder de una marca

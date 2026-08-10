@@ -10,11 +10,41 @@
 let _pedidosPollTimer = null;
 let _zonaActiva = 'pendientes';
 
+// ── Estado de la cola (ISS-026) ──────────────────────────
+// Antes, tocar un botón disparaba el PATCH y una recarga completa, sin bloquear
+// el botón ni descartar las respuestas de polls viejos. Resultado: el pedido
+// tardaba en moverse, reaparecía en la zona anterior cuando llegaba la respuesta
+// de un poll anterior al cambio, y el segundo tap devolvía "No se puede cambiar
+// una orden pagado" aunque la acción sí se había aplicado.
+
+// Token de secuencia: toda carga guarda el suyo y descarta su resultado si
+// mientras tanto empezó otra más nueva (o se ejecutó una acción).
+let _cargaSeq = 0;
+
+// Acciones en vuelo, por ítem — evita que el doble tap dispare 2 PATCH
+const _enVuelo = new Set();
+
+// Última respuesta del servidor, para repintar tras una acción optimista
+let _cache = { ordenes: [], reservas: [] };
+
+// Flags de estatus, en orden. Aplicar uno implica apagar los demás — es como
+// el backend modela el estatus (una fila de estatus_orden/estatus_reserva).
+const FLAGS_ORDEN   = ['es_inicial', 'es_en_cocina', 'es_listo', 'es_entregado', 'es_pagado', 'es_cancelado'];
+const FLAGS_RESERVA = ['es_inicial', 'es_confirmada', 'es_en_cocina', 'es_listo', 'es_cliente_llego', 'es_full', 'es_cancelado'];
+
+function aplicarFlagLocal(x, flags, destino) {
+  flags.forEach(f => { x[f] = 0; });
+  x[destino] = 1;
+}
+
 // ── Polling ──────────────────────────────────────────────
 
 function initPedidosPoll() {
   stopPedidosPoll();
   loadColaDia();
+  // Los pedidos viejos no cambian solos: basta con mirarlos al abrir el panel,
+  // no en cada poll.
+  loadSinCerrar();
   _pedidosPollTimer = setInterval(loadColaDia, 30000);
 }
 
@@ -23,6 +53,14 @@ function stopPedidosPoll() {
     clearInterval(_pedidosPollTimer);
     _pedidosPollTimer = null;
   }
+}
+
+// Reinicia la cuenta del poll tras una acción, para que el siguiente refresco
+// automático no caiga justo encima del cambio que el usuario acaba de hacer.
+function reiniciarPoll() {
+  if (!_pedidosPollTimer) return;   // el panel no está activo
+  clearInterval(_pedidosPollTimer);
+  _pedidosPollTimer = setInterval(loadColaDia, 30000);
 }
 
 // ── Cambio de tab ────────────────────────────────────────
@@ -41,53 +79,59 @@ function switchZona(zona) {
 // ── Carga principal ──────────────────────────────────────
 
 async function loadColaDia() {
+  const seq = ++_cargaSeq;
+
   try {
-    // GET /api/reservations sin filtro trae TODO el historial del restaurante
-    // (con una consulta N+1 de ítems por cada una) — con el tiempo se vuelve
-    // cada vez más pesado y bloquea el proceso entero (better-sqlite3 es
-    // síncrono). Igual que reservas.js, se piden solo los 5 estados activos
-    // (los otros 2 son es_full/es_cancelado — no interesan acá).
-    const [ordenes, pendientes, confirmadas, enCocina, listas, llegaron] = await Promise.all([
-      api('GET', '/api/orders/activas'),
-      api('GET', '/api/reservations?flag=es_inicial'),
-      api('GET', '/api/reservations?flag=es_confirmada'),
-      api('GET', '/api/reservations?flag=es_en_cocina'),
-      api('GET', '/api/reservations?flag=es_listo'),
-      api('GET', '/api/reservations?flag=es_cliente_llego'),
-    ]);
-    const reservasActivas = [...pendientes, ...confirmadas, ...enCocina, ...listas, ...llegaron];
+    // Una sola llamada: antes eran 6 requests en paralelo (órdenes + 5 estados
+    // de reserva), cada una con su N+1 de ítems. Como better-sqlite3 es
+    // síncrono, esas consultas bloquean el proceso Node entero mientras se
+    // resuelven — con 2-3 pedidos ya se notaba. Ver ISS-026.
+    const { ordenes, reservas } = await api('GET', '/api/orders/cola');
+
+    // Si mientras viajaba esta respuesta empezó otra carga, o el usuario
+    // ejecutó una acción, este resultado ya es viejo: descartarlo. Sin esto,
+    // un pedido recién movido reaparecía en su zona anterior.
+    if (seq !== _cargaSeq) return;
+
+    _cache = { ordenes, reservas };
 
     detectNuevasOrdenes(ordenes);
-    detectNuevasReservas(reservasActivas);
+    detectNuevasReservas(reservas);
 
-    // Clasificar por zona
-    const zonas = clasificarZonas(ordenes, reservasActivas);
-
-    // Badge del nav (total activos)
-    const total = ordenes.length + reservasActivas.length;
-    const badgeNav = document.getElementById('badge-pedidos');
-    if (badgeNav) {
-      badgeNav.textContent = total;
-      badgeNav.classList.toggle('show', total > 0);
-    }
-
-    // Actualizar badges de tabs y contenido
-    const ZONAS = ['pendientes', 'cocina', 'listos', 'cobrar'];
-    ZONAS.forEach(z => {
-      const badge = document.getElementById(`kb-${z}`);
-      if (badge) {
-        badge.textContent = zonas[z].length;
-        badge.classList.toggle('kb-badge-active', zonas[z].length > 0);
-      }
-      renderZona(z, zonas[z]);
-    });
+    renderColaDesdeCache();
 
   } catch(e) {
+    if (seq !== _cargaSeq) return;
     ['pendientes','cocina','listos','cobrar'].forEach(z => {
       const el = document.getElementById(`zona-${z}`);
       if (el) el.innerHTML = emptyState('⚠️', e.message);
     });
   }
+}
+
+// Pinta la cola con lo que hay en _cache. Separado de loadColaDia() para poder
+// repintar al instante tras una acción, sin esperar al servidor.
+function renderColaDesdeCache() {
+  const { ordenes, reservas } = _cache;
+  const zonas = clasificarZonas(ordenes, reservas);
+
+  // Badge del nav (total activos)
+  const total = ordenes.length + reservas.length;
+  const badgeNav = document.getElementById('badge-pedidos');
+  if (badgeNav) {
+    badgeNav.textContent = total;
+    badgeNav.classList.toggle('show', total > 0);
+  }
+
+  // Actualizar badges de tabs y contenido
+  ['pendientes', 'cocina', 'listos', 'cobrar'].forEach(z => {
+    const badge = document.getElementById(`kb-${z}`);
+    if (badge) {
+      badge.textContent = zonas[z].length;
+      badge.classList.toggle('kb-badge-active', zonas[z].length > 0);
+    }
+    renderZona(z, zonas[z]);
+  });
 }
 
 // ── Clasificación por zona ───────────────────────────────
@@ -225,7 +269,7 @@ function requiereConfirmarPago(x) {
 function btnOrden(o, zona) {
   const paraLlevar = o.modalidad === 'para_llevar';
   const btnCobrar = requiereConfirmarPago(o)
-    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoOrden(${o.id})">✓ Confirmar pago</button>`
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoColaOrden(${o.id})">✓ Confirmar pago</button>`
     : `<button class="btn btn-success btn-sm" onclick="accionRapidaOrden(${o.id},'es_pagado')">💰 Cobrar</button>`;
   if (zona === 'pendientes' && o.es_inicial)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_en_cocina')">🍳 A cocina</button>`;
@@ -241,7 +285,7 @@ function btnOrden(o, zona) {
 function btnReserva(r, zona) {
   const sinMesa = r.modalidad === 'para_llevar' || r.modalidad === 'delivery';
   const btnCompletar = requiereConfirmarPago(r)
-    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoReserva(${r.id})">✓ Confirmar pago</button>`
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoColaReserva(${r.id})">✓ Confirmar pago</button>`
     : `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_full')">💰 Completar</button>`;
   if (zona === 'pendientes' && r.es_confirmada)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_en_cocina')">🍳 A cocina</button>`;
@@ -258,20 +302,248 @@ function btnReserva(r, zona) {
 
 // ── Acciones rápidas ─────────────────────────────────────
 
-async function accionRapidaOrden(id, flag) {
+// Mueve el ítem de zona al instante y recién después confirma con el servidor.
+// Si el backend rechaza, se revierte al estado anterior y se avisa.
+//
+// El guard por clave (`o12`/`r34`) es lo que mata el bug del doble tap: antes,
+// como no pasaba nada visible durante la request, el owner tocaba de nuevo; el
+// primer PATCH funcionaba y el segundo devolvía "No se puede cambiar una orden
+// pagado", mostrando un error por una acción que sí había funcionado.
+async function accionRapida({ clave, item, flags, flag, url, okMsg }) {
+  if (_enVuelo.has(clave)) return;
+  _enVuelo.add(clave);
+
+  // Invalidar cargas en vuelo: sus datos ya no reflejan lo que acaba de pasar
+  _cargaSeq++;
+
+  const previo = item ? { ...item } : null;
+  if (item) {
+    aplicarFlagLocal(item, flags, flag);
+    renderColaDesdeCache();
+  }
+
   try {
-    await api('PATCH', `/api/orders/${id}/estatus`, { flag });
-    toast('Orden actualizada');
-    loadColaDia();
-  } catch(e) { toast(e.message, 'err'); }
+    await api(url.method, url.path, { flag });
+    toast(okMsg);
+    reiniciarPoll();
+    await loadColaDia();
+  } catch (e) {
+    // Revertir: el cambio optimista no llegó a aplicarse en el servidor
+    if (previo) {
+      Object.assign(item, previo);
+      renderColaDesdeCache();
+    }
+    toast(e.message, 'err');
+  } finally {
+    _enVuelo.delete(clave);
+  }
+}
+
+async function accionRapidaOrden(id, flag) {
+  return accionRapida({
+    clave: `o${id}`,
+    item:  _cache.ordenes.find(o => o.id === id),
+    flags: FLAGS_ORDEN,
+    flag,
+    url:   { method: 'PATCH', path: `/api/orders/${id}/estatus` },
+    okMsg: 'Orden actualizada',
+  });
 }
 
 async function accionRapidaReserva(id, flag) {
+  return accionRapida({
+    clave: `r${id}`,
+    item:  _cache.reservas.find(r => r.id === id),
+    flags: FLAGS_RESERVA,
+    flag,
+    url:   { method: 'PATCH', path: `/api/reservations/${id}/estatus` },
+    okMsg: 'Reserva actualizada',
+  });
+}
+
+// ── Confirmar pago desde la Cola ──────────────────────────
+// No se reutilizan confirmarPagoOrden()/confirmarPagoReserva() de
+// ordenes.js/reservas.js porque esas refrescan sus propios paneles
+// (loadOrdenesActivas/loadReservasActivas): tocadas desde la Cola, el pago se
+// confirmaba en el servidor pero la card no se actualizaba hasta el siguiente
+// poll, y parecía que el botón no había hecho nada.
+async function confirmarPagoEnCola(clave, item, url, okMsg) {
+  if (_enVuelo.has(clave)) return;
+  _enVuelo.add(clave);
+  _cargaSeq++;
+
+  const previo = item ? { ...item } : null;
+  if (item) {
+    // Confirmar el pago cambia el botón a "Cobrar"/"Completar"
+    item.estado_pago = 'confirmado';
+    renderColaDesdeCache();
+  }
+
   try {
-    await api('PATCH', `/api/reservations/${id}/estatus`, { flag });
-    toast('Reserva actualizada');
-    loadColaDia();
-  } catch(e) { toast(e.message, 'err'); }
+    await api('PATCH', url);
+    toast(okMsg);
+    reiniciarPoll();
+    await loadColaDia();
+  } catch (e) {
+    if (previo) {
+      Object.assign(item, previo);
+      renderColaDesdeCache();
+    }
+    toast(e.message, 'err');
+  } finally {
+    _enVuelo.delete(clave);
+  }
+}
+
+async function confirmarPagoColaOrden(id) {
+  return confirmarPagoEnCola(
+    `o${id}`,
+    _cache.ordenes.find(o => o.id === id),
+    `/api/orders/${id}/confirmar-pago`,
+    `Pago de la orden #${id} confirmado ✓`
+  );
+}
+
+async function confirmarPagoColaReserva(id) {
+  return confirmarPagoEnCola(
+    `r${id}`,
+    _cache.reservas.find(r => r.id === id),
+    `/api/reservations/${id}/confirmar-pago`,
+    `Pago de la reserva #${id} confirmado ✓`
+  );
+}
+
+// ════════════════════════════════════════════════════════
+// CIERRE DE CAJA — pedidos de días anteriores sin cerrar
+//
+// La Cola muestra solo lo de hoy, para que no se llene de basura acumulada.
+// Pero lo que quedó abierto de días previos no se puede simplemente ocultar:
+// `total` solo se escribe cuando la orden se marca como cobrada, y Ganancias
+// suma `WHERE total IS NOT NULL` — mientras sigan abiertos, ese dinero no
+// aparece en ningún reporte. Acá el dueño los cierra uno por uno.
+// ════════════════════════════════════════════════════════
+
+let _sinCerrar = { ordenes: [], reservas: [] };
+
+async function loadSinCerrar() {
+  const banner = document.getElementById('banner-sin-cerrar');
+  if (!banner) return;
+
+  try {
+    _sinCerrar = await api('GET', '/api/orders/sin-cerrar');
+  } catch (_) {
+    // El aviso es secundario: si falla, la cola del día debe seguir funcionando
+    banner.style.display = 'none';
+    return;
+  }
+
+  const total = _sinCerrar.ordenes.length + _sinCerrar.reservas.length;
+  banner.style.display = total > 0 ? '' : 'none';
+
+  const conteo = document.getElementById('sin-cerrar-conteo');
+  if (conteo) conteo.textContent = total === 1 ? '1 pedido' : `${total} pedidos`;
+}
+
+function abrirCierreCaja() {
+  renderCierreCaja();
+  const modal = document.getElementById('modal-cierre-caja');
+  if (modal) modal.style.display = 'flex';
+}
+
+function cerrarCierreCaja() {
+  const modal = document.getElementById('modal-cierre-caja');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderCierreCaja() {
+  const cont = document.getElementById('cierre-caja-lista');
+  if (!cont) return;
+
+  const filas = [
+    ..._sinCerrar.ordenes.map(o  => cierreItemOrden(o)),
+    ..._sinCerrar.reservas.map(r => cierreItemReserva(r)),
+  ];
+
+  cont.innerHTML = filas.length
+    ? filas.join('')
+    : emptyState('✅', 'No queda nada sin cerrar');
+
+  if (!filas.length) loadSinCerrar();   // esconde el banner al vaciarse
+}
+
+// La fecha viene 'YYYY-MM-DD' o con timestamp — fDate() espera solo la fecha
+const soloFecha = f => String(f || '').slice(0, 10);
+
+function cierreItemOrden(o) {
+  const items = renderItemLines(o.carta_items, o.menu_items);
+  const mesa  = o.mesa ? ` · Mesa ${o.mesa}` : '';
+  const monto = o.total ? ` · S/ ${o.total.toFixed(2)}` : '';
+
+  return `
+    <div class="cierre-item">
+      <div class="cierre-item-head">🧾 Orden #${o.numero_dia ?? o.id}${mesa}</div>
+      <div class="cierre-item-meta">${fDate(soloFecha(o.fecha))} · ${esc(o.nombre_cliente || 'Sin nombre')} · ${esc(o.estatus)}${monto}</div>
+      ${items ? `<div class="cierre-item-items">${items}</div>` : ''}
+      <div class="cierre-item-acciones">
+        <button class="btn btn-success btn-sm" onclick="cerrarPedidoViejo('orden',${o.id},'cobrado')">💰 Se cobró</button>
+        <button class="btn btn-danger btn-sm"  onclick="cerrarPedidoViejo('orden',${o.id},'anulado')">✗ No se concretó</button>
+      </div>
+    </div>`;
+}
+
+function cierreItemReserva(r) {
+  const items = renderItemLines(r.carta_items, r.menu_items);
+  const codigo = r.codigo ? ` · 🔑 ${esc(r.codigo)}` : '';
+
+  return `
+    <div class="cierre-item">
+      <div class="cierre-item-head">📅 ${esc(r.nombre_cliente || 'Sin nombre')}${codigo}</div>
+      <div class="cierre-item-meta">${fDate(soloFecha(r.fecha))} · ${esc(r.estatus)}</div>
+      ${items ? `<div class="cierre-item-items">${items}</div>` : ''}
+      <div class="cierre-item-acciones">
+        <button class="btn btn-success btn-sm" onclick="cerrarPedidoViejo('reserva',${r.id},'cobrado')">💰 Se cobró</button>
+        <button class="btn btn-danger btn-sm"  onclick="cerrarPedidoViejo('reserva',${r.id},'anulado')">✗ No se concretó</button>
+      </div>
+    </div>`;
+}
+
+// 'cobrado' → cuenta en Ganancias (el backend calcula y persiste el total).
+// 'anulado' → se cancela y devuelve el stock, igual que cualquier cancelación.
+async function cerrarPedidoViejo(tipo, id, resultado) {
+  const clave = `cierre-${tipo}${id}`;
+  if (_enVuelo.has(clave)) return;
+  _enVuelo.add(clave);
+
+  const esOrden = tipo === 'orden';
+  const flag = resultado === 'cobrado'
+    ? (esOrden ? 'es_pagado' : 'es_full')
+    : 'es_cancelado';
+  const url = esOrden ? `/api/orders/${id}/estatus` : `/api/reservations/${id}/estatus`;
+
+  try {
+    await api('PATCH', url, { flag });
+    toast(resultado === 'cobrado' ? 'Pedido cobrado ✓' : 'Pedido anulado');
+
+    // Sacarlo de la lista local y repintar el modal sin cerrarlo: el dueño
+    // normalmente cierra varios seguidos.
+    const lista = esOrden ? 'ordenes' : 'reservas';
+    _sinCerrar[lista] = _sinCerrar[lista].filter(x => x.id !== id);
+    renderCierreCaja();
+
+    const total = _sinCerrar.ordenes.length + _sinCerrar.reservas.length;
+    const conteo = document.getElementById('sin-cerrar-conteo');
+    if (conteo) conteo.textContent = total === 1 ? '1 pedido' : `${total} pedidos`;
+    if (total === 0) {
+      const banner = document.getElementById('banner-sin-cerrar');
+      if (banner) banner.style.display = 'none';
+    }
+  } catch (e) {
+    // Caso típico: pago digital sin confirmar bloquea el cobro (el backend lo
+    // valida). El mensaje del servidor explica qué falta.
+    toast(e.message, 'err');
+  } finally {
+    _enVuelo.delete(clave);
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────

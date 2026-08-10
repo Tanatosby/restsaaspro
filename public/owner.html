@@ -10,6 +10,7 @@
   <script src="/js/modules/charts-theme.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="/css/owner.css">
+  <script src="/js/session.js"></script>
   <script src="/js/modules/utils.js"></script>
   <script src="/js/modules/config.js"></script>
   <script src="/js/modules/usuarios.js"></script>
@@ -665,10 +666,23 @@
         <div class="sec-header">
           <div>
             <div class="sec-title">📋 Cola del día</div>
-            <div class="sec-sub">Órdenes y reservas activas por etapa — se actualiza cada 15 s</div>
+            <div class="sec-sub">Órdenes y reservas activas por etapa — se actualiza cada 30 s</div>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="loadColaDia()">↻ Actualizar</button>
         </div>
+
+        <!-- ── Cierre de caja: pedidos de días anteriores sin cerrar ──
+             La cola muestra solo lo de hoy. Lo que quedó abierto de días
+             previos no se oculta: mientras siga así no aparece en Ganancias
+             (`total` solo se escribe al cobrar), así que se avisa acá para
+             que el dueño lo cierre. -->
+        <div id="banner-sin-cerrar" class="banner-sin-cerrar" style="display:none">
+          <div class="banner-sin-cerrar-txt">
+            <strong id="sin-cerrar-conteo">0 pedidos</strong> de días anteriores sin cerrar
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirCierreCaja()">Revisar →</button>
+        </div>
+
         <!-- Tabs de zona -->
         <div class="tabs kanban-tabs" id="kanban-tabs">
           <button class="tab active" data-zona="pendientes" onclick="switchZona('pendientes')">
@@ -1049,6 +1063,20 @@
   </div>
 </div>
 
+<!-- ── Modal de cierre de caja ── -->
+<div id="modal-cierre-caja" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:var(--shadow)">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:1.142857rem;font-weight:700;color:var(--text)">Pedidos sin cerrar</span>
+      <button onclick="cerrarCierreCaja()" style="background:none;border:none;font-size:1.428571rem;color:var(--muted);cursor:pointer;line-height:1;padding:2px 6px" aria-label="Cerrar">✕</button>
+    </div>
+    <div style="padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);font-size:0.928571rem;color:var(--text-2)">
+      Quedaron abiertos de días anteriores. Hasta cerrarlos no aparecen en tus Ganancias.
+    </div>
+    <div id="cierre-caja-lista" style="padding:1rem 1.5rem;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0.75rem"></div>
+  </div>
+</div>
+
 <!-- ── Modal de comprobante de pago (evita target="_blank", rompe la PWA instalada) ── -->
 <div class="comprobante-modal" id="comprobante-modal" onclick="cerrarComprobante(event)">
   <button class="comprobante-modal-close" onclick="cerrarComprobante()" aria-label="Cerrar">✕</button>
@@ -1086,7 +1114,11 @@
 
 <script>
 // ── Auth guard ──────────────────────────────────────────
-const session = (() => { try { return JSON.parse(sessionStorage.getItem('session') || 'null'); } catch { return null; } })();
+// leerSesion() vive en /js/session.js, cargado antes que este bloque.
+// Persiste en localStorage: abrir el ícono de la PWA ya no vuelve a pedir
+// credenciales (ISS-027). Si no hay sesión local, login.html se encarga de
+// revalidar la cookie contra /api/auth/me antes de mostrar el formulario.
+const session = leerSesion();
 if (!session || (!['owner','admin','cocinero'].includes(session.role) && !Array.isArray(session.permisos))) window.location.replace('/login.html');
 
 document.getElementById('owner-name').textContent    = session.name || '—';
@@ -2168,7 +2200,7 @@ setInterval(() => {
 // ── Logout ───────────────────────────────────────────────
 async function logout() {
   try { await fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }); }
-  finally { sessionStorage.removeItem('session'); window.location.replace('/login.html'); }
+  finally { limpiarSesion(); window.location.replace('/login.html'); }
 }
 
 // ── Cambiar contraseña ───────────────────────────────────
@@ -2185,6 +2217,11 @@ function abrirModalCambiarPassword() {
 function cerrarModalCambiarPassword() {
   document.getElementById('modal-cambiar-pwd').style.display = 'none';
 }
+// Cerrar el modal de cierre de caja tocando el fondo (mismo patrón que el de contraseña)
+document.getElementById('modal-cierre-caja').addEventListener('click', e => {
+  if (e.target.id === 'modal-cierre-caja') cerrarCierreCaja();
+});
+
 document.getElementById('modal-cambiar-pwd').addEventListener('click', e => {
   if (e.target === e.currentTarget) cerrarModalCambiarPassword();
 });

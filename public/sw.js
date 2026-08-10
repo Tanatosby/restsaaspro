@@ -1,4 +1,7 @@
-const CACHE = 'menupro-v4';
+// Bumpear SIEMPRE que cambie alguno de los archivos de ASSETS — si no, los
+// celulares con la PWA instalada siguen viendo la versión vieja para siempre
+// (ver ISS-022). v5: owner.html cambió su auth guard para la sesión persistente.
+const CACHE = 'menupro-v5';
 
 const ASSETS = [
   '/owner.html',

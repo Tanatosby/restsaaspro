@@ -45,7 +45,10 @@ function restaurantesSinMenuHoy(db, fecha = fechaLima()) {
 function procesarRecordatoriosMenu(db, wpush, ahora = new Date()) {
   if (!wpush) return 0;
 
-  const candidatos = restaurantesSinMenuHoy(db);
+  // La fecha se deriva del mismo `ahora` que decide el throttle de 8h: usar el
+  // reloj real acá mientras `ahora` apunta a otro día hacía que el job mirara
+  // el menú de un día distinto al que estaba evaluando.
+  const candidatos = restaurantesSinMenuHoy(db, fechaLima(ahora));
   if (!candidatos.length) return 0;
 
   const upd = db.prepare(`UPDATE restaurantes SET ultimo_recordatorio_menu = ? WHERE id = ?`);

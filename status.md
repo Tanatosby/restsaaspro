@@ -2,6 +2,127 @@
 
 ---
 
+## 📝 Memoria de Julio — nota personal
+
+Me he querido rendir, tengo que hacer algo incómodo, tengo que seguir haciendo algo incómodo, no puedo
+rendirme. Sé que si no me rindo, mis sueños se van a cumplir, ni siquiera he comenzado. Somos lo
+suficientemente audaces, somos lo suficientemente modernos, lo suficientemente capaces para caminar y
+consolidar dinero en esta experiencia empresarial, tenemos que estudiar Node, lo que habría que hacer es
+seguir reformando mi mentalidad. Sí se puede, hagámoslo por la patria, por el Perú. Somos lo suficientemente
+empresarios para saber las cosas antes de que las podamos hacer.
+
+---
+
+## ✅ Sesión 2026-08-10 — ISS-027 (sesión persistente) + ISS-026 (Cola del día trabada)
+
+**Prompt:** el usuario trajo `conversacion_opues10082026.md` (contexto y prioridades de la etapa) y
+eligió 2 features: **(1)** entrar a la app sin iniciar sesión cada vez, como WhatsApp; **(2)** arreglar
+la lentitud, que aparece con apenas 2-3 pedidos simultáneos.
+
+Al preguntarle dónde veía exactamente la lentitud, la respuesta cambió el diagnóstico: *"cuando
+intentas pasar de un lugar de la cola a otro se pone lento y a veces no te pasa el pedido, o se queda
+esperando mucho tiempo, o sale error que ya se envió a cobrados y no desaparece de la cola"*. No era
+lentitud de base de datos: era una **carrera entre el poll y los taps**.
+
+### ISS-027 — Sesión persistente
+
+**Diagnóstico — 2 causas, la segunda era la real:** el JWT y la cookie duraban `8h`
+(`routes/auth.js`), pero sobre todo la sesión vivía en **`sessionStorage`** (`owner.html:1089`,
+`login.html:412`), que el navegador **borra al cerrar la PWA**. Aunque la cookie siguiera viva, al
+reabrir la app no había `session` y el guard redirigía al login. **Subir el `expiresIn` solo no habría
+arreglado nada.**
+
+**Implementado:**
+- `utils/sesion.js` (nuevo) — reglas puras testeables: `diasSesion()`, `cookieSesion()`,
+  `necesitaRenovacion()`. Mismo patrón que `horarioAtencion.js`/`verificacionPago.js`.
+- Sesión de **30 días** con **renovación deslizante**: `GET /api/auth/me` (nuevo) revalida la cookie y
+  emite una nueva si le queda menos de la mitad de vida. Relee al usuario de la BD, no solo del token
+  — con 30 días, un cambio de permisos o un restaurante desactivado tardaría un mes en aplicarse.
+- **El admin del SaaS queda acotado a 1 día**: usa el mismo `/api/auth/login`, así que sin esta
+  distinción habría heredado los 30 días en la cuenta más privilegiada del sistema.
+- `sameSite` `'strict'` → **`'lax'`**: con `strict` el navegador no manda la cookie en la navegación
+  inicial hacia la app, justo el caso de abrir la PWA desde el ícono.
+- `public/js/session.js` (nuevo) — sesión en `localStorage` con key `mp-session` (para no cruzarse con
+  el panel admin, que sigue en `sessionStorage`) y **migración automática** desde la sesión vieja: nadie
+  queda deslogueado el día del deploy.
+- `login.html`: splash "Entrando…" aplicado **antes del primer paint** (mismo patrón que el tema y el
+  tamaño de letra). Sin red se entra igual con la sesión local, en vez de mostrar el login a quien ya
+  estaba dentro solo porque se cayó el wifi.
+- **Bug propio detectado y corregido en el camino:** `utils.js` redirigía al login ante un 401 sin
+  limpiar la sesión local. Con `localStorage` (que ya no se borra solo) eso habría creado un **bucle
+  infinito login ↔ panel**. Se agregó `limpiarSesion()` antes de redirigir.
+- `sw.js`: `CACHE` bumpeado a **`menupro-v5`** — `owner.html` está en `ASSETS` y cambió su guard
+  (obligatorio, ver ISS-022).
+
+### ISS-026 — Cola del día
+
+**Diagnóstico — 3 defectos que se realimentaban:**
+1. **Doble tap:** `accionRapidaOrden()` no bloqueaba el botón. El primer `PATCH` funcionaba, el segundo
+   chocaba con la guarda de `routes/orders.js:370` → *"No se puede cambiar una orden pagado"*. **El
+   error aparecía por una acción que sí había funcionado.**
+2. **El poll repintaba el estado viejo:** sin token de secuencia, las respuestas de un poll iniciado
+   antes del `PATCH` llegaban después y `renderZona()` reemplazaba el HTML con datos anteriores al
+   cambio — el pedido reaparecía en su zona previa.
+3. **Cero feedback inmediato:** entre el tap y el repintado corrían 1 `PATCH` + 6 `GET`, cada uno con
+   su N+1, sobre `better-sqlite3` (síncrono, bloquea el proceso entero). Eso alimentaba el defecto 1.
+
+Encontrados de paso: **(4)** "Confirmar pago" desde la Cola llamaba a las funciones de `ordenes.js`,
+que refrescan *el panel de Órdenes*, no la Cola; **(5)** `GET /api/orders/activas` no filtraba por
+fecha, así que toda orden nunca cobrada seguía activa para siempre arrastrando su N+1.
+
+**Implementado:**
+- `pedidos.js`: guard por ítem (`_enVuelo`), token de secuencia (`_cargaSeq`), **actualización
+  optimista** con reversión si el backend rechaza, `reiniciarPoll()` tras cada acción, y
+  `confirmarPagoColaOrden()`/`confirmarPagoColaReserva()` propias de la Cola.
+- `utils/colaDia.js` (nuevo) + **`GET /api/orders/cola`**: órdenes + reservas activas en 1 llamada con
+  un número **fijo** de consultas (6) sin importar cuántos pedidos haya. Reemplaza las 6 requests con
+  N+1 que hacía `pedidos.js`.
+- Filtro por fecha con **`substr(fecha,1,10)`**: `ordenes.fecha` tiene formatos mezclados en la BD
+  (`'2026-08-10'` y `'2026-06-04 03:46:13'`), un `WHERE fecha = ?` nunca habría matcheado los largos.
+  Las reservas usan `>= hoy` y no `= hoy` — las futuras deben verse para poder confirmarlas.
+
+### Cierre de caja (decisión de producto)
+
+**Hallazgo que cambió el diseño:** `total` solo se escribe al marcar la orden como cobrada
+(`orders.js:377`) y Ganancias suma `WHERE total IS NOT NULL` (`reportes.js:385`). **Un pedido que
+nunca se cerró no aparece en las Ganancias, nunca.** En la BD local había 5 así, todas con `total NULL`.
+Ocultarlos de la cola sin más habría sido perder ese dinero para siempre.
+
+Se le presentaron 4 opciones al usuario y **eligió el cierre de caja**, descartando explícitamente el
+auto-cierre nocturno: nada que involucre dinero se cierra solo. La cola muestra solo hoy; un banner
+avisa cuántos quedaron abiertos y un modal permite marcarlos "💰 Se cobró" (entra a Ganancias) o
+"✗ No se concretó" (cancela y devuelve stock). Nuevo `GET /api/orders/sin-cerrar`.
+
+### Verificación
+
+- **`scripts/test-cola-carrera.js`** (nuevo, Playwright, fuera de jest) — **21/21 verde**: doble tap →
+  1 solo PATCH sin error falso; respuesta de poll retenida 3 s que llega tarde → el pedido **no**
+  reaparece; con el PATCH retrasado 2,5 s la card ya se movió a los 400 ms; ante un 400 la card vuelve
+  y la BD queda intacta; cierre de caja lleva `total` de `NULL` a persistido; sesión persistente
+  completa incluido el caso "sin cookie vuelve al login sin bucle".
+- **`tests/sesion-persistente.test.js`** (19 casos) y **`tests/cola-dia.test.js`** (15 casos) nuevos.
+- **`curl` contra servidor real:** `/me` sin cookie 401, vencida 401, fresca 200 sin renovar, por
+  vencer 200 + `Set-Cookie` con `Max-Age=2592000; HttpOnly; SameSite=Lax`.
+- **317/317 jest verde** (283 previos + 34 nuevos).
+
+**Bonus — 2 tests que ya estaban rojos antes de esta sesión, arreglados:**
+`recordatorio-menu.test.js` fallaba desde el 17 de julio. La causa era del **código de producción**, no
+del test: `procesarRecordatoriosMenu()` recibe un `ahora` inyectable pero llamaba a
+`restaurantesSinMenuHoy(db)` sin fecha, usando el reloj real del servidor — el job miraba el menú de un
+día distinto al que estaba evaluando. Fix: `fechaLima()` ahora acepta un momento inyectable y el job
+deriva la fecha de su propio `ahora`.
+
+**Pendiente:**
+- **Deploy a producción** — acumulado con todo lo de julio (íconos "MP", Gap 21, fixes ISS-018 a
+  ISS-025). Avisar que, igual que con ISS-022, quien tenga la PWA instalada debe **cerrar y reabrir la
+  app una vez** para que el navegador note el `sw.js` nuevo (`menupro-v5`).
+- `GET /api/orders/activas` (panel de **Órdenes**, no la Cola) conserva su N+1 y su falta de filtro por
+  fecha. No se tocó para no cambiar ese panel en el mismo trabajo; migrarlo a `utils/colaDia.js` es
+  directo si aparece lentitud ahí.
+- Siguientes del backlog acordado: **3.1** letra aún más grande y **3.3** entrada directa a Cola del día.
+
+---
+
 ## ✅ Sesión 2026-07-16 (parte 3) — Ícono de la PWA: "RA" → "MP"
 
 **Prompt:** "ahora sale RA en el logo de la app" — el ícono instalado en el celular mostraba un monograma

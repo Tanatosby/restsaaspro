@@ -9,6 +9,7 @@ const { calcularTotalOrden } = require('../utils/totales');
 const { fechaLima } = require('../utils/fecha');
 const { descontarStock, devolverStock, itemsMenuDeOrden } = require('../utils/stock');
 const { requiereConfirmarPagoAntes } = require('../utils/verificacionPago');
+const { colaDelDia, pedidosSinCerrar } = require('../utils/colaDia');
 
 router.use(authenticate);
 
@@ -84,6 +85,27 @@ router.get('/activas', (req, res) => {
   });
 
   res.json(result);
+});
+
+// ─────────────────────────────────────────────────────
+// GET /api/orders/cola
+// Cola del día completa — órdenes + reservas activas en UNA sola llamada.
+// Reemplaza las 6 requests que hacía pedidos.js (cada una con su N+1 de
+// ítems), que bloqueaban el proceso y hacían sentir lenta la app con apenas
+// 2-3 pedidos. Ver ISS-026 y utils/colaDia.js.
+// ─────────────────────────────────────────────────────
+router.get('/cola', authorizePermiso(), (req, res) => {
+  res.json(colaDelDia(db, req.user.restaurant_id, fechaLima()));
+});
+
+// ─────────────────────────────────────────────────────
+// GET /api/orders/sin-cerrar
+// Pedidos de días anteriores que quedaron abiertos (cierre de caja).
+// Mientras sigan así no aparecen en Ganancias: `total` solo se escribe al
+// cobrarlos. Ver utils/colaDia.js.
+// ─────────────────────────────────────────────────────
+router.get('/sin-cerrar', authorizePermiso(), (req, res) => {
+  res.json(pedidosSinCerrar(db, req.user.restaurant_id, fechaLima()));
 });
 
 // ─────────────────────────────────────────────────────

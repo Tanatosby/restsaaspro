@@ -15,6 +15,10 @@ node_modules/
 # Las carpetas se recrean solas al arrancar (routes/menu.js, routes/public.js).
 public/uploads/
 
+# Notas de trabajo con contexto comercial (precios, estrategia, datos de los
+# pilotos). El repositorio es público — no versionar.
+conversacion_*.md
+
 # Logs
 *.log
 
