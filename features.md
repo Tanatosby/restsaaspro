@@ -1,5 +1,21 @@
 # Features — Menú Pro
 
+## ~~Letra más grande en el panel del owner~~ ✅ Completado 2026-08-10
+*Punto 3.1 del backlog. Ver [ISS-028](issues/ISS-028-overflow-letra-grande.md).*
+
+El sistema de tamaño ajustable ya existía (3 niveles sobre `--font-scale`, desde 2026-07-14), pero se
+quedaba corto: 14 / 16,1 / 18,2px. Subido a **16,1 / 19,6 / 23,8px** (escalas 1,15 / 1,4 / 1,7). Se
+mantienen 3 botones en vez de agregar un cuarto — menos opciones es mejor para un dueño mayor. El
+"Normal" nuevo equivale al "Grande" anterior.
+
+**La preferencia guardada migra hacia arriba, nunca hacia abajo**, con key versionada
+(`mp-font-scale-v2`): 1.15 significaba "Grande" en el esquema viejo y "Normal" en el nuevo, así que por
+el número solo no se puede saber cuál eligió el usuario.
+
+Antes hubo que corregir 2 bugs de overflow que bloqueaban la subida — uno de ellos **ya activo en
+producción** (ver ISS-028). Verificación: `scripts/test-escala-tipografica.js`, 14/14, incluyendo touch
+targets ≥44px e inputs ≥16px en la escala máxima. `menu.html` (carta del cliente) no se tocó.
+
 ## ~~Sesión persistente — entrar sin iniciar sesión, como WhatsApp~~ ✅ Completado 2026-08-10
 *Ver [ISS-027](issues/ISS-027-sesion-se-pierde.md) y §3.2 de `conversacion_opues10082026.md`.*
 

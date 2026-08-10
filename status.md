@@ -13,6 +13,53 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## ✅ Sesión 2026-08-10 (parte 2) — Letra más grande + 2 bugs de overflow (ISS-028)
+
+**Prompt:** "ahora sigamos con la letra más grande aún, ya está grande, más grande" — punto 3.1 del
+backlog acordado.
+
+**Medición antes de tocar nada** (Playwright a 360px, recorriendo 10 paneles × 8 escalas): el sistema ya
+existía con base 14px y niveles 1 / 1.15 / 1.3 (14 / 16,1 / 18,2px). Pero la medición encontró que
+**subir la escala estaba bloqueado por overflow horizontal ya existente**, no por falta de espacio real.
+
+**2 bugs de layout encontrados y corregidos** (ISS-028) — el primero ya afectaba a producción:
+1. **Bloque "Link del menú" + QR en Configuración** — desbordaba desde **1.15×, el nivel "Grande" que
+   ya estaba activo en producción**: un dueño que eligiera "Grande" tenía scroll horizontal justo en la
+   pantalla donde se configura el tamaño de letra. Causa: el contenedor de la columna derecha es un flex
+   item sin `min-width:0`, así que su ancho lo fijaba el contenido más largo ("⬇ Descargar PNG") y nunca
+   encogía. Fix: `flex:1 1 200px; min-width:0` + `flex-wrap` en la fila del input.
+2. **`.page-title` del topbar** — desbordaba desde 1.4× **en todos los paneles**, porque el topbar
+   siempre está visible. Causa: `flex:1` sin `min-width:0` — un flex item no encoge por debajo de su
+   min-content, así que el título empujaba los botones fuera de la pantalla. Fix: `min-width:0` +
+   `text-overflow: ellipsis`. Además el padding del topbar pasó de `1.6rem` a px fijos en móvil: en rem
+   crecía con la letra y se comía el ancho disponible justo cuando más falta hacía.
+
+**Falsos positivos descartados con una segunda medición** (que distingue overflow real de scroll interno
+legítimo, comprobando si la página efectivamente se desplaza): los tabs (`.tabs` ya tiene `overflow-x:
+auto`), el carrusel de Home y la tabla de Usuarios (`.table-wrap`, `owner.css:419`) **no** eran bugs.
+Sin esa distinción se habrían "arreglado" 3 cosas que ya funcionaban.
+
+**Escala subida** (decisión del usuario entre 3 opciones): **1,15 / 1,4 / 1,7 → 16,1 / 19,6 / 23,8px**.
+Se mantienen 3 botones en vez de agregar un 4º — menos opciones es mejor para un dueño de 70 años. El
+"Normal" nuevo equivale al "Grande" viejo.
+
+**Migración de la preferencia guardada:** la key pasó a `mp-font-scale-v2`. Versionarla era necesario
+porque **1.15 existe en ambos esquemas con significados distintos** (era "Grande", ahora es "Normal") y
+por el número solo no se puede saber cuál guardó el usuario. Cada nivel viejo sube a su equivalente
+nuevo, **nunca baja**: encogerle la letra a quien ya la había agrandado sería lo contrario de lo pedido.
+
+**Verificación** — `scripts/test-escala-tipografica.js` (nuevo, Playwright): **14/14 verde**. Cubre los
+3 niveles × 13 paneles sin scroll horizontal real a 360px, touch targets ≥44px y inputs ≥16px (anti-zoom
+de iOS) en la escala máxima, persistencia tras recargar, y los 4 casos de migración. Capturas visuales
+de Cola del día y Configuración a 1,7× revisadas: entra todo. **317/317 jest verde.**
+
+`sw.js`: `CACHE` → **`menupro-v6`** (`owner.html` y `owner.css` están en `ASSETS` y ambos cambiaron).
+
+**Pendiente:** deploy. `menu.html` (la carta del cliente) **no** se tocó — decisión del usuario, queda
+para más adelante.
+
+---
+
 ## ✅ Sesión 2026-08-10 — ISS-027 (sesión persistente) + ISS-026 (Cola del día trabada)
 
 **Prompt:** el usuario trajo `conversacion_opues10082026.md` (contexto y prioridades de la etapa) y
