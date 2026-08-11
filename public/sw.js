@@ -1,8 +1,10 @@
 // Bumpear SIEMPRE que cambie alguno de los archivos de ASSETS — si no, los
 // celulares con la PWA instalada siguen viendo la versión vieja para siempre
 // (ver ISS-022). v5: auth guard de la sesión persistente. v6: escala
-// tipográfica más grande + fixes de overflow en owner.html/owner.css.
-const CACHE = 'menupro-v6';
+// tipográfica más grande + fixes de overflow en owner.html/owner.css. v7:
+// ícono de badge propio para push (antes usaba icon-192.png, opaco — Android
+// lo pintaba como un cuadrado gris plano al no poder generar una silueta).
+const CACHE = 'menupro-v7';
 
 const ASSETS = [
   '/owner.html',
@@ -11,6 +13,7 @@ const ASSETS = [
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/badge-96.png',
 ];
 
 self.addEventListener('install', e => {
@@ -56,7 +59,7 @@ self.addEventListener('push', e => {
     self.registration.showNotification(data.title, {
       body:  data.body,
       icon:  data.icon  || '/icons/icon-192.png',
-      badge: data.badge || '/icons/icon-192.png',
+      badge: data.badge || '/icons/badge-96.png',
       tag:   'menupro-preparacion',
       renotify: true,
     })

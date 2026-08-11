@@ -13,6 +13,77 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## 🎯 Sesión 2026-08-11 (parte 3) — Push no llegaba: causa raíz encontrada por SSH + ícono de badge (ISS-025, ISS-031)
+
+Mismo día, continuación. El usuario reportó que las notificaciones push no le llegaban pese a tener
+permisos activados y la PWA instalada — descartando de entrada las 2 causas típicas (permiso denegado,
+PWA no instalada). Diagnóstico en vivo por SSH, paso a paso:
+
+1. `push_subscriptions` en la BD de producción **sí tenía** su suscripción, y correspondía al mismo
+   restaurante ("Restaurante Demo", id 1) al que le mandó la reserva de prueba — descartado "nunca se
+   suscribió" y "restaurante equivocado".
+2. `pm2 logs menupro | grep push` mostró `[Push] Error (sub 10): Received unexpected response code` en
+   cada intento — el servidor sí intentaba mandar, pero fallaba.
+3. Un envío de diagnóstico manual (`webpush.sendNotification` directo capturando `err.body`) reveló el
+   motivo exacto de FCM: **"the VAPID credentials in the authorization header do not correspond to the
+   credentials used to create the subscriptions"** — las VAPID keys del servidor se regeneraron en algún
+   momento después de crearse esa suscripción (y otras 3 más), dejándolas huérfanas para siempre. Riesgo
+   que `deploy.md` ya advertía.
+
+**Mitigado a mano:** el usuario borró el almacenamiento de la PWA en su celular, forzando una
+resuscripción con la clave vigente. **Confirmado funcionando en producción.**
+
+**Fix de código aplicado (mismo día):** `owner.html` (`suscribirPush`) ahora se autorrepara — si el
+navegador rechaza `subscribe()` por una VAPID key vieja, da de baja la suscripción anterior y reintenta,
+sin intervención del usuario. `pushNotificaciones.js` limpia la suscripción de la BD también en 403 (VAPID
+desincronizada), no solo en 410. `tests/push-notificaciones.test.js` (nuevo, 8 casos). El indicador
+visible de Configuración sigue pendiente, pero ya no es urgente — el escenario que lo motivaba (rotación
+de VAPID keys) ya no requiere que nadie lo detecte a mano. Ver `issues/ISS-025-push-no-llega.md`.
+
+**De paso (ISS-031):** una vez confirmado que el push llegaba, el usuario notó que el ícono aparecía como
+un cuadrado gris en vez del logo. Causa: Android fuerza el ícono de badge (barra de estado) a una silueta
+monocromática, y se estaba usando `icon-192.png` (opaco, sin transparencia) también como badge. Generado
+`public/icons/badge-96.png` (monograma "MP" blanco sobre transparente, con Pillow) + `sw.js` bump a `v7`
++ actualizados los 4 puntos que disparan push. El logo de marca real (más allá del monograma) queda para
+más adelante, a pedido explícito del usuario — "cuando ya seamos marca".
+
+**Pendiente:** commit + push de este fix (badge) y del pendiente de ISS-030 (cocina + intervalos, todavía
+sin commitear).
+
+---
+
+## 🎯 Sesión 2026-08-11 (parte 2) — Cocina sin filtro por día + intervalos de polling (ISS-030)
+
+Mismo día, continuación de la sesión del fix de tapper. El usuario pidió dos cosas tras confirmar que
+ese fix funcionaba en producción:
+
+1. **Cocina también debía filtrar "solo por día"**, como ya hace Cola del día desde ISS-026. Era
+   exactamente el riesgo que había quedado anotado sin resolver en la sesión 2026-08-10 (parte 4):
+   `GET /api/orders/activas` sin filtro de fecha y con N+1, usado por `cocina.js` junto con
+   `/api/reservations?flag=es_en_cocina` (tampoco filtraba fecha).
+2. **Subir los intervalos de refresco** de cara a la primera atención masiva del 2026-08-12.
+
+Solución — ver [ISS-030](issues/ISS-030-cocina-sin-filtro-fecha.md):
+- `utils/colaDia.js` — nueva `cocinaDelDia()`, reutilizando `ordenesActivas`/`reservasActivas`.
+- `routes/orders.js` — nuevo `GET /api/orders/cola-cocina`.
+- `public/js/modules/cocina.js` — usa el endpoint único, sin N+1.
+- Intervalos: Cocina 15s→30s, Órdenes/Reservas/Mesas (`owner.html`) 10s→20s. Cola del día se dejó en 30s.
+- `tests/cola-dia.test.js` ampliado con 5 casos para `cocinaDelDia` (20 en el archivo). 330/330 jest
+  verde.
+
+**Pendiente:** commit + push, y confirmar deploy cuando el usuario lo haga.
+
+**Además, en esta sesión:** el usuario reportó que las notificaciones push no le llegan y preguntó si es
+un tema de permisos del celular. Repasado `issues/ISS-025-push-no-llega.md` (diagnosticado, no
+implementado del todo) — el trigger de "pedido/reserva nueva" ya se agregó (commit `4373dce`, previo a
+esta sesión), pero la suscripción push sigue sin feedback visible: si el permiso quedó denegado, si las
+VAPID keys de producción no están cargadas, o si es iPhone sin la PWA instalada a pantalla de inicio, el
+`catch` queda silencioso y no hay ningún indicador en Configuración. Sin ese diagnóstico visible no se
+puede confirmar la causa real solo con lo que cuenta el usuario — falta implementar el punto pendiente de
+ISS-025 (indicador "🔔 Notificaciones: activas/denegadas/sin configurar").
+
+---
+
 ## 🎯 Sesión 2026-08-11 — Fix: cargo de tapper fijo en vez de por unidad (ISS-029)
 
 **Reporte del usuario:** "cuando se asigna para llevar y son + de 1 menú por llevar igual cobra 1.5...

@@ -40,7 +40,7 @@ function enviarPushRestaurante(db, reserva, wpush) {
     title: '🍽 Hora de preparar',
     body:  `Reserva de ${reserva.nombre_cliente} — llega en ${reserva.minutos_preparacion} min`,
     icon:  '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    badge: '/icons/badge-96.png',
   }, wpush);
 }
 

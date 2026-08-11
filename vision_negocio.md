@@ -294,6 +294,7 @@ El dueño define su política (configurable por restaurante):
 - **Modularización completa** owner.html → ES Modules (`utils.js`, `config.js`, `usuarios.js`, `mesas.js`, `cocina.js`, `reservas.js`, `ordenes.js`, `reportes.js`, `pedidos.js`) — ARCH-001 completo 2026-05-23
 - **Sesión persistente de 30 días** (2026-08-10): el dueño abre el ícono de la PWA y ya está dentro, como WhatsApp. Renovación deslizante silenciosa; el admin del SaaS queda acotado a 1 día por ser la cuenta más privilegiada — ISS-027
 - **Cierre de caja** (2026-08-10): la Cola del día muestra solo hoy, y lo que quedó abierto de días anteriores se avisa aparte para que el dueño lo marque como cobrado o no concretado. Nace de un hallazgo de negocio: `total` solo se escribe al cobrar, así que **un pedido que nunca se cerró no aparecía en las Ganancias, nunca** — ISS-026
+- **Cocina filtra solo hoy** (2026-08-11): mismo criterio que Cola del día — antes un pedido/reserva viejo que quedó "en cocina" sin cerrarse se acumulaba ahí para siempre. Intervalos de polling subidos (Cocina 15s→30s, Órdenes/Reservas/Mesas 10s→20s) de cara a la primera atención masiva del 2026-08-12 — ISS-030
 
 ---
 

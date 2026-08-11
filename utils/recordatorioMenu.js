@@ -61,7 +61,7 @@ function procesarRecordatoriosMenu(db, wpush, ahora = new Date()) {
       title: '🍽 No olvides configurar tu menú',
       body:  'Todavía no configuraste el menú del día de hoy.',
       icon:  '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      badge: '/icons/badge-96.png',
     }, wpush);
 
     upd.run(ahora.toISOString(), r.id);

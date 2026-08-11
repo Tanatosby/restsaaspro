@@ -2217,7 +2217,7 @@ setInterval(() => {
     if (tabActiva === 'tab-ord-activas') loadOrdenesActivas();
   }
   if (activePanel === 'reservas') loadReservasActivas();
-}, 10000);
+}, 20000);
 
 // ── Logout ───────────────────────────────────────────────
 async function logout() {
@@ -2341,10 +2341,20 @@ initConfigListeners();
       const { publicKey } = await (await fetch('/api/push/vapid-key')).json();
       if (!publicKey) return;
 
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly:      true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
+      const applicationServerKey = urlBase64ToUint8Array(publicKey);
+      let sub;
+      try {
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+      } catch (errSubscribe) {
+        // El navegador ya tenía una suscripción con una VAPID key distinta a
+        // la actual (ej. keys regeneradas en el servidor — ver ISS-025) y no
+        // deja crear una nueva sin dar de baja la vieja primero. Se
+        // autorrepara: da de baja y reintenta una sola vez.
+        const vieja = await reg.pushManager.getSubscription();
+        if (!vieja) throw errSubscribe;
+        await vieja.unsubscribe();
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+      }
 
       await fetch('/api/push/subscribe', {
         method:      'POST',

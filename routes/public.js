@@ -346,7 +346,7 @@ router.post('/orders', (req, res) => {
     title: '🆕 Nueva orden',
     body:  `${nombre_cliente.trim()} — mesa ${mesa || 's/n'}`,
     icon:  '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    badge: '/icons/badge-96.png',
   }, webpush);
 
   res.status(201).json({
@@ -486,7 +486,7 @@ router.post('/reservations', (req, res) => {
     title: '🆕 Nueva reserva',
     body:  `${nombre_cliente.trim()}${hora_llegada?.trim() ? ' — llega ' + hora_llegada.trim() : ''}`,
     icon:  '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    badge: '/icons/badge-96.png',
   }, webpush);
 
   res.status(201).json({

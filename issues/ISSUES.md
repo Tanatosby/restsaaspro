@@ -16,14 +16,15 @@ _(vacío)_
 
 ## Fix pendiente (diagnosticado, sin implementar)
 
-| ID | Título | Módulo | Prioridad |
-|----|--------|--------|-----------|
-| [ISS-025](ISS-025-push-no-llega.md) | Notificaciones push no llegan / no existe aviso de "pedido nuevo" | `sw.js`, `push.js`, `autoPreparacion.js` | 🟡 Media-Alta |
+_(vacío)_
 
 ## Resueltos
 
 | ID | Título | Fecha resolución | Solución |
 |----|--------|-----------------|---------|
+| [ISS-025](ISS-025-push-no-llega.md) | Push no llegaba pese a permisos + PWA instalada | 2026-08-11 | Causa raíz encontrada por SSH: VAPID keys del servidor regeneradas después de crearse las suscripciones — FCM las rechazaba con 403 para siempre. Fix: `owner.html` se autorrepara (da de baja + resuscribe si el navegador rechaza la clave actual); `pushNotificaciones.js` limpia también en 403, no solo en 410. 8 tests nuevos. |
+| [ISS-031](ISS-031-badge-push-gris.md) | Ícono de notificación push aparece como cuadrado gris en vez del logo | 2026-08-11 | Android fuerza el `badge` (ícono chico de barra de estado) a una silueta monocromática — necesita fondo transparente. Se usaba `icon-192.png` (opaco) también como badge. Nuevo `badge-96.png` (monograma "MP" blanco sobre transparente) + `sw.js` bump a `v7` + los 4 puntos que disparan push actualizados. |
+| [ISS-030](ISS-030-cocina-sin-filtro-fecha.md) | Cocina sin filtro por día (mismo patrón que ISS-026) + intervalos de polling muy cortos | 2026-08-11 | `GET /api/orders/activas` + `/api/reservations?flag=es_en_cocina` no filtraban fecha (con N+1). Nueva `cocinaDelDia()` en `utils/colaDia.js` (reutiliza `ordenesActivas`/`reservasActivas` de ISS-026) + `GET /api/orders/cola-cocina`. Intervalos subidos: Cocina 15s→30s, Órdenes/Reservas/Mesas 10s→20s. |
 | [ISS-029](ISS-029-cargo-tapper-fijo.md) | Cargo de tapper fijo en vez de por unidad (2 menús para llevar solo sumaban 1 tapper) | 2026-08-11 | `cargo_modalidad` era un monto fijo por orden/reserva en vez de escalar por cantidad. Nueva `contarUnidadesMenu()` en `utils/menuPricing.js` (deduce cuántos menús se pidieron contando filas de secciones obligatorias por `id_menu_dia` — no hay ID de "instancia de menú" en la BD) + `calcularCargoModalidad()` en `routes/public.js`: `costo_tapper × (unidades de menú + unidades de carta)`, más tarifa de delivery fija si aplica. Ampliado a pedido del usuario para que la carta también sume tapper por ítem. |
 | [ISS-028](ISS-028-overflow-letra-grande.md) | Scroll horizontal en el panel al agrandar la letra | 2026-08-10 | Encontrado al medir antes de subir la escala tipográfica, no reportado. Dos flex items sin `min-width:0` que nunca encogían: el bloque "Link del menú"/QR de Configuración (desbordaba ya a 1.15×, el nivel "Grande" activo en producción) y `.page-title` del topbar (desde 1.4×, afectando todos los paneles). Fix: `min-width:0` + `text-overflow:ellipsis` + padding del topbar en px. Tabs, carrusel de Home y tabla de Usuarios resultaron falsos positivos — ya tenían su propio `overflow-x:auto`. |
 | [ISS-027](ISS-027-sesion-se-pierde.md) | Hay que iniciar sesión cada vez que se abre la app | 2026-08-10 | Dos causas: JWT/cookie de 8h **y** sesión guardada en `sessionStorage` (se borra al cerrar la PWA) — esta última era la real. Sesión de 30 días con renovación deslizante vía `GET /api/auth/me` (admin acotado a 1 día), sesión movida a `localStorage` con migración automática, `sameSite: 'lax'`, splash antes del paint en `login.html` y limpieza de sesión en el 401 para evitar el bucle login ↔ panel. |

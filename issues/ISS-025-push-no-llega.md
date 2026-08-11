@@ -1,8 +1,62 @@
 # ISS-025 — Notificaciones push no llegan / no existe aviso de "pedido nuevo"
 
-**Módulo:** `public/sw.js`, `public/owner.html`, `routes/push.js`, `utils/autoPreparacion.js`
+**Módulo:** `public/sw.js`, `public/owner.html`, `routes/push.js`, `utils/autoPreparacion.js`,
+`utils/pushNotificaciones.js`
 **Prioridad:** 🟡 Media-Alta — afectó directamente la primera experiencia piloto (ver `pilotos.md`)
-**Estado:** 🔍 Diagnosticado — decisión de producto pendiente, sin implementar
+**Estado:** ✅ Resuelto — 2026-08-11 (causa raíz + autorreparación de código)
+
+---
+
+## Actualización 2026-08-11 — causa raíz real encontrada
+
+El trigger de "pedido/reserva nueva" (causa 1 del diagnóstico original) **ya se había implementado**
+(commit `4373dce`, Gap 21) antes de esta sesión. El usuario probó de nuevo con permiso de notificaciones
+confirmado y la PWA ya instalada — y seguía sin llegar nada. Diagnóstico paso a paso vía SSH (ver
+`status.md` sesión 2026-08-11 parte 3):
+
+1. `push_subscriptions` sí tenía la suscripción del usuario (`id_restaurante=1`, el mismo del "menú demo"
+   que probó) — descartado "nunca se suscribió".
+2. `pm2 logs` mostraba `[Push] Error (sub 10): Received unexpected response code` en cada intento.
+3. Un envío manual de diagnóstico (`webpush.sendNotification` directo, capturando `err.body`) reveló el
+   motivo real de FCM: **"the VAPID credentials in the authorization header do not correspond to the
+   credentials used to create the subscriptions"**.
+
+**Causa raíz:** las VAPID keys del servidor se regeneraron/cambiaron en algún momento después de que esa
+suscripción (y otras 3: Karina ×2, Leo) se crearan en el navegador — riesgo que `deploy.md` ya advertía
+explícitamente. La suscripción queda huérfana para siempre: FCM la rechaza con 403 en cada intento, y
+`pushNotificaciones.js` **solo limpia suscripciones en 410**, no en este 403, así que el registro roto se
+queda en la BD reintentando en vano.
+
+**Por qué nunca se autorreparó:** en `owner.html`, si el navegador ya tiene una suscripción con una clave
+distinta a la actual, `pushManager.subscribe()` tira un error — que el `catch (_) {}` silencioso se traga
+sin reintentar ni avisar.
+
+**Mitigación aplicada (manual, sin cambio de código):** el usuario borró el almacenamiento de la PWA en
+su celular (`Ajustes → Apps → Menú Pro → Almacenamiento → Borrar`), forzando una resuscripción limpia con
+la clave actual. **Confirmado funcionando.**
+
+**Fix de código aplicado (mismo día, para que esto no dependa de que cada usuario lo detecte y borre a
+mano la próxima vez que se regeneren las VAPID keys):**
+1. `public/owner.html` (`suscribirPush`) — si `pushManager.subscribe()` falla (suscripción vieja con una
+   VAPID key distinta a la vigente), da de baja la suscripción existente (`getSubscription()` +
+   `unsubscribe()`) y reintenta una vez. Autorreparación en cada carga de la página, sin intervención del
+   usuario.
+2. `utils/pushNotificaciones.js` — el 403 de "VAPID credentials no corresponden" ahora limpia la
+   suscripción de la BD, igual que el 410. Cualquier otro error (ej. 500 transitorio) sigue sin borrarse.
+3. `tests/push-notificaciones.test.js` (nuevo, 8 casos): limpieza en 410 y en 403, no-limpieza en otros
+   errores, aislamiento por restaurante, JSON corrupto no rompe el resto. 338/338 jest verde.
+
+**Pendiente (fuera de esta sesión):** indicador visible en Configuración ("🔔 Notificaciones:
+activas/denegadas/sin configurar") — sigue sin implementarse, ver checklist original abajo. No bloquea
+nada — con el fix de autorreparación, el escenario que lo motivaba (VAPID keys rotadas) ya no requiere
+intervención manual.
+
+Ver también [ISS-031](ISS-031-badge-push-gris.md) — arreglado de paso el ícono de badge (aparecía como
+cuadrado gris), encontrado en la misma conversación al confirmar que el push ya llegaba.
+
+---
+
+## Diagnóstico original (2026-08-XX)
 
 ## Reporte original
 
