@@ -19,6 +19,8 @@ const usuariosRoutes     = require('./routes/usuarios');
 const { router: reportesRoutes } = require('./routes/reportes');
 const mesasRoutes        = require('./routes/mesas');
 const pushRoutes         = require('./routes/push');
+const pensionistasRoutes = require('./routes/pensionistas');
+const pensionistaRoutes  = require('./routes/pensionista');
 const { iniciarJob }              = require('./utils/autoPreparacion');
 const { iniciarJob: iniciarJobRecordatorioMenu } = require('./utils/recordatorioMenu');
 
@@ -98,6 +100,8 @@ app.use('/api/usuarios',  usuariosRoutes);
 app.use('/api/reportes',  reportesRoutes);
 app.use('/api/mesas',     mesasRoutes);
 app.use('/api/push',      pushRoutes);
+app.use('/api/pensionistas', pensionistasRoutes);
+app.use('/api/pensionista',  pensionistaRoutes);
 
 
 const htmlRoutes = [

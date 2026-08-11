@@ -6,6 +6,18 @@
 
 ---
 
+## 0-bis. ESTADO DE IMPLEMENTACIÓN (actualizado 2026-08-11 noche)
+
+Backend del MVP (fase 1, sección 10) **implementado y probado** (723/723 jest):
+tablas + rol (§3), CRUD del owner (§6, `routes/pensionistas.js`), pedido con descuento de saldo y
+bloqueo por saldo insuficiente (§4/§7, `routes/pensionista.js`), cancelación con devolución de
+saldo+stock (§7, `utils/pensionistaPedido.js`). Detalle en `status.md` sesión 2026-08-11 parte 7.
+
+**Falta del MVP:** integración en Cola del día/Cocina (§5), `login.html` `ROLE_REDIRECT` (§2),
+`pensionista.html` (§9), panel del owner en `owner.html` (§6), reportería separada (§8).
+
+---
+
 ## 0. DECISIONES CERRADAS (2026-08-10) — leer antes que el resto
 
 **El resto del documento sigue siendo válido como análisis, pero varias alternativas que ahí

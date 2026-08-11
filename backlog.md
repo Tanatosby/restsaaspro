@@ -48,10 +48,9 @@ Si el miércoles atienden 60+ menús con la versión que hoy corre en producció
 5. **🟢 Contador "menús vendidos hoy"** — ver la sección de Reportería. **Es la métrica que la clienta
    va a querer mirar justo ese día**, y es mucho más chica que el rediseño completo. Si algo de
    features entra el martes, que sea esto.
-6. **⏸️ Pensionistas — postergar.** La lógica ya está cerrada y no se va a perder. Pero es un módulo
-   grande (rol nuevo, tablas, rutas, panel del owner, página nueva) y meterlo el día antes de la
-   primera atención masiva es exactamente cuando no conviene tocar el sistema. Retomarlo el jueves,
-   con el aprendizaje del miércoles encima.
+6. ~~⏸️ Pensionistas — postergar.~~ **Anulado por el usuario la noche del 2026-08-11**: pidió
+   avanzar igual pese al riesgo señalado acá. Se hizo el backend del MVP (pasos 1-5), probado a
+   fondo en cada paso. Ver sección propia más abajo y `status.md` parte 7.
 
 ---
 
@@ -166,7 +165,14 @@ cambiar** — no es un ajuste de tamaño, es un rediseño de qué se muestra y p
 
 ---
 
-## 🎯 Módulo Pensionistas — LÓGICA CERRADA, listo para implementar
+## 🎯 Módulo Pensionistas — EN IMPLEMENTACIÓN (backend MVP: pasos 1-5 hechos, 2026-08-11 noche)
+
+> **Decisión del usuario, 2026-08-11 noche:** avanzar el mismo día pese al riesgo señalado más
+> arriba (víspera de la atención masiva). Confirmado explícitamente. El backend del MVP (tablas,
+> rol, CRUD del owner, pedido con descuento de saldo, cancelación con devolución) ya está hecho y
+> probado (723/723 jest). **Falta:** integración en Cola del día/Cocina, `login.html`
+> `ROLE_REDIRECT`, `pensionista.html`, panel del owner en `owner.html`, reportería separada. Ver
+> detalle en `status.md`, sesión 2026-08-11 parte 7.
 
 **Casi todo el target tiene pensionistas almorzando en su menú, y lo piden.** No es especulativo: es
 funcionalidad de segmento y probablemente un diferenciador, porque los sistemas de restaurante

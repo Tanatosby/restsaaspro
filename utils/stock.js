@@ -74,4 +74,13 @@ function itemsMenuDeReserva(db, reservaId) {
   `).all(reservaId);
 }
 
-module.exports = { descontarStock, devolverStock, itemsMenuDeOrden, itemsMenuDeReserva };
+function itemsMenuDePedidoPensionista(db, idPedido) {
+  return db.prepare(`
+    SELECT id_componente, cantidad FROM pedido_pensionista_menu_items WHERE id_pedido = ?
+  `).all(idPedido);
+}
+
+module.exports = {
+  descontarStock, devolverStock,
+  itemsMenuDeOrden, itemsMenuDeReserva, itemsMenuDePedidoPensionista,
+};

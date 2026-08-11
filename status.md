@@ -13,6 +13,65 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## 🎯 Sesión 2026-08-11 (parte 8) — Pensionistas: backend completo (pasos 1-5 del MVP)
+
+**Continúa la parte 7** (sesión distinta, misma noche): esa sesión había dejado el pedido del
+usuario documentado pero "pendiente de aprobación", sin código escrito. En esta sesión el usuario
+volvió a pedirlo directamente ("avancemos con pensionistas"); se le marcó otra vez el conflicto con
+`backlog.md` (que lo posponía al jueves), confirmó dos veces que quería proceder igual ("sí,
+implementar ahora"), y esta vez sí se implementó — a diferencia del plan acotado que proponía la
+parte 7 (solo schema/rol/panel, sin tocar pedidos), acá se hizo el flujo completo de pedido +
+descuento de saldo + cancelación, porque el usuario no puso ese límite en esta conversación. Cada
+paso se probó por separado (suite jest completa + boot del server + verificación de que no queda
+data huérfana) antes de avanzar al siguiente.
+
+1. **`config/database.js`** — rol `pensionista` en `roles`; columna
+   `restaurantes.pensionista_saldo_aviso` (default 20, umbral de aviso configurable por
+   restaurante — corregido en la sesión: iba a quedar por pensionista individual, no es lo que
+   dice el documento); 5 tablas nuevas (`pensionistas`, `pensionista_movimientos`,
+   `pedidos_pensionista`, `pedido_pensionista_menu_items`, `pedido_pensionista_carta_items`) +
+   índices, todo migración idempotente igual que el resto del archivo.
+2. **`routes/pensionistas.js`** (nuevo, CRUD del owner) — crear (usuario+pensionista+recarga
+   inicial en una transacción), listar, recargar saldo, historial de movimientos, editar, cambiar
+   password, baja lógica (`activo`).
+3. **`routes/usuarios.js`** — `GET /api/usuarios` excluye `role='pensionista'` (no se mezcla con
+   el panel de staff).
+4. **`routes/pensionista.js`** (nuevo, singular — el propio pensionista logueado) — `GET /me`
+   (saldo + `saldo_bajo`), `POST /pedido` (valida horario, calcula total con
+   `calcularMenuTotal`, bloquea si el saldo no alcanza, descuenta stock y saldo en una sola
+   transacción, registra el movimiento `consumo`), `GET /mis-pedidos`.
+5. **Cancelación** (`utils/pensionistaPedido.js`, nuevo) — helper compartido
+   `cancelarPedidoPensionista()`: devuelve stock (`devolverStock`) + saldo
+   (`pensionista_movimientos` tipo `devolucion`) en una transacción. Expuesto en dos lados:
+   `PATCH /api/pensionista/pedido/:id/cancelar` (el propio pensionista) y
+   `PATCH /api/pensionistas/pedidos/:id/estatus` (owner/staff, mismo set de flags que
+   `PATCH /api/orders/:id/estatus`, para mover el pedido por el flujo de cocina desde Cola del
+   día/Cocina — llegará a usarse cuando el paso 6 los integre ahí).
+
+**Tests nuevos:** `tests/pensionistas.test.js` (15), `tests/pensionista-pedidos.test.js` (9),
+`tests/pensionista-cancelacion.test.js` (7) — 31 casos nuevos. **723/723 jest verde** (692 base +
+31, sin contar la duplicación por el worktree suelto — ver nota abajo). Verificado en cada paso que
+no queda data huérfana en `database.sqlite` (conteos de `restaurantes`/`usuarios` vuelven a su
+línea base) y que el server bootea y responde `401` sin token en las rutas nuevas.
+
+**Nota de proceso:** el primer intento de `pensionista-pedidos.test.js` se colgó — no era un bug de
+la ruta (los 9 casos ya pasaban), sino que el `afterAll` borraba el restaurante de prueba antes que
+sus filas dependientes (menú/carta) y violaba una FK; Jest quedaba esperando un `server.close()`
+que nunca llegaba a ejecutarse. Corregido el orden de limpieza + `try/finally`.
+
+**Nota aparte, no bloqueante:** sigue sin resolverse que `.claude/worktrees/foamy-moseying-nebula/`
+(carpeta sin trackear en git) duplica el proyecto entero y hace que Jest corra cada test dos veces
+si se apunta a la raíz sin filtro — no se tocó, es indiferente para el resultado (todos verdes),
+pero infla el conteo total reportado por `npx jest` sin filtro.
+
+**Pendiente para la próxima sesión (paso 6 en adelante):** integrar `pedidos_pensionista` en
+`utils/colaDia.js` (Cola del día + Cocina) con tag visual 🪪, agregar `pensionista:
+'/pensionista.html'` a `ROLE_REDIRECT` en `login.html`, construir `public/pensionista.html` y el
+panel "Pensionistas" en `owner.html`, y la reportería separada (recargas vs. consumo) de
+`pensionistas.md` §8. **Pendiente: deploy** — preguntar al usuario cuando corresponda.
+
+---
+
 ## 🎯 Sesión 2026-08-11 (parte 6) — Pensionistas, primer paso: dominio @menupro.tech obligatorio
 
 El usuario quería arrancar el módulo Pensionistas completo hoy, la noche antes de la primera

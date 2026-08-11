@@ -31,6 +31,7 @@ router.get('/', authorize('owner', 'admin'), (req, res) => {
     FROM usuarios u
     JOIN roles r ON u.id_rol = r.id
     WHERE u.id_restaurante = ?
+      AND r.nombre != 'pensionista'
     ORDER BY r.nombre ASC, u.nombre ASC
   `).all(restauranteId);
 

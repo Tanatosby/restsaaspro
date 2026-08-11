@@ -31,6 +31,7 @@ INSERT OR IGNORE INTO roles (nombre, requiere_restaurante) VALUES ('admin', 0);
 INSERT OR IGNORE INTO roles (nombre, requiere_restaurante) VALUES ('owner', 1);
 INSERT OR IGNORE INTO roles (nombre, requiere_restaurante) VALUES ('cocinero', 1);
 INSERT OR IGNORE INTO roles (nombre, requiere_restaurante) VALUES ('mozo', 1);
+INSERT OR IGNORE INTO roles (nombre, requiere_restaurante) VALUES ('pensionista', 1);
 
 -- ============================================================
 -- 3. USUARIOS
@@ -503,6 +504,101 @@ db.exec(`
 // Guarda cuándo se envió el último push "no olvides configurar tu menú" para
 // no reenviarlo antes de que pasen 8 horas, aunque el job corra más seguido.
 try { db.exec(`ALTER TABLE restaurantes ADD COLUMN ultimo_recordatorio_menu TEXT DEFAULT NULL`); } catch (_) {}
+
+// Umbral de saldo bajo para avisar al pensionista — configurable por
+// restaurante (no por pensionista individual), ver pensionistas.md §0 punto 4.
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN pensionista_saldo_aviso REAL DEFAULT 20`); } catch (_) {}
+
+// ============================================================
+// MÓDULO PENSIONISTAS — ver pensionistas.md §0-§3 (decisiones cerradas 2026-08-10)
+// El pensionista es un usuario más (id_rol='pensionista'); esta tabla lo
+// extiende 1-a-1 con los campos propios de saldo prepagado.
+// ============================================================
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pensionistas (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_usuario     INTEGER NOT NULL UNIQUE,
+    apellido       TEXT NOT NULL,
+    telefono       TEXT,
+    saldo          REAL NOT NULL DEFAULT 0,
+    activo         INTEGER DEFAULT 1,
+    id_restaurante INTEGER NOT NULL,
+    created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario)     REFERENCES usuarios(id),
+    FOREIGN KEY (id_restaurante) REFERENCES restaurantes(id)
+  )
+`);
+
+// Ledger completo de saldo — toda recarga y todo consumo queda registrado.
+// Fuente de verdad para reportería y para auditar reclamos de saldo.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pensionista_movimientos (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_pensionista        INTEGER NOT NULL,
+    tipo                  TEXT NOT NULL CHECK (tipo IN ('recarga','consumo','ajuste','devolucion')),
+    monto                 REAL NOT NULL,
+    saldo_resultante       REAL NOT NULL,
+    id_pedido_pensionista INTEGER,
+    nota                  TEXT,
+    id_usuario_registro   INTEGER NOT NULL,
+    created_at            DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_pensionista)  REFERENCES pensionistas(id),
+    FOREIGN KEY (id_usuario_registro) REFERENCES usuarios(id)
+  )
+`);
+
+// Tercera entidad de pedido, deliberadamente separada de `ordenes` y
+// `reservas` — nunca se confunde con el pedido de una mesa walk-in ni con
+// una reserva anticipada. Reutiliza estatus_orden: mismo ciclo de vida en
+// cocina (pendiente→preparando→entregando→completado/cancelado); no usa
+// estado_pago porque el pedido nace ya cobrado (descuento de saldo).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pedidos_pensionista (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_pensionista INTEGER NOT NULL,
+    mesa           INTEGER,
+    modalidad      TEXT NOT NULL DEFAULT 'en_local',
+    fecha          TEXT NOT NULL,
+    total          REAL NOT NULL,
+    id_restaurante INTEGER NOT NULL,
+    id_estatus     INTEGER DEFAULT 1,
+    created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_pensionista)  REFERENCES pensionistas(id),
+    FOREIGN KEY (id_restaurante)  REFERENCES restaurantes(id),
+    FOREIGN KEY (id_estatus)      REFERENCES estatus_orden(id)
+  )
+`);
+
+// Mismo patrón que orden_menu_items / orden_carta_items
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pedido_pensionista_menu_items (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_pedido      INTEGER NOT NULL,
+    id_menu_dia    INTEGER NOT NULL,
+    id_componente  INTEGER NOT NULL,
+    cantidad       INTEGER DEFAULT 1,
+    FOREIGN KEY (id_pedido)      REFERENCES pedidos_pensionista(id),
+    FOREIGN KEY (id_menu_dia)    REFERENCES menus_dia(id),
+    FOREIGN KEY (id_componente)  REFERENCES componentes_menu_dia(id)
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pedido_pensionista_carta_items (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_pedido       INTEGER NOT NULL,
+    id_plato_carta  INTEGER NOT NULL,
+    cantidad        INTEGER DEFAULT 1,
+    precio_unitario REAL NOT NULL,
+    FOREIGN KEY (id_pedido)       REFERENCES pedidos_pensionista(id),
+    FOREIGN KEY (id_plato_carta)  REFERENCES platos_carta(id)
+  )
+`);
+
+// Índices de performance — mismo criterio que ordenes/reservas (ISS-026/030)
+db.exec(`CREATE INDEX IF NOT EXISTS idx_pedidos_pensionista_restaurante ON pedidos_pensionista(id_restaurante)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_pedidos_pensionista_fecha       ON pedidos_pensionista(fecha)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_pensionista_movimientos_pensionista ON pensionista_movimientos(id_pensionista)`);
 
 console.log('✅ Database ready');
 
