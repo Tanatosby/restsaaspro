@@ -13,6 +13,110 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## ⏸️ Sesión 2026-08-10 (parte 3) — Auto-actualización del SW CONGELADA + estado previo al deploy
+
+**Leer esto antes de tocar `sw.js`.** Sesión sin cambios de código: se analizó la auto-actualización
+del service worker (punto 4 del backlog de `conversacion_opues10082026.md`) y **el usuario decidió
+congelarla**. El motivo es correcto: el beneficio es hipotético y el riesgo es romperle la app a un
+dueño piloto justo antes de un deploy grande.
+
+### Estado del repo al cerrar la sesión
+
+- Working tree **limpio**, `main` == `origin/main`. Nada sin commitear.
+- **Solo 2 commits sin desplegar** — los de ayer: `181ddf3` (`ISS-027` sesión persistente +
+  `ISS-026` Cola del día) y `6d4576e` (`ISS-028` letra más grande + overflow).
+- Todo lo de julio (gate de pago, Gap 18/19/21, íconos "MP", `ISS-018` a `ISS-024`) **ya está en
+  producción** — ver "Corrección del log" abajo. `ISS-025` sigue sin fix, no es tema de deploy.
+- `sw.js` local en `menupro-v6`; producción debería estar en `menupro-v4`. `.env` de producción
+  **sin confirmar** las VAPID reales.
+
+### Hallazgo técnico (para no re-descubrirlo)
+
+`self.skipWaiting()` **ya existe** en `sw.js:20` y `clients.claim()` en `sw.js:29`. La tarea del
+backlog estaba mal enunciada: no falta `skipWaiting`, ya está. Lo que falta, si algún día se retoma,
+es lo otro: (1) la pestaña abierta nunca se recarga sola, así que el SW nuevo toma control pero el
+HTML pintado sigue siendo el viejo; (2) nadie llama a `reg.update()` mientras la app está abierta
+—`register()` solo corre al cargar la página (`owner.html:2328`)—, así que una PWA suspendida en
+background no descubre el `sw.js` nuevo hasta que se la cierra y reabre. El patrón correcto sería
+**quitar** `skipWaiting` del `install`, detectar el SW en `waiting` desde la página, y ofrecer un
+banner con tap (no recarga automática: recargarle la pantalla a un dueño a media orden en hora punta
+es peor que el problema).
+
+### ⚠️ Corrección del log — hubo un deploy que nunca se registró
+
+**`status.md` estaba incompleto.** La última sesión de deploy registrada era el **2026-07-09**
+(`status.md:456`), lo que daba a entender que había 16 commits sin desplegar. **Es falso.** El
+usuario confirmó que en producción ya están el ícono "MP" (`f626c98`, 2026-07-16) y el tamaño de
+letra ajustable (`37a85a2`, 2026-07-14).
+
+Corrobora desde el propio log: el análisis de `ISS-028` (sesión de ayer) constató que el overflow del
+bloque "Link del menú" *"desbordaba desde 1.15×, **el nivel 'Grande' que ya estaba activo en
+producción**"* — es decir, ayer ya se observó esa feature de julio corriendo en el servidor.
+
+**Conclusión:** hubo un deploy manual entre el 2026-07-16 y el 2026-08-10, hecho por la consola web
+del Droplet, que no quedó anotado. **Producción está en `f626c98` o posterior.**
+
+**Confirmado en campo por el usuario (2026-08-10):** el dueño **ya está viendo la letra grande en su
+celular**. Es evidencia de uso real, no de repo: la feature de julio llegó al dispositivo del dueño y
+**el service worker se actualizó solo**, sin que nadie le pidiera cerrar y reabrir la app. Es el
+argumento más fuerte para descartar la auto-actualización del SW del backlog.
+
+**Lección de proceso:** todo deploy hecho por la consola web debe anotarse en `status.md`, o el log
+miente sobre el estado real de producción y las decisiones se toman sobre datos falsos (como estuvo a
+punto de pasar en esta sesión).
+
+**Verificar mañana en el servidor, toma 5 segundos y cierra el tema:**
+`cd /var/www/menupro && git log -1 --oneline` → deja constancia del commit exacto en el que estaba
+producción **antes** del pull.
+
+**Impacto en el piloto #1:** sigue en pie que probó una versión vieja. Usó la app el 13–14 de julio,
+y los fixes `ISS-018` a `ISS-024` se desplegaron **después** de esos dos días.
+
+### Plan acordado
+
+1. **Mañana:** el usuario despliega a producción (`git pull origin main` + `pm2 restart menupro`) y
+   prueba desde el celular. Trabajará **desde la otra laptop**. Son solo 2 commits (los de ayer).
+2. Anotar el `git log -1` previo al pull, para cerrar la corrección de arriba.
+3. Si tras el deploy los cambios se ven **sin cerrar y reabrir la app** → la auto-actualización del
+   SW queda descartada definitivamente y se borra del backlog. Que el ícono "MP" y la letra
+   ajustable hayan llegado solos al celular del dueño ya apunta fuerte en esa dirección.
+4. **Avisarle al dueño que la letra le va a crecer otra vez.** Hoy ve la escala de julio
+   (14 / 16,1 / 18,2px); el deploy de mañana la sube a **16,1 / 19,6 / 23,8px** y la migración
+   `mp-font-scale-v2` le sube su preferencia guardada un nivel automáticamente (nunca la baja). Si
+   no se le avisa, un cambio de tamaño que él no pidió puede leerse como una falla.
+5. Si hay que cerrar y reabrir para verlos → se retoma con el diseño descrito arriba.
+6. El usuario avisa el resultado. **Hasta entonces, no tocar `sw.js` salvo el bump de `CACHE` que ya
+   exige `ISS-022` cuando cambie algún archivo de `ASSETS`.**
+
+### 🆕 Regla de proceso nueva: preguntar por el deploy después de cada commit
+
+Acordada en esta sesión, a pedido del usuario. **Al terminar cada commit, Claude debe preguntarle si
+ya está desplegado**, y anotar la respuesta en `status.md`. Ataca la causa raíz del desfase que se
+corrigió hoy: el deploy lo hace el usuario a mano, a veces días después y desde otra laptop, así que
+el log solo puede quedar exacto si se le pregunta. Sin eso, cualquier sesión futura vuelve a calcular
+mal qué está en producción. Documentada en `CLAUDE.md`.
+
+### 🔒 Regla confirmada: los deploys los hace siempre el usuario
+
+**Claude Code no despliega. Nunca tuvo ni va a tener acceso al servidor.** No es una limitación
+temporal por la passphrase — es cómo funciona el proyecto. Documentado en `deploy.md` §16.
+
+- Cuando una sesión cierra con "pendiente: deploy", **el trabajo de Claude ya está completo**; el
+  deploy es un paso manual del usuario, cuando él pueda.
+- Claude no debe proponer automatizar deploys, cargar claves en el `ssh-agent` ni pedir credenciales.
+- El usuario ejecuta por **consola web del Droplet** o SSH interactivo, y **anota el deploy en
+  `status.md`** (commit + fecha). Saltarse esa anotación es lo que produjo la corrección de arriba.
+
+**Sobre la clave SSH:** la passphrase de `~/.ssh/id_rsa` no se recuerda de memoria (está en un cuaderno
+en la oficina); el `ssh-agent` de Windows está `Stopped`/`Disabled` y la passphrase no es recuperable
+del archivo (`aes256-ctr` + bcrypt). No bloquea nada: la consola web del Droplet no necesita la clave.
+Plan B documentado en `deploy.md` §16 → "Acceso SSH al servidor".
+
+**Siguiente del backlog tras el deploy:** **3.3** entrada directa a Cola del día (último P0 abierto;
+3.1 y 3.2 se cerraron ayer).
+
+---
+
 ## ✅ Sesión 2026-08-10 (parte 2) — Letra más grande + 2 bugs de overflow (ISS-028)
 
 **Prompt:** "ahora sigamos con la letra más grande aún, ya está grande, más grande" — punto 3.1 del
@@ -160,9 +264,11 @@ día distinto al que estaba evaluando. Fix: `fechaLima()` ahora acepta un moment
 deriva la fecha de su propio `ahora`.
 
 **Pendiente:**
-- **Deploy a producción** — acumulado con todo lo de julio (íconos "MP", Gap 21, fixes ISS-018 a
-  ISS-025). Avisar que, igual que con ISS-022, quien tenga la PWA instalada debe **cerrar y reabrir la
-  app una vez** para que el navegador note el `sw.js` nuevo (`menupro-v5`).
+- **Deploy a producción** — ~~acumulado con todo lo de julio (íconos "MP", Gap 21, fixes ISS-018 a
+  ISS-025)~~. **Corregido en la sesión parte 3:** lo de julio **ya estaba desplegado** (deploy manual
+  sin registrar); lo único pendiente son los 2 commits del 2026-08-10. Avisar que, igual que con
+  ISS-022, quien tenga la PWA instalada podría necesitar **cerrar y reabrir la app una vez** para que
+  el navegador note el `sw.js` nuevo (`menupro-v6`).
 - `GET /api/orders/activas` (panel de **Órdenes**, no la Cola) conserva su N+1 y su falta de filtro por
   fecha. No se tocó para no cambiar ese panel en el mismo trabajo; migrarlo a `utils/colaDia.js` es
   directo si aparece lentitud ahí.

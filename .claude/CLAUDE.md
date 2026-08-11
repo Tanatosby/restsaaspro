@@ -70,6 +70,16 @@ Al finalizar cada tarea o sesión de trabajo, siempre actualizar todos los `*.md
 
 **El objetivo:** que cualquier sesión futura (desde cualquier laptop) arranque con documentación exacta del estado real del proyecto.
 
+## Deploys — los hace SIEMPRE el usuario
+
+**Claude Code no despliega y no debe intentarlo.** No tiene acceso al servidor de producción y no es algo por resolver: es cómo funciona el proyecto. Todo deploy lo ejecuta el usuario a mano, por la consola web del Droplet o por SSH interactivo. Detalle completo en `deploy.md` §16.
+
+- Cuando una tarea termina con "pendiente: deploy", **el trabajo de Claude ya está completo**.
+- No proponer automatizar deploys, cargar claves en el `ssh-agent`, ni pedir credenciales del servidor.
+- **Al terminar cada commit, preguntarle al usuario si ya está desplegado** y anotar la respuesta en `status.md` (commit + fecha). El deploy suele ocurrir horas o días después, a veces desde la otra laptop, así que sin preguntar el log se desactualiza.
+
+**Por qué importa:** el 2026-08-10 una sesión calculó **16 commits pendientes de deploy cuando en realidad eran 2** — un deploy hecho por la consola web entre el 16 de julio y el 10 de agosto nunca se anotó. Con el dato equivocado casi se implementa una feature (auto-actualización del service worker) para resolver un problema que ya no existía. **Un log de deploys inexacto hace que se tomen decisiones de producto sobre datos falsos.**
+
 ## Gestión de Issues
 
 El proyecto tiene una carpeta `issues/` en la raíz para tracking de bugs y problemas encontrados en producción/testing.
