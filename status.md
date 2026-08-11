@@ -31,7 +31,19 @@ paso chico e independiente** ya identificado: forzar `@menupro.tech` en la creac
 - Docs: `backlog.md` y `pensionistas.md` §0 marcan el punto 5 como completado. El resto del módulo
   (tablas, rol nuevo, panel, `pensionista.html`) sigue postergado al jueves.
 
-**Pendiente:** commit + push, y confirmar deploy cuando el usuario lo haga.
+**Commit `2a60ef4` pusheado a `main` y confirmado desplegado en producción por el usuario el
+2026-08-11.**
+
+---
+
+## 🎯 Sesión 2026-08-11 (parte 7) — Pensionistas: el usuario vuelve a pedir avanzar la noche antes
+
+El usuario retomó el pedido de arrancar el módulo grande hoy mismo (la noche antes de la atención
+masiva del miércoles 12/08), con el argumento de que es una feature útil para la dueña actual. Se le
+recordó el riesgo documentado en `backlog.md` (tocar Cola del día/Cocina, los módulos que reciben la
+carga real mañana) y se propuso un TODO acotado: avanzar con lo que es aislado y no toca las rutas
+activas de pedidos (schema, rol, panel del owner), dejando **Cola del día, Cocina y reportería para
+después del miércoles**. Pendiente de aprobación del usuario antes de escribir código.
 
 ---
 
