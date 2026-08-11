@@ -44,8 +44,8 @@ validación actual del backend ("La orden debe tener al menos un ítem") esos sc
 veces si se corrieran tal cual. Quedan desactualizados; si se retoma k6 en el futuro, hay que agregarles
 al menos un ítem válido por request antes de usarlos.
 
-**Pendiente:** commit + push de este fix, y confirmar deploy cuando el usuario lo haga — es el candidato
-más urgente para desplegar antes de mañana, dado el riesgo directo sobre el login del personal.
+**Deploy:** commit `9e33781` pusheado a `main` y desplegado por el usuario en producción el 2026-08-11,
+antes de la primera atención masiva de mañana (2026-08-12).
 
 ---
 
