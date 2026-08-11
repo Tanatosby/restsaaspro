@@ -715,10 +715,17 @@ async function renderReservarContent() {
     if (el) el.textContent = qtyMap[platoId] || 0;
   }
 
+  // Cuenta cuántos tappers necesita un carrito: 1 por cada menú agregado +
+  // 1 por cada unidad de plato a la carta (cada plato para llevar necesita
+  // su propio envase). Ver Gap 5 — cargo por modalidad.
+  function contarTappers(cartArr) {
+    return cartArr.reduce((s, i) => s + (i.type === 'carta' ? (i.cantidad || 1) : 1), 0);
+  }
+
   // ── Pedir cart ───────────────────────────────────
   function updateCart() {
     const itemsTotal = cart.reduce((s, i) => s + i.precio, 0);
-    const cargo      = getModalidadOrden() === 'para_llevar' ? (modalidades.costo_tapper || 0) : 0;
+    const cargo      = getModalidadOrden() === 'para_llevar' ? contarTappers(cart) * (modalidades.costo_tapper || 0) : 0;
     const total      = itemsTotal + cargo;
     const count = cart.length;
     document.getElementById('cart-count').textContent        = count;
@@ -855,7 +862,7 @@ async function renderReservarContent() {
     // de elegir método de pago (antes se creaba acá y el pago quedaba como
     // paso posterior, sin bloquear nada — ver Gap 17 en vision_negocio.md).
     if (tienePagos) {
-      const cargo = getModalidadOrden() === 'para_llevar' ? (modalidades.costo_tapper || 0) : 0;
+      const cargo = getModalidadOrden() === 'para_llevar' ? contarTappers(cart) * (modalidades.costo_tapper || 0) : 0;
       pagoPendiente = {
         tipo: 'orden', payload, nombre,
         items: cart.slice(),
@@ -884,8 +891,8 @@ async function renderReservarContent() {
     const itemsTotal = resCart.reduce((s, i) => s + i.precio, 0);
     const mod = getModalidadReserva();
     let cargo = 0;
-    if (mod === 'para_llevar') cargo = modalidades.costo_tapper    || 0;
-    if (mod === 'delivery')    cargo = (modalidades.costo_tapper || 0) + (modalidades.tarifa_delivery || 0);
+    if (mod === 'para_llevar') cargo = contarTappers(resCart) * (modalidades.costo_tapper || 0);
+    if (mod === 'delivery')    cargo = contarTappers(resCart) * (modalidades.costo_tapper || 0) + (modalidades.tarifa_delivery || 0);
     const total = itemsTotal + cargo;
     const section = document.getElementById('res-cart-section');
     section.style.display = resCart.length ? 'block' : 'none';
@@ -963,8 +970,8 @@ async function renderReservarContent() {
     if (tienePagos) {
       const mod = getModalidadReserva();
       let cargo = 0;
-      if (mod === 'para_llevar') cargo = modalidades.costo_tapper || 0;
-      if (mod === 'delivery')    cargo = (modalidades.costo_tapper || 0) + (modalidades.tarifa_delivery || 0);
+      if (mod === 'para_llevar') cargo = contarTappers(resCart) * (modalidades.costo_tapper || 0);
+      if (mod === 'delivery')    cargo = contarTappers(resCart) * (modalidades.costo_tapper || 0) + (modalidades.tarifa_delivery || 0);
       pagoPendiente = {
         tipo: 'reserva', payload, nombre,
         items: resCart.slice(),

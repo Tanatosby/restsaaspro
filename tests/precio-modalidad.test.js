@@ -2,9 +2,14 @@
  * Pruebas para Gap 5 — Precio por modalidad.
  * Cubre: BD (columnas), cálculo de cargo_modalidad en POST,
  * y suma en utils/totales.js.
+ *
+ * El cargo por tapper se cobra por unidad (1 por cada menú del día completo
+ * + 1 por cada unidad de plato a la carta), no como monto fijo por pedido —
+ * bug reportado 2026-08-11: 2 menús para llevar solo sumaban 1 tapper.
  */
 
 const Database = require('better-sqlite3');
+const { contarUnidadesMenu } = require('../utils/menuPricing');
 
 // ── BD helpers ───────────────────────────────────────────────────────────────
 
@@ -133,17 +138,24 @@ function insertReservaConItems(db, modalidad, cargo_modalidad) {
   return reservaId;
 }
 
-// ── Lógica de cálculo (replicada de routes/public.js) ───────────────────────
+// ── Lógica de cálculo (replicada de calcularCargoModalidad en routes/public.js) ──
+// El tapper se cobra por unidad: 1 por cada menú del día completo (contado
+// con la misma contarUnidadesMenu que usa el backend) + 1 por cada unidad de
+// plato a la carta. La tarifa de delivery es fija por pedido.
 
-function calcularCargoOrden(modalidad, rest) {
-  return modalidad === 'para_llevar' ? (rest.costo_tapper ?? 0) : 0;
+function calcularCargoModalidad(modalidad, rest, cartaItems = [], menuItemsEnriquecidos = []) {
+  if (modalidad === 'en_local') return 0;
+  const unidadesMenu  = contarUnidadesMenu(menuItemsEnriquecidos);
+  const unidadesCarta = cartaItems.reduce((s, i) => s + (i.cantidad || 1), 0);
+  const totalTappers  = unidadesMenu + unidadesCarta;
+  let cargo = totalTappers * (rest.costo_tapper ?? 0);
+  if (modalidad === 'delivery') cargo += (rest.tarifa_delivery ?? 0);
+  return cargo;
 }
 
-function calcularCargoReserva(modalidad, rest) {
-  if (modalidad === 'para_llevar') return rest.costo_tapper ?? 0;
-  if (modalidad === 'delivery')    return (rest.costo_tapper ?? 0) + (rest.tarifa_delivery ?? 0);
-  return 0;
-}
+// Atajo: 1 menú "simple" (1 sola sección obligatoria) — el caso más común
+// en los tests que no necesitan probar la cuenta de unidades en detalle.
+const UN_MENU = [{ id_menu_dia: 1, requerido: 1, total_obligatorias: 1 }];
 
 // ── Total simplificado (solo carta, sin menú del día) ───────────────────────
 
@@ -204,43 +216,101 @@ describe('Gap 5 — Precio por modalidad', () => {
 
   // ── Cálculo de cargo ─────────────────────────────────────────────────────
 
-  describe('Cálculo de cargo en órdenes', () => {
+  describe('Cálculo de cargo en órdenes (1 menú)', () => {
     const rest = { costo_tapper: 0.50, tarifa_delivery: 3.00 };
 
     test('en_local → cargo 0', () => {
-      expect(calcularCargoOrden('en_local', rest)).toBe(0);
+      expect(calcularCargoModalidad('en_local', rest, [], UN_MENU)).toBe(0);
     });
 
     test('para_llevar → cargo = costo_tapper', () => {
-      expect(calcularCargoOrden('para_llevar', rest)).toBe(0.50);
+      expect(calcularCargoModalidad('para_llevar', rest, [], UN_MENU)).toBe(0.50);
     });
 
     test('para_llevar con tapper 0 → cargo 0', () => {
-      expect(calcularCargoOrden('para_llevar', { costo_tapper: 0 })).toBe(0);
+      expect(calcularCargoModalidad('para_llevar', { costo_tapper: 0 }, [], UN_MENU)).toBe(0);
     });
   });
 
-  describe('Cálculo de cargo en reservas', () => {
+  describe('Cálculo de cargo en reservas (1 menú)', () => {
     const rest = { costo_tapper: 0.50, tarifa_delivery: 3.00 };
 
     test('en_local → cargo 0', () => {
-      expect(calcularCargoReserva('en_local', rest)).toBe(0);
+      expect(calcularCargoModalidad('en_local', rest, [], UN_MENU)).toBe(0);
     });
 
     test('para_llevar → cargo = costo_tapper', () => {
-      expect(calcularCargoReserva('para_llevar', rest)).toBe(0.50);
+      expect(calcularCargoModalidad('para_llevar', rest, [], UN_MENU)).toBe(0.50);
     });
 
     test('delivery → cargo = tapper + tarifa', () => {
-      expect(calcularCargoReserva('delivery', rest)).toBe(3.50);
+      expect(calcularCargoModalidad('delivery', rest, [], UN_MENU)).toBe(3.50);
     });
 
     test('delivery con tapper 0 → cargo = solo tarifa', () => {
-      expect(calcularCargoReserva('delivery', { costo_tapper: 0, tarifa_delivery: 3.00 })).toBe(3.00);
+      expect(calcularCargoModalidad('delivery', { costo_tapper: 0, tarifa_delivery: 3.00 }, [], UN_MENU)).toBe(3.00);
     });
 
     test('delivery con tarifa 0 → cargo = solo tapper', () => {
-      expect(calcularCargoReserva('delivery', { costo_tapper: 0.50, tarifa_delivery: 0 })).toBe(0.50);
+      expect(calcularCargoModalidad('delivery', { costo_tapper: 0.50, tarifa_delivery: 0 }, [], UN_MENU)).toBe(0.50);
+    });
+  });
+
+  // ── Bug 2026-08-11: el cargo debe escalar por unidad, no ser fijo ────────
+
+  describe('Cargo escala por cantidad de menús (fix bug reportado)', () => {
+    const rest = { costo_tapper: 1.50, tarifa_delivery: 3.00 };
+
+    test('2 menús de 1 sección c/u para llevar → cargo = 2 × tapper (antes sumaba solo 1×)', () => {
+      const dosMenus = [
+        { id_menu_dia: 1, requerido: 1, total_obligatorias: 1 },
+        { id_menu_dia: 1, requerido: 1, total_obligatorias: 1 },
+      ];
+      expect(calcularCargoModalidad('para_llevar', rest, [], dosMenus)).toBe(3.00);
+    });
+
+    test('3 menús con 2 secciones obligatorias c/u (entrada+fondo) para llevar → cargo = 3 × tapper', () => {
+      // 3 unidades del mismo menú del día = 6 filas de secciones obligatorias
+      const tresMenus = Array.from({ length: 6 }, () => (
+        { id_menu_dia: 5, requerido: 1, total_obligatorias: 2 }
+      ));
+      expect(calcularCargoModalidad('para_llevar', rest, [], tresMenus)).toBeCloseTo(4.50);
+    });
+
+    test('secciones opcionales (ej. postre) no suman unidades extra', () => {
+      const unMenuConPostreOpcional = [
+        { id_menu_dia: 1, requerido: 1, total_obligatorias: 1 }, // fondo (obligatoria)
+        { id_menu_dia: 1, requerido: 0, total_obligatorias: 1 }, // postre (opcional)
+      ];
+      expect(calcularCargoModalidad('para_llevar', rest, [], unMenuConPostreOpcional)).toBe(1.50);
+    });
+
+    test('2 menús distintos (id_menu_dia diferente) para llevar → cargo = 2 × tapper', () => {
+      const dosMenusDistintos = [
+        { id_menu_dia: 1, requerido: 1, total_obligatorias: 1 },
+        { id_menu_dia: 2, requerido: 1, total_obligatorias: 1 },
+      ];
+      expect(calcularCargoModalidad('para_llevar', rest, [], dosMenusDistintos)).toBe(3.00);
+    });
+  });
+
+  describe('Cargo escala por cantidad de ítems a la carta', () => {
+    const rest = { costo_tapper: 1.50, tarifa_delivery: 3.00 };
+
+    test('2 unidades de un plato a la carta para llevar → cargo = 2 × tapper', () => {
+      expect(calcularCargoModalidad('para_llevar', rest, [{ id_plato_carta: 1, cantidad: 2 }], [])).toBe(3.00);
+    });
+
+    test('carta (cantidad 2) + 1 menú para llevar → cargo = 3 × tapper', () => {
+      expect(calcularCargoModalidad('para_llevar', rest, [{ id_plato_carta: 1, cantidad: 2 }], UN_MENU)).toBeCloseTo(4.50);
+    });
+
+    test('en_local con carta → cargo 0 (el tapper solo aplica para llevar/delivery)', () => {
+      expect(calcularCargoModalidad('en_local', rest, [{ id_plato_carta: 1, cantidad: 5 }], [])).toBe(0);
+    });
+
+    test('delivery con carta (cantidad 2) → cargo = 2 × tapper + tarifa fija', () => {
+      expect(calcularCargoModalidad('delivery', rest, [{ id_plato_carta: 1, cantidad: 2 }], [])).toBeCloseTo(6.00);
     });
   });
 

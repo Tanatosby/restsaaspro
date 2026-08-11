@@ -13,6 +13,7 @@ const { descontarStock, devolverStock, itemsMenuDeReserva } = require('../utils/
 const { dentroDeVentanaCancelacion } = require('../utils/cancelacionReserva');
 const { estadoHorario, mensajeHorario, validarHorarioAhora, validarHorarioReserva } = require('../utils/horarioAtencion');
 const { enviarPushRestaurante } = require('../utils/pushNotificaciones');
+const { contarUnidadesMenu } = require('../utils/menuPricing');
 const db      = require('../config/database');
 
 // Multer para comprobantes de pago (subidos por el cliente)
@@ -45,6 +46,58 @@ function getRestaurante(id) {
            horario_activo, hora_apertura, hora_cierre, dias_atencion
     FROM restaurantes WHERE id = ? AND activo = 1
   `).get(id);
+}
+
+// ─────────────────────────────────────────────────────
+// Helper: enriquece los menu_items recibidos ({ id_componente, ... }) con
+// id_menu_dia / requerido / total_obligatorias, necesarios para deducir
+// cuántas unidades de menú se pidieron (ver contarUnidadesMenu).
+// ─────────────────────────────────────────────────────
+function enriquecerMenuItems(idRestaurante, menuItems) {
+  const seccionesCache = new Map();
+  return menuItems.map(item => {
+    const info = db.prepare(`
+      SELECT cmd.id_menu_dia, ms.requerido
+      FROM componentes_menu_dia cmd
+      JOIN menus_dia md      ON cmd.id_menu_dia = md.id
+      JOIN menu_secciones ms ON ms.id_menu_dia = cmd.id_menu_dia
+                            AND ms.id_seccion_menu = cmd.id_seccion_menu
+      WHERE cmd.id = ? AND md.id_restaurante = ?
+    `).get(item.id_componente, idRestaurante);
+    if (!info) return null;
+
+    if (!seccionesCache.has(info.id_menu_dia)) {
+      const { total_obligatorias } = db.prepare(`
+        SELECT COUNT(*) AS total_obligatorias FROM menu_secciones
+        WHERE id_menu_dia = ? AND requerido = 1
+      `).get(info.id_menu_dia);
+      seccionesCache.set(info.id_menu_dia, total_obligatorias);
+    }
+
+    return {
+      id_menu_dia:       info.id_menu_dia,
+      requerido:         info.requerido,
+      total_obligatorias: seccionesCache.get(info.id_menu_dia),
+    };
+  }).filter(Boolean);
+}
+
+// ─────────────────────────────────────────────────────
+// Helper: calcula el cargo por modalidad (Gap 5).
+// El tapper se cobra por cada menú completo (unidadesMenu) y por cada
+// ítem a la carta (cada plato para llevar necesita su propio envase).
+// La tarifa de delivery es fija por pedido (un solo viaje).
+// ─────────────────────────────────────────────────────
+function calcularCargoModalidad(modalidad, rest, idRestaurante, cartaItems, menuItems) {
+  if (modalidad === 'en_local') return 0;
+
+  const unidadesMenu  = contarUnidadesMenu(enriquecerMenuItems(idRestaurante, menuItems));
+  const unidadesCarta = cartaItems.reduce((s, i) => s + (i.cantidad || 1), 0);
+  const totalTappers  = unidadesMenu + unidadesCarta;
+
+  let cargo = totalTappers * (rest.costo_tapper ?? 0);
+  if (modalidad === 'delivery') cargo += (rest.tarifa_delivery ?? 0);
+  return cargo;
 }
 
 // ─────────────────────────────────────────────────────
@@ -250,7 +303,7 @@ router.post('/orders', (req, res) => {
       return res.status(400).json({ error: `Componente #${item.id_componente} no válido` });
   }
 
-  const cargo_modalidad = modalidad === 'para_llevar' ? (rest.costo_tapper ?? 0) : 0;
+  const cargo_modalidad = calcularCargoModalidad(modalidad, rest, id_restaurante, carta_items, menu_items);
 
   // Todo válido — insertar en transacción (si el stock no alcanza, revierte todo)
   let ordenId;
@@ -378,9 +431,7 @@ router.post('/reservations', (req, res) => {
       return res.status(400).json({ error: `Componente #${item.id_componente} no válido` });
   }
 
-  let cargo_modalidad_res = 0;
-  if (modalidad === 'para_llevar') cargo_modalidad_res = rest.costo_tapper    ?? 0;
-  if (modalidad === 'delivery')    cargo_modalidad_res = (rest.costo_tapper ?? 0) + (rest.tarifa_delivery ?? 0);
+  const cargo_modalidad_res = calcularCargoModalidad(modalidad, rest, id_restaurante, carta_items, menu_items);
 
   // Insertar en transacción (si el stock no alcanza, revierte todo)
   let reservaId, codigo;

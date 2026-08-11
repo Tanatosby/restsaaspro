@@ -13,6 +13,37 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## 🎯 Sesión 2026-08-11 — Fix: cargo de tapper fijo en vez de por unidad (ISS-029)
+
+**Reporte del usuario:** "cuando se asigna para llevar y son + de 1 menú por llevar igual cobra 1.5...
+debería sumar 3 soles y así consecutivamente".
+
+`cargo_modalidad` (Gap 5) se calculaba como monto fijo por orden/reserva, sin importar cuántos ítems se
+pedían. Fix: escala por unidad — `costo_tapper × (cantidad de menús + cantidad de ítems a la carta)`,
+más tarifa de delivery fija si aplica. Se amplió el alcance a pedido del usuario: la carta también suma
+tapper por unidad (antes solo se planeaba para menús).
+
+- `utils/menuPricing.js` — nueva `contarUnidadesMenu()`: deduce cuántos menús completos hay en un
+  pedido contando filas de secciones obligatorias por `id_menu_dia` (no existe ID de "instancia de
+  menú" en la BD).
+- `routes/public.js` — `enriquecerMenuItems()` + `calcularCargoModalidad()`, usados en `POST /orders` y
+  `POST /reservations` en lugar del cálculo fijo anterior.
+- `public/menu.html` — `contarTappers(cartArr)` reemplaza el cálculo fijo en los 4 puntos donde se
+  mostraba/enviaba el cargo (carrito de orden y de reserva, con y sin pago pendiente).
+- `tests/precio-modalidad.test.js` ampliado a 29 casos (multi-menú, secciones opcionales, menús
+  distintos, mezcla con carta). Verificado también con un smoke test manual end-to-end contra la BD
+  real (creado y descartado en la sesión, sin dejar residuos) — 325/325 jest verde.
+
+**Nota de flujo de la sesión:** antes de empezar el fix había 6 commits sin traer del remoto (sesión
+persistente ISS-027, Cola del día ISS-026, cierre de pensionistas, backlog trackeado). Había además un
+cambio local sin commitear en `vision_negocio.md` (Gaps 18/19 marcados completados) que no era de esta
+sesión — se commiteó aparte antes del `pull` para no perderlo ni arriesgar un conflicto silencioso.
+
+**Pendiente:** commit de este fix + push, y confirmar con el usuario si ya se desplegó (ver política de
+deploys en `.claude/CLAUDE.md` — el usuario despliega siempre manualmente).
+
+---
+
 ## 🎯 Sesión 2026-08-10 (parte 4) — Pensionistas: lógica CERRADA + reportería a rediseñar
 
 **Sesión de decisiones, sin código.** Se cerró toda la lógica de negocio del módulo Pensionistas y

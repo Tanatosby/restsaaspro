@@ -339,6 +339,8 @@ En orden de impacto:
 **Gap 5 — Precio por modalidad (tapper + delivery fee)**
 Al crear una orden/reserva, calcular el cargo extra según modalidad: `para_llevar` suma costo de tapper configurable (ej: S/0.50); `delivery` suma tapper + tarifa de delivery. El precio final se muestra en tiempo real en `menu.html` al cambiar el radio button. Columnas `costo_tapper` y `tarifa_delivery` en `restaurantes`. El cargo queda registrado en la orden/reserva para reportes.
 
+> **Fix 2026-08-11 (ISS-029):** el cargo era un monto fijo por pedido — 2 menús para llevar solo sumaban 1 tapper. Ahora escala por unidad: `costo_tapper × (cantidad de menús del día + cantidad de ítems a la carta)`, más la tarifa de delivery fija si aplica. Cada plato/menú para llevar necesita su propio envase. Ver `utils/menuPricing.js::contarUnidadesMenu` y `routes/public.js::calcularCargoModalidad`.
+
 **Gap 8 — Auto-merge cuenta por mesa al marcar `cliente llegó`**
 Cuando el mozo marca `es_cliente_llego` en una reserva que tiene mesa asignada, el sistema busca automáticamente si hay una orden activa en esa misma mesa y fusiona los ítems en una sola cuenta. Evita que el mozo tenga que hacer el merge manual en hora pico. Si no hay orden en la mesa, no hace nada. Configurable: el owner puede desactivar el auto-merge si prefiere manejar cuentas separadas.
 
