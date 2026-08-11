@@ -418,7 +418,9 @@ Antes no existía ningún control de horario de atención — un cliente podía 
 
 La modalidad (`badgeModalidad()`) ya se mostraba en las tarjetas de la Cola. Faltaba cancelar directo desde ahí sin entrar a los paneles separados de Órdenes/Reservas — agregado botón "✗ Cancelar" en `renderKanbanOrden()`/`renderKanbanReserva()`, reutilizando `accionRapidaOrden()`/`accionRapidaReserva()` (mismo endpoint `PATCH /:id/estatus` con flag `es_cancelado` que ya usan Órdenes/Reservas — la devolución de stock ya la maneja el backend, sin cambios). Mismo criterio de visibilidad que esos paneles: en órdenes siempre disponible; en reservas se oculta una vez que el cliente ya llegó o la reserva ya se completó.
 
-**Gap 20 — Módulo Pensionistas (saldo prepagado + login propio)** *(anotado 2026-07-15, sin implementar)*
+**Gap 20 — Módulo Pensionistas (saldo prepagado + login propio)** *(anotado 2026-07-15; **lógica de negocio cerrada el 2026-08-10**, sin implementar)*
+
+> ✅ **Ya no quedan decisiones de negocio abiertas.** Ver `pensionistas.md` **§0** (manda sobre el resto de ese documento) y `backlog.md`. En resumen: el pensionista se crea **desde el panel Usuarios que ya existe** (no un módulo aparte, como decía el diseño original de abajo); el owner le carga el dinero y recarga cuando se acaba, sin límite; **saldo insuficiente bloquea el pedido**; aviso de saldo bajo a S/20 configurable; y todos los usuarios pasan a requerir email `@menupro.tech`.
 
 Un pensionista es un comensal recurrente al que el restaurante le administra un **saldo prepagado
 en dinero** (no menús contados) — paga por adelantado (semana/mes, a criterio del restaurante) y va

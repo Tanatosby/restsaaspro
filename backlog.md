@@ -12,6 +12,21 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 
 ---
 
+## ⏰ Fecha límite: miércoles 2026-08-12 — "el primer reto"
+
+El usuario avisó que **el miércoles hay un compromiso importante** ("el primer reto") y que por eso
+**el martes 2026-08-11 tiene que ser un día muy productivo**. *(El usuario no detalló en qué consiste
+el reto — preguntárselo al inicio de la sesión del martes, porque cambia qué conviene priorizar.)*
+
+**Prioridades para el martes 11, en orden:**
+1. **Deploy** de los 2 commits del 2026-08-10 (`181ddf3`, `6d4576e`) — es lo único que separa a los
+   pilotos de todo el trabajo de ayer.
+2. **Pensionistas** — lógica ya cerrada, sin preguntas abiertas. Empezar por el paso chico:
+   `@menupro.tech` obligatorio en la creación de usuarios.
+3. **Reportería** — análisis primero (qué mostrar), no código.
+
+---
+
 ## Etapa actual
 
 Producto online en `menupro.tech` con landing y **2 restaurantes piloto**. La etapa no es construir
@@ -72,6 +87,39 @@ lugar de contraseña, y revisar `login.html` (`autocapitalize`, `inputmode`, tam
 
 ---
 
+## 🔴 P0 — Reportería: rediseño completo (nuevo, 2026-08-10)
+
+**La reportería actual no le sirve a la clienta.** Palabras del usuario: *"las gráficas son
+microscópicas y no dan nada de valor que le interesa a la clienta"*. **Toda la reportería va a
+cambiar** — no es un ajuste de tamaño, es un rediseño de qué se muestra y para qué.
+
+### El dato #1 que la clienta quiere ver
+
+> **Cuántos menús va vendiendo en ese momento, en el día.**
+
+- Es **lo principal**, y hoy **no se muestra en ninguna parte**.
+- **No importa si el menú vino por mesa o por reserva** — es la cantidad total de menús vendidos hoy.
+  El sistema hoy separa esas dos fuentes en todos lados; para este número hay que unificarlas.
+- Es un dato **en vivo**, para consultar en pleno servicio, no un reporte de cierre.
+
+### Después de eso
+
+- Qué **platos** va vendiendo (mismo criterio: del día, en vivo).
+- **Requiere análisis previo** antes de implementar: qué métricas reemplazan a las actuales, cuáles
+  se eliminan, y cómo se ve en un celular de 360px. No empezar por el código.
+
+### Ya diagnosticado, aprovechar
+
+`features.md` → "Estadísticas: qué pidió la gente hoy + fix del gráfico de barras chico"
+(anotado 2026-07-13) ya tiene medio camino hecho:
+- **Por qué el gráfico se ve chiquito:** `#chart-pedidos-wrap` (`owner.html:557`) solo tiene
+  `min-height:220px`, sin `position:relative` ni alto fijo — a diferencia de los otros dos gráficos,
+  que sí los tienen. Chart.js con `responsive:true` necesita ambos.
+- **Por qué no sirve el dato:** `contarPedidosPorPlato()` en `routes/reportes.js` no filtra por fecha
+  (es un acumulado histórico total) y obliga a elegir una sección/categoría a la vez.
+
+---
+
 ## P1 — Antes de cobrarle al primer restaurante
 
 - [ ] **Backup diario automático con restauración probada.** No basta con generarlo: hay que probar el
@@ -83,27 +131,54 @@ lugar de contraseña, y revisar `login.html` (`autocapitalize`, `inputmode`, tam
 
 ---
 
-## P1 — Módulo Pensionistas (pedido por el mercado)
+## 🎯 Módulo Pensionistas — LÓGICA CERRADA, listo para implementar
 
 **Casi todo el target tiene pensionistas almorzando en su menú, y lo piden.** No es especulativo: es
 funcionalidad de segmento y probablemente un diferenciador, porque los sistemas de restaurante
 genéricos no manejan comensales recurrentes con saldo prepagado.
 
-Análisis arquitectónico completo en `pensionistas.md` (Gap 20). **Su dependencia era 3.2 (sesión
-persistente), que ya está hecha → desbloqueado.**
+**Estado: sin preguntas abiertas.** Todas las decisiones de negocio se cerraron el 2026-08-10 — ver
+**`pensionistas.md` §0**, que manda sobre el resto de ese documento. Su dependencia era 3.2 (sesión
+persistente), que ya está hecha.
 
-**Recorte propuesto para una v1 que se pueda soltar rápido:**
-- **Incluir:** tabla `pensionistas` (extiende `usuarios`), `pensionista_movimientos` como ledger de
-  recargas y consumos, y el módulo del owner para registrar recargas y descontar consumo. Con eso ya
-  se resuelve el dolor real del dueño: saber quién pagó, cuánto le queda, y evitar discusiones de "yo
-  recargué y no aparece".
-- **Diferir a v2:** login propio del pensionista, `pedidos_pensionista` y su integración en Cola del
-  día y Cocina con tag. Es la mitad del trabajo y no es lo que el dueño pide primero.
-- **Decisión de negocio pendiente** (`pensionistas.md` §11): si el saldo insuficiente bloquea el
-  pedido o permite negativo. Sugerencia: configurable por restaurante, permitiendo negativo por
-  defecto con alerta visible, porque **el fiado es práctica normal en este segmento**.
-- **Reportería separada desde el día uno:** recargas (ingreso real) vs. consumo (gasto de saldo ya
-  cobrado), para no contar el mismo dinero dos veces en Ganancias.
+### La lógica, en palabras del usuario
+
+> "Se le coloca el dinero que tiene y él va gastando; si se necesita más, la señora le coloca más, y
+> así ad infinitum."
+
+1. El pensionista **es un usuario más**, creado desde el panel Usuarios que el owner ya usa, con rol
+   nuevo `pensionista`.
+2. El owner le **carga el dinero disponible**; cuando se acaba, recarga. Sin límite.
+3. El pensionista **entra por el login normal** y pide desde `pensionista.html`; cada pedido le
+   descuenta del saldo, sin pantalla de pago.
+4. **Aviso de saldo bajo** (S/20 por defecto, configurable por restaurante).
+5. **Saldo insuficiente bloquea el pedido.** Si el dueño quiere fiarle, le recarga.
+6. **Todos los usuarios deben tener email `@menupro.tech`** — hoy `routes/usuarios.js:50` acepta
+   cualquier dominio.
+
+### Descartado — no volver sobre esto
+
+- ❌ El "v1 recortado" sin login del pensionista (estuvo anotado aquí mismo el 2026-08-10 por la
+  mañana; el usuario lo descartó ese día).
+- ❌ `id_usuario` nullable — el pensionista siempre es un usuario real.
+- ❌ Reutilizar `menu.html` con un "modo pensionista": es la carta pública por la que los 2 pilotos
+  reciben pedidos hoy, y tocarla es riesgo puro. Va **`pensionista.html`**, página propia.
+
+### Primer paso acordado (chico e independiente)
+
+Forzar `@menupro.tech` en la creación de usuarios: validación en `routes/usuarios.js` + el formulario
+en `owner.html`. No toca nada de pensionistas y sirve igual por sí solo.
+
+### Facilidad confirmada
+
+Mandar al pensionista a su propia página **no es complicado**: `login.html:420` ya tiene el mapa
+`ROLE_REDIRECT` por rol (hecho en `ISS-007`). Es agregar una línea.
+
+### Sigue vigente del análisis original
+
+- Reportería separada: recargas (ingreso real) vs. consumo (gasto de saldo ya cobrado), para no
+  contar el mismo dinero dos veces en Ganancias — `pensionistas.md` §8.
+- Devolución automática de saldo al cancelar un pedido; el pedido respeta stock y horario de atención.
 
 ---
 

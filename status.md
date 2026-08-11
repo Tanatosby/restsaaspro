@@ -13,6 +13,80 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## 🎯 Sesión 2026-08-10 (parte 4) — Pensionistas: lógica CERRADA + reportería a rediseñar
+
+**Sesión de decisiones, sin código.** Se cerró toda la lógica de negocio del módulo Pensionistas y
+apareció un tema nuevo y grande: la reportería no le sirve a la clienta.
+
+### ⏰ Contexto de tiempo: el miércoles 2026-08-12 hay "el primer reto"
+
+El usuario avisó que el miércoles tiene un compromiso importante —**no detalló cuál**— y que por eso
+**el martes 11 tiene que ser un día muy productivo**. *Preguntarle qué es "el primer reto" al abrir la
+sesión del martes: cambia qué conviene priorizar.* Orden propuesto en `backlog.md`.
+
+### Pensionistas — lógica definitiva, sin preguntas abiertas
+
+El usuario reformuló el módulo entero, más simple que lo que se venía proponiendo:
+
+> "Se le coloca el dinero que tiene y él va gastando; si se necesita más, la señora le coloca más, y
+> así ad infinitum."
+
+1. El pensionista **es un usuario más**, creado desde el panel Usuarios que el owner ya usa (rol nuevo
+   `pensionista`). No hay registro paralelo: reutiliza lo que ya existe.
+2. El owner le **carga el dinero**; cuando se acaba, recarga. Sin límite de veces.
+3. El pensionista **entra por el login normal** y pide desde `pensionista.html`, descontándose del
+   saldo, sin pantalla de pago.
+4. **Aviso de saldo bajo** — S/20 por defecto, configurable por restaurante.
+5. **Saldo insuficiente bloquea el pedido.** Razón: quien pide es el pensionista, y él no es quién
+   para decidir que el restaurante le fíe; si el dueño quiere fiarle, le recarga.
+6. **Todos los usuarios pasan a requerir email `@menupro.tech`.** Hoy `routes/usuarios.js:50` solo
+   valida que no esté vacío y acepta cualquier dominio.
+
+**Las 5 preguntas abiertas del `pensionistas.md` §11 quedaron respondidas.** Documentado en la **§0**
+de ese archivo, que manda sobre el resto del documento.
+
+**Descartado explícitamente (no volver sobre esto):**
+- El **"v1 recortado" sin login del pensionista**, que se había anotado en `backlog.md` esa misma
+  mañana. El usuario prefiere el flujo completo.
+- **`id_usuario` nullable** — se había propuesto para permitir pensionistas sin login; ya no aplica.
+- **Reutilizar `menu.html`** con un "modo pensionista". El usuario lo propuso, se le marcó el riesgo
+  (es la carta pública por la que los 2 pilotos reciben pedidos hoy) y **él mismo eligió
+  `pensionista.html`**: *"tienes razón, pensionistas.html tiene que ser la opción"*.
+
+**Temor despejado:** preocupaba que mandar al pensionista a otra página fuera complicado porque "todos
+los que entran al login van a `owner.html`". **No lo es:** `login.html:420` ya tiene el mapa
+`ROLE_REDIRECT` por rol (construido en `ISS-007`), y los 3 roles actuales apuntan a `owner.html` solo
+porque así se definió. Agregar `pensionista: '/pensionista.html'` es una línea.
+
+**Primer paso acordado, chico e independiente:** forzar `@menupro.tech` en la creación de usuarios
+(`routes/usuarios.js` + formulario en `owner.html`). **Aprobado pero no ejecutado** — el usuario
+prefirió cerrar la sesión y seguir mañana.
+
+### 🔴 Reportería — hay que rediseñarla entera
+
+Tema nuevo, y es P0. Palabras del usuario: *"las gráficas son microscópicas y no dan nada de valor
+que le interesa a la clienta"*.
+
+**El dato #1 que la clienta quiere, y que hoy no se muestra en ninguna parte:**
+> **cuántos menús va vendiendo en ese momento, en el día.**
+
+- **No importa si vino por mesa o por reserva** — es la cantidad total de menús vendidos hoy. El
+  sistema hoy separa esas dos fuentes en todos lados; para este número hay que unificarlas.
+- Es un dato **en vivo**, para mirar en pleno servicio, no un reporte de cierre.
+- Después: **qué platos** va vendiendo, mismo criterio.
+- **Requiere análisis antes de codear** — qué métricas reemplazan a las actuales, cuáles se eliminan y
+  cómo entra en 360px. El usuario pidió explícitamente que se analice.
+
+**Aprovechar lo ya diagnosticado** en `features.md` (anotado 2026-07-13): el gráfico se ve chiquito
+porque `#chart-pedidos-wrap` (`owner.html:557`) tiene `min-height:220px` sin `position:relative` ni
+alto fijo, a diferencia de los otros dos; y `contarPedidosPorPlato()` (`routes/reportes.js`) no filtra
+por fecha, así que muestra un acumulado histórico en vez de "hoy".
+
+**Docs actualizadas:** `pensionistas.md` (§0 nueva + §11 cerrada), `backlog.md` (Pensionistas
+reescrito, reportería como P0 nuevo, fecha del miércoles), `features.md` (ambas entradas), `status.md`.
+
+---
+
 ## ⏸️ Sesión 2026-08-10 (parte 3) — Auto-actualización del SW CONGELADA + estado previo al deploy
 
 **Leer esto antes de tocar `sw.js`.** Sesión sin cambios de código: se analizó la auto-actualización

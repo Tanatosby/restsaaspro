@@ -101,7 +101,9 @@ requiere re-aceptación ante cambios de los términos, y el texto legal completo
 `vision_negocio.md`.
 
 ### Módulo Pensionistas (saldo prepagado + login propio)
-*Anotado 2026-07-15, pendiente de implementar. Ver Gap 20 en `vision_negocio.md` y análisis completo en `pensionistas.md`.*
+*Anotado 2026-07-15. **Lógica de negocio cerrada el 2026-08-10 — sin preguntas abiertas, listo para implementar.** Ver `pensionistas.md` §0 (manda sobre el resto de ese documento), `backlog.md` y Gap 20 en `vision_negocio.md`.*
+
+**Decisiones cerradas:** el pensionista es un usuario más creado desde el panel Usuarios (rol nuevo `pensionista`); el owner le carga el dinero y recarga cuando se acaba, sin límite; el pensionista entra por el login normal y pide desde `pensionista.html`, descontándose del saldo sin pantalla de pago; aviso de saldo bajo a S/20 (configurable); **saldo insuficiente bloquea el pedido**; y todos los usuarios del sistema pasan a requerir email `@menupro.tech` (hoy `routes/usuarios.js:50` acepta cualquier dominio). **Descartado:** el "v1 recortado" sin login, `id_usuario` nullable, y reutilizar `menu.html` con un modo pensionista. Mandar al pensionista a su propia página es una línea en el mapa `ROLE_REDIRECT` de `login.html:420`.
 
 Comensales recurrentes con saldo prepagado en dinero, administrado por el owner. El pensionista
 tiene login propio (nuevo rol `pensionista`, reutiliza el JWT/auth existente) y pide desde una
@@ -120,7 +122,9 @@ con el usuario antes de implementar (saldo insuficiente, alcance del menú, qui�
 Backend (`routes/public.js`, `POST /orders`): agregado `if (!nombre_cliente?.trim()) return res.status(400)...`, mismo patrón que reservas. Frontend (`menu.html`): quitado "(opcional)" del label; `confirmarPedido()` valida el nombre antes de continuar (mismo patrón que `confirmarReserva()`). Verificado con `scripts/test-gate-pago.js` (Test 1): sin nombre no se crea la orden ni por UI ni pegándole directo a la API (400).
 
 ### Estadísticas: "qué pidió la gente hoy" + fix del gráfico de barras chico
-*Anotado 2026-07-13, pendiente de implementar.*
+*Anotado 2026-07-13. **Escalado el 2026-08-10 a rediseño completo de la reportería — ver `backlog.md`.** El usuario fue tajante: "las gráficas son microscópicas y no dan nada de valor que le interesa a la clienta". Toda la reportería va a cambiar, y **requiere análisis antes de codear**.*
+
+**El dato #1 que la clienta quiere, y que hoy no existe:** **cuántos menús va vendiendo en el día, en ese momento** — sin importar si el menú vino por mesa o por reserva. Es la cantidad total, en vivo, para mirar en pleno servicio. Después de eso, qué platos va vendiendo. El diagnóstico técnico de abajo sigue siendo válido y hay que aprovecharlo, pero el alcance ya no es "arreglar el gráfico": es replantear qué se muestra.
 
 El usuario preguntó puntualmente: "¿cuántos platos voy hasta ahora?", "¿qué ha pedido la gente hoy?". Ya existe "Análisis de pedidos" en reportería (`reportes.js` → `loadPedidos()`, endpoint `GET /api/reportes/pedidos?tipo=&filtro=`) — un gráfico de barras por plato con Chart.js. Pero: (a) es un **acumulado histórico total**, sin filtro de fecha/"hoy" (confirmado en `contarPedidosPorPlato()`, `routes/reportes.js` — las queries SQL no tienen `WHERE fecha = ?`); (b) filtra de a una sección/categoría del menú a la vez, no da un resumen "todo lo pedido hoy" de un vistazo.
 

@@ -6,6 +6,65 @@
 
 ---
 
+## 0. DECISIONES CERRADAS (2026-08-10) — leer antes que el resto
+
+**El resto del documento sigue siendo válido como análisis, pero varias alternativas que ahí
+aparecen como abiertas ya están decididas. Esta sección manda sobre cualquier contradicción.**
+
+### La lógica definitiva, en palabras del usuario
+
+> "Se le coloca el dinero que tiene y él va gastando; si se necesita más, la señora le coloca más, y
+> así ad infinitum."
+
+1. **El pensionista es un usuario más.** Se crea desde el panel Usuarios que el owner ya usa, con un
+   rol nuevo `pensionista`. No hay registro aparte ni auto-registro.
+2. **El owner le carga el dinero disponible.** Cuando se acaba, el owner recarga. Sin límite de veces.
+3. **El pensionista entra por el login normal** y pide desde su propia pantalla; cada pedido le
+   descuenta del saldo automáticamente, sin pasar por pantalla de pago.
+4. **Aviso de saldo bajo:** cuando le queda poco (**S/20 por defecto, configurable por restaurante**)
+   se le avisa que su cuenta está por acabarse.
+5. **Todos los usuarios del sistema deben tener email `@menupro.tech`.** Hoy no se valida:
+   `routes/usuarios.js:50` solo comprueba que el email no esté vacío y acepta cualquier dominio.
+
+### Preguntas del §11, respondidas
+
+| # | Pregunta | Decisión |
+|---|---|---|
+| 1 | ¿Saldo insuficiente bloquea o permite fiado? | **Bloquea.** Quien pide es el pensionista, y él no es quién para decidir que el restaurante le fíe. Si el dueño quiere fiarle, le recarga. |
+| 2 | ¿Menú completo o restringido? | **Completo**, como cualquier comensal (lo que ya asumía el diseño). |
+| 3 | ¿Dos pensionistas con el mismo nombre? | **No es problema:** al ser usuarios reales, el email los distingue. |
+| 4 | ¿Quién puede recargar? | **Solo el owner** en la primera versión. |
+| 5 | ¿El pensionista ve su historial de movimientos? | Ve **su saldo** siempre visible; el historial de movimientos es deseable pero no bloqueante. |
+
+### Alternativas evaluadas y DESCARTADAS — no volver sobre ellas
+
+- ❌ **"v1 recortado" sin login del pensionista** (registrar el consumo a mano el owner, difiriendo
+  login y pedidos a una v2). Estuvo anotado en `backlog.md` el 2026-08-10 y **el usuario lo descartó
+  el mismo día**: prefiere el flujo completo, que además reutiliza el login y el panel de Usuarios
+  que ya existen en vez de inventar un registro paralelo.
+- ❌ **`pensionistas.id_usuario` nullable.** Se propuso para permitir pensionistas sin login; ya no
+  aplica. Queda **`NOT NULL UNIQUE`** como define la §3 — el pensionista siempre es un usuario.
+- ❌ **Reutilizar `menu.html` con un "modo pensionista".** Evaluado y descartado por el usuario: es la
+  carta pública del cliente (funciona sin login, con `?restaurante=X&mesa=Y`, y tiene la pantalla de
+  pago del Gap 17). Meterle condicionales significa tocar el flujo por el que los 2 restaurantes
+  piloto reciben pedidos hoy. **Va `pensionista.html`, página propia que reusa las mismas APIs**
+  (§9).
+
+### Nota técnica que despeja el mayor temor del usuario
+
+Preocupaba que mandar al pensionista a una página distinta fuera complicado, porque "todos los que
+entran al login van a `owner.html`". **No lo es: ya existe redirección por rol.** `login.html:420`
+tiene el mapa `ROLE_REDIRECT`; los 3 roles actuales apuntan a `owner.html` solo porque así se definió.
+Agregar `pensionista: '/pensionista.html'` es **una línea**. El caso de rol desconocido ya está
+cubierto con un error claro (`login.html:486`). El mecanismo se construyó en `ISS-007`.
+
+**Sobre el formulario:** probablemente convenga un formulario aparte para pensionistas dentro del
+panel Usuarios — no por el redirect, sino porque necesita un campo que los otros roles no tienen (el
+dinero disponible) y **no** necesita las casillas de permisos granulares (cocina, órdenes, reservas),
+que para un pensionista no significan nada. A definir al implementar.
+
+---
+
 ## 1. Qué es un pensionista (concepto de negocio)
 
 Un **pensionista** es un comensal recurrente al que el restaurante le administra un **saldo
@@ -333,7 +392,10 @@ overflow, PWA-instalable eventualmente). Versión simplificada de `menu.html`:
 
 ---
 
-## 11. Preguntas abiertas para validar antes de implementar
+## 11. ~~Preguntas abiertas para validar antes de implementar~~ — ✅ TODAS RESPONDIDAS (2026-08-10)
+
+> **Ya no hay preguntas abiertas.** Las respuestas están en la **§0** de este documento. Se dejan las
+> preguntas originales abajo solo como registro de qué se preguntó y por qué.
 
 1. **¿Saldo insuficiente bloquea el pedido, o se permite negativo (fiado)?** (sección 7 — recomendado: bloquear)
 2. **¿El pensionista puede pedir cualquier menú/plato del restaurante, o el owner puede restringirlo a un menú fijo?** El diseño actual asume acceso total al menú del día + carta, igual que cualquier comensal — más simple y flexible. Si el negocio real necesita restringir, sería una tabla `pensionista_restricciones` en fase 2.
