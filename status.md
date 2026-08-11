@@ -39,8 +39,10 @@ persistente ISS-027, Cola del día ISS-026, cierre de pensionistas, backlog trac
 cambio local sin commitear en `vision_negocio.md` (Gaps 18/19 marcados completados) que no era de esta
 sesión — se commiteó aparte antes del `pull` para no perderlo ni arriesgar un conflicto silencioso.
 
-**Pendiente:** commit de este fix + push, y confirmar con el usuario si ya se desplegó (ver política de
-deploys en `.claude/CLAUDE.md` — el usuario despliega siempre manualmente).
+**Deploy:** commit `e8785bf` pusheado a `main` y desplegado por el usuario en producción el 2026-08-11
+(manual, junto con los 6 commits previos ya traídos del remoto: `39a9ba9`..`b8e0f18` — sesión persistente
+ISS-027, Cola del día ISS-026, cierre de pensionistas, backlog trackeado). Sin verificación post-deploy
+registrada en esta sesión.
 
 ---
 
