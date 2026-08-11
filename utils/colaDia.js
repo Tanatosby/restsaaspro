@@ -191,6 +191,27 @@ function colaDelDia(db, id_restaurante, hoy) {
 }
 
 /**
+ * Cola de cocina — igual que colaDelDia pero acotada a lo que le importa al
+ * cocinero: órdenes por preparar (pendientes o en preparación) y reservas ya
+ * disparadas a cocina, ambas de HOY. Antes `cocina.js` pedía
+ * `/api/orders/activas` (sin filtro de fecha, con N+1) y
+ * `/api/reservations?flag=es_en_cocina` (tampoco filtra fecha) — cualquier
+ * pedido viejo que quedó "en cocina" sin cerrarse se quedaba ahí para
+ * siempre. Ver ISS-030 (mismo patrón que ya resolvió Cola del día en ISS-026).
+ *
+ * Las reservas futuras (fecha > hoy) nunca tienen es_en_cocina=1 todavía —
+ * el job de auto-preparación solo las dispara el mismo día — así que
+ * reutilizar reservasActivas (>= hoy) y filtrar por el flag no cuela ninguna
+ * reserva de otro día.
+ */
+function cocinaDelDia(db, id_restaurante, hoy) {
+  return {
+    ordenes:  ordenesActivas(db, id_restaurante, hoy).filter(o => o.es_inicial || o.es_en_cocina),
+    reservas: reservasActivas(db, id_restaurante, hoy).filter(r => r.es_en_cocina),
+  };
+}
+
+/**
  * Pedidos que quedaron sin cerrar en días anteriores.
  *
  * Importan porque `total` solo se escribe al marcar la orden como cobrada
@@ -207,6 +228,7 @@ function pedidosSinCerrar(db, id_restaurante, hoy) {
 
 module.exports = {
   colaDelDia,
+  cocinaDelDia,
   pedidosSinCerrar,
   ordenesActivas,
   reservasActivas,

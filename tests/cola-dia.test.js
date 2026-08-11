@@ -10,7 +10,7 @@
  */
 
 const Database = require('better-sqlite3');
-const { colaDelDia, pedidosSinCerrar, agruparPorPadre } = require('../utils/colaDia');
+const { colaDelDia, cocinaDelDia, pedidosSinCerrar, agruparPorPadre } = require('../utils/colaDia');
 
 const HOY    = '2026-08-10';
 const AYER   = '2026-08-09';
@@ -42,6 +42,7 @@ function crearDB() {
     );
     INSERT INTO estatus_reserva (nombre, es_inicial)   VALUES ('pendiente', 1);
     INSERT INTO estatus_reserva (nombre, es_confirmada) VALUES ('confirmada', 1);
+    INSERT INTO estatus_reserva (nombre, es_en_cocina) VALUES ('en_cocina', 1);
     INSERT INTO estatus_reserva (nombre, es_full)      VALUES ('completada', 1);
     INSERT INTO estatus_reserva (nombre, es_cancelado) VALUES ('cancelada',  1);
 
@@ -156,6 +157,57 @@ describe('colaDelDia', () => {
   test('devuelve listas vacías cuando no hay nada', () => {
     const db = crearDB();
     expect(colaDelDia(db, 1, HOY)).toEqual({ ordenes: [], reservas: [] });
+  });
+});
+
+// ── Cola de cocina (ISS-030) ──────────────────────────────────────────────────
+
+describe('cocinaDelDia', () => {
+  test('trae pendientes y en preparación de hoy, no lo ya listo/entregado', () => {
+    const db = crearDB();
+    crearOrden(db, { fecha: HOY, estatus: 'pendiente',  cliente: 'Pendiente' });
+    crearOrden(db, { fecha: HOY, estatus: 'preparando', cliente: 'En prep' });
+    crearOrden(db, { fecha: HOY, estatus: 'entregado',  cliente: 'Ya entregada' });
+
+    const { ordenes } = cocinaDelDia(db, 1, HOY);
+    expect(ordenes.map(o => o.nombre_cliente).sort()).toEqual(['En prep', 'Pendiente']);
+  });
+
+  test('una orden "en preparación" de AYER ya no aparece en cocina (bug reportado)', () => {
+    const db = crearDB();
+    crearOrden(db, { fecha: AYER, estatus: 'preparando', cliente: 'Vieja, en prep' });
+    crearOrden(db, { fecha: HOY,  estatus: 'preparando', cliente: 'De hoy' });
+
+    const { ordenes } = cocinaDelDia(db, 1, HOY);
+    expect(ordenes).toHaveLength(1);
+    expect(ordenes[0].nombre_cliente).toBe('De hoy');
+  });
+
+  test('solo trae reservas ya disparadas a cocina (es_en_cocina), no las pendientes de confirmar', () => {
+    const db = crearDB();
+    crearReserva(db, { fecha: HOY, estatus: 'pendiente',  cliente: 'Aún no confirmada' });
+    crearReserva(db, { fecha: HOY, estatus: 'confirmada', cliente: 'Confirmada, no en cocina aún' });
+    crearReserva(db, { fecha: HOY, estatus: 'en_cocina',  cliente: 'En cocina' });
+
+    const { reservas } = cocinaDelDia(db, 1, HOY);
+    expect(reservas).toHaveLength(1);
+    expect(reservas[0].nombre_cliente).toBe('En cocina');
+  });
+
+  test('una reserva "en cocina" de AYER que nunca se cerró ya no aparece (bug reportado)', () => {
+    const db = crearDB();
+    crearReserva(db, { fecha: AYER, estatus: 'en_cocina', cliente: 'Vieja, en cocina' });
+    crearReserva(db, { fecha: HOY,  estatus: 'en_cocina', cliente: 'De hoy' });
+
+    const { reservas } = cocinaDelDia(db, 1, HOY);
+    expect(reservas).toHaveLength(1);
+    expect(reservas[0].nombre_cliente).toBe('De hoy');
+  });
+
+  test('devuelve listas vacías cuando no hay nada para cocina', () => {
+    const db = crearDB();
+    crearOrden(db, { fecha: HOY, estatus: 'entregado' }); // ya listo, no le toca a cocina
+    expect(cocinaDelDia(db, 1, HOY)).toEqual({ ordenes: [], reservas: [] });
   });
 });
 

@@ -9,7 +9,7 @@ const { calcularTotalOrden } = require('../utils/totales');
 const { fechaLima } = require('../utils/fecha');
 const { descontarStock, devolverStock, itemsMenuDeOrden } = require('../utils/stock');
 const { requiereConfirmarPagoAntes } = require('../utils/verificacionPago');
-const { colaDelDia, pedidosSinCerrar } = require('../utils/colaDia');
+const { colaDelDia, cocinaDelDia, pedidosSinCerrar } = require('../utils/colaDia');
 
 router.use(authenticate);
 
@@ -96,6 +96,16 @@ router.get('/activas', (req, res) => {
 // ─────────────────────────────────────────────────────
 router.get('/cola', authorizePermiso(), (req, res) => {
   res.json(colaDelDia(db, req.user.restaurant_id, fechaLima()));
+});
+
+// ─────────────────────────────────────────────────────
+// GET /api/orders/cola-cocina
+// Cola de cocina — órdenes por preparar + reservas en cocina, ambas de HOY.
+// Reemplaza /activas + /reservations?flag=es_en_cocina (sin filtro de fecha,
+// con N+1) que usaba cocina.js. Ver ISS-030 y utils/colaDia.js.
+// ─────────────────────────────────────────────────────
+router.get('/cola-cocina', authorizePermiso(), (req, res) => {
+  res.json(cocinaDelDia(db, req.user.restaurant_id, fechaLima()));
 });
 
 // ─────────────────────────────────────────────────────

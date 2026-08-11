@@ -1,7 +1,8 @@
 // ════════════════════════════════════════════════════════
 // MÓDULO: COLA DE COCINA
 // Vista del cocinero — órdenes pendientes/en preparación + reservas en preparación.
-// Hace polling cada 15 s mientras el panel está activo.
+// Solo muestra lo de HOY (antes se acumulaban pedidos viejos sin cerrar —
+// ver ISS-030). Hace polling cada 30 s mientras el panel está activo.
 // Usa playAlertSound() y detectNuevasOrdenes() de owner.html (globals).
 // ════════════════════════════════════════════════════════
 
@@ -12,13 +13,10 @@ async function loadColaCocina() {
   if (!el) return;
   el.innerHTML = '<div class="loading-text">Cargando…</div>';
   try {
-    const [ordenes, reservasEnCocina] = await Promise.all([
-      api('GET', '/api/orders/activas'),
-      api('GET', '/api/reservations?flag=es_en_cocina'),
-    ]);
+    const { ordenes, reservas: reservasEnCocina } = await api('GET', '/api/orders/cola-cocina');
     detectNuevasOrdenes(ordenes);
 
-    const ordenesActivas = ordenes.filter(o => o.es_inicial || o.es_en_cocina);
+    const ordenesActivas = ordenes; // ya vienen filtradas por es_inicial/es_en_cocina + hoy
     const totalBadge = ordenesActivas.length + reservasEnCocina.length;
 
     const badgeCocina = document.getElementById('badge-cocina');
@@ -161,7 +159,7 @@ async function marcarReservaListaCocina(id) {
 function initCocinaPoll() {
   stopCocinaPoll();
   loadColaCocina();
-  _cocinaPollTimer = setInterval(loadColaCocina, 15000);
+  _cocinaPollTimer = setInterval(loadColaCocina, 30000);
 }
 
 function stopCocinaPoll() {
