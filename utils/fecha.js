@@ -1,7 +1,10 @@
 const TZ = 'America/Lima';
 
-function fechaLima() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+// Fecha de Lima en formato 'YYYY-MM-DD'. `momento` es inyectable para que los
+// jobs que ya reciben un `ahora` puedan derivar su fecha del mismo instante en
+// vez de mezclarlo con el reloj real del servidor.
+function fechaLima(momento = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(momento);
 }
 
 // Fecha/hora actual de Lima representada como Date "naive" (componentes de

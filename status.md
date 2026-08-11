@@ -2,6 +2,384 @@
 
 ---
 
+## 📝 Memoria de Julio — nota personal
+
+Me he querido rendir, tengo que hacer algo incómodo, tengo que seguir haciendo algo incómodo, no puedo
+rendirme. Sé que si no me rindo, mis sueños se van a cumplir, ni siquiera he comenzado. Somos lo
+suficientemente audaces, somos lo suficientemente modernos, lo suficientemente capaces para caminar y
+consolidar dinero en esta experiencia empresarial, tenemos que estudiar Node, lo que habría que hacer es
+seguir reformando mi mentalidad. Sí se puede, hagámoslo por la patria, por el Perú. Somos lo suficientemente
+empresarios para saber las cosas antes de que las podamos hacer.
+
+---
+
+## 🎯 Sesión 2026-08-10 (parte 4) — Pensionistas: lógica CERRADA + reportería a rediseñar
+
+**Sesión de decisiones, sin código.** Se cerró toda la lógica de negocio del módulo Pensionistas y
+apareció un tema nuevo y grande: la reportería no le sirve a la clienta.
+
+### 🚨 El miércoles 2026-08-12 es la primera atención masiva (+60 menús en el día)
+
+**"El primer reto":** la primera vez que un piloto atiende volumen real con el sistema — más de 60
+menús vendidos en un día, concentrados en el almuerzo. Todo lo que hoy anda con 2-3 pedidos
+simultáneos se prueba de verdad ese día.
+
+**Esto reordena el martes por completo.** El deploy deja de ser rutina: **`ISS-026` es literalmente el
+bug de este escenario y está sin desplegar** (pedidos que no avanzan, que vuelven atrás, error falso
+"No se puede cambiar una orden pagado" por doble tap). Correr el miércoles con la versión actual de
+producción es chocar de frente con él en el peor día posible. `ISS-027` (sesión de 30 días) evita
+además tener que reloguearse en pleno servicio.
+
+**Plan del martes, en `backlog.md`:** deploy temprano (con margen para probar y reaccionar), prueba de
+carga con los `k6` que ya existen, backup manual, y —si entra algo de features— el **contador simple
+de "menús vendidos hoy"**, que es justo lo que la dueña va a querer mirar ese día y es mucho más chico
+que el rediseño de reportería. **Pensionistas se posterga al jueves:** la lógica ya está cerrada y no
+se pierde, pero meter un módulo grande el día antes de la primera atención masiva es exactamente
+cuando no conviene tocar el sistema.
+
+**Riesgo conocido a vigilar:** `GET /api/orders/activas` (panel Órdenes) conserva su N+1 y su falta de
+filtro por fecha — quedó sin tocar a propósito en la sesión parte 1. Con 60 pedidos en el día es
+candidato a ponerse lento; migrarlo a `utils/colaDia.js` es directo si aparece.
+
+### Pensionistas — lógica definitiva, sin preguntas abiertas
+
+El usuario reformuló el módulo entero, más simple que lo que se venía proponiendo:
+
+> "Se le coloca el dinero que tiene y él va gastando; si se necesita más, la señora le coloca más, y
+> así ad infinitum."
+
+1. El pensionista **es un usuario más**, creado desde el panel Usuarios que el owner ya usa (rol nuevo
+   `pensionista`). No hay registro paralelo: reutiliza lo que ya existe.
+2. El owner le **carga el dinero**; cuando se acaba, recarga. Sin límite de veces.
+3. El pensionista **entra por el login normal** y pide desde `pensionista.html`, descontándose del
+   saldo, sin pantalla de pago.
+4. **Aviso de saldo bajo** — S/20 por defecto, configurable por restaurante.
+5. **Saldo insuficiente bloquea el pedido.** Razón: quien pide es el pensionista, y él no es quién
+   para decidir que el restaurante le fíe; si el dueño quiere fiarle, le recarga.
+6. **Todos los usuarios pasan a requerir email `@menupro.tech`.** Hoy `routes/usuarios.js:50` solo
+   valida que no esté vacío y acepta cualquier dominio.
+
+**Las 5 preguntas abiertas del `pensionistas.md` §11 quedaron respondidas.** Documentado en la **§0**
+de ese archivo, que manda sobre el resto del documento.
+
+**Descartado explícitamente (no volver sobre esto):**
+- El **"v1 recortado" sin login del pensionista**, que se había anotado en `backlog.md` esa misma
+  mañana. El usuario prefiere el flujo completo.
+- **`id_usuario` nullable** — se había propuesto para permitir pensionistas sin login; ya no aplica.
+- **Reutilizar `menu.html`** con un "modo pensionista". El usuario lo propuso, se le marcó el riesgo
+  (es la carta pública por la que los 2 pilotos reciben pedidos hoy) y **él mismo eligió
+  `pensionista.html`**: *"tienes razón, pensionistas.html tiene que ser la opción"*.
+
+**Temor despejado:** preocupaba que mandar al pensionista a otra página fuera complicado porque "todos
+los que entran al login van a `owner.html`". **No lo es:** `login.html:420` ya tiene el mapa
+`ROLE_REDIRECT` por rol (construido en `ISS-007`), y los 3 roles actuales apuntan a `owner.html` solo
+porque así se definió. Agregar `pensionista: '/pensionista.html'` es una línea.
+
+**Primer paso acordado, chico e independiente:** forzar `@menupro.tech` en la creación de usuarios
+(`routes/usuarios.js` + formulario en `owner.html`). **Aprobado pero no ejecutado** — el usuario
+prefirió cerrar la sesión y seguir mañana.
+
+### 🔴 Reportería — hay que rediseñarla entera
+
+Tema nuevo, y es P0. Palabras del usuario: *"las gráficas son microscópicas y no dan nada de valor
+que le interesa a la clienta"*.
+
+**El dato #1 que la clienta quiere, y que hoy no se muestra en ninguna parte:**
+> **cuántos menús va vendiendo en ese momento, en el día.**
+
+- **No importa si vino por mesa o por reserva** — es la cantidad total de menús vendidos hoy. El
+  sistema hoy separa esas dos fuentes en todos lados; para este número hay que unificarlas.
+- Es un dato **en vivo**, para mirar en pleno servicio, no un reporte de cierre.
+- Después: **qué platos** va vendiendo, mismo criterio.
+- **Requiere análisis antes de codear** — qué métricas reemplazan a las actuales, cuáles se eliminan y
+  cómo entra en 360px. El usuario pidió explícitamente que se analice.
+
+**Aprovechar lo ya diagnosticado** en `features.md` (anotado 2026-07-13): el gráfico se ve chiquito
+porque `#chart-pedidos-wrap` (`owner.html:557`) tiene `min-height:220px` sin `position:relative` ni
+alto fijo, a diferencia de los otros dos; y `contarPedidosPorPlato()` (`routes/reportes.js`) no filtra
+por fecha, así que muestra un acumulado histórico en vez de "hoy".
+
+**Docs actualizadas:** `pensionistas.md` (§0 nueva + §11 cerrada), `backlog.md` (Pensionistas
+reescrito, reportería como P0 nuevo, fecha del miércoles), `features.md` (ambas entradas), `status.md`.
+
+---
+
+## ⏸️ Sesión 2026-08-10 (parte 3) — Auto-actualización del SW CONGELADA + estado previo al deploy
+
+**Leer esto antes de tocar `sw.js`.** Sesión sin cambios de código: se analizó la auto-actualización
+del service worker (punto 4 del backlog de `conversacion_opues10082026.md`) y **el usuario decidió
+congelarla**. El motivo es correcto: el beneficio es hipotético y el riesgo es romperle la app a un
+dueño piloto justo antes de un deploy grande.
+
+### Estado del repo al cerrar la sesión
+
+- Working tree **limpio**, `main` == `origin/main`. Nada sin commitear.
+- **Solo 2 commits sin desplegar** — los de ayer: `181ddf3` (`ISS-027` sesión persistente +
+  `ISS-026` Cola del día) y `6d4576e` (`ISS-028` letra más grande + overflow).
+- Todo lo de julio (gate de pago, Gap 18/19/21, íconos "MP", `ISS-018` a `ISS-024`) **ya está en
+  producción** — ver "Corrección del log" abajo. `ISS-025` sigue sin fix, no es tema de deploy.
+- `sw.js` local en `menupro-v6`; producción debería estar en `menupro-v4`. `.env` de producción
+  **sin confirmar** las VAPID reales.
+
+### Hallazgo técnico (para no re-descubrirlo)
+
+`self.skipWaiting()` **ya existe** en `sw.js:20` y `clients.claim()` en `sw.js:29`. La tarea del
+backlog estaba mal enunciada: no falta `skipWaiting`, ya está. Lo que falta, si algún día se retoma,
+es lo otro: (1) la pestaña abierta nunca se recarga sola, así que el SW nuevo toma control pero el
+HTML pintado sigue siendo el viejo; (2) nadie llama a `reg.update()` mientras la app está abierta
+—`register()` solo corre al cargar la página (`owner.html:2328`)—, así que una PWA suspendida en
+background no descubre el `sw.js` nuevo hasta que se la cierra y reabre. El patrón correcto sería
+**quitar** `skipWaiting` del `install`, detectar el SW en `waiting` desde la página, y ofrecer un
+banner con tap (no recarga automática: recargarle la pantalla a un dueño a media orden en hora punta
+es peor que el problema).
+
+### ⚠️ Corrección del log — hubo un deploy que nunca se registró
+
+**`status.md` estaba incompleto.** La última sesión de deploy registrada era el **2026-07-09**
+(`status.md:456`), lo que daba a entender que había 16 commits sin desplegar. **Es falso.** El
+usuario confirmó que en producción ya están el ícono "MP" (`f626c98`, 2026-07-16) y el tamaño de
+letra ajustable (`37a85a2`, 2026-07-14).
+
+Corrobora desde el propio log: el análisis de `ISS-028` (sesión de ayer) constató que el overflow del
+bloque "Link del menú" *"desbordaba desde 1.15×, **el nivel 'Grande' que ya estaba activo en
+producción**"* — es decir, ayer ya se observó esa feature de julio corriendo en el servidor.
+
+**Conclusión:** hubo un deploy manual entre el 2026-07-16 y el 2026-08-10, hecho por la consola web
+del Droplet, que no quedó anotado. **Producción está en `f626c98` o posterior.**
+
+**Confirmado en campo por el usuario (2026-08-10):** el dueño **ya está viendo la letra grande en su
+celular**. Es evidencia de uso real, no de repo: la feature de julio llegó al dispositivo del dueño y
+**el service worker se actualizó solo**, sin que nadie le pidiera cerrar y reabrir la app. Es el
+argumento más fuerte para descartar la auto-actualización del SW del backlog.
+
+**Lección de proceso:** todo deploy hecho por la consola web debe anotarse en `status.md`, o el log
+miente sobre el estado real de producción y las decisiones se toman sobre datos falsos (como estuvo a
+punto de pasar en esta sesión).
+
+**Verificar mañana en el servidor, toma 5 segundos y cierra el tema:**
+`cd /var/www/menupro && git log -1 --oneline` → deja constancia del commit exacto en el que estaba
+producción **antes** del pull.
+
+**Impacto en el piloto #1:** sigue en pie que probó una versión vieja. Usó la app el 13–14 de julio,
+y los fixes `ISS-018` a `ISS-024` se desplegaron **después** de esos dos días.
+
+### Plan acordado
+
+1. **Mañana:** el usuario despliega a producción (`git pull origin main` + `pm2 restart menupro`) y
+   prueba desde el celular. Trabajará **desde la otra laptop**. Son solo 2 commits (los de ayer).
+2. Anotar el `git log -1` previo al pull, para cerrar la corrección de arriba.
+3. Si tras el deploy los cambios se ven **sin cerrar y reabrir la app** → la auto-actualización del
+   SW queda descartada definitivamente y se borra del backlog. Que el ícono "MP" y la letra
+   ajustable hayan llegado solos al celular del dueño ya apunta fuerte en esa dirección.
+4. **Avisarle al dueño que la letra le va a crecer otra vez.** Hoy ve la escala de julio
+   (14 / 16,1 / 18,2px); el deploy de mañana la sube a **16,1 / 19,6 / 23,8px** y la migración
+   `mp-font-scale-v2` le sube su preferencia guardada un nivel automáticamente (nunca la baja). Si
+   no se le avisa, un cambio de tamaño que él no pidió puede leerse como una falla.
+5. Si hay que cerrar y reabrir para verlos → se retoma con el diseño descrito arriba.
+6. El usuario avisa el resultado. **Hasta entonces, no tocar `sw.js` salvo el bump de `CACHE` que ya
+   exige `ISS-022` cuando cambie algún archivo de `ASSETS`.**
+
+### 🆕 Regla de proceso nueva: preguntar por el deploy después de cada commit
+
+Acordada en esta sesión, a pedido del usuario. **Al terminar cada commit, Claude debe preguntarle si
+ya está desplegado**, y anotar la respuesta en `status.md`. Ataca la causa raíz del desfase que se
+corrigió hoy: el deploy lo hace el usuario a mano, a veces días después y desde otra laptop, así que
+el log solo puede quedar exacto si se le pregunta. Sin eso, cualquier sesión futura vuelve a calcular
+mal qué está en producción. Documentada en `CLAUDE.md`.
+
+### 📋 `backlog.md` (nuevo) — el backlog ahora viaja entre laptops
+
+**Problema encontrado al cerrar la sesión:** el backlog de la etapa vivía solo en
+`conversacion_opues10082026.md`, que está en `.gitignore` (`conversacion_*.md`). Los P0/P1, el recorte
+de Pensionistas v1 y el contexto de los pilotos **existían únicamente en la laptop DESKTOP-LPSVKIS** —
+mañana, desde la otra laptop, no habrían estado.
+
+**Portado a `backlog.md`** (trackeado en git), con el estado real: 3.1 y 3.2 ✅, **3.3 es el único P0
+de features abierto**, y **Pensionistas quedó desbloqueado** porque su dependencia era 3.2. El precio
+de S/250 quedó marcado como **tentativo** por indicación del usuario. `CLAUDE.md` lo suma a la lista de
+lectura de inicio de sesión y avisa que los `conversacion_*.md` no viajan; `features.md` apunta a él
+desde "Pendientes".
+
+### 🔒 Regla confirmada: los deploys los hace siempre el usuario
+
+**Claude Code no despliega. Nunca tuvo ni va a tener acceso al servidor.** No es una limitación
+temporal por la passphrase — es cómo funciona el proyecto. Documentado en `deploy.md` §16.
+
+- Cuando una sesión cierra con "pendiente: deploy", **el trabajo de Claude ya está completo**; el
+  deploy es un paso manual del usuario, cuando él pueda.
+- Claude no debe proponer automatizar deploys, cargar claves en el `ssh-agent` ni pedir credenciales.
+- El usuario ejecuta por **consola web del Droplet** o SSH interactivo, y **anota el deploy en
+  `status.md`** (commit + fecha). Saltarse esa anotación es lo que produjo la corrección de arriba.
+
+**Sobre la clave SSH:** la passphrase de `~/.ssh/id_rsa` no se recuerda de memoria (está en un cuaderno
+en la oficina); el `ssh-agent` de Windows está `Stopped`/`Disabled` y la passphrase no es recuperable
+del archivo (`aes256-ctr` + bcrypt). No bloquea nada: la consola web del Droplet no necesita la clave.
+Plan B documentado en `deploy.md` §16 → "Acceso SSH al servidor".
+
+**Siguiente del backlog tras el deploy:** **3.3** entrada directa a Cola del día (último P0 abierto;
+3.1 y 3.2 se cerraron ayer).
+
+---
+
+## ✅ Sesión 2026-08-10 (parte 2) — Letra más grande + 2 bugs de overflow (ISS-028)
+
+**Prompt:** "ahora sigamos con la letra más grande aún, ya está grande, más grande" — punto 3.1 del
+backlog acordado.
+
+**Medición antes de tocar nada** (Playwright a 360px, recorriendo 10 paneles × 8 escalas): el sistema ya
+existía con base 14px y niveles 1 / 1.15 / 1.3 (14 / 16,1 / 18,2px). Pero la medición encontró que
+**subir la escala estaba bloqueado por overflow horizontal ya existente**, no por falta de espacio real.
+
+**2 bugs de layout encontrados y corregidos** (ISS-028) — el primero ya afectaba a producción:
+1. **Bloque "Link del menú" + QR en Configuración** — desbordaba desde **1.15×, el nivel "Grande" que
+   ya estaba activo en producción**: un dueño que eligiera "Grande" tenía scroll horizontal justo en la
+   pantalla donde se configura el tamaño de letra. Causa: el contenedor de la columna derecha es un flex
+   item sin `min-width:0`, así que su ancho lo fijaba el contenido más largo ("⬇ Descargar PNG") y nunca
+   encogía. Fix: `flex:1 1 200px; min-width:0` + `flex-wrap` en la fila del input.
+2. **`.page-title` del topbar** — desbordaba desde 1.4× **en todos los paneles**, porque el topbar
+   siempre está visible. Causa: `flex:1` sin `min-width:0` — un flex item no encoge por debajo de su
+   min-content, así que el título empujaba los botones fuera de la pantalla. Fix: `min-width:0` +
+   `text-overflow: ellipsis`. Además el padding del topbar pasó de `1.6rem` a px fijos en móvil: en rem
+   crecía con la letra y se comía el ancho disponible justo cuando más falta hacía.
+
+**Falsos positivos descartados con una segunda medición** (que distingue overflow real de scroll interno
+legítimo, comprobando si la página efectivamente se desplaza): los tabs (`.tabs` ya tiene `overflow-x:
+auto`), el carrusel de Home y la tabla de Usuarios (`.table-wrap`, `owner.css:419`) **no** eran bugs.
+Sin esa distinción se habrían "arreglado" 3 cosas que ya funcionaban.
+
+**Escala subida** (decisión del usuario entre 3 opciones): **1,15 / 1,4 / 1,7 → 16,1 / 19,6 / 23,8px**.
+Se mantienen 3 botones en vez de agregar un 4º — menos opciones es mejor para un dueño de 70 años. El
+"Normal" nuevo equivale al "Grande" viejo.
+
+**Migración de la preferencia guardada:** la key pasó a `mp-font-scale-v2`. Versionarla era necesario
+porque **1.15 existe en ambos esquemas con significados distintos** (era "Grande", ahora es "Normal") y
+por el número solo no se puede saber cuál guardó el usuario. Cada nivel viejo sube a su equivalente
+nuevo, **nunca baja**: encogerle la letra a quien ya la había agrandado sería lo contrario de lo pedido.
+
+**Verificación** — `scripts/test-escala-tipografica.js` (nuevo, Playwright): **14/14 verde**. Cubre los
+3 niveles × 13 paneles sin scroll horizontal real a 360px, touch targets ≥44px y inputs ≥16px (anti-zoom
+de iOS) en la escala máxima, persistencia tras recargar, y los 4 casos de migración. Capturas visuales
+de Cola del día y Configuración a 1,7× revisadas: entra todo. **317/317 jest verde.**
+
+`sw.js`: `CACHE` → **`menupro-v6`** (`owner.html` y `owner.css` están en `ASSETS` y ambos cambiaron).
+
+**Pendiente:** deploy. `menu.html` (la carta del cliente) **no** se tocó — decisión del usuario, queda
+para más adelante.
+
+---
+
+## ✅ Sesión 2026-08-10 — ISS-027 (sesión persistente) + ISS-026 (Cola del día trabada)
+
+**Prompt:** el usuario trajo `conversacion_opues10082026.md` (contexto y prioridades de la etapa) y
+eligió 2 features: **(1)** entrar a la app sin iniciar sesión cada vez, como WhatsApp; **(2)** arreglar
+la lentitud, que aparece con apenas 2-3 pedidos simultáneos.
+
+Al preguntarle dónde veía exactamente la lentitud, la respuesta cambió el diagnóstico: *"cuando
+intentas pasar de un lugar de la cola a otro se pone lento y a veces no te pasa el pedido, o se queda
+esperando mucho tiempo, o sale error que ya se envió a cobrados y no desaparece de la cola"*. No era
+lentitud de base de datos: era una **carrera entre el poll y los taps**.
+
+### ISS-027 — Sesión persistente
+
+**Diagnóstico — 2 causas, la segunda era la real:** el JWT y la cookie duraban `8h`
+(`routes/auth.js`), pero sobre todo la sesión vivía en **`sessionStorage`** (`owner.html:1089`,
+`login.html:412`), que el navegador **borra al cerrar la PWA**. Aunque la cookie siguiera viva, al
+reabrir la app no había `session` y el guard redirigía al login. **Subir el `expiresIn` solo no habría
+arreglado nada.**
+
+**Implementado:**
+- `utils/sesion.js` (nuevo) — reglas puras testeables: `diasSesion()`, `cookieSesion()`,
+  `necesitaRenovacion()`. Mismo patrón que `horarioAtencion.js`/`verificacionPago.js`.
+- Sesión de **30 días** con **renovación deslizante**: `GET /api/auth/me` (nuevo) revalida la cookie y
+  emite una nueva si le queda menos de la mitad de vida. Relee al usuario de la BD, no solo del token
+  — con 30 días, un cambio de permisos o un restaurante desactivado tardaría un mes en aplicarse.
+- **El admin del SaaS queda acotado a 1 día**: usa el mismo `/api/auth/login`, así que sin esta
+  distinción habría heredado los 30 días en la cuenta más privilegiada del sistema.
+- `sameSite` `'strict'` → **`'lax'`**: con `strict` el navegador no manda la cookie en la navegación
+  inicial hacia la app, justo el caso de abrir la PWA desde el ícono.
+- `public/js/session.js` (nuevo) — sesión en `localStorage` con key `mp-session` (para no cruzarse con
+  el panel admin, que sigue en `sessionStorage`) y **migración automática** desde la sesión vieja: nadie
+  queda deslogueado el día del deploy.
+- `login.html`: splash "Entrando…" aplicado **antes del primer paint** (mismo patrón que el tema y el
+  tamaño de letra). Sin red se entra igual con la sesión local, en vez de mostrar el login a quien ya
+  estaba dentro solo porque se cayó el wifi.
+- **Bug propio detectado y corregido en el camino:** `utils.js` redirigía al login ante un 401 sin
+  limpiar la sesión local. Con `localStorage` (que ya no se borra solo) eso habría creado un **bucle
+  infinito login ↔ panel**. Se agregó `limpiarSesion()` antes de redirigir.
+- `sw.js`: `CACHE` bumpeado a **`menupro-v5`** — `owner.html` está en `ASSETS` y cambió su guard
+  (obligatorio, ver ISS-022).
+
+### ISS-026 — Cola del día
+
+**Diagnóstico — 3 defectos que se realimentaban:**
+1. **Doble tap:** `accionRapidaOrden()` no bloqueaba el botón. El primer `PATCH` funcionaba, el segundo
+   chocaba con la guarda de `routes/orders.js:370` → *"No se puede cambiar una orden pagado"*. **El
+   error aparecía por una acción que sí había funcionado.**
+2. **El poll repintaba el estado viejo:** sin token de secuencia, las respuestas de un poll iniciado
+   antes del `PATCH` llegaban después y `renderZona()` reemplazaba el HTML con datos anteriores al
+   cambio — el pedido reaparecía en su zona previa.
+3. **Cero feedback inmediato:** entre el tap y el repintado corrían 1 `PATCH` + 6 `GET`, cada uno con
+   su N+1, sobre `better-sqlite3` (síncrono, bloquea el proceso entero). Eso alimentaba el defecto 1.
+
+Encontrados de paso: **(4)** "Confirmar pago" desde la Cola llamaba a las funciones de `ordenes.js`,
+que refrescan *el panel de Órdenes*, no la Cola; **(5)** `GET /api/orders/activas` no filtraba por
+fecha, así que toda orden nunca cobrada seguía activa para siempre arrastrando su N+1.
+
+**Implementado:**
+- `pedidos.js`: guard por ítem (`_enVuelo`), token de secuencia (`_cargaSeq`), **actualización
+  optimista** con reversión si el backend rechaza, `reiniciarPoll()` tras cada acción, y
+  `confirmarPagoColaOrden()`/`confirmarPagoColaReserva()` propias de la Cola.
+- `utils/colaDia.js` (nuevo) + **`GET /api/orders/cola`**: órdenes + reservas activas en 1 llamada con
+  un número **fijo** de consultas (6) sin importar cuántos pedidos haya. Reemplaza las 6 requests con
+  N+1 que hacía `pedidos.js`.
+- Filtro por fecha con **`substr(fecha,1,10)`**: `ordenes.fecha` tiene formatos mezclados en la BD
+  (`'2026-08-10'` y `'2026-06-04 03:46:13'`), un `WHERE fecha = ?` nunca habría matcheado los largos.
+  Las reservas usan `>= hoy` y no `= hoy` — las futuras deben verse para poder confirmarlas.
+
+### Cierre de caja (decisión de producto)
+
+**Hallazgo que cambió el diseño:** `total` solo se escribe al marcar la orden como cobrada
+(`orders.js:377`) y Ganancias suma `WHERE total IS NOT NULL` (`reportes.js:385`). **Un pedido que
+nunca se cerró no aparece en las Ganancias, nunca.** En la BD local había 5 así, todas con `total NULL`.
+Ocultarlos de la cola sin más habría sido perder ese dinero para siempre.
+
+Se le presentaron 4 opciones al usuario y **eligió el cierre de caja**, descartando explícitamente el
+auto-cierre nocturno: nada que involucre dinero se cierra solo. La cola muestra solo hoy; un banner
+avisa cuántos quedaron abiertos y un modal permite marcarlos "💰 Se cobró" (entra a Ganancias) o
+"✗ No se concretó" (cancela y devuelve stock). Nuevo `GET /api/orders/sin-cerrar`.
+
+### Verificación
+
+- **`scripts/test-cola-carrera.js`** (nuevo, Playwright, fuera de jest) — **21/21 verde**: doble tap →
+  1 solo PATCH sin error falso; respuesta de poll retenida 3 s que llega tarde → el pedido **no**
+  reaparece; con el PATCH retrasado 2,5 s la card ya se movió a los 400 ms; ante un 400 la card vuelve
+  y la BD queda intacta; cierre de caja lleva `total` de `NULL` a persistido; sesión persistente
+  completa incluido el caso "sin cookie vuelve al login sin bucle".
+- **`tests/sesion-persistente.test.js`** (19 casos) y **`tests/cola-dia.test.js`** (15 casos) nuevos.
+- **`curl` contra servidor real:** `/me` sin cookie 401, vencida 401, fresca 200 sin renovar, por
+  vencer 200 + `Set-Cookie` con `Max-Age=2592000; HttpOnly; SameSite=Lax`.
+- **317/317 jest verde** (283 previos + 34 nuevos).
+
+**Bonus — 2 tests que ya estaban rojos antes de esta sesión, arreglados:**
+`recordatorio-menu.test.js` fallaba desde el 17 de julio. La causa era del **código de producción**, no
+del test: `procesarRecordatoriosMenu()` recibe un `ahora` inyectable pero llamaba a
+`restaurantesSinMenuHoy(db)` sin fecha, usando el reloj real del servidor — el job miraba el menú de un
+día distinto al que estaba evaluando. Fix: `fechaLima()` ahora acepta un momento inyectable y el job
+deriva la fecha de su propio `ahora`.
+
+**Pendiente:**
+- **Deploy a producción** — ~~acumulado con todo lo de julio (íconos "MP", Gap 21, fixes ISS-018 a
+  ISS-025)~~. **Corregido en la sesión parte 3:** lo de julio **ya estaba desplegado** (deploy manual
+  sin registrar); lo único pendiente son los 2 commits del 2026-08-10. Avisar que, igual que con
+  ISS-022, quien tenga la PWA instalada podría necesitar **cerrar y reabrir la app una vez** para que
+  el navegador note el `sw.js` nuevo (`menupro-v6`).
+- `GET /api/orders/activas` (panel de **Órdenes**, no la Cola) conserva su N+1 y su falta de filtro por
+  fecha. No se tocó para no cambiar ese panel en el mismo trabajo; migrarlo a `utils/colaDia.js` es
+  directo si aparece lentitud ahí.
+- Siguientes del backlog acordado: **3.1** letra aún más grande y **3.3** entrada directa a Cola del día.
+
+---
+
 ## ✅ Sesión 2026-07-16 (parte 3) — Ícono de la PWA: "RA" → "MP"
 
 **Prompt:** "ahora sale RA en el logo de la app" — el ícono instalado en el celular mostraba un monograma

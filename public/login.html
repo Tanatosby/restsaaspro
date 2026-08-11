@@ -13,7 +13,17 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
     }
+
+    // Si hay una sesión guardada, ocultamos el formulario antes del primer paint
+    // (mismo patrón que el tema y el tamaño de letra en owner.html). Así quien ya
+    // estaba dentro nunca ve un parpadeo del login mientras se revalida la cookie.
+    try {
+      if (localStorage.getItem('mp-session') || sessionStorage.getItem('session')) {
+        document.documentElement.classList.add('restaurando');
+      }
+    } catch (e) {}
   </script>
+  <script src="/js/session.js"></script>
   <script src="/js/widgets/pwa-install.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,6 +46,35 @@
       background: var(--cream);
       font-family: 'Lato', sans-serif;
       color: var(--text);
+    }
+
+    /* ── Splash de restauración de sesión ─────────────────
+       Visible solo mientras se revalida la cookie de alguien que ya
+       tenía sesión. El formulario queda oculto para evitar el parpadeo. */
+    #splash { display: none; }
+    html.restaurando #splash { display: flex; }
+    html.restaurando .shell  { display: none; }
+
+    #splash {
+      position: fixed; inset: 0;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 1rem; background: var(--cream); z-index: 100;
+    }
+    .splash-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px;
+    }
+    .splash-text { color: var(--muted); font-size: 15px; }
+    .splash-dots {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid var(--sand); border-top-color: var(--accent);
+      animation: splash-spin 0.8s linear infinite;
+    }
+    @keyframes splash-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .splash-dots { animation-duration: 2.4s; }
     }
 
     /* ══════════════════════════════
@@ -289,6 +328,14 @@
   </style>
 </head>
 <body>
+
+<!-- Splash mientras se revalida la sesión guardada (ISS-027) -->
+<div id="splash">
+  <div class="splash-icon">🍽️</div>
+  <div class="splash-dots"></div>
+  <div class="splash-text">Entrando…</div>
+</div>
+
 <div class="shell">
 
   <!-- ── Left (solo desktop) ── -->
@@ -376,15 +423,38 @@
     mozo:     '/owner.html'
   };
 
-  (function guard() {
-    try {
-      const session = JSON.parse(sessionStorage.getItem('session') || 'null');
-      if (session?.role) {
-        // Usuarios con permisos delegados van al panel del owner (con módulos filtrados)
-        const target = session.permisos ? '/owner.html' : ROLE_REDIRECT[session.role];
-        if (target) window.location.replace(target);
-      }
-    } catch { sessionStorage.removeItem('session'); }
+  function destinoDe(user) {
+    // Usuarios con permisos delegados van al panel del owner (con módulos filtrados)
+    return user.permisos ? '/owner.html' : ROLE_REDIRECT[user.role];
+  }
+
+  // ── Guard: entrar sin escribir nada si la sesión sigue viva ──────────
+  // No alcanza con confiar en la sesión local: ahora vive en localStorage y
+  // sobrevive a la expiración de la cookie. Si rebotáramos al panel sin
+  // preguntarle al backend, owner.html recibiría un 401 y nos mandaría de
+  // vuelta acá — bucle infinito. Por eso se revalida contra /api/auth/me,
+  // que además renueva la cookie (renovación deslizante).
+  (async function guard() {
+    const session = leerSesion();
+    if (!session?.role) {
+      document.documentElement.classList.remove('restaurando');
+      return;
+    }
+
+    const { estado, user } = await restaurarSesion();
+
+    // Sin red se entra igual con la sesión local: la app está cacheada por el
+    // service worker y owner.html revalidará en su primera llamada al API.
+    // Mostrar el login a quien ya estaba dentro solo porque se cayó el wifi
+    // sería exactamente la fricción que este cambio viene a eliminar.
+    const destino = estado === 'ok'      ? destinoDe(user)
+                  : estado === 'sin-red' ? destinoDe(session)
+                  : null;
+
+    if (destino) return window.location.replace(destino);
+
+    // Cookie vencida o revocada: mostrar el formulario
+    document.documentElement.classList.remove('restaurando');
   })();
 
   async function handleLogin() {
@@ -409,15 +479,10 @@
 
       if (!res.ok) return showError(data.error || 'Error al ingresar. Intenta de nuevo.');
 
-      sessionStorage.setItem('session', JSON.stringify({
-        name:          data.user.name,
-        role:          data.user.role,
-        restaurant_id: data.user.restaurant_id,
-        permisos:      data.user.permisos   // null = acceso total (owner/admin)
-      }));
+      // Persiste en localStorage — sobrevive al cierre de la PWA (ISS-027)
+      guardarSesion(data.user);
 
-      // Usuarios con permisos delegados usan el panel del owner con módulos filtrados
-      const target = data.user.permisos ? '/owner.html' : ROLE_REDIRECT[data.user.role];
+      const target = destinoDe(data.user);
       if (!target) return showError(`Rol desconocido "${data.user.role}". Contacta al administrador.`);
 
       window.location.replace(target);

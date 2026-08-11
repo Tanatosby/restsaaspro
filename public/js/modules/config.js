@@ -88,8 +88,11 @@ async function loadConfiguracion() {
     loadMesasConfig();
 
     // Tamaño de letra ajustable — preferencia por dispositivo (localStorage, no viaja al backend)
-    let scaleActual = parseFloat(localStorage.getItem('mp-font-scale'));
-    if (![1, 1.15, 1.3].includes(scaleActual)) scaleActual = 1;
+    // La lista y la migración de valores viejos viven en el script del <head>
+    // de owner.html (se aplica antes del paint). Acá solo se marca el botón.
+    const escalas = window.MP_FONT_SCALES || [1.15, 1.4, 1.7];
+    let scaleActual = parseFloat(localStorage.getItem(window.MP_FONT_KEY || 'mp-font-scale-v2'));
+    if (!escalas.includes(scaleActual)) scaleActual = escalas[0];
     document.querySelectorAll('.font-scale-btn').forEach(btn => {
       btn.classList.toggle('active', parseFloat(btn.dataset.scale) === scaleActual);
     });

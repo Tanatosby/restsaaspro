@@ -722,6 +722,24 @@ Pruebas antes de abrir
 
 ## 16. Deploys futuros
 
+> ### ⚠️ Los deploys los hace SIEMPRE el usuario, a mano
+>
+> **Regla fija del proyecto, no una limitación temporal.** Claude Code **no despliega** y no debe
+> intentarlo: no tiene ni tendrá acceso al servidor. Todo comando de esta sección lo ejecuta el
+> usuario, por SSH interactivo o por la **consola web del Droplet** en DigitalOcean.
+>
+> Qué significa en la práctica:
+> - Cuando una sesión termina con "pendiente: deploy", **el trabajo de Claude está completo**. El
+>   deploy es un paso manual del usuario, en su tiempo.
+> - Claude no debe proponer automatizar el deploy, cargar claves en el `ssh-agent`, ni pedir
+>   credenciales del servidor.
+> - **Todo deploy manual debe anotarse en `status.md`** (commit desplegado + fecha). Si no se anota,
+>   el log miente sobre el estado real de producción — ya pasó una vez: un deploy hecho por la
+>   consola web entre el 2026-07-16 y el 2026-08-10 no quedó registrado, y la sesión del 2026-08-10
+>   (parte 3) calculó 16 commits pendientes cuando en realidad eran 2.
+> - Al entrar al servidor, correr primero `git log -1 --oneline` y anotarlo: es el estado real de
+>   producción antes del pull.
+
 ### Flujo estándar (actualización de código)
 
 ```bash
@@ -769,3 +787,20 @@ pm2 restart menupro
 ```bash
 ssh root@147.182.135.252
 ```
+
+**Estado del acceso (2026-08-10):** la clave pública de la laptop DESKTOP-LPSVKIS está autorizada en
+`/root/.ssh/authorized_keys` desde el 2026-06-06, pero **`~/.ssh/id_rsa` tiene passphrase y el usuario
+no la recuerda de memoria** (está anotada en un cuaderno en su oficina). El `ssh-agent` de Windows
+está `Stopped`/`Disabled`, así que no hay nada cacheado, y la passphrase **no es recuperable** desde el
+archivo (`aes256-ctr` + KDF bcrypt).
+
+Las dos vías que funcionan hoy:
+1. **Consola web del Droplet** (DigitalOcean → Droplet → Access → Launch Droplet Console). No necesita
+   la clave SSH. Es la vía que se viene usando.
+2. **SSH interactivo** con la passphrase del cuaderno.
+
+Si la passphrase se pierde definitivamente: generar un par nuevo
+(`ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_menupro`), agregar la pública a
+`/root/.ssh/authorized_keys` desde la consola web, y borrar la línea de la clave vieja
+(huella `SHA256:kEDDD7W2UbtdNNVEz0abCoSZYoPFwGBEhb7mTory3HE`). La contraseña root se puede resetear
+desde el panel de DigitalOcean (Access → Reset Root Password) si tampoco se recuerda.

@@ -4,6 +4,10 @@ async function api(method, path, body) {
   if (body) opts.body = JSON.stringify(body);
   const res  = await fetch(path, opts);
   if (res.status === 401) {
+    // Limpiar la sesión local es obligatorio: vive en localStorage y ya no se
+    // borra sola al cerrar la app. Sin esto, login.html vería una sesión que el
+    // backend rechaza y rebotaría de vuelta al panel — bucle infinito.
+    limpiarSesion();
     window.location.replace('/login.html');
     return;
   }

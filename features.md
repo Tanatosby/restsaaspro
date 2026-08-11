@@ -1,5 +1,57 @@
 # Features — Menú Pro
 
+## ~~Letra más grande en el panel del owner~~ ✅ Completado 2026-08-10
+*Punto 3.1 del backlog. Ver [ISS-028](issues/ISS-028-overflow-letra-grande.md).*
+
+El sistema de tamaño ajustable ya existía (3 niveles sobre `--font-scale`, desde 2026-07-14), pero se
+quedaba corto: 14 / 16,1 / 18,2px. Subido a **16,1 / 19,6 / 23,8px** (escalas 1,15 / 1,4 / 1,7). Se
+mantienen 3 botones en vez de agregar un cuarto — menos opciones es mejor para un dueño mayor. El
+"Normal" nuevo equivale al "Grande" anterior.
+
+**La preferencia guardada migra hacia arriba, nunca hacia abajo**, con key versionada
+(`mp-font-scale-v2`): 1.15 significaba "Grande" en el esquema viejo y "Normal" en el nuevo, así que por
+el número solo no se puede saber cuál eligió el usuario.
+
+Antes hubo que corregir 2 bugs de overflow que bloqueaban la subida — uno de ellos **ya activo en
+producción** (ver ISS-028). Verificación: `scripts/test-escala-tipografica.js`, 14/14, incluyendo touch
+targets ≥44px e inputs ≥16px en la escala máxima. `menu.html` (carta del cliente) no se tocó.
+
+## ~~Sesión persistente — entrar sin iniciar sesión, como WhatsApp~~ ✅ Completado 2026-08-10
+*Ver [ISS-027](issues/ISS-027-sesion-se-pierde.md) y §3.2 de `conversacion_opues10082026.md`.*
+
+La barrera de adopción más cara del proyecto: el piloto #2 no lograba ni iniciar sesión. Eran **dos**
+causas, y la segunda era la real — la sesión vivía en `sessionStorage`, que el navegador borra al cerrar
+la PWA, así que subir el `expiresIn` solo no habría arreglado nada.
+
+Sesión de **30 días** con renovación deslizante vía `GET /api/auth/me` (nuevo), sesión movida a
+`localStorage` con migración automática desde la anterior, `sameSite: 'lax'` (con `strict` la PWA no
+manda la cookie al abrir desde el ícono) y splash antes del primer paint en `login.html`. **El admin del
+SaaS queda acotado a 1 día** — usa el mismo endpoint de login y no debe heredar los 30 días.
+`utils/sesion.js` (nuevo) concentra las reglas como funciones puras. Tests:
+`tests/sesion-persistente.test.js` (19 casos). **317/317 jest verde.**
+
+## ~~Cola del día trabada: pedidos que no avanzan de etapa~~ ✅ Completado 2026-08-10
+*Ver [ISS-026](issues/ISS-026-cola-carrera-doble-tap.md).*
+
+Reportado como "lentitud con 2-3 pedidos", pero era una **carrera entre el poll y los taps**: sin guard
+de botón (el doble tap producía el error falso *"No se puede cambiar una orden pagado"* sobre una acción
+que sí había funcionado), sin token de secuencia (las respuestas de polls viejos repintaban el estado
+anterior y el pedido reaparecía) y sin feedback inmediato.
+
+Fix en `pedidos.js`: guard por ítem, token de secuencia, actualización optimista con reversión.
+`utils/colaDia.js` (nuevo) + **`GET /api/orders/cola`** reemplazan las 6 requests con N+1 por 1 llamada
+con consultas fijas. Tests: `tests/cola-dia.test.js` (15 casos) + `scripts/test-cola-carrera.js`
+(Playwright, 21/21).
+
+## ~~Cierre de caja — pedidos de días anteriores sin cerrar~~ ✅ Completado 2026-08-10
+
+Salió de ISS-026: `total` solo se escribe al cobrar y Ganancias suma `WHERE total IS NOT NULL`, así que
+**un pedido que nunca se cerró no aparece en las Ganancias, nunca**. La Cola ahora muestra solo hoy, pero
+lo viejo no se oculta: un banner avisa cuántos quedaron abiertos y un modal permite marcarlos "💰 Se
+cobró" (entra a Ganancias) o "✗ No se concretó" (cancela y devuelve stock). Nuevo
+`GET /api/orders/sin-cerrar`. Decisión del usuario entre 4 opciones; se descartó el auto-cierre nocturno
+— nada que involucre dinero se cierra solo.
+
 ## ~~Ícono de la PWA mostraba "RA" en vez de la marca~~ ✅ Completado 2026-07-16
 
 El usuario notó que el ícono instalado en el celular mostraba el monograma "RA" (placeholder de una marca
@@ -10,6 +62,10 @@ los celulares con la PWA ya instalada seguirían viendo el ícono viejo indefini
 `ISS-022`). **283/283 jest verde** (sin tests nuevos, cambio de assets estáticos).
 
 ## Pendientes
+
+> **¿Qué sigue?** → `backlog.md`. Este archivo es el registro por feature (qué es, cómo se
+> implementó); `backlog.md` es el plan priorizado de la etapa (P0/P1/P2) con el porqué de cada
+> prioridad y el contexto de los pilotos.
 
 ### ~~Notificaciones push ampliadas (Gap 21)~~ ✅ Completado 2026-07-16
 *Ver Gap 21 en `vision_negocio.md`, `pilotos.md` y `issues/ISS-025-push-no-llega.md`.*
@@ -45,7 +101,9 @@ requiere re-aceptación ante cambios de los términos, y el texto legal completo
 `vision_negocio.md`.
 
 ### Módulo Pensionistas (saldo prepagado + login propio)
-*Anotado 2026-07-15, pendiente de implementar. Ver Gap 20 en `vision_negocio.md` y análisis completo en `pensionistas.md`.*
+*Anotado 2026-07-15. **Lógica de negocio cerrada el 2026-08-10 — sin preguntas abiertas, listo para implementar.** Ver `pensionistas.md` §0 (manda sobre el resto de ese documento), `backlog.md` y Gap 20 en `vision_negocio.md`.*
+
+**Decisiones cerradas:** el pensionista es un usuario más creado desde el panel Usuarios (rol nuevo `pensionista`); el owner le carga el dinero y recarga cuando se acaba, sin límite; el pensionista entra por el login normal y pide desde `pensionista.html`, descontándose del saldo sin pantalla de pago; aviso de saldo bajo a S/20 (configurable); **saldo insuficiente bloquea el pedido**; y todos los usuarios del sistema pasan a requerir email `@menupro.tech` (hoy `routes/usuarios.js:50` acepta cualquier dominio). **Descartado:** el "v1 recortado" sin login, `id_usuario` nullable, y reutilizar `menu.html` con un modo pensionista. Mandar al pensionista a su propia página es una línea en el mapa `ROLE_REDIRECT` de `login.html:420`.
 
 Comensales recurrentes con saldo prepagado en dinero, administrado por el owner. El pensionista
 tiene login propio (nuevo rol `pensionista`, reutiliza el JWT/auth existente) y pide desde una
@@ -64,7 +122,9 @@ con el usuario antes de implementar (saldo insuficiente, alcance del menú, qui�
 Backend (`routes/public.js`, `POST /orders`): agregado `if (!nombre_cliente?.trim()) return res.status(400)...`, mismo patrón que reservas. Frontend (`menu.html`): quitado "(opcional)" del label; `confirmarPedido()` valida el nombre antes de continuar (mismo patrón que `confirmarReserva()`). Verificado con `scripts/test-gate-pago.js` (Test 1): sin nombre no se crea la orden ni por UI ni pegándole directo a la API (400).
 
 ### Estadísticas: "qué pidió la gente hoy" + fix del gráfico de barras chico
-*Anotado 2026-07-13, pendiente de implementar.*
+*Anotado 2026-07-13. **Escalado el 2026-08-10 a rediseño completo de la reportería — ver `backlog.md`.** El usuario fue tajante: "las gráficas son microscópicas y no dan nada de valor que le interesa a la clienta". Toda la reportería va a cambiar, y **requiere análisis antes de codear**.*
+
+**El dato #1 que la clienta quiere, y que hoy no existe:** **cuántos menús va vendiendo en el día, en ese momento** — sin importar si el menú vino por mesa o por reserva. Es la cantidad total, en vivo, para mirar en pleno servicio. Después de eso, qué platos va vendiendo. El diagnóstico técnico de abajo sigue siendo válido y hay que aprovecharlo, pero el alcance ya no es "arreglar el gráfico": es replantear qué se muestra.
 
 El usuario preguntó puntualmente: "¿cuántos platos voy hasta ahora?", "¿qué ha pedido la gente hoy?". Ya existe "Análisis de pedidos" en reportería (`reportes.js` → `loadPedidos()`, endpoint `GET /api/reportes/pedidos?tipo=&filtro=`) — un gráfico de barras por plato con Chart.js. Pero: (a) es un **acumulado histórico total**, sin filtro de fecha/"hoy" (confirmado en `contarPedidosPorPlato()`, `routes/reportes.js` — las queries SQL no tienen `WHERE fecha = ?`); (b) filtra de a una sección/categoría del menú a la vez, no da un resumen "todo lo pedido hoy" de un vistazo.
 

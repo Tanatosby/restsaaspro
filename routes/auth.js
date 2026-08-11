@@ -7,6 +7,28 @@ const rateLimit = require('express-rate-limit');
 const db        = require('../config/database');
 const { authenticate, authorize } = require('../middleware/authenticate');
 
+// Vida de la sesión — el dueño abre el ícono de la PWA y ya está adentro, como
+// WhatsApp. Reingresar en plena atención era la barrera de adopción más cara del
+// proyecto (piloto #2 no lograba ni iniciar sesión). Ver ISS-027.
+// Las reglas viven en utils/sesion.js como funciones puras testeables.
+const { diasSesion, cookieSesion, necesitaRenovacion } = require('../utils/sesion');
+
+// Opciones de la cookie, compartidas entre login y renovación deslizante
+function opcionesCookie(role) {
+  return cookieSesion(role, process.env.NODE_ENV === 'production');
+}
+
+// Payload del JWT — lo que viaja en cada request
+function payloadToken(user, permisos) {
+  return {
+    id:            user.id,
+    name:          user.nombre,
+    role:          user.role,
+    restaurant_id: user.id_restaurante,  // null for admin
+    permisos                             // null = acceso total (owner/admin)
+  };
+}
+
 const loginLimiter = rateLimit({
   windowMs:         15 * 60 * 1000,  // 15 minutes
   max:              10,
@@ -99,24 +121,13 @@ router.post('/login', loginLimiter, (req, res) => {
 
   // 3. Build the JWT payload — what we attach to every request
   const token = jwt.sign(
-    {
-      id:            user.id,
-      name:          user.nombre,
-      role:          user.role,
-      restaurant_id: user.id_restaurante,  // null for admin
-      permisos                             // null = acceso total (owner/admin)
-    },
+    payloadToken(user, permisos),
     process.env.JWT_SECRET,
-    { expiresIn: '8h' }
+    { expiresIn: `${diasSesion(user.role)}d` }
   );
 
   // HttpOnly cookie — JS cannot read this, so XSS cannot steal the token
-  res.cookie('auth_token', token, {
-    httpOnly: true,
-    sameSite: 'strict',
-    secure:   process.env.NODE_ENV === 'production',
-    maxAge:   8 * 60 * 60 * 1000   // 8 h, matches JWT expiry
-  });
+  res.cookie('auth_token', token, opcionesCookie(user.role));
 
   // Return only non-sensitive UI data — never expose the raw token to JS
   res.json({
@@ -125,6 +136,65 @@ router.post('/login', loginLimiter, (req, res) => {
       role:          user.role,
       restaurant_id: user.id_restaurante,
       permisos                              // null = owner/admin (acceso total)
+    }
+  });
+});
+
+// ─────────────────────────────────────────
+// GET /api/auth/me
+// Revalida la cookie y devuelve los datos de sesión, para que el frontend
+// pueda restaurar la sesión al abrir la app sin pedir credenciales de nuevo.
+//
+// Renovación deslizante: si al token le queda menos de la mitad de su vida,
+// se emite uno nuevo. Un dueño que usa la app a diario nunca vuelve a ver el
+// login; uno que la abandona 30 días sí tiene que ingresar de nuevo.
+//
+// Relee al usuario de la BD en vez de confiar solo en el token: con sesiones
+// de 30 días, un cambio de rol/permisos o un restaurante desactivado tardaría
+// hasta un mes en tener efecto si solo miráramos el JWT.
+// ─────────────────────────────────────────
+router.get('/me', authenticate, (req, res) => {
+  const user = db.prepare(`
+    SELECT u.id, u.nombre, u.permisos, u.id_restaurante, r.nombre AS role
+    FROM usuarios u
+    JOIN roles r ON u.id_rol = r.id
+    WHERE u.id = ?
+  `).get(req.user.id);
+
+  if (!user) {
+    res.clearCookie('auth_token', { httpOnly: true, sameSite: 'lax' });
+    return res.status(401).json({ error: 'Sesión inválida' });
+  }
+
+  // El restaurante pudo desactivarse después de emitido el token
+  if (user.id_restaurante) {
+    const restaurant = db.prepare(`SELECT activo FROM restaurantes WHERE id = ?`).get(user.id_restaurante);
+    if (!restaurant || !restaurant.activo) {
+      res.clearCookie('auth_token', { httpOnly: true, sameSite: 'lax' });
+      return res.status(403).json({ error: 'Tu cuenta ha sido desactivada. Contacta al administrador.' });
+    }
+  }
+
+  let permisos = null;
+  if (!['owner', 'admin'].includes(user.role) && user.permisos) {
+    try { permisos = JSON.parse(user.permisos); } catch (_) { permisos = []; }
+  }
+
+  if (necesitaRenovacion(req.user.exp, user.role)) {
+    const token = jwt.sign(
+      payloadToken(user, permisos),
+      process.env.JWT_SECRET,
+      { expiresIn: `${diasSesion(user.role)}d` }
+    );
+    res.cookie('auth_token', token, opcionesCookie(user.role));
+  }
+
+  res.json({
+    user: {
+      name:          user.nombre,
+      role:          user.role,
+      restaurant_id: user.id_restaurante,
+      permisos
     }
   });
 });
@@ -159,7 +229,7 @@ router.patch('/me/password', authenticate, (req, res) => {
 // Clears the auth cookie
 // ─────────────────────────────────────────
 router.post('/logout', (req, res) => {
-  res.clearCookie('auth_token', { httpOnly: true, sameSite: 'strict' });
+  res.clearCookie('auth_token', { httpOnly: true, sameSite: 'lax' });
   res.json({ message: 'Sesión terminada' });
 });
 

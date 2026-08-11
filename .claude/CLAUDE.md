@@ -70,6 +70,16 @@ Al finalizar cada tarea o sesión de trabajo, siempre actualizar todos los `*.md
 
 **El objetivo:** que cualquier sesión futura (desde cualquier laptop) arranque con documentación exacta del estado real del proyecto.
 
+## Deploys — los hace SIEMPRE el usuario
+
+**Claude Code no despliega y no debe intentarlo.** No tiene acceso al servidor de producción y no es algo por resolver: es cómo funciona el proyecto. Todo deploy lo ejecuta el usuario a mano, por la consola web del Droplet o por SSH interactivo. Detalle completo en `deploy.md` §16.
+
+- Cuando una tarea termina con "pendiente: deploy", **el trabajo de Claude ya está completo**.
+- No proponer automatizar deploys, cargar claves en el `ssh-agent`, ni pedir credenciales del servidor.
+- **Al terminar cada commit, preguntarle al usuario si ya está desplegado** y anotar la respuesta en `status.md` (commit + fecha). El deploy suele ocurrir horas o días después, a veces desde la otra laptop, así que sin preguntar el log se desactualiza.
+
+**Por qué importa:** el 2026-08-10 una sesión calculó **16 commits pendientes de deploy cuando en realidad eran 2** — un deploy hecho por la consola web entre el 16 de julio y el 10 de agosto nunca se anotó. Con el dato equivocado casi se implementa una feature (auto-actualización del service worker) para resolver un problema que ya no existía. **Un log de deploys inexacto hace que se tomen decisiones de producto sobre datos falsos.**
+
 ## Gestión de Issues
 
 El proyecto tiene una carpeta `issues/` en la raíz para tracking de bugs y problemas encontrados en producción/testing.
@@ -78,7 +88,8 @@ El proyecto tiene una carpeta `issues/` en la raíz para tracking de bugs y prob
 - Las capturas de pantalla se guardan en `issues/screenshots/`.
 - El archivo `issues/ISSUES.md` es el índice central con todos los issues y su estado.
 - Al inicio de cada sesión, si hay issues abiertos relevantes al trabajo, mencionarlos.
-- El usuario trabaja desde 2 laptops distintas, por lo tanto al inicio de sesión siempre leer CLAUDE.md, vision_negocio.md, features.md, status.md e ISSUES.md para tener contexto completo antes de cualquier tarea.
+- El usuario trabaja desde 2 laptops distintas, por lo tanto al inicio de sesión siempre leer CLAUDE.md, vision_negocio.md, features.md, status.md, backlog.md e ISSUES.md para tener contexto completo antes de cualquier tarea.
+- `backlog.md` es el plan priorizado de la etapa (P0/P1/P2) con el porqué de cada prioridad y el contexto de los pilotos. Es la fuente para "¿qué sigue?". Actualizarlo al cerrar cada sesión. **Ojo:** los archivos `conversacion_*.md` están en `.gitignore` y no viajan entre laptops — si el usuario trae uno con decisiones nuevas, portar lo que sea permanente a `backlog.md`.
 - `vision_negocio.md` es la brújula del proyecto: define el target (restaurantes de menú pequeños, NO restaurantes elegantes), los flujos reales de reserva/orden/cocina/pago, los roles y los 15 gaps pendientes. Leerlo siempre — evita implementar cosas que no encajan con el negocio real.
 - El usuario puede enviar capturas de pantalla (rutas de archivo) para diagnóstico — leerlas con Read tool.
 - Para diagnosticar bugs de frontend: pedir captura de consola (F12 → Console) y Network tab con la request fallida.
