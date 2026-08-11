@@ -13,6 +13,22 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## 🎯 Sesión 2026-08-11 (parte 5) — Verificación manual en producción (ISS-025, ISS-026, ISS-027, ISS-028) + VAPID keys
+
+De cierre de sesión, el usuario confirmó a mano en producción, en vísperas de la primera atención
+masiva de mañana (2026-08-12):
+
+- **VAPID keys reales presentes en el `.env` de producción** — verificado por SSH
+  (`grep VAPID /var/www/menupro/.env`), las 3 variables existen y no están vacías.
+- **Cola del día (ISS-026) probada a mano:** los pedidos avanzan de etapa suaves, sin los
+  retrasos/trabas ni el error falso reportados antes del fix. Cierra la verificación post-deploy que
+  había quedado pendiente en la sesión ISS-029 ("sin verificación post-deploy registrada").
+- Con esto, **ISS-025, ISS-026, ISS-027 y ISS-028 quedan confirmados como desplegados y funcionando
+  en producción** (los 4 viajaron en el mismo deploy acumulado del 2026-08-11, ver sesiones parte
+  2–4 más abajo). `backlog.md` actualizado — ya no quedan ítems de deploy abiertos de cara a mañana.
+
+---
+
 ## 🎯 Sesión 2026-08-11 (parte 4) — Prueba de carga manual + fix del rate limiter de login (ISS-032)
 
 El usuario pidió correr pruebas de pedidos masivos y de tiempo de login de cara a la primera atención
