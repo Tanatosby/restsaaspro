@@ -100,8 +100,9 @@ lugar de contraseña, y revisar `login.html` (`autocapitalize`, `inputmode`, tam
 - [ ] **Deploy del trabajo del 2026-08-10** — 2 commits: `181ddf3` (`ISS-027` + `ISS-026`) y
       `6d4576e` (`ISS-028`). Al entrar al servidor, anotar `git log -1 --oneline` **antes** del pull.
       Avisarle al dueño que la letra le va a crecer otra vez: es esperado, no una falla.
-- [ ] **Confirmar VAPID keys reales** en el `.env` de producción. Sin esto el Gap 21 está desplegado
-      pero las push no salen.
+- [x] ~~Confirmar VAPID keys reales~~ — **confirmado 2026-08-11.** El usuario verificó por SSH
+      (`grep VAPID /var/www/menupro/.env`) que las 3 líneas (`VAPID_EMAIL`, `VAPID_PUBLIC_KEY`,
+      `VAPID_PRIVATE_KEY`) existen y no están vacías en el `.env` de producción.
 - [ ] **`ISS-025`** — feedback visible del estado de la suscripción push en Configuración. Hoy es
       silencioso (catch vacío): es imposible saber si está activa, denegada o sin keys.
 - [x] ~~Deploy de lo acumulado de julio~~ — **hecho**, por la consola web del Droplet entre el
