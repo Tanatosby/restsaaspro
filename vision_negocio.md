@@ -324,8 +324,8 @@ En orden de impacto:
 | 15 | Métrica de visitas al menú por restaurante (dashboard admin) | Bajo (hoy) / Alto (a escala) | Media | Fase 2 — ver sección 15, "cuando inicie masivo" |
 | 16 | ~~Deep link real de Yape (requiere pasarela de pago afiliada)~~ | ~~Bajo~~ | ~~Alta~~ | ❌ Cerrado por diseño 2026-07-13 — inviable, complejidad no justificada; "Copiar número" es la solución definitiva |
 | 17 | ~~Pago obligatorio antes de crear la orden/reserva~~ | ~~Alto~~ | ~~Media~~ | ✅ Completado 2026-07-13 — ver detalle abajo |
-| 18 | Horario de atención configurable y estricto | Medio | Baja | Pendiente — ver detalle abajo |
-| 19 | Cola del día: cancelar pedido + mostrar todos los datos (modalidad) | **Alto** | Baja | Pendiente — ver detalle abajo |
+| 18 | ~~Horario de atención configurable y estricto~~ | ~~Medio~~ | ~~Baja~~ | ✅ Completado 2026-07-14 — ver detalle abajo |
+| 19 | ~~Cola del día: cancelar pedido + mostrar todos los datos (modalidad)~~ | ~~**Alto**~~ | ~~Baja~~ | ✅ Completado 2026-07-14 — ver detalle abajo |
 | 20 | Módulo Pensionistas (saldo prepagado + login propio) | Medio | Alta | Anotado 2026-07-15 — ver detalle abajo y `pensionistas.md` |
 | 21 | ~~Notificaciones push ampliadas (más allá de "hora de preparar")~~ | ~~**Alto**~~ | ~~Media~~ | ✅ Completado 2026-07-16 — push de orden/reserva nueva + recordatorio de menú cada 8h — ver detalle abajo |
 | 22 | Aceptación de Términos y Condiciones (consentimiento de datos + disclosure de IA) | Medio | Baja-Media | Anotado 2026-07-16 — ver detalle abajo |
