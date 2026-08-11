@@ -47,8 +47,8 @@ monocromática, y se estaba usando `icon-192.png` (opaco, sin transparencia) tam
 + actualizados los 4 puntos que disparan push. El logo de marca real (más allá del monograma) queda para
 más adelante, a pedido explícito del usuario — "cuando ya seamos marca".
 
-**Pendiente:** commit + push de este fix (badge) y del pendiente de ISS-030 (cocina + intervalos, todavía
-sin commitear).
+**Deploy:** commits `a1e08f3` (ISS-030) y `1c28cc0` (ISS-025 + ISS-031) pusheados a `main` y desplegados
+por el usuario en producción el 2026-08-11.
 
 ---
 
@@ -71,7 +71,8 @@ Solución — ver [ISS-030](issues/ISS-030-cocina-sin-filtro-fecha.md):
 - `tests/cola-dia.test.js` ampliado con 5 casos para `cocinaDelDia` (20 en el archivo). 330/330 jest
   verde.
 
-**Pendiente:** commit + push, y confirmar deploy cuando el usuario lo haga.
+**Deploy:** commit `a1e08f3` pusheado a `main` y desplegado por el usuario en producción el 2026-08-11
+(junto con `1c28cc0` — ver sesión parte 3).
 
 **Además, en esta sesión:** el usuario reportó que las notificaciones push no le llegan y preguntó si es
 un tema de permisos del celular. Repasado `issues/ISS-025-push-no-llega.md` (diagnosticado, no
