@@ -88,7 +88,8 @@ El proyecto tiene una carpeta `issues/` en la raíz para tracking de bugs y prob
 - Las capturas de pantalla se guardan en `issues/screenshots/`.
 - El archivo `issues/ISSUES.md` es el índice central con todos los issues y su estado.
 - Al inicio de cada sesión, si hay issues abiertos relevantes al trabajo, mencionarlos.
-- El usuario trabaja desde 2 laptops distintas, por lo tanto al inicio de sesión siempre leer CLAUDE.md, vision_negocio.md, features.md, status.md e ISSUES.md para tener contexto completo antes de cualquier tarea.
+- El usuario trabaja desde 2 laptops distintas, por lo tanto al inicio de sesión siempre leer CLAUDE.md, vision_negocio.md, features.md, status.md, backlog.md e ISSUES.md para tener contexto completo antes de cualquier tarea.
+- `backlog.md` es el plan priorizado de la etapa (P0/P1/P2) con el porqué de cada prioridad y el contexto de los pilotos. Es la fuente para "¿qué sigue?". Actualizarlo al cerrar cada sesión. **Ojo:** los archivos `conversacion_*.md` están en `.gitignore` y no viajan entre laptops — si el usuario trae uno con decisiones nuevas, portar lo que sea permanente a `backlog.md`.
 - `vision_negocio.md` es la brújula del proyecto: define el target (restaurantes de menú pequeños, NO restaurantes elegantes), los flujos reales de reserva/orden/cocina/pago, los roles y los 15 gaps pendientes. Leerlo siempre — evita implementar cosas que no encajan con el negocio real.
 - El usuario puede enviar capturas de pantalla (rutas de archivo) para diagnóstico — leerlas con Read tool.
 - Para diagnosticar bugs de frontend: pedir captura de consola (F12 → Console) y Network tab con la request fallida.

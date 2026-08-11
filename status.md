@@ -96,6 +96,19 @@ corrigió hoy: el deploy lo hace el usuario a mano, a veces días después y des
 el log solo puede quedar exacto si se le pregunta. Sin eso, cualquier sesión futura vuelve a calcular
 mal qué está en producción. Documentada en `CLAUDE.md`.
 
+### 📋 `backlog.md` (nuevo) — el backlog ahora viaja entre laptops
+
+**Problema encontrado al cerrar la sesión:** el backlog de la etapa vivía solo en
+`conversacion_opues10082026.md`, que está en `.gitignore` (`conversacion_*.md`). Los P0/P1, el recorte
+de Pensionistas v1 y el contexto de los pilotos **existían únicamente en la laptop DESKTOP-LPSVKIS** —
+mañana, desde la otra laptop, no habrían estado.
+
+**Portado a `backlog.md`** (trackeado en git), con el estado real: 3.1 y 3.2 ✅, **3.3 es el único P0
+de features abierto**, y **Pensionistas quedó desbloqueado** porque su dependencia era 3.2. El precio
+de S/250 quedó marcado como **tentativo** por indicación del usuario. `CLAUDE.md` lo suma a la lista de
+lectura de inicio de sesión y avisa que los `conversacion_*.md` no viajan; `features.md` apunta a él
+desde "Pendientes".
+
 ### 🔒 Regla confirmada: los deploys los hace siempre el usuario
 
 **Claude Code no despliega. Nunca tuvo ni va a tener acceso al servidor.** No es una limitación

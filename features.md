@@ -63,6 +63,10 @@ los celulares con la PWA ya instalada seguirían viendo el ícono viejo indefini
 
 ## Pendientes
 
+> **¿Qué sigue?** → `backlog.md`. Este archivo es el registro por feature (qué es, cómo se
+> implementó); `backlog.md` es el plan priorizado de la etapa (P0/P1/P2) con el porqué de cada
+> prioridad y el contexto de los pilotos.
+
 ### ~~Notificaciones push ampliadas (Gap 21)~~ ✅ Completado 2026-07-16
 *Ver Gap 21 en `vision_negocio.md`, `pilotos.md` y `issues/ISS-025-push-no-llega.md`.*
 
