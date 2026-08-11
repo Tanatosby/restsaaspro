@@ -34,6 +34,11 @@ const loginLimiter = rateLimit({
   max:              10,
   standardHeaders:  true,
   legacyHeaders:    false,
+  // Solo cuenta intentos FALLIDOS (login con credenciales incorrectas) — sin
+  // esto, un login CORRECTO también consumía el cupo, y varios mozos entrando
+  // desde el mismo WiFi/IP del restaurante en 15 min podían bloquearse entre
+  // sí aunque cada uno pusiera bien su contraseña. Ver ISS-032.
+  skipSuccessfulRequests: true,
   handler: (req, res, next, options) => {
     const retryAfterSec = Math.ceil(options.windowMs / 1000);
     const minutes       = Math.ceil(retryAfterSec / 60);

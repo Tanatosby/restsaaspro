@@ -13,6 +13,42 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## 🎯 Sesión 2026-08-11 (parte 4) — Prueba de carga manual + fix del rate limiter de login (ISS-032)
+
+El usuario pidió correr pruebas de pedidos masivos y de tiempo de login de cara a la primera atención
+masiva de mañana (2026-08-12). `k6` (ya había scripts armados: `scripts/k6-load-test.js` y
+`k6-stress-test.js`) no se pudo instalar en esta sesión — el instalador de winget quedó colgado esperando
+una confirmación que no llega en modo no interactivo. Se armó un script propio en Node en su lugar,
+corrido contra un **servidor local** con un restaurante de prueba dedicado (nada tocó producción — evita
+mandar pedidos o pushes falsos a restaurantes reales como Karina o Boosi), limpiado por completo al
+terminar.
+
+**Resultados:**
+- 60 pedidos simultáneos: **0 errores**, 82ms totales, p95 69ms — el sistema aguanta de sobra el volumen
+  esperado.
+- 20 reservas simultáneas: 0 errores, p95 29ms.
+- Login (1 solo): 76ms baseline.
+- **Login (10 simultáneos): 1 de 10 bloqueado con 429** — no era un problema de performance, sino de una
+  regla de rate-limit mal configurada.
+
+**Causa (ISS-032):** `loginLimiter` en `routes/auth.js` (10 intentos / 15 min por IP, pensado como
+anti-fuerza-bruta) le faltaba `skipSuccessfulRequests: true` — contaba también los logins **correctos**.
+Con todo el personal entrando desde el mismo WiFi del restaurante al abrir mañana, el 11° login se
+bloqueaba 15 minutos aunque la contraseña fuera correcta. Fix de una línea + `tests/login-rate-limit.test.js`
+(4 casos nuevos, levanta un server real por test para que el contador del limiter arranque limpio).
+342/342 jest verde.
+
+**Nota técnica:** de paso se detectó (y se guardó como aprendizaje, sin acción por ahora) que
+`k6-load-test.js`/`k6-stress-test.js` mandan `carta_items: []` y `menu_items: []` en las órdenes — con la
+validación actual del backend ("La orden debe tener al menos un ítem") esos scripts fallarían 100% de las
+veces si se corrieran tal cual. Quedan desactualizados; si se retoma k6 en el futuro, hay que agregarles
+al menos un ítem válido por request antes de usarlos.
+
+**Pendiente:** commit + push de este fix, y confirmar deploy cuando el usuario lo haga — es el candidato
+más urgente para desplegar antes de mañana, dado el riesgo directo sobre el login del personal.
+
+---
+
 ## 🎯 Sesión 2026-08-11 (parte 3) — Push no llegaba: causa raíz encontrada por SSH + ícono de badge (ISS-025, ISS-031)
 
 Mismo día, continuación. El usuario reportó que las notificaciones push no le llegaban pese a tener
