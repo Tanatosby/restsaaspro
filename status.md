@@ -13,6 +13,28 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## 🎯 Sesión 2026-08-11 (parte 6) — Pensionistas, primer paso: dominio @menupro.tech obligatorio
+
+El usuario quería arrancar el módulo Pensionistas completo hoy, la noche antes de la primera
+atención masiva. Se le marcó el conflicto con `backlog.md` (que pospone el módulo grande al jueves,
+justo por el riesgo de tocar el sistema antes del miércoles) y se acordó avanzar solo con el **primer
+paso chico e independiente** ya identificado: forzar `@menupro.tech` en la creación de usuarios.
+
+- `routes/usuarios.js` — `POST /api/usuarios` valida que el email termine en `@menupro.tech`
+  (insensible a mayúsculas), 400 con mensaje claro si no. Alcance deliberado: **no toca**
+  `routes/admin.js` (alta de un restaurante nuevo), donde el email es el real del dueño — la regla
+  aplica solo a cocinero/mozo (y a futuro pensionista), que no tienen correo real y el owner les
+  inventa uno como identificador de login.
+- `public/js/modules/usuarios.js` + `owner.html` — mismo chequeo en el frontend + hint en el
+  formulario ("No es un correo real...").
+- `tests/usuarios-email-dominio.test.js` (nuevo, 4 casos). 346/346 jest verde.
+- Docs: `backlog.md` y `pensionistas.md` §0 marcan el punto 5 como completado. El resto del módulo
+  (tablas, rol nuevo, panel, `pensionista.html`) sigue postergado al jueves.
+
+**Pendiente:** commit + push, y confirmar deploy cuando el usuario lo haga.
+
+---
+
 ## 🎯 Sesión 2026-08-11 (parte 5) — Verificación manual en producción (ISS-025, ISS-026, ISS-027, ISS-028) + VAPID keys
 
 De cierre de sesión, el usuario confirmó a mano en producción, en vísperas de la primera atención

@@ -188,8 +188,7 @@ persistente), que ya está hecha.
    descuenta del saldo, sin pantalla de pago.
 4. **Aviso de saldo bajo** (S/20 por defecto, configurable por restaurante).
 5. **Saldo insuficiente bloquea el pedido.** Si el dueño quiere fiarle, le recarga.
-6. **Todos los usuarios deben tener email `@menupro.tech`** — hoy `routes/usuarios.js:50` acepta
-   cualquier dominio.
+6. ~~Todos los usuarios deben tener email `@menupro.tech`~~ — ✅ **hecho 2026-08-11**, ver abajo.
 
 ### Descartado — no volver sobre esto
 
@@ -199,10 +198,13 @@ persistente), que ya está hecha.
 - ❌ Reutilizar `menu.html` con un "modo pensionista": es la carta pública por la que los 2 pilotos
   reciben pedidos hoy, y tocarla es riesgo puro. Va **`pensionista.html`**, página propia.
 
-### Primer paso acordado (chico e independiente)
+### Primer paso acordado (chico e independiente) — ✅ Completado 2026-08-11
 
-Forzar `@menupro.tech` en la creación de usuarios: validación en `routes/usuarios.js` + el formulario
-en `owner.html`. No toca nada de pensionistas y sirve igual por sí solo.
+Forzar `@menupro.tech` en la creación de usuarios: validación en `routes/usuarios.js` (400 claro si
+el dominio no coincide, insensible a mayúsculas) + mismo chequeo en `public/js/modules/usuarios.js`
++ hint en el formulario de `owner.html` aclarando que no es un correo real. **No toca**
+`routes/admin.js` (alta de un restaurante nuevo), donde el email sí es el real del dueño.
+`tests/usuarios-email-dominio.test.js` (4 casos nuevos). 346/346 jest verde.
 
 ### Facilidad confirmada
 

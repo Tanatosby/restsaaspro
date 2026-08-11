@@ -23,8 +23,10 @@ aparecen como abiertas ya están decididas. Esta sección manda sobre cualquier 
    descuenta del saldo automáticamente, sin pasar por pantalla de pago.
 4. **Aviso de saldo bajo:** cuando le queda poco (**S/20 por defecto, configurable por restaurante**)
    se le avisa que su cuenta está por acabarse.
-5. **Todos los usuarios del sistema deben tener email `@menupro.tech`.** Hoy no se valida:
-   `routes/usuarios.js:50` solo comprueba que el email no esté vacío y acepta cualquier dominio.
+5. ~~Todos los usuarios del sistema deben tener email `@menupro.tech`.~~ — ✅ **Hecho 2026-08-11**:
+   `routes/usuarios.js` valida el dominio (400 claro si no coincide, insensible a mayúsculas) +
+   mismo chequeo en el formulario de `owner.html`. No aplica al alta de un restaurante nuevo
+   (`routes/admin.js`), donde el email sí es el real del dueño.
 
 ### Preguntas del §11, respondidas
 

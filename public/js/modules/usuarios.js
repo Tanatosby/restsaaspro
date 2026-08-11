@@ -86,6 +86,8 @@ async function crearUsuario() {
   setErr('err-usuario', '');
   if (!nombre)        return setErr('err-usuario', 'El nombre es requerido');
   if (!email)         return setErr('err-usuario', 'El email es requerido');
+  if (!email.toLowerCase().endsWith('@menupro.tech'))
+    return setErr('err-usuario', 'El email debe terminar en @menupro.tech');
   if (!password || password.length < 8)
     return setErr('err-usuario', 'La contraseña debe tener al menos 8 caracteres');
   try {

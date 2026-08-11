@@ -49,6 +49,13 @@ router.post('/', authorize('owner', 'admin'), (req, res) => {
     return res.status(400).json({ error: 'El nombre es requerido' });
   if (!email?.trim())
     return res.status(400).json({ error: 'El email es requerido' });
+  // Todos los usuarios del sistema (staff creado por el owner: cocinero/mozo,
+  // y en el futuro pensionista) deben tener email @menupro.tech — no son
+  // direcciones reales, son identificadores de login que el owner inventa.
+  // No aplica al alta de un restaurante nuevo (routes/admin.js), donde el
+  // email sí es el real del dueño. Ver pensionistas.md §0 punto 5.
+  if (!email.trim().toLowerCase().endsWith('@menupro.tech'))
+    return res.status(400).json({ error: 'El email debe terminar en @menupro.tech' });
   if (!password || password.length < 8)
     return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
   if (!rol)
