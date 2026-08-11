@@ -18,11 +18,28 @@ empresarios para saber las cosas antes de que las podamos hacer.
 **Sesión de decisiones, sin código.** Se cerró toda la lógica de negocio del módulo Pensionistas y
 apareció un tema nuevo y grande: la reportería no le sirve a la clienta.
 
-### ⏰ Contexto de tiempo: el miércoles 2026-08-12 hay "el primer reto"
+### 🚨 El miércoles 2026-08-12 es la primera atención masiva (+60 menús en el día)
 
-El usuario avisó que el miércoles tiene un compromiso importante —**no detalló cuál**— y que por eso
-**el martes 11 tiene que ser un día muy productivo**. *Preguntarle qué es "el primer reto" al abrir la
-sesión del martes: cambia qué conviene priorizar.* Orden propuesto en `backlog.md`.
+**"El primer reto":** la primera vez que un piloto atiende volumen real con el sistema — más de 60
+menús vendidos en un día, concentrados en el almuerzo. Todo lo que hoy anda con 2-3 pedidos
+simultáneos se prueba de verdad ese día.
+
+**Esto reordena el martes por completo.** El deploy deja de ser rutina: **`ISS-026` es literalmente el
+bug de este escenario y está sin desplegar** (pedidos que no avanzan, que vuelven atrás, error falso
+"No se puede cambiar una orden pagado" por doble tap). Correr el miércoles con la versión actual de
+producción es chocar de frente con él en el peor día posible. `ISS-027` (sesión de 30 días) evita
+además tener que reloguearse en pleno servicio.
+
+**Plan del martes, en `backlog.md`:** deploy temprano (con margen para probar y reaccionar), prueba de
+carga con los `k6` que ya existen, backup manual, y —si entra algo de features— el **contador simple
+de "menús vendidos hoy"**, que es justo lo que la dueña va a querer mirar ese día y es mucho más chico
+que el rediseño de reportería. **Pensionistas se posterga al jueves:** la lógica ya está cerrada y no
+se pierde, pero meter un módulo grande el día antes de la primera atención masiva es exactamente
+cuando no conviene tocar el sistema.
+
+**Riesgo conocido a vigilar:** `GET /api/orders/activas` (panel Órdenes) conserva su N+1 y su falta de
+filtro por fecha — quedó sin tocar a propósito en la sesión parte 1. Con 60 pedidos en el día es
+candidato a ponerse lento; migrarlo a `utils/colaDia.js` es directo si aparece.
 
 ### Pensionistas — lógica definitiva, sin preguntas abiertas
 

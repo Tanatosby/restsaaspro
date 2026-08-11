@@ -12,18 +12,46 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 
 ---
 
-## ⏰ Fecha límite: miércoles 2026-08-12 — "el primer reto"
+## 🚨 Miércoles 2026-08-12 — "el primer reto": primera atención masiva (+60 menús en el día)
 
-El usuario avisó que **el miércoles hay un compromiso importante** ("el primer reto") y que por eso
-**el martes 2026-08-11 tiene que ser un día muy productivo**. *(El usuario no detalló en qué consiste
-el reto — preguntárselo al inicio de la sesión del martes, porque cambia qué conviene priorizar.)*
+**Es la primera vez que un restaurante piloto atiende volumen real con el sistema.** Más de 60 menús
+vendidos en un día, concentrados casi todos en el almuerzo. Todo lo que hoy funciona con 2-3 pedidos
+simultáneos se prueba de verdad ese día.
 
-**Prioridades para el martes 11, en orden:**
-1. **Deploy** de los 2 commits del 2026-08-10 (`181ddf3`, `6d4576e`) — es lo único que separa a los
-   pilotos de todo el trabajo de ayer.
-2. **Pensionistas** — lógica ya cerrada, sin preguntas abiertas. Empezar por el paso chico:
-   `@menupro.tech` obligatorio en la creación de usuarios.
-3. **Reportería** — análisis primero (qué mostrar), no código.
+### Por qué el deploy dejó de ser rutina y es lo más urgente
+
+**`ISS-026` es literalmente el bug de este escenario y está sin desplegar.** Se arregló el 2026-08-10
+(commit `181ddf3`) y describe exactamente lo que pasa con carga: pedidos que no avanzan de etapa, que
+vuelven a su zona anterior, y el error falso *"No se puede cambiar una orden pagado"* por doble tap.
+Si el miércoles atienden 60+ menús con la versión que hoy corre en producción, chocan de frente con
+él **en el peor día posible**.
+
+`ISS-027` (sesión de 30 días) es el segundo: nadie quiere reloguearse en medio de un servicio lleno.
+
+### Prioridades del martes 2026-08-11, en orden
+
+1. **🔴 DEPLOY, primero que nada** — `181ddf3` (`ISS-026` + `ISS-027`) y `6d4576e` (`ISS-028`). No
+   dejarlo para la tarde: hay que desplegar **con tiempo de sobra para probar en producción** y con
+   margen de reacción si algo sale mal. Un deploy la noche del martes es la peor opción.
+2. **🔴 Prueba de carga antes del miércoles** — ya existen `scripts/k6-load-test.js` y
+   `scripts/k6-stress-test.js`. Vale correrlos contra un escenario de ~60 menús concentrados en 2
+   horas. `better-sqlite3` es **síncrono** y bloquea el proceso entero: es justo el tipo de cosa que
+   no se nota con 3 pedidos y sí con 60.
+3. **🟡 Riesgo conocido sin resolver:** `GET /api/orders/activas` (el panel **Órdenes**, no la Cola)
+   conserva su **N+1 y su falta de filtro por fecha** — quedó anotado en `status.md` (sesión
+   2026-08-10) como deliberadamente no tocado. Con 60 pedidos en el día ese panel es candidato a
+   ponerse lento. Migrarlo a `utils/colaDia.js` es directo si aparece el problema.
+4. **🟡 Backup manual antes del miércoles.** El backup diario automático con restore probado sigue
+   siendo un P1 pendiente (ver más abajo). Antes del primer día de volumen real conviene, como
+   mínimo, un backup manual verificado: si algo se rompe con datos reales de 60 pedidos, no hay
+   vuelta atrás.
+5. **🟢 Contador "menús vendidos hoy"** — ver la sección de Reportería. **Es la métrica que la clienta
+   va a querer mirar justo ese día**, y es mucho más chica que el rediseño completo. Si algo de
+   features entra el martes, que sea esto.
+6. **⏸️ Pensionistas — postergar.** La lógica ya está cerrada y no se va a perder. Pero es un módulo
+   grande (rol nuevo, tablas, rutas, panel del owner, página nueva) y meterlo el día antes de la
+   primera atención masiva es exactamente cuando no conviene tocar el sistema. Retomarlo el jueves,
+   con el aprendizaje del miércoles encima.
 
 ---
 
@@ -96,6 +124,12 @@ cambiar** — no es un ajuste de tamaño, es un rediseño de qué se muestra y p
 ### El dato #1 que la clienta quiere ver
 
 > **Cuántos menús va vendiendo en ese momento, en el día.**
+
+> 🚨 **Este número importa muchísimo más el miércoles 2026-08-12** (primera atención masiva, +60
+> menús). Es exactamente el día en que la dueña va a querer mirar el contador cada rato. **Conviene
+> separar el contador simple del rediseño completo:** un número grande y visible de "menús vendidos
+> hoy" (una query de conteo + una tarjeta) es chico y entrega el 80% del valor; el rediseño de las
+> gráficas puede esperar al jueves.
 
 - Es **lo principal**, y hoy **no se muestra en ninguna parte**.
 - **No importa si el menú vino por mesa o por reserva** — es la cantidad total de menús vendidos hoy.
