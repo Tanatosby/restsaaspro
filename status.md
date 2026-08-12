@@ -13,6 +13,143 @@ empresarios para saber las cosas antes de que las podamos hacer.
 
 ---
 
+## 🎯 Sesión 2026-08-12 (parte 1) — Autorización en órdenes y reservas (ISS-033) + feedback de uso real
+
+**Deploy confirmado al inicio de sesión:** el usuario confirmó que `7a92260` (backend
+de Pensionistas) **ya está desplegado en producción**. Con eso, todo lo pusheado hasta
+`7a92260` está en el servidor.
+
+### Feedback de la señora del menú (piloto #1) — 3 hallazgos, diagnosticados
+
+El usuario trajo observaciones de una sesión de uso real. Se diagnosticaron los tres en
+el código; **ninguno implementado todavía** (hoy es el día de la atención masiva y no se
+tocó producción en pleno servicio):
+
+1. **Cierre de caja pide confirmar el pago y no da con qué.** Los pedidos viejos de
+   Yape/Plin sin confirmar chocan con el guard de `routes/orders.js:405`
+   (`requiereConfirmarPagoAntes`), pero la tarjeta del modal de cierre
+   (`pedidos.js:477-508`) **no muestra el comprobante ni el botón de confirmar**, que sí
+   existen en Cola, Órdenes y Reservas. Callejón sin salida. Cita textual de ella:
+   *"debo confirmar el pago, pero no me sale la foto del pago aquí, cómo hago para
+   confirmarlo?"*. **Workaround mientras tanto:** el panel Órdenes sí los muestra, porque
+   `GET /api/orders/activas` no filtra por fecha. ⚠️ **Por eso el filtro de fecha en
+   `/activas` NO debe hacerse antes que este fix** — hoy es su única salida.
+2. **No ve la flecha de volver.** Causa encontrada: no hay **ni un** `scrollTo` /
+   `scrollTop` / `scrollIntoView` en todo `owner.html`. `showPanel()` (`:1275`) y
+   `switchTab()` (`:1299`) no resetean el scroll, así que el panel nuevo se abre con el
+   scroll donde estaba y el `← Volver` + el stepper quedan fuera de pantalla. En celular
+   pasa casi siempre. Fix: `window.scrollTo(0,0)` en ambas.
+3. **Reservas fuera del horario de atención.** Tres problemas distintos:
+   (a) `menu.html:93` es `<input type="time">` sin `min`/`max` y `res-fecha` sin límites
+   → el formulario deja elegir cualquier hora; (b) el backend **sí** valida
+   (`public.js:399`), pero recién al enviar; (c) el POST del owner
+   (`reservations.js:146`) no validaba horario en absoluto. **Pregunta de negocio
+   abierta:** `validarHorarioReserva()` llama primero a `validarHorarioAhora()`, o sea
+   que hoy **no se puede crear una reserva con el restaurante cerrado**, ni siquiera para
+   mañana. Pendiente de decisión del usuario.
+
+### ISS-033 — implementado y probado
+
+Salió de una pregunta del usuario sobre el punto 3c (*"¿el mozo puede reservar desde su
+panel? ¿qué?"*). Verificado: **no puede, esa pantalla no existe** — ningún archivo del
+frontend llama a `POST /api/reservations`. Pero tirando del hilo apareció otra cosa.
+
+`orders.js` y `reservations.js` tenían `router.use(authenticate)` (la autenticación
+nunca faltó: sin token es 401), pero **7 rutas sin `authorizePermiso()`**, mientras sus
+vecinas de los mismos archivos sí lo tenían. Con el rol `pensionista` de anoche eso pasó
+a importar: un comensal con cuenta podía listar **todas las reservas con nombre y
+teléfono de los clientes**, y saltarse su propio descuento de saldo llamando a
+`POST /api/orders` (orden normal, sin tocar el saldo, indistinguible en cocina).
+
+Hallazgo adicional: `POST /api/orders` **nunca leía `req.user`** — tomaba
+`id_restaurante` del body, o sea creación de órdenes en restaurante ajeno. En
+`POST /api/reservations` el fallback `req.user?.restaurant_id || id_restaurante` hacía
+lo mismo para un token de admin. Ambos eran restos de cuando el router era público.
+
+**Aplicado:** `authorizePermiso()` en las 7 rutas; el restaurante sale del token en
+ambos POST; comentario y fallback obsoletos eliminados; `tests/autorizacion-rutas.test.js`
+(15 casos). **392/392 jest verde** (`npx jest tests/` — el número difiere de los 723 de
+la sesión anterior porque aquel corrió sin filtro y el worktree suelto duplicaba todo).
+Server verificado: arranca y responde 401 sin token.
+
+**Auditados y correctos, sin cambios:** `pensionistas.js`, `pensionista.js`,
+`usuarios.js`, `reportes.js`, `push.js`.
+
+**Segunda tanda, mismo día — el catálogo del panel.** En la primera pasada se dejaron
+fuera los `GET` de `menu.js` y `mesas.js` con el argumento de que "esos datos ya son
+públicos en la carta". El usuario preguntó si ese GET era el mismo que llama
+`public/menu.html`, y **no lo era**: la carta del cliente usa solo `/api/public/*`
+(`routes/public.js`, sin `authenticate`), mientras que `/api/menu/*` y `/api/mesas` los
+consume únicamente el panel (`owner.html`, `menu-wizard.js`, `config.js`, `reportes.js`,
+`mesas.js`; `cocina.js` no los toca). Y `pensionista.html` tampoco los necesita: leerá la
+carta por `/api/public/menu`. Cerradas también esas 7 rutas → **14 en total**.
+Verificado con el server arriba: `/api/public/*` sigue en **200 sin token**,
+`/api/menu/menus-dia` y `/api/mesas` en **401**. **406/406 jest verde.**
+
+**Deliberadamente NO tocado:** `authorizeRestaurante()`, que es código muerto
+importado en `menu.js:5` y además lee `req.user.restaurante_id` cuando el JWT guarda
+`restaurant_id` — decidir en otra sesión si se arregla o se borra.
+
+**Este fix es requisito previo al paso 7 de Pensionistas** (`pensionista.html`): hoy la
+exposición es teórica porque no existe ninguna cuenta de pensionista.
+
+**Pendiente: deploy** — preguntar al usuario cuando corresponda.
+
+### Corrección de encuadre: la carga es una SEMANA, no un día
+
+El usuario corrigió una premisa que venía deformando todas las recomendaciones de la
+sesión. `backlog.md` decía *"Miércoles 2026-08-12 — el primer reto"*, escrito como evento
+de **un día**, y sobre eso se venía recomendando "no despleguemos hoy, esperemos a que
+pase el servicio". **La atención masiva es de miércoles a sábado; el domingo es el único
+día tranquilo.** Aplicado toda la semana, ese consejo significaba no desplegar nada hasta
+el domingo — lo contrario del objetivo del mes de pruebas.
+
+**El modelo del usuario, que es el correcto:** probar en el servicio de la tarde, corregir
+esa noche, desplegar antes del servicio siguiente. *"Si no mejoro entre días, se va a
+notar."*
+
+**Dato operativo nuevo: el servicio es de 12:00 a 18:00.** La ventana de deploy es de las
+18:00 en adelante; el único horario prohibido es 12:00-18:00. Quedó anotado en
+`backlog.md` junto con una clasificación 🟢verde / 🟡ámbar / 🔴rojo de qué se puede
+desplegar cualquier noche y qué espera al domingo (lo único rojo hoy: pasos 10-11 de
+Pensionistas, que meten una tercera fuente dentro de `colaDia.js`).
+
+### ISS-034 y ISS-035 — implementados (T1 y T2)
+
+- **ISS-034 · Cierre de caja sin comprobante.** El backend ya devolvía `metodo_pago`,
+  `estado_pago` y `comprobante_url` en `pedidosSinCerrar()`, así que **no hubo que tocar
+  backend**. En `pedidos.js`: las tarjetas del cierre ahora muestran `badgePago()` +
+  `comprobanteThumb()`, el botón principal es condicional (`✓ Confirmar pago` vs
+  `💰 Se cobró`) igual que en `btnOrden()`/`btnReserva()`, y se agregó
+  `confirmarPagoCierre()` propia — la de la Cola (`confirmarPagoEnCola`) repinta `_cache`
+  con `renderColaDesdeCache()`, y acá la lista es `_sinCerrar` con su propio render.
+- **ISS-035 · Reset de scroll.** ⚠️ **El fix obvio no habría funcionado:** el backlog decía
+  `window.scrollTo(0,0)`, pero el scroll vive en `.content` (`overflow-y:auto`,
+  `owner.css:322`), y se verificó que en móvil sigue igual (el media query de 768px solo
+  cambia el padding). Nueva `scrollPanelArriba()` que ataca `.content.scrollTop`, con
+  `window.scrollTo()` como fallback, llamada desde `showPanel()` y `switchTab()`.
+- **`sw.js` bumpeado a `menupro-v8`**: `owner.html` está precacheado, así que sin bump el
+  fix de scroll no llegaría nunca a los celulares con la PWA instalada (escenario ISS-022).
+  Esto hace que **este deploy sea ámbar**: conviene verificarlo en un celular real.
+
+**406/406 jest verde** + `node --check` sobre `pedidos.js` y `sw.js`. Falta la prueba
+manual en producción de ambos.
+
+**T4 (filtro de fecha en `/api/orders/activas`) queda desbloqueada**, pero no se debe
+tocar hasta que ISS-034 esté **desplegado y verificado**: hasta entonces, ese endpoint sin
+filtro sigue siendo la única vía de la dueña para confirmar pagos viejos.
+
+### Cierre de sesión
+
+Todo lo que queda abierto se consolidó en `backlog.md` → **"Próximas decisiones |
+Tareas"**, separado en decisiones que dependen del usuario (**D1-D5**) y tareas listas
+para ejecutar (**T1-T10**). Esa tabla es el punto de entrada para la próxima sesión, desde
+cualquiera de las 2 laptops. La regla de orden **T1 antes que T4** está anotada ahí con su
+porqué: el panel Órdenes sin filtro de fecha es hoy la única salida de la dueña para
+confirmar pagos viejos.
+
+---
+
 ## 🎯 Sesión 2026-08-11 (parte 8) — Pensionistas: backend completo (pasos 1-5 del MVP)
 
 **Continúa la parte 7** (sesión distinta, misma noche): esa sesión había dejado el pedido del

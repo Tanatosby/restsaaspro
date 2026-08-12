@@ -1272,6 +1272,17 @@ if (!isOwnerOrAdmin && Array.isArray(session.permisos)) {
   });
 })();
 
+// El scroll vive en .content (overflow-y:auto en owner.css:322), no en window
+// — window.scrollTo() acá no hace nada. Sin este reset, al cambiar de panel la
+// vista se queda donde estaba y el "← Volver" y el stepper del panel nuevo
+// nacen fuera de pantalla. En un celular pasa casi siempre: la dueña del piloto
+// no encontraba la flecha de volver y había que decirle "subí un poquito".
+function scrollPanelArriba() {
+  const cont = document.querySelector('.content');
+  if (cont) cont.scrollTop = 0;
+  window.scrollTo(0, 0);   // fallback por si el scroll vuelve al documento
+}
+
 function showPanel(name) {
   PANELS.forEach(p => {
     document.getElementById(`panel-${p}`).classList.toggle('active', p === name);
@@ -1284,6 +1295,7 @@ function showPanel(name) {
   document.getElementById('page-title').textContent = TITLES[name] || name;
   activePanel = name;
   closeSidebar();
+  scrollPanelArriba();
   if (name === 'menu-dia')  { loadSecciones(); loadPlatosMenu(); loadMenusDia(); }
   if (name === 'carta')     { loadCategorias(); loadPlatosCarta(); }
   if (name === 'ordenes')   { loadPlanoMesas(); }
@@ -1303,6 +1315,7 @@ function switchTab(group, tab) {
   document.getElementById(`tab-${prefix}-${tab}`).classList.add('active');
   document.querySelectorAll(`[id^="subpanel-${prefix}-"]`).forEach(sp => sp.classList.add('hidden'));
   document.getElementById(`subpanel-${prefix}-${tab}`).classList.remove('hidden');
+  scrollPanelArriba();
   if (group === 'ord' && tab === 'plano')      loadPlanoMesas();
   if (group === 'ord' && tab === 'activas')    loadOrdenesActivas();
   if (group === 'res' && tab === 'activas')    loadReservasActivas();

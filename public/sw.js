@@ -4,7 +4,9 @@
 // tipográfica más grande + fixes de overflow en owner.html/owner.css. v7:
 // ícono de badge propio para push (antes usaba icon-192.png, opaco — Android
 // lo pintaba como un cuadrado gris plano al no poder generar una silueta).
-const CACHE = 'menupro-v7';
+// v8: reset de scroll al cambiar de panel en owner.html (la dueña del piloto
+// no encontraba el botón "← Volver" porque nacía fuera de pantalla).
+const CACHE = 'menupro-v8';
 
 const ASSETS = [
   '/owner.html',

@@ -474,18 +474,29 @@ function renderCierreCaja() {
 // La fecha viene 'YYYY-MM-DD' o con timestamp — fDate() espera solo la fecha
 const soloFecha = f => String(f || '').slice(0, 10);
 
+// Un pago digital sin confirmar bloquea el cobro en el backend
+// (routes/orders.js:405 y reservations.js:270). Hasta que estas tarjetas
+// mostraron el comprobante, el mensaje "Confirma el pago (revisa el
+// comprobante)" era un callejón sin salida: la foto y el botón de confirmar
+// solo existían en la Cola del día, y estos pedidos son de días anteriores, así
+// que ya no aparecen ahí. La dueña del piloto se quedó trabada justo acá.
 function cierreItemOrden(o) {
   const items = renderItemLines(o.carta_items, o.menu_items);
   const mesa  = o.mesa ? ` · Mesa ${o.mesa}` : '';
   const monto = o.total ? ` · S/ ${o.total.toFixed(2)}` : '';
+  const pagoHtml = o.metodo_pago ? `<div style="margin-top:4px">${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
+  const btnCobro = requiereConfirmarPago(o)
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoCierre('orden',${o.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="cerrarPedidoViejo('orden',${o.id},'cobrado')">💰 Se cobró</button>`;
 
   return `
     <div class="cierre-item">
       <div class="cierre-item-head">🧾 Orden #${o.numero_dia ?? o.id}${mesa}</div>
       <div class="cierre-item-meta">${fDate(soloFecha(o.fecha))} · ${esc(o.nombre_cliente || 'Sin nombre')} · ${esc(o.estatus)}${monto}</div>
       ${items ? `<div class="cierre-item-items">${items}</div>` : ''}
+      ${pagoHtml}
       <div class="cierre-item-acciones">
-        <button class="btn btn-success btn-sm" onclick="cerrarPedidoViejo('orden',${o.id},'cobrado')">💰 Se cobró</button>
+        ${btnCobro}
         <button class="btn btn-danger btn-sm"  onclick="cerrarPedidoViejo('orden',${o.id},'anulado')">✗ No se concretó</button>
       </div>
     </div>`;
@@ -494,17 +505,58 @@ function cierreItemOrden(o) {
 function cierreItemReserva(r) {
   const items = renderItemLines(r.carta_items, r.menu_items);
   const codigo = r.codigo ? ` · 🔑 ${esc(r.codigo)}` : '';
+  const pagoHtml = r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteThumb(r)}</div>` : '';
+  const btnCobro = requiereConfirmarPago(r)
+    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoCierre('reserva',${r.id})">✓ Confirmar pago</button>`
+    : `<button class="btn btn-success btn-sm" onclick="cerrarPedidoViejo('reserva',${r.id},'cobrado')">💰 Se cobró</button>`;
 
   return `
     <div class="cierre-item">
       <div class="cierre-item-head">📅 ${esc(r.nombre_cliente || 'Sin nombre')}${codigo}</div>
       <div class="cierre-item-meta">${fDate(soloFecha(r.fecha))} · ${esc(r.estatus)}</div>
       ${items ? `<div class="cierre-item-items">${items}</div>` : ''}
+      ${pagoHtml}
       <div class="cierre-item-acciones">
-        <button class="btn btn-success btn-sm" onclick="cerrarPedidoViejo('reserva',${r.id},'cobrado')">💰 Se cobró</button>
+        ${btnCobro}
         <button class="btn btn-danger btn-sm"  onclick="cerrarPedidoViejo('reserva',${r.id},'anulado')">✗ No se concretó</button>
       </div>
     </div>`;
+}
+
+// No se reutiliza confirmarPagoEnCola(): esa opera sobre _cache y repinta la
+// Cola del día con renderColaDesdeCache(). Acá la lista es _sinCerrar y el
+// modal tiene su propio render, así que el pago se confirmaba en el servidor
+// pero la tarjeta no cambiaba hasta reabrir el modal.
+async function confirmarPagoCierre(tipo, id) {
+  const clave = `cierre-pago-${tipo}${id}`;
+  if (_enVuelo.has(clave)) return;
+  _enVuelo.add(clave);
+
+  const esOrden = tipo === 'orden';
+  const lista   = esOrden ? 'ordenes' : 'reservas';
+  const item    = _sinCerrar[lista].find(x => x.id === id);
+  const previo  = item ? { ...item } : null;
+
+  // Optimista: el botón pasa a "Se cobró" al instante, sin esperar la red
+  if (item) {
+    item.estado_pago = 'confirmado';
+    renderCierreCaja();
+  }
+
+  try {
+    await api('PATCH', esOrden
+      ? `/api/orders/${id}/confirmar-pago`
+      : `/api/reservations/${id}/confirmar-pago`);
+    toast('Pago confirmado ✓ — ya podés cerrarlo');
+  } catch (e) {
+    if (previo) {
+      Object.assign(item, previo);
+      renderCierreCaja();
+    }
+    toast(e.message, 'err');
+  } finally {
+    _enVuelo.delete(clave);
+  }
 }
 
 // 'cobrado' → cuenta en Ganancias (el backend calcula y persiste el total).

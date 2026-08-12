@@ -8,15 +8,90 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 > (`conversacion_*.md`) y por lo tanto **no viajaba entre las 2 laptops del usuario**. Este archivo sí
 > está en git: es la copia viva del backlog. Actualizarlo al cerrar cada sesión.
 
-**Última actualización:** 2026-08-10
+**Última actualización:** 2026-08-12
 
 ---
 
-## 🚨 Miércoles 2026-08-12 — "el primer reto": primera atención masiva (+60 menús en el día)
+## 🧭 Próximas decisiones | Tareas — al cierre de la sesión del 2026-08-12
+
+**Lo que hay que resolver a continuación, separado en dos:** decisiones que dependen del
+usuario (nadie puede avanzarlas por su cuenta) y tareas ya definidas listas para ejecutar.
+Próximo número de issue libre: **ISS-036**.
+
+### A · Decisiones pendientes del usuario
+
+| # | Decisión | Por qué no se puede decidir sola | Bloquea |
+|---|---|---|---|
+| **D1** | ¿Se puede crear una reserva con el restaurante **cerrado** (de noche, para mañana al mediodía)? Hoy **no se puede**: `validarHorarioReserva()` llama primero a `validarHorarioAhora()` (`utils/horarioAtencion.js:56`). | Es una regla de negocio, no un detalle técnico. El sentido de reservar es pedir para después, así que el comportamiento actual es sospechoso — pero cambiarlo es decisión del dueño. | T3 |
+| **D2** | `authorizeRestaurante()` — ¿arreglar o borrar? | Es **código muerto**: importado en `routes/menu.js:5`, usado en ninguna ruta, y lee `req.user.restaurante_id` cuando el JWT guarda `restaurant_id` (`routes/auth.js:27`). Si se deja así, tarde o temprano alguien lo enchufa creyendo que protege algo. | T8 |
+| **D3** | Nombre del restaurante: ¿`UPDATE` puntual por SSH ahora, o campo editable en Configuración? | Hoy **no existe forma de renombrar** un restaurante: `restaurantes.nombre` solo se escribe en el `INSERT` de creación (`routes/admin.js:411`). La única salida actual es borrar y recrear, perdiendo todos los datos. | T7 |
+| **D4** | ¿Cuándo se despliega `ISS-033`? | Hoy es el día de la atención masiva. Desplegar en pleno servicio vs. esperar a que termine. | — |
+| **D5** | Pensionistas: ¿hacer los pasos 6-9 (aislados) antes que el 10-12? | Los pasos 10 y 11 tocan Cola del día y Cocina, los módulos que reciben la carga real. Los 6-9 no tocan ningún flujo activo. | T9 |
+
+### B · Tareas definidas, listas para ejecutar
+
+| # | Tarea | Estado | Depende de |
+|---|---|---|---|
+| ~~**T1**~~ | ~~Cierre de caja: comprobante + botón "Confirmar pago"~~ | ✅ **Hecho 2026-08-12** — `ISS-034`. Desbloquea T4. Pendiente de deploy | — |
+| ~~**T2**~~ | ~~Reset de scroll al cambiar de panel~~ | ✅ **Hecho 2026-08-12** — `ISS-035`. Ojo: **no** era `window.scrollTo()`; el scroll vive en `.content`. SW bumpeado a v8 → deploy **ámbar** | — |
+| **T3** | Reservas y horario: `min`/`max` en `res-fecha` y `res-hora` (`menu.html:89,93`) + validar horario en el POST del owner (`reservations.js:146`). | ⏸️ Bloqueada | **D1** |
+| **T4** | Filtro de fecha + fin del N+1 en `GET /api/orders/activas`, migrándolo a `utils/colaDia.js`. | 🟢 **Desbloqueada** — T1 ya está hecho, pero **esperar a que T1 esté desplegado y verificado en producción** antes de tocar esto | **T1** ⚠️ |
+| **T11** | **Arranque lento de la app** (1ª apertura no entra, 2ª rápida). 4 hosts externos bloqueantes en el `<head>`, 17 scripts sin `defer`, y el SW **no cachea los módulos JS** (no hay un solo `cache.put`). Ver diagnóstico en `status.md`. | 🔴 Diagnosticado, sin implementar. Abrir **ISS-036** | — |
+| **T5** | Contador **"menús vendidos hoy"** — número grande y visible, unificando órdenes y reservas. | 🟢 Listo para hacer | — |
+| **T6** | **Backup manual verificado** de la BD de producción (dump + restore de prueba). Lo ejecuta el usuario por SSH. | 🟡 Pendiente | — |
+| **T7** | Editar el nombre del restaurante. | ⏸️ Bloqueada | **D3** |
+| **T8** | Resolver `authorizeRestaurante()`. | ⏸️ Bloqueada | **D2** |
+| **T9** | Pensionistas, pasos 6-12 (ver sección propia más abajo). | ⏸️ Parcial | **D5** |
+| **T10** | Abrir **ISS-037** con `issues/screenshots/visualización_fecha.png` — las fechas en Configuración de menú. (`opcional_1.png` y `opcional_2.png` **no** son issue, confirmado por el usuario.) Puede que ISS-035 ya lo haya resuelto: si no veía el stepper por el scroll, quizá tampoco veía el paso 3. **Verificar con ella antes de escribir código.** | 🟢 Listo para hacer | — |
+
+### C · La regla de orden que no se puede romper
+
+> ⚠️ **T1 va antes que T4, sin excepción.**
+>
+> Hoy, cuando la dueña queda trabada en el cierre de caja (T1), su **único** camino para
+> confirmar esos pagos es el panel **Órdenes** — y ese panel funciona justamente porque
+> `GET /api/orders/activas` **no filtra por fecha** y sigue mostrando los pedidos viejos.
+> Si T4 entra primero, se le cierra la única salida que le queda y el bug de T1 pasa de
+> molesto a sin escapatoria.
+
+---
+
+## 🚨 Semana de carga real — miércoles 12 a sábado 15 de agosto de 2026
+
+> **CORREGIDO 2026-08-12.** Esta sección decía *"Miércoles 2026-08-12 — el primer reto"* y
+> estaba escrita como si la atención masiva fuera **un solo día**. **No lo es: es toda la
+> semana.** Miércoles, jueves, viernes y sábado con +60 menús; **el domingo es el único día
+> tranquilo.** El error de encuadre llevó a recomendar "no toques nada hasta que pase el
+> día", que aplicado toda la semana significaba **no desplegar nada hasta el domingo** —
+> exactamente lo contrario del objetivo del mes de pruebas.
+
+**El modelo de trabajo del usuario, que es el correcto:** probar en el servicio de la tarde
+con 60+ pedidos, detectar errores reales, corregirlos esa misma noche y desplegar antes del
+servicio siguiente. **Si no se mejora entre días, se nota.**
+
+### 🕐 Ventana de deploy — el dato operativo
+
+**El servicio es de 12:00 a 18:00.** Entonces:
+
+- ❌ **Nunca desplegar entre las 12:00 y las 18:00.** Es el único horario prohibido.
+- ✅ **Desplegar a partir de las 18:00**, apenas cierra. No dejarlo para la mañana
+  siguiente: de noche queda la noche entera para verificar y la mañana de colchón. Un
+  deploy a las 11:00 hace que cualquier problema explote dentro del servicio.
+
+### 🚦 Qué se puede desplegar y cuándo
+
+| | Qué es | Cuándo |
+|---|---|---|
+| 🟢 **Verde** | Fixes de frontend, backend aditivo, permisos. Cubiertos por tests y verificables en 2 minutos. | **Cualquier noche, después de las 18:00** |
+| 🟡 **Ámbar** | Service worker, sesión/auth. Funcionan, pero afectan **cómo arranca** la app en los celulares. | Noche + **verificar en un celular real antes de dormir**. Preferir que salgan solos, no mezclados con otros cambios |
+| 🔴 **Rojo** | Tocar por dentro Cola del día / Cocina, migraciones sobre datos reales, cualquier cosa que no se pueda verificar rápido. | **Domingo** |
+
+**Lo único rojo hoy en la lista:** los **pasos 10-11 de Pensionistas** (meter una tercera
+fuente dentro de `utils/colaDia.js`). Todo lo demás de T1-T11 es verde o ámbar.
 
 **Es la primera vez que un restaurante piloto atiende volumen real con el sistema.** Más de 60 menús
-vendidos en un día, concentrados casi todos en el almuerzo. Todo lo que hoy funciona con 2-3 pedidos
-simultáneos se prueba de verdad ese día.
+vendidos por día, concentrados casi todos en el almuerzo. Todo lo que hoy funciona con 2-3 pedidos
+simultáneos se prueba de verdad esta semana.
 
 ### Por qué el deploy dejó de ser rutina y es lo más urgente
 
@@ -29,6 +104,11 @@ Si el miércoles atienden 60+ menús con la versión que hoy corre en producció
 `ISS-027` (sesión de 30 días) es el segundo: nadie quiere reloguearse en medio de un servicio lleno.
 
 ### Prioridades del martes 2026-08-11, en orden
+
+> **Cierre de esta lista (2026-08-12):** ✅ hechos el **1**, el **2** y el **6**.
+> El **3** sigue abierto y ahora es **T4**, con la advertencia de orden de la sección C
+> (va después de T1). El **4** sigue abierto y es **T6**. El **5** sigue abierto y es
+> **T5**. Se deja el texto original porque explica el porqué de cada prioridad.
 
 1. **🔴 DEPLOY, primero que nada** — `181ddf3` (`ISS-026` + `ISS-027`) y `6d4576e` (`ISS-028`). No
    dejarlo para la tarde: hay que desplegar **con tiempo de sobra para probar en producción** y con
@@ -162,6 +242,19 @@ cambiar** — no es un ajuste de tamaño, es un rediseño de qué se muestra y p
 - [ ] **Protocolo de onboarding** documentado en `pilotos.md`: instalar la PWA juntos, forzar cierre y
       reapertura, enviar una notificación de prueba y verificarla en su celular, quedarse a observar
       un servicio en hora punta, check-in día 1, 3 y 7.
+
+---
+
+## 🔴 P0 — Salido del uso real de la piloto (2026-08-12)
+
+**T1, T2 y T3** de la tabla de arriba salieron de una sesión de uso real con la señora
+del menú (piloto #1) — no de un test ni de una auditoría. Los tres están diagnosticados
+en el código, con archivo y línea, en `status.md` (sesión 2026-08-12 parte 1). El más
+grave es **T1**: la deja trabada **sin salida** al cerrar pedidos viejos de Yape/Plin.
+
+- [x] ~~**`ISS-033`** — 14 rutas del panel sin `authorizePermiso()`~~ —
+      ✅ **resuelto 2026-08-12.** Requisito previo al paso 7 de Pensionistas.
+      Pendiente de deploy (**D4**).
 
 ---
 
