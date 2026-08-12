@@ -16,6 +16,13 @@ saldo+stock (§7, `utils/pensionistaPedido.js`). Detalle en `status.md` sesión 
 **Falta del MVP:** integración en Cola del día/Cocina (§5), `login.html` `ROLE_REDIRECT` (§2),
 `pensionista.html` (§9), panel del owner en `owner.html` (§6), reportería separada (§8).
 
+**Requisito previo cerrado (2026-08-12):** `ISS-033`. El rol `pensionista` dejaba al
+descubierto 7 rutas de `orders.js`/`reservations.js` que pedían login pero no permisos —
+un comensal con cuenta podía leer todas las reservas con teléfonos de clientes y, sobre
+todo, **saltarse el descuento de saldo** pidiendo por `POST /api/orders` en vez de
+`POST /api/pensionista/pedido`. Corregido y probado antes de que exista la primera cuenta
+de pensionista. **No construir `pensionista.html` sin este fix desplegado.**
+
 ---
 
 ## 0. DECISIONES CERRADAS (2026-08-10) — leer antes que el resto

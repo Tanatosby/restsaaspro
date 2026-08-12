@@ -15,7 +15,7 @@ router.use(authenticate);
 // GET /api/reservations/estatus
 // Lista todos los estatus de reserva (para poblar selects dinámicamente)
 // ─────────────────────────────────────────────────────
-router.get('/estatus', (req, res) => {
+router.get('/estatus', authorizePermiso(), (req, res) => {
   const estatus = db.prepare(`SELECT id, nombre FROM estatus_reserva ORDER BY id ASC`).all();
   res.json(estatus);
 });
@@ -29,7 +29,7 @@ router.get('/estatus', (req, res) => {
 // ─────────────────────────────────────────────────────
 const VALID_RESERVA_FLAGS = new Set(['es_inicial','es_confirmada','es_en_cocina','es_listo','es_cliente_llego','es_full','es_cancelado']);
 
-router.get('/', (req, res) => {
+router.get('/', authorizePermiso(), (req, res) => {
   const { fecha_desde, fecha_hasta, estatus, flag } = req.query;
 
   let query = `
@@ -143,9 +143,10 @@ router.get('/', (req, res) => {
 // Crear una reserva — puede venir del cliente (menu.html)
 // o del mozo
 // ─────────────────────────────────────────────────────
-router.post('/', (req, res) => {
+// El restaurante SIEMPRE sale del token, nunca del body. La reserva del
+// cliente (sin login) entra por POST /api/public/reservations. Ver ISS-033.
+router.post('/', authorizePermiso(), (req, res) => {
   const {
-    id_restaurante,
     nombre_cliente,
     telefono_cliente,
     fecha,
@@ -160,12 +161,10 @@ router.post('/', (req, res) => {
   if (!fecha)
     return res.status(400).json({ error: 'La fecha de la reserva es requerida' });
 
-  // Si viene del cliente (sin auth), necesita id_restaurante en el body
-  // Si viene del mozo/owner (con auth), usamos req.user.restaurant_id
-  const restauranteId = req.user?.restaurant_id || id_restaurante;
+  const restauranteId = req.user.restaurant_id;
 
   if (!restauranteId)
-    return res.status(400).json({ error: 'id_restaurante es requerido' });
+    return res.status(400).json({ error: 'Tu usuario no tiene un restaurante asignado' });
 
   const restaurante = db.prepare(`
     SELECT id FROM restaurantes WHERE id = ? AND activo = 1

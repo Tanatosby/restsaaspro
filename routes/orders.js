@@ -17,7 +17,7 @@ router.use(authenticate);
 // GET /api/orders/estatus
 // Lista todos los estatus de orden (para poblar selects dinámicamente)
 // ─────────────────────────────────────────────────────
-router.get('/estatus', (req, res) => {
+router.get('/estatus', authorizePermiso(), (req, res) => {
   const estatus = db.prepare(`SELECT id, nombre FROM estatus_orden ORDER BY id ASC`).all();
   res.json(estatus);
 });
@@ -27,7 +27,7 @@ router.get('/estatus', (req, res) => {
 // Órdenes activas: pendiente + preparando + entregando
 // Para la vista en tiempo real del owner/cocinero
 // ─────────────────────────────────────────────────────
-router.get('/activas', (req, res) => {
+router.get('/activas', authorizePermiso(), (req, res) => {
   const ordenes = db.prepare(`
     SELECT
       o.id,
@@ -182,7 +182,7 @@ router.get('/queue', authorizePermiso(), (req, res) => {
 // ?fecha_hasta=YYYY-MM-DD  → fecha fin del rango
 // ?estatus=completado      → filtrar por estatus
 // ─────────────────────────────────────────────────────
-router.get('/', (req, res) => {
+router.get('/', authorizePermiso(), (req, res) => {
   const { fecha_desde, fecha_hasta, estatus } = req.query;
 
   let query = `
@@ -279,17 +279,22 @@ router.get('/', (req, res) => {
 // No requiere autenticación — el restaurante_id viene
 // del query param del QR
 // ─────────────────────────────────────────────────────
-router.post('/', (req, res) => {
+// El restaurante SIEMPRE sale del token, nunca del body: si no, cualquier
+// usuario autenticado podía crear órdenes en un restaurante ajeno pasando
+// otro `id_restaurante`. El pedido del cliente (sin login) no pasa por acá
+// sino por POST /api/public/orders. Ver ISS-033.
+router.post('/', authorizePermiso(), (req, res) => {
   const {
-    id_restaurante,
     mesa,
     nombre_cliente,
     carta_items,   // [{ id_plato_carta, cantidad }]
     menu_items     // [{ id_componente, id_menu_dia, cantidad }]
   } = req.body;
 
+  const id_restaurante = req.user.restaurant_id;
+
   if (!id_restaurante)
-    return res.status(400).json({ error: 'id_restaurante es requerido' });
+    return res.status(400).json({ error: 'Tu usuario no tiene un restaurante asignado' });
   if (!carta_items?.length && !menu_items?.length)
     return res.status(400).json({ error: 'La orden debe tener al menos un ítem' });
 

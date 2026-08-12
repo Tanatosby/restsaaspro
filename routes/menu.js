@@ -14,7 +14,7 @@ router.use(authenticate);
 // ─────────────────────────────────────────────────────
 
 // GET /api/menu/secciones
-router.get('/secciones', (req, res) => {
+router.get('/secciones', authorizePermiso(), (req, res) => {
   const secciones = db.prepare(`
     SELECT id, nombre FROM secciones_menu
     WHERE id_restaurante = ?
@@ -66,7 +66,7 @@ router.delete('/secciones/:id', authorizePermiso(), (req, res) => {
 // ─────────────────────────────────────────────────────
 
 // GET /api/menu/platos-menu
-router.get('/platos-menu', (req, res) => {
+router.get('/platos-menu', authorizePermiso(), (req, res) => {
   const platos = db.prepare(`
     SELECT id, nombre, descripcion, url_foto
     FROM platos_menu
@@ -131,7 +131,7 @@ router.patch('/platos-menu/:id', authorizePermiso(), (req, res) => {
 // ─────────────────────────────────────────────────────
 
 // GET /api/menu/menus-dia?dia=YYYY-MM-DD
-router.get('/menus-dia', (req, res) => {
+router.get('/menus-dia', authorizePermiso(), (req, res) => {
   const { dia } = req.query;
 
   const menus = dia
@@ -613,7 +613,7 @@ router.delete('/menus-dia/:id/secciones/:seccionId/platos/:componenteId', author
 // ─────────────────────────────────────────────────────
 
 // GET /api/menu/categorias
-router.get('/categorias', (req, res) => {
+router.get('/categorias', authorizePermiso(), (req, res) => {
   const categorias = db.prepare(`
     SELECT id, nombre FROM categorias_carta
     WHERE id_restaurante = ?
@@ -674,7 +674,7 @@ router.delete('/categorias/:id', authorizePermiso(), (req, res) => {
 
 // GET /api/menu/platos-carta
 // Incluye conteo de veces pedido para la métrica del owner
-router.get('/platos-carta', (req, res) => {
+router.get('/platos-carta', authorizePermiso(), (req, res) => {
   const platos = db.prepare(`
     SELECT
       pc.id,

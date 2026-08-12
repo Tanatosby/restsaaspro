@@ -8,7 +8,7 @@ const { fechaLima } = require('../utils/fecha');
 router.use(authenticate);
 
 // GET /api/mesas — lista todas las mesas del restaurante
-router.get('/', (req, res) => {
+router.get('/', authorizePermiso(), (req, res) => {
   const mesas = db.prepare(`
     SELECT id, numero, capacidad, activo
     FROM mesas
@@ -41,7 +41,7 @@ function esInminente(hora_llegada) {
 }
 
 // GET /api/mesas/estado — mesas con estado derivado de órdenes y reservas activas de hoy
-router.get('/estado', (req, res) => {
+router.get('/estado', authorizePermiso(), (req, res) => {
   const hoy = fechaLima();
   const rid  = req.user.restaurant_id;
 
