@@ -2,6 +2,48 @@
 
 ---
 
+## 🎯 Sesión 2026-08-13 (parte 5) — ISS-039: pedido colgado en "Enviando…"
+
+**Prompt del usuario:** "¿Por qué razones dejaría en status 'enviando' el pedido desde la
+vista del cliente que entra a consumir?" — seguido de: "o sea hace clic y queda en ese
+status... 'enviando' actualicé la página y funcionó, pero al principio no."
+
+**Diagnóstico:** el flujo de confirmar pedido en `menu.html` hace 2 peticiones en serie —
+crear la orden/reserva (JSON liviano) y después subir la foto del comprobante de pago
+(Yape/Plin). Ninguna de las dos tenía timeout: en una conexión de restaurante floja, el
+`await` puede no resolver nunca y el botón queda en "Enviando…" sin límite de tiempo ni
+feedback. Agravante encontrado: como el pedido ya se crea en el paso 1 antes de que arranque
+la subida de la foto, un reintento manual (refrescar y volver a confirmar) podía dejar un
+pedido duplicado en la cola de cocina.
+
+**Documentado primero:** `issues/ISS-039-pedido-enviando-colgado.md`, a pedido explícito del
+usuario, antes de tocar código.
+
+**Fix implementado (`public/menu.html`, sin tocar backend):**
+- `fetchConTimeout()` nueva — `AbortController` con timeout (15s para crear
+  orden/reserva, 30s para subir la foto), mensaje claro al agotarse en vez de quedar
+  colgado.
+- `pagoPendiente.creado` guarda el id apenas se crea el pedido/reserva — un reintento tras
+  fallar el paso 2 (foto) ya no vuelve a crear el pedido, solo repite el PATCH de pago.
+- Mensajes de paso en el botón, pedido explícito del usuario: "Enviando pedido…" /
+  "Enviando reserva…" (paso 1), "Subiendo comprobante…" / "Confirmando pago…" (paso 2).
+
+**Verificación:** sintaxis de los 2 bloques `<script>` de `menu.html` compilada con
+`new Function()` sin errores. `npx jest` completo — **754/754 verde**, sin regresiones
+(fix 100% frontend). No se armó script Playwright end-to-end: los timeouts están fijos en
+código (15s/30s), no hay forma rápida de simularlos acortados sin exponerlos como parámetro.
+
+**Sin commit todavía** — pendiente de indicación del usuario para commitear (se está en
+`main`; corresponde crear rama antes de commitear, según convención del harness). Deploy,
+como siempre, lo hace el usuario.
+
+**Apreciación:** el hallazgo del posible pedido duplicado (agravante, no el síntoma
+reportado) era el riesgo real detrás de un bug que a simple vista parece "solo" un botón
+colgado — vale la pena, cuando se pueda, confirmar contra la base si el incidente que contó
+el usuario dejó alguna orden duplicada de ese momento.
+
+---
+
 ## 🎯 Sesión 2026-08-13 (parte 4) — Feedback de campo: visita a la dueña del piloto #1
 
 **Prompt del usuario:** contó una visita en persona a la dueña del piloto #1 el 12/08/2026

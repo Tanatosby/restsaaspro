@@ -831,11 +831,29 @@ async function renderReservarContent() {
     return sel ? sel.value : 'en_local';
   }
 
+  // fetch() con timeout — sin esto, en una conexión de restaurante floja el
+  // pedido/reserva puede quedar colgado en "Enviando…" para siempre: el
+  // fetch nunca resuelve ni rechaza, así que el botón nunca se reactiva y el
+  // cliente no tiene forma de saber si su pedido llegó o no (ISS-039).
+  async function fetchConTimeout(url, options = {}, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } catch (e) {
+      if (e.name === 'AbortError')
+        throw new Error('No hubo respuesta del restaurante. Revisa tu conexión e intenta de nuevo.');
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   // Crea la orden vía API. Separado de confirmarPedido() porque ahora puede
   // dispararse en 2 momentos distintos: directo (si el restaurante no tiene
   // ningún método de pago activo) o recién al final del repaso de pago.
   async function crearOrden(payload) {
-    const res = await fetch('/api/public/orders', {
+    const res = await fetchConTimeout('/api/public/orders', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
@@ -880,7 +898,7 @@ async function renderReservarContent() {
     }
 
     const btn = document.getElementById('btn-confirmar');
-    btn.disabled = true; btn.textContent = 'Enviando…';
+    btn.disabled = true; btn.textContent = 'Enviando pedido…';
     try {
       const data = await crearOrden(payload);
       closeDrawer();
@@ -935,7 +953,7 @@ async function renderReservarContent() {
   }
 
   async function crearReserva(payload) {
-    const res = await fetch('/api/public/reservations', {
+    const res = await fetchConTimeout('/api/public/reservations', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
@@ -989,7 +1007,7 @@ async function renderReservarContent() {
     }
 
     const btn = document.getElementById('btn-reservar');
-    btn.disabled = true; btn.textContent = 'Enviando…';
+    btn.disabled = true; btn.textContent = 'Enviando reserva…';
     try {
       const data = await crearReserva(payload);
       showConfirm('reservar', data.id_reserva, data.codigo);
@@ -1153,27 +1171,48 @@ async function renderReservarContent() {
 
   // Acá recién se crea la orden/reserva en el backend y se le adjunta el
   // pago — el único punto del flujo donde el pedido pasa a existir de verdad.
+  //
+  // Son 2 pasos con 2 requests distintas, y el botón avisa en cuál está
+  // parado (ISS-039): primero crear el pedido/reserva (rápido, JSON), después
+  // subir la foto del comprobante (más lento, sube una imagen).
+  //
+  // Si el paso 1 tuvo éxito pero el paso 2 falla o se cae por timeout,
+  // `pagoPendiente.creado` queda guardado con el id ya creado — un reintento
+  // (mismo tap en "Confirmar") solo repite el PATCH de la foto, nunca vuelve
+  // a crear el pedido. Sin esto, reintentar duplicaba el pedido en cocina.
   async function confirmarEnvioFinal() {
     const btn = document.getElementById('btn-repaso-confirmar');
-    btn.disabled = true; btn.textContent = 'Enviando…';
+    btn.disabled = true;
 
     try {
       const { tipo, payload, metodo, foto } = pagoPendiente;
-      const data = tipo === 'reserva' ? await crearReserva(payload) : await crearOrden(payload);
-      const id   = tipo === 'reserva' ? data.id_reserva : data.id_orden;
+      let id, codigo;
 
+      if (pagoPendiente.creado) {
+        ({ id, codigo } = pagoPendiente.creado);
+      } else {
+        btn.textContent = tipo === 'reserva' ? 'Enviando reserva…' : 'Enviando pedido…';
+        const data = tipo === 'reserva' ? await crearReserva(payload) : await crearOrden(payload);
+        id     = tipo === 'reserva' ? data.id_reserva : data.id_orden;
+        codigo = tipo === 'reserva' ? data.codigo : null;
+        pagoPendiente.creado = { id, codigo };
+      }
+
+      btn.textContent = foto ? 'Subiendo comprobante…' : 'Confirmando pago…';
       const formData = new FormData();
       formData.append('metodo_pago', metodo);
       if (foto) formData.append('foto', foto);
       const endpoint = tipo === 'reserva'
         ? `/api/public/pago/reserva/${id}`
         : `/api/public/pago/orden/${id}`;
-      const res = await fetch(endpoint, { method: 'PATCH', body: formData });
+      // Timeout más largo que el de crearOrden/crearReserva: acá viaja una
+      // imagen, no un JSON liviano, y puede tardar más en redes flojas.
+      const res = await fetchConTimeout(endpoint, { method: 'PATCH', body: formData }, 30000);
       const pagoData = await res.json();
       if (!res.ok) throw new Error(pagoData.error || 'Error al registrar el pago');
 
       document.getElementById('repaso-screen').classList.remove('show');
-      showConfirm(tipo === 'reserva' ? 'reservar' : 'pedir', id, tipo === 'reserva' ? data.codigo : null);
+      showConfirm(tipo === 'reserva' ? 'reservar' : 'pedir', id, codigo);
       pagoPendiente = null;
     } catch(e) {
       alert(e.message);
