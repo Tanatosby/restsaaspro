@@ -27,20 +27,25 @@ tocar backend).
 
 **Documentado:** `issues/ISS-038-modal-foto-tapado-por-menumodal.md` + `issues/ISSUES.md`.
 
-**Pendiente: deploy** — este cambio es 🟢 verde (CSS puro, un solo valor), se puede
-desplegar cualquier noche después de las 18:00.
+**Commit:** `b351e88`, pusheado a `main`. **Deploy confirmado por el usuario 2026-08-13**,
+y verificado visualmente en producción: la foto aparece arriba de la hoja de selección.
+**ISS-038 cerrado por completo.**
 
 ---
 
-## 🚀 Deploy 2026-08-13 — confirmado por el usuario
+## 🚀 Deploys 2026-08-13 — confirmados por el usuario
 
-`git pull origin main` + reinicio en el servidor, hasta `b38f106`. Quedan resueltos los
-"Pendiente: deploy" de 4 commits que se habían ido acumulando:
+**Primera tanda** (`git pull origin main` + reinicio, hasta `b38f106`) — quedan resueltos
+los "Pendiente: deploy" de 4 commits que se habían ido acumulando:
 
 - `69379df` — fix(seguridad): 14 rutas del panel pedían login pero no permisos (ISS-033)
 - `ee0194c` — fix(piloto): cierre de caja sin comprobante (ISS-034) y scroll que no vuelve arriba (ISS-035) — deploy ámbar (SW bumpeado a v8), **verificado en celular real 2026-08-13** ✅
 - `a1e9755` — fix(reservas): D1 — permitir reservar con el restaurante cerrado si la hora pedida cae en horario
 - `b38f106` — fix(reservas): T3 — botón de reservar ya no se bloquea con el restaurante cerrado
+
+**Segunda tanda:**
+
+- `b351e88` — fix(menu): ISS-038 — modal de foto tapado al elegir platos de un menú
 
 **Producción queda al día con `main`.**
 

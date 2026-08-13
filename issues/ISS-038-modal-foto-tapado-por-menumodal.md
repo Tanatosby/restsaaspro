@@ -40,3 +40,7 @@ pantalla pertenece a `#photo-modal`, no a `.mm-sheet`. **6/6 verde.** Además co
 cerrar solo la foto no afecta a `MenuModal` (sigue abierto).
 
 `npx jest tests/`: **754/754 verde** (cambio de CSS puro, sin tocar backend).
+
+**Verificado en producción 2026-08-13** — el usuario confirmó visualmente: la foto del
+plato aparece arriba de la hoja de selección, ya no queda tapada. Issue cerrado por
+completo.
