@@ -1,6 +1,6 @@
 # ISS-039 — Pedido queda trabado en "Enviando…" desde la vista del cliente
 
-**Estado:** ✅ Resuelto (código) — 2026-08-13. Falta commit/deploy y verificación en campo.
+**Estado:** ✅ Resuelto y desplegado — commit `1a85a89`, deploy confirmado por el usuario 2026-08-13. Falta verificación en campo (conexión real lenta).
 **Módulo:** `public/menu.html` (`confirmarEnvioFinal`, `crearOrden`, `crearReserva`), `routes/public.js` (`POST /orders`, `PATCH /pago/orden/:id`)
 **Prioridad:** 🔴 Alta — ocurre en el momento más crítico del flujo (el cliente confirmando su pedido) y puede duplicar pedidos en cocina
 
@@ -92,7 +92,8 @@ parámetro/constante inyectable para simular el timeout en segundos en vez de en
 
 ## Pendiente
 
-- Commit + deploy (lo hace el usuario, ver `CLAUDE.md` §Deploys).
+- ~~Commit + deploy~~ — hecho: commit `1a85a89`, deploy confirmado por el usuario el
+  2026-08-13, mismo día.
 - Verificación en campo: confirmar que, ante una conexión lenta real, el botón ya no queda
   congelado sin mensaje y que un reintento no genera un pedido duplicado.
 - Punto 4 del diagnóstico original (confirmar si el incidente reportado dejó una orden

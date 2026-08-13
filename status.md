@@ -33,9 +33,10 @@ usuario, antes de tocar código.
 (fix 100% frontend). No se armó script Playwright end-to-end: los timeouts están fijos en
 código (15s/30s), no hay forma rápida de simularlos acortados sin exponerlos como parámetro.
 
-**Sin commit todavía** — pendiente de indicación del usuario para commitear (se está en
-`main`; corresponde crear rama antes de commitear, según convención del harness). Deploy,
-como siempre, lo hace el usuario.
+**Commit:** `1a85a89`, pusheado directo a `main` (confirmado con el usuario que este repo es
+trunk-based: sin PRs, sin CI de rama, y el deploy hace `git pull origin main` directo —
+crear una rama acá no aplica; ver `[[feedback-conventions]]`). **Deploy confirmado por el
+usuario 2026-08-13**, mismo día del commit.
 
 **Apreciación:** el hallazgo del posible pedido duplicado (agravante, no el síntoma
 reportado) era el riesgo real detrás de un bug que a simple vista parece "solo" un botón
