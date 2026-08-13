@@ -10,6 +10,17 @@ const db = require('../config/database');
 const BASE = 'http://localhost:3311';
 const REST_ID = 1;
 
+// Fechas relativas a "hoy" — nunca hardcodear una fecha fija: el backend
+// rechaza reservas en el pasado (public.js) y una fecha fija termina
+// pudriéndose apenas pasan los meses.
+function fechaEnDias(dias) {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+const FECHA_MANANA      = fechaEnDias(1);
+const FECHA_EN_10_DIAS  = fechaEnDias(10);
+
 let pass = 0, fail = 0;
 function check(cond, msg) {
   if (cond) { console.log(`  ✅ ${msg}`); pass++; }
@@ -55,6 +66,11 @@ function setHorario({ activo, apertura, cierre, dias }) {
     const btnDisabled = await page.locator('#btn-confirmar').isDisabled();
     check(btnDisabled, 'botón "Confirmar pedido" deshabilitado mientras está cerrado');
 
+    // D1 (2026-08-13): reservar SÍ debe seguir habilitado con el restaurante
+    // cerrado ahora — solo el pedido (inmediato) se bloquea.
+    const btnReservarEnabled = !(await page.locator('#btn-reservar').isDisabled());
+    check(btnReservarEnabled, 'botón "Confirmar reserva" sigue habilitado aunque esté cerrado (D1)');
+
     // Backend también bloquea (defensa en profundidad)
     const res = await fetch(`${BASE}/api/public/orders`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -65,7 +81,7 @@ function setHorario({ activo, apertura, cierre, dias }) {
 
     const resReserva = await fetch(`${BASE}/api/public/reservations`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id_restaurante: REST_ID, nombre_cliente: 'Test Cerrado', fecha: '2026-07-20' })
+      body: JSON.stringify({ id_restaurante: REST_ID, nombre_cliente: 'Test Cerrado', fecha: FECHA_MANANA })
     });
     const dataReserva = await resReserva.json();
     check(resReserva.status === 400 && /cerrado/i.test(dataReserva.error), `POST /reservations bloqueado por el backend (${resReserva.status}: ${dataReserva.error})`);
@@ -96,12 +112,26 @@ function setHorario({ activo, apertura, cierre, dias }) {
     setHorario({ activo: true, apertura: '08:00', cierre: '20:00', dias: '0,1,2,3,4,5,6' });
     const resFutura = await fetch(`${BASE}/api/public/reservations`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id_restaurante: REST_ID, nombre_cliente: 'Test Futuro', fecha: '2026-07-25', hora_llegada: '22:00' })
+      body: JSON.stringify({ id_restaurante: REST_ID, nombre_cliente: 'Test Futuro', fecha: FECHA_EN_10_DIAS, hora_llegada: '22:00' })
     });
     const dataFutura = await resFutura.json();
     check(resFutura.status === 400 && /reservar/i.test(dataFutura.error), `reserva con hora_llegada fuera de rango bloqueada (${resFutura.status}: ${dataFutura.error})`);
 
     await page.close();
+  }
+
+  // ── Test 3: restaurante cerrado AHORA, pero se reserva para una hora futura
+  // dentro de su horario de atención — debe permitir (D1, 2026-08-13) ──
+  console.log('\n[Test 3] Restaurante cerrado ahora, reserva para hora futura válida (D1)');
+  {
+    setHorario({ activo: true, apertura: '01:00', cierre: '02:00', dias: '0,1,2,3,4,5,6' });
+
+    const resD1 = await fetch(`${BASE}/api/public/reservations`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_restaurante: REST_ID, nombre_cliente: 'Test D1', fecha: FECHA_EN_10_DIAS, hora_llegada: '01:30' })
+    });
+    const dataD1 = await resD1.json();
+    check(resD1.status === 200 || resD1.status === 201, `reserva con restaurante cerrado AHORA pero hora futura válida permitida (${resD1.status}: ${dataD1.error || 'ok'})`);
   }
 
   await browser.close();

@@ -440,6 +440,13 @@
       document.getElementById('res-fecha').min   = hoyLima;
       document.getElementById('res-fecha').value = hoyLima;
 
+      // Restringe la hora de llegada al horario de atención configurado —
+      // solo guía la elección, el backend es quien valida de verdad (D1).
+      if (horarioInfo && horarioInfo.activo) {
+        document.getElementById('res-hora').min = horarioInfo.apertura;
+        document.getElementById('res-hora').max = horarioInfo.cierre;
+      }
+
       renderPedirContent();
       await renderReservarContent();
       switchMode(activeMode);
@@ -795,9 +802,12 @@ async function renderReservarContent() {
     );
   }
 
-  // Banner "Cerrado" + deshabilita el envío final mientras el restaurante
-  // esté fuera de su horario de atención (Gap 18). El cliente puede seguir
-  // viendo la carta/menú y armando su carrito con normalidad.
+  // Banner "Cerrado" + deshabilita el envío del PEDIDO mientras el
+  // restaurante esté fuera de su horario de atención (Gap 18). El cliente
+  // puede seguir viendo la carta/menú y armando su carrito con normalidad.
+  // Las RESERVAS no se bloquean acá: se puede reservar con el restaurante
+  // cerrado ahora, siempre que la hora elegida caiga en horario de atención
+  // (min/max de #res-hora + validación del backend). Decisión D1, 2026-08-13.
   function actualizarEstadoHorario() {
     const banner = document.getElementById('horario-cerrado-banner');
     const cerrado = !!(horarioInfo && horarioInfo.activo && !horarioInfo.abierto_ahora);
@@ -807,12 +817,8 @@ async function renderReservarContent() {
       banner.textContent   = cerrado ? `🕐 ${horarioInfo.mensaje}` : '';
     }
 
-    ['btn-confirmar', 'btn-reservar'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) btn.disabled = cerrado;
-    });
-    const resBarBtn = document.querySelector('.res-bar-btn');
-    if (resBarBtn) resBarBtn.disabled = cerrado;
+    const btnConfirmar = document.getElementById('btn-confirmar');
+    if (btnConfirmar) btnConfirmar.disabled = cerrado;
   }
 
   function getModalidadOrden() {
@@ -939,8 +945,9 @@ async function renderReservarContent() {
   }
 
   async function confirmarReserva() {
-    if (horarioInfo && horarioInfo.activo && !horarioInfo.abierto_ahora)
-      return showMsg(horarioInfo.mensaje, true);
+    // Sin gate de "abierto ahora" acá — se puede reservar con el restaurante
+    // cerrado (D1). El min/max de #res-hora guía la elección y el backend
+    // valida que la hora elegida caiga en horario de atención.
     const nombre   = document.getElementById('res-nombre').value.trim();
     const telefono = document.getElementById('res-telefono').value.trim();
     const fecha    = document.getElementById('res-fecha').value;

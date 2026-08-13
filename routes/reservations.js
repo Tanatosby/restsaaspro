@@ -140,8 +140,16 @@ router.get('/', authorizePermiso(), (req, res) => {
 
 // ─────────────────────────────────────────────────────
 // POST /api/reservations
-// Crear una reserva — puede venir del cliente (menu.html)
-// o del mozo
+// Crea una reserva autenticada (para cuando el mozo/dueña la registra a
+// mano, ej. un cliente que llamó por teléfono).
+//
+// UTILIDAD SIN USAR HOY (2026-08-13): funcional y protegida, pero ningún
+// archivo del frontend la llama — owner.html no tiene pantalla para crear
+// reservas, solo para listarlas/gestionarlas. La reserva del cliente real
+// entra siempre por POST /api/public/reservations (sin login), que sí
+// valida horario de atención (ver D1 en backlog.md). Esta ruta no valida
+// horario. Si algún restaurante piloto pide reservar por teléfono desde el
+// panel, retomar acá: construir la pantalla y agregar validarHorarioReserva().
 // ─────────────────────────────────────────────────────
 // El restaurante SIEMPRE sale del token, nunca del body. La reserva del
 // cliente (sin login) entra por POST /api/public/reservations. Ver ISS-033.

@@ -29,6 +29,53 @@ desbloqueada por esta decisión.
 
 ---
 
+## 🎯 Sesión 2026-08-13 (parte 2) — T3: min/max de hora + gate de reservar (frontend)
+
+**Continuación de D1** (arriba). El usuario confirmó el alcance: solo `min`/`max` en el
+formulario del cliente, sin construir pantalla de reserva telefónica para el mozo.
+
+**Hallazgo antes de tocar código:** `menu.html` tenía **su propio gate**, independiente
+del backend, que dejaba sin efecto a D1: `actualizarEstadoHorario()` deshabilitaba el
+botón `btn-reservar` (y `.res-bar-btn`) cada vez que `horarioInfo.abierto_ahora` era
+falso, y `confirmarReserva()` cortaba con el mismo chequeo antes de leer `fecha`/`hora`.
+Sin arreglar esto, un cliente que entra de noche (restaurante cerrado) nunca podría ni
+intentar reservar para el almuerzo del día siguiente — el botón estaría apagado.
+
+**Cambios en `public/menu.html`:**
+- `res-hora` recibe `min`/`max` = `horarioInfo.apertura`/`.cierre` en `init()`, mismo
+  patrón que ya existía para `res-fecha.min` (que ya estaba resuelto — no hacía falta
+  tocarlo).
+- `actualizarEstadoHorario()`: el gate de "cerrado" ahora solo deshabilita
+  `btn-confirmar` (pedido, inmediato). Ya no toca `btn-reservar` ni `.res-bar-btn`.
+- `confirmarReserva()`: se quitó el `return showMsg(...)` temprano por "abierto ahora".
+  El backend (`validarHorarioReserva()`, corregido por D1) es quien valida de verdad; el
+  error, si lo hay, llega igual por el `catch` existente que ya mostraba `e.message`.
+
+**Endpoint huérfano documentado, no construido:** `POST /api/reservations` (owner/mozo,
+`routes/reservations.js`) no tiene ninguna pantalla que lo llame — verificado buscando en
+todo `public/`. Decisión del usuario: **no construir la pantalla ahora**; si algún
+restaurante piloto pide reservar por teléfono, se retoma en ese momento con ese cliente
+real. Comentario del endpoint actualizado para dejarlo explícito.
+
+**Verificación:**
+- `npx jest tests/` → **754/754 verde** (sin cambios de backend en esta parte).
+- `scripts/test-horario-atencion.js` corrido de punta a punta contra un server local
+  (Playwright): **11/11 verde**, incluyendo el caso nuevo (Test 3) que prueba
+  exactamente D1 — restaurante cerrado ahora + hora futura válida → reserva permitida
+  (201). Se agregó también el chequeo de que `#btn-reservar` sigue habilitado con el
+  restaurante cerrado (Test 1).
+- De paso se encontraron y corrigieron **3 fechas hardcodeadas** en ese script
+  (`2026-07-20`, `2026-07-25`) que habían quedado en el pasado y hacían fallar el script
+  por una razón ajena al cambio (`fecha en el pasado`, no horario). Reemplazadas por
+  fechas relativas a "hoy" para que no se pudra de nuevo.
+
+**Commit:** pendiente (preguntar antes de hacer commit + push).
+
+**Pendiente: deploy** — este cambio es 🟢 verde (frontend + comentario, cubierto por el
+script de Playwright), se puede desplegar cualquier noche después de las 18:00.
+
+---
+
 ## 📝 Memoria de Julio — nota personal
 
 Me he querido rendir, tengo que hacer algo incómodo, tengo que seguir haciendo algo incómodo, no puedo
