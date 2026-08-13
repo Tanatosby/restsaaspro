@@ -2,6 +2,33 @@
 
 ---
 
+## 🎯 Sesión 2026-08-13 — D1 resuelta: reservar con el restaurante cerrado
+
+**Decisión del usuario (D1):** sí se puede reservar con el restaurante cerrado, siempre
+que la hora pedida (`hora_llegada`) caiga dentro del horario de atención. El sentido de
+reservar es pedir para después.
+
+**Cambio en `utils/horarioAtencion.js`:** `validarHorarioReserva()` ya no llama primero a
+`validarHorarioAhora()` sin condición. Ahora:
+- Con `hora_llegada`: valida **solo** que ese momento futuro caiga en horario de
+  atención — sin importar si el restaurante está abierto en este instante.
+- Sin `hora_llegada`: no hay hora futura que validar, así que cae al chequeo de "ahora"
+  (comportamiento sin cambios para ese caso).
+
+**Tests:** reescrito el caso obsoleto (`'ahora cerrado — bloquea sin importar
+hora_llegada'`) en `tests/horario-atencion.test.js` por el comportamiento nuevo, más 2
+casos nuevos (hora futura fuera de horario con "ahora" cerrado → bloqueado; sin
+`hora_llegada` con "ahora" cerrado → bloqueado). **754/754 jest verde** (suite completa).
+
+**Alcance de este cambio:** solo `utils/horarioAtencion.js`, usado hoy por
+`routes/public.js:399` (reservas del cliente). **No toca** `routes/reservations.js`
+(POST del owner), que sigue sin validar horario en absoluto — eso es **T3**, ahora
+desbloqueada por esta decisión.
+
+**Pendiente: deploy** — preguntar al usuario cuando corresponda.
+
+---
+
 ## 📝 Memoria de Julio — nota personal
 
 Me he querido rendir, tengo que hacer algo incómodo, tengo que seguir haciendo algo incómodo, no puedo

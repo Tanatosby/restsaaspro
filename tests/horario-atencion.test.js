@@ -75,8 +75,20 @@ describe('validarHorarioAhora', () => {
 });
 
 describe('validarHorarioReserva', () => {
-  test('ahora cerrado — bloquea sin importar hora_llegada', () => {
+  test('ahora cerrado, pero hora_llegada cae dentro del horario de atención — permitido (D1)', () => {
+    // "ahora" es domingo (cerrado), pero se reserva para el miércoles 13:00 (dentro de rango)
     const r = validarHorarioReserva(REST, '2026-07-15', '13:00', new Date('2026-07-12T13:00:00Z'));
+    expect(r.permitido).toBe(true);
+  });
+
+  test('ahora cerrado y hora_llegada también fuera de horario — bloqueado', () => {
+    const r = validarHorarioReserva(REST, '2026-07-15', '20:00', new Date('2026-07-12T13:00:00Z'));
+    expect(r.permitido).toBe(false);
+    expect(r.error).toContain('No puedes reservar para esa hora');
+  });
+
+  test('ahora cerrado, sin hora_llegada — bloqueado (no hay hora futura, se valida "ahora")', () => {
+    const r = validarHorarioReserva(REST, '2026-07-15', null, new Date('2026-07-12T13:00:00Z'));
     expect(r.permitido).toBe(false);
   });
 

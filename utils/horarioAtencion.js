@@ -50,20 +50,21 @@ function validarHorarioAhora(rest, ahora) {
   return { permitido: true };
 }
 
-// Reservas: además de "ahora", si el cliente especificó hora_llegada,
-// valida que ese momento futuro también caiga dentro del horario de atención.
+// Reservas: si el cliente especificó hora_llegada, lo que importa es que ESE
+// momento futuro caiga dentro del horario de atención — no si el restaurante
+// está abierto justo ahora (reservar de noche para el almuerzo de mañana debe
+// funcionar). Sin hora_llegada no hay momento futuro que validar, así que se
+// cae al chequeo de "ahora" (D1, decidido 2026-08-13).
 function validarHorarioReserva(rest, fecha, hora_llegada, ahora) {
-  const base = validarHorarioAhora(rest, ahora);
-  if (!base.permitido) return base;
-
   if (hora_llegada) {
     const momentoReserva = new Date(`${fecha}T${hora_llegada}:00Z`);
     const { abierto } = estadoHorario(rest, momentoReserva);
     if (!abierto)
       return { permitido: false, error: `No puedes reservar para esa hora — ${mensajeHorario(rest)}` };
+    return { permitido: true };
   }
 
-  return { permitido: true };
+  return validarHorarioAhora(rest, ahora);
 }
 
 module.exports = { estadoHorario, mensajeHorario, validarHorarioAhora, validarHorarioReserva };
