@@ -2,6 +2,99 @@
 
 ---
 
+## 🎯 Sesión 2026-08-13 (parte 4) — Feedback de campo: visita a la dueña del piloto #1
+
+**Prompt del usuario:** contó una visita en persona a la dueña del piloto #1 el 12/08/2026
+(un día antes de esta sesión), con 4 hallazgos — documentados con detalle en
+`vision_negocio.md` §16:
+
+1. Percepción general mejoró: "ya no se le paraba tanto al entrar como antes".
+2. Sigue usando el cuaderno en paralelo: *"hasta que los chicos se acostumbren"* y
+   *"hasta que tenga una forma de cómo identificar las mesas"*.
+3. Mesas que se juntan pierden numeración — propuso ella misma un acrílico con número +
+   QR para pegar entre las mesas combinadas.
+4. Clientas reportaron fricción en el pago Yape/Plin: *"tantos pasos para pagar, medio
+   confuso"*.
+
+**Verificado en código antes de documentar:**
+- El hallazgo 1 no tiene causa técnica única identificable, pero coincide en el tiempo
+  con ISS-026 (doble tap) y las correcciones de esta semana — se anota como señal
+  positiva, no como algo para investigar.
+- El hallazgo 3 **ya funciona con el sistema actual, verificado en código**: `mesa` es un
+  parámetro de URL libre (`menu.html:314`), sin validar contra la tabla `mesas`. La
+  dueña puede registrar un número suelto (ej. `34`) desde Configuración → Mesas
+  (`crearMesa()`, ya existe) e imprimir su QR. Encontrada una fricción menor: el
+  generador masivo de QRs (`generarQRsMesas()`) solo cubre secuencias `1..N`, no números
+  sueltos — anotado como mejora menor no urgente, no como gap bloqueante.
+- El hallazgo 4 confirma con datos reales la fricción que ya se había investigado y
+  cerrado por diseño en **Gap 16** (deep link de Yape, 2026-07-13): inviable sin afiliar
+  el restaurante a una pasarela de pago. La decisión no cambia, pero queda anotada una
+  idea distinta y más barata — acortar pasos del flujo de 3 pantallas (Gap 17) sin tocar
+  el mecanismo de comprobante — para evaluar en otra sesión.
+
+**Documentado:** `vision_negocio.md` nueva §16 "Feedback de campo — visitas a
+restaurantes piloto", con las 4 citas textuales completas y el detalle técnico de cada
+verificación.
+
+**Sin cambios de código en esta sesión** — es trabajo de documentación puro, sin deploy
+asociado.
+
+**Apreciación:**
+
+- El hallazgo más accionable de los cuatro es el **3**, y la buena noticia es que no
+  requiere que yo escriba una sola línea: la solución ya existe en el sistema, solo hace
+  falta comunicársela a la dueña. Vale la pena hacerlo pronto — es el segundo motivo que
+  ella misma dio para seguir con el cuaderno, así que resolverlo (aunque sea con una
+  instrucción, no con código) ataca directamente la adopción.
+- El hallazgo **2** no es alarmante todavía. Migrar de un sistema en papel a uno digital
+  casi nunca es un salto de un día para el otro, y que ella misma distinga "falta
+  costumbre del personal" de "me falta resolver X" es una señal de que está pensando en
+  el sistema como una herramienta, no descartándolo. El punto de atención real es el
+  *plazo*: si en 3-4 semanas el cuaderno sigue ahí, ahí sí conviene volver a preguntarle
+  qué falta.
+- El hallazgo **4** es el más interesante a mediano plazo, aunque hoy no cambie ninguna
+  decisión. Es la primera vez que la fricción del flujo de pago manual (Gap 16/17) se
+  confirma con la voz de clientes reales, no solo como una limitación técnica conocida.
+  No recomendaría reabrir el deep link de Yape — la cuenta económica de julio sigue
+  siendo válida — pero si el volumen crece y en algún momento se justifica afiliar a una
+  pasarela, este feedback es evidencia concreta de que vale la pena revisarlo. Mientras
+  tanto, la opción barata (acortar pasos del flujo de 3 pantallas) es la que yo priorizaría
+  si se decide tocar algo acá.
+- En conjunto, esta visita vale más que cualquier métrica del sistema: son los primeros
+  dos datos de negocio reales (mesas combinadas, fricción de pago) que **no** salieron de
+  un bug reportado, sino de observar el uso real en el local. Vale la pena que estas
+  visitas presenciales sigan siendo parte del ritmo del piloto, no solo el feedback
+  reactivo cuando algo falla.
+
+### Corrección sobre el hallazgo 3, tras una segunda vuelta con el usuario
+
+La primera lectura del hallazgo 3 (arriba y en `vision_negocio.md` §16) fue incompleta: se
+asumió que la dueña necesitaba un número de mesa **combinado** (ej. "34" para "mesa 3+4"),
+cuando en realidad sus acrílicos son objetos **físicos portátiles**: tiene N acrílicos con
+número + QR y mueve **uno solo** al conjunto de mesas que se juntó, sin que el sistema
+necesite saber que se juntaron — para él sigue siendo, simplemente, "Mesa 3".
+
+Con esa corrección, el generador masivo `1..N` que ya existe (`generarQRsMesas()`,
+`config.js:262`) es exactamente lo que necesita — no hace falta ningún cambio ahí. El
+problema real es otro, encontrado al revisar el código de descarga: el botón "⬇ PNG" por
+mesa (`config.js:284-294`) exporta **solo el QR**, sin el número — el `<span>` "Mesa X" que
+se ve en pantalla no viaja en la imagen. Si imprime esos PNGs, le saldrían QRs idénticos
+sin ningún número visible en el papel.
+
+**Decisión del usuario:** anotarlo para una sesión futura, no implementarlo ahora. Agregada
+**T12** a `backlog.md` (componer el PNG con QR + etiqueta antes de exportar) y corregido el
+hallazgo 3 en `vision_negocio.md` §16 con la explicación completa.
+
+**De paso, se corrigió un error propio al insertar la sección 16**: había quedado partida
+en medio de la sección 15 (Modelo de Ingreso Indirecto) por una edición mal ubicada —
+reordenado antes de commitear, verificado con los headers `##` en orden correcto.
+
+**Cierre de sesión — sin cambios de código pendientes.** Todo el trabajo de hoy (ISS-033,
+ISS-034, ISS-035, D1, T3, ISS-038) está desplegado y verificado. Queda para retomar:
+T4 (desbloqueada), T5, T6, T10, T12 (nueva) y las decisiones D2/D3/D5.
+
+---
+
 ## 🎯 Sesión 2026-08-13 (parte 3) — ISS-038: modal de foto tapado al elegir platos
 
 El usuario reportó: al elegir platos de un menú del día, tocar la foto no mostraba el

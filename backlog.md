@@ -43,6 +43,7 @@ Próximo número de issue libre: **ISS-036**.
 | **T8** | Resolver `authorizeRestaurante()`. | ⏸️ Bloqueada | **D2** |
 | **T9** | Pensionistas, pasos 6-12 (ver sección propia más abajo). | ⏸️ Parcial | **D5** |
 | **T10** | Abrir **ISS-037** con `issues/screenshots/visualización_fecha.png` — las fechas en Configuración de menú. (`opcional_1.png` y `opcional_2.png` **no** son issue, confirmado por el usuario.) Puede que ISS-035 ya lo haya resuelto: si no veía el stepper por el scroll, quizá tampoco veía el paso 3. **Verificar con ella antes de escribir código.** | 🟢 Listo para hacer | — |
+| **T12** | Generador masivo de QR de mesas (`generarQRsMesas()`, `config.js:262`): el PNG descargado por mesa hoy es **solo el QR**, sin el número "Mesa X" — es un `<span>` aparte que no viaja en la imagen exportada. Componer un canvas nuevo (QR + etiqueta) antes de exportar, listo para imprimir/cortar. Surgió del feedback de campo del piloto #1 (`vision_negocio.md` §16, hallazgo 3) — la dueña quiere acrílicos portátiles con número + QR para reasignar a mesas que se juntan; el generador `1..N` ya le sirve tal cual, solo falta que el PNG incluya el número. | 🟢 Listo para hacer, no urgente | — |
 
 ### C · La regla de orden que ya se cumplió
 

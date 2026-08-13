@@ -2,7 +2,7 @@
 
 > Este documento es la brújula del proyecto. Debe leerse al inicio de cada sesión de desarrollo
 > para garantizar que cada decisión técnica va en la dirección correcta.
-> Última actualización: 2026-07-09
+> Última actualización: 2026-08-13
 
 ---
 
@@ -519,3 +519,73 @@ Es un punto de contacto distinto (y activo) del principio 9 de la sección 11 �
 - ¿El owner del restaurante ve su propio número, o es solo visibilidad del admin de la plataforma (para no filtrar información competitiva entre restaurantes)?
 - ¿Cuándo se activa la conversación de venta de publicidad? (ej. umbral mínimo de restaurantes activos o de tráfico agregado mensual)
 - Implicancias de privacidad si se decide trackear visitantes únicos (el sistema hoy es 100% anónimo del lado del cliente — sección 9).
+
+---
+
+## 16. Feedback de campo — visitas a restaurantes piloto
+
+### Visita del 2026-08-12 — dueña del piloto #1
+
+El usuario visitó en persona a la dueña del piloto #1 (la misma del feedback de ISS-033/034/035, sesión 2026-08-12). Cuatro hallazgos:
+
+**1. Percepción general mejoró.** La dueña dijo que la app le parece mejor que la versión
+anterior y que ya no "se le paraba" tanto al entrar como antes. Sin fecha exacta de
+comparación, pero coincide con las semanas de estabilización reciente (ISS-026 — pedidos
+que no avanzaban de etapa por doble tap — y el trabajo de esta semana sobre scroll/cierre
+de caja). Señal positiva, sin acción pendiente.
+
+**2. Sigue usando el cuaderno en paralelo.** Razones textuales: *"hasta que los chicos se
+acostumbren"* y *"hasta que tenga una forma de cómo identificar las mesas"*. Es decir, dos
+motivos distintos — adopción del personal (tiempo, no producto) y un problema de producto
+real (punto 3). **No es una señal de alarma por sí sola** — es el patrón normal de
+transición de un sistema en papel a uno digital — pero si el cuaderno sigue en uso dentro
+de 3-4 semanas, ahí sí habría que investigar por qué no se soltó.
+
+**3. Mesas que se juntan pierden su numeración — problema real, con solución propia
+propuesta por la dueña.** Cita textual: *"Lo que pasa es que cuando varios chicos vienen,
+juntan las mesas, lo que las desordena, y mi idea ¿cuál es? colocar un acrílico o una
+especie de cartel con el número de la mesa y el qr así ya si vienen varios, coloco ese
+acrílico en medio de las 2 o 3 [mesas] que peguen y ya sé cuál es el número de esa
+mesa."*
+
+**Aclaración clave (corrige una lectura inicial equivocada):** los acrílicos son objetos
+**físicos portátiles**, no números fijos atados a una mesa de madera concreta. La dueña
+tendría, por ejemplo, 10 acrílicos ("Mesa 1" ... "Mesa 10", cada uno con su QR). Cuando
+varias mesas físicas se juntan para un grupo grande, ella coloca **uno solo** de esos
+acrílicos sobre el conjunto — no necesita un número combinado tipo "3+4", ni que el
+sistema sepa que las mesas se juntaron. Para el sistema sigue siendo, simplemente,
+"Mesa 3".
+
+Con esa aclaración, el generador masivo de QRs que ya existe (`generarQRsMesas()`,
+`config.js:262`, mesas `1..N`) **es exactamente lo que necesita** para la parte de
+generar los QRs — no hace falta ningún número especial ni cambio en cómo `mesa` viaja
+como parámetro de URL (`menu.html:314`).
+
+**El problema real está en la descarga, no en la generación:** verificado en el código
+que el botón "⬇ PNG" de cada mesa (`config.js:284-294`) descarga **solo el QR**, sin el
+número — el texto "Mesa X" que se ve en pantalla es un `<span>` aparte, no forma parte
+de la imagen exportada. Si ella imprime esos PNGs para armar los acrílicos, le saldrían
+varios cuadraditos de QR idénticos, sin ningún número visible en el papel — justo lo
+que necesita reconocer de un vistazo al acercarse a una mesa.
+
+**Tarea anotada para más tarde (no urgente, sin fecha):** que el PNG descargado incluya
+el número "Mesa X" dentro de la misma imagen (QR + etiqueta, listo para imprimir/cortar),
+componiendo un canvas nuevo en vez de exportar el canvas del QR solo. Con eso, el
+generador masivo ya cubre el caso completo sin ningún desarrollo adicional. Agregada a
+`backlog.md` como tarea de una sesión futura.
+
+**4. Fricción confirmada en el flujo de pago Yape/Plin.** Cita textual de clientas del
+restaurante: *"lo único incómodo es que tenemos que entrar a Yape, hacer el Yape,
+capturar y luego recién subir la captura, no hay ninguna validación directa y es medio
+incómodo tantos pasos para pagar, medio confuso."*
+
+Esto es exactamente el trade-off que ya se investigó y se cerró por diseño en **Gap 16**
+(`§13`, arriba): un deep link real de Yape que evite la captura de pantalla manual existe,
+pero requiere afiliación del restaurante a una pasarela de pago (Mercado Pago/Culqi/Izipay)
+con costo por transacción — se decidió inviable el 2026-07-13. Este feedback **confirma
+con datos reales que la fricción existe y la sienten los clientes**, pero no cambia la
+conclusión técnica/económica de esa decisión — el gap sigue cerrado salvo que cambie el
+contexto del negocio (más volumen, capacidad de absorber el costo por transacción).
+Lo que sí es replanteable sin pasarela: revisar si el flujo de 3 pantallas
+(pago → repaso → confirmar, Gap 17) puede acortarse en pasos, sin tocar el mecanismo de
+comprobante en sí. Sin diseño aún — anotado para evaluar, no urgente.
