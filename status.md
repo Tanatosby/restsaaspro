@@ -2,6 +2,20 @@
 
 ---
 
+## 🚀 Deploy 2026-08-13 — confirmado por el usuario
+
+`git pull origin main` + reinicio en el servidor, hasta `b38f106`. Quedan resueltos los
+"Pendiente: deploy" de 4 commits que se habían ido acumulando:
+
+- `69379df` — fix(seguridad): 14 rutas del panel pedían login pero no permisos (ISS-033)
+- `ee0194c` — fix(piloto): cierre de caja sin comprobante (ISS-034) y scroll que no vuelve arriba (ISS-035) — deploy ámbar (SW bumpeado a v8), **sigue pendiente la verificación manual en un celular real**
+- `a1e9755` — fix(reservas): D1 — permitir reservar con el restaurante cerrado si la hora pedida cae en horario
+- `b38f106` — fix(reservas): T3 — botón de reservar ya no se bloquea con el restaurante cerrado
+
+**Producción queda al día con `main`.**
+
+---
+
 ## 🎯 Sesión 2026-08-13 — D1 resuelta: reservar con el restaurante cerrado
 
 **Decisión del usuario (D1):** sí se puede reservar con el restaurante cerrado, siempre
@@ -25,7 +39,8 @@ casos nuevos (hora futura fuera de horario con "ahora" cerrado → bloqueado; si
 (POST del owner), que sigue sin validar horario en absoluto — eso es **T3**, ahora
 desbloqueada por esta decisión.
 
-**Pendiente: deploy** — preguntar al usuario cuando corresponda.
+**Commit:** `a1e9755`, pusheado a `main`. **Deploy confirmado por el usuario 2026-08-13**
+junto con `b38f106` (T3, ver sesión siguiente).
 
 ---
 
@@ -69,10 +84,10 @@ real. Comentario del endpoint actualizado para dejarlo explícito.
   por una razón ajena al cambio (`fecha en el pasado`, no horario). Reemplazadas por
   fechas relativas a "hoy" para que no se pudra de nuevo.
 
-**Commit:** pendiente (preguntar antes de hacer commit + push).
+**Commit:** `b38f106`, pusheado a `main`.
 
-**Pendiente: deploy** — este cambio es 🟢 verde (frontend + comentario, cubierto por el
-script de Playwright), se puede desplegar cualquier noche después de las 18:00.
+**Deploy confirmado por el usuario 2026-08-13.** Junto con `a1e9755` (D1, backend), ambos
+ya están en producción.
 
 ---
 
@@ -167,7 +182,8 @@ importado en `menu.js:5` y además lee `req.user.restaurante_id` cuando el JWT g
 **Este fix es requisito previo al paso 7 de Pensionistas** (`pensionista.html`): hoy la
 exposición es teórica porque no existe ninguna cuenta de pensionista.
 
-**Pendiente: deploy** — preguntar al usuario cuando corresponda.
+**Deploy confirmado por el usuario 2026-08-13** (commit `69379df`), junto con el resto
+de commits pendientes hasta `b38f106`.
 
 ### Corrección de encuadre: la carga es una SEMANA, no un día
 
@@ -206,12 +222,18 @@ Pensionistas, que meten una tercera fuente dentro de `colaDia.js`).
   fix de scroll no llegaría nunca a los celulares con la PWA instalada (escenario ISS-022).
   Esto hace que **este deploy sea ámbar**: conviene verificarlo en un celular real.
 
-**406/406 jest verde** + `node --check` sobre `pedidos.js` y `sw.js`. Falta la prueba
-manual en producción de ambos.
+**406/406 jest verde** + `node --check` sobre `pedidos.js` y `sw.js`.
 
-**T4 (filtro de fecha en `/api/orders/activas`) queda desbloqueada**, pero no se debe
-tocar hasta que ISS-034 esté **desplegado y verificado**: hasta entonces, ese endpoint sin
-filtro sigue siendo la única vía de la dueña para confirmar pagos viejos.
+**Deploy confirmado por el usuario 2026-08-13** (commit `ee0194c`), junto con el resto de
+commits pendientes hasta `b38f106`. ⚠️ **Sigue faltando la verificación manual en un
+celular real** que este mismo bloque pedía por ser deploy ámbar (SW bumpeado a v8) — el
+deploy no es lo mismo que confirmar que el fix de scroll llegó a un celular con la PWA ya
+instalada. No dar por cerrado ISS-035 hasta esa prueba.
+
+**T4 (filtro de fecha en `/api/orders/activas`) queda desbloqueada** ahora que ISS-034
+está desplegado — pero conviene esperar a la verificación manual de arriba antes de
+tocarla: hasta confirmarla, ese endpoint sin filtro sigue siendo la única vía de la dueña
+para confirmar pagos viejos si algo salió mal en el deploy.
 
 ### Cierre de sesión
 
@@ -279,7 +301,8 @@ pero infla el conteo total reportado por `npx jest` sin filtro.
 `utils/colaDia.js` (Cola del día + Cocina) con tag visual 🪪, agregar `pensionista:
 '/pensionista.html'` a `ROLE_REDIRECT` en `login.html`, construir `public/pensionista.html` y el
 panel "Pensionistas" en `owner.html`, y la reportería separada (recargas vs. consumo) de
-`pensionistas.md` §8. **Pendiente: deploy** — preguntar al usuario cuando corresponda.
+`pensionistas.md` §8. **Deploy confirmado** — el usuario lo confirmó al inicio de la
+sesión 2026-08-12 (ver esa sección); esta nota había quedado desactualizada.
 
 ---
 

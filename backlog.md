@@ -34,7 +34,7 @@ Próximo número de issue libre: **ISS-036**.
 |---|---|---|---|
 | ~~**T1**~~ | ~~Cierre de caja: comprobante + botón "Confirmar pago"~~ | ✅ **Hecho 2026-08-12** — `ISS-034`. Desbloquea T4. Pendiente de deploy | — |
 | ~~**T2**~~ | ~~Reset de scroll al cambiar de panel~~ | ✅ **Hecho 2026-08-12** — `ISS-035`. Ojo: **no** era `window.scrollTo()`; el scroll vive en `.content`. SW bumpeado a v8 → deploy **ámbar** | — |
-| ~~**T3**~~ | ~~Reservas y horario: `min`/`max` en `res-fecha`/`res-hora` + quitar el gate de "abierto ahora" del botón reservar.~~ | ✅ **Hecho 2026-08-13**, alcance reducido — ver detalle abajo. Pendiente de deploy | ~~D1~~ |
+| ~~**T3**~~ | ~~Reservas y horario: `min`/`max` en `res-fecha`/`res-hora` + quitar el gate de "abierto ahora" del botón reservar.~~ | ✅ **Hecho y desplegado 2026-08-13**, alcance reducido — ver detalle en `status.md` | ~~D1~~ |
 | **T4** | Filtro de fecha + fin del N+1 en `GET /api/orders/activas`, migrándolo a `utils/colaDia.js`. | 🟢 **Desbloqueada** — T1 ya está hecho, pero **esperar a que T1 esté desplegado y verificado en producción** antes de tocar esto | **T1** ⚠️ |
 | **T11** | **Arranque lento de la app** (1ª apertura no entra, 2ª rápida). 4 hosts externos bloqueantes en el `<head>`, 17 scripts sin `defer`, y el SW **no cachea los módulos JS** (no hay un solo `cache.put`). Ver diagnóstico en `status.md`. | 🔴 Diagnosticado, sin implementar. Abrir **ISS-036** | — |
 | **T5** | Contador **"menús vendidos hoy"** — número grande y visible, unificando órdenes y reservas. | 🟢 Listo para hacer | — |
