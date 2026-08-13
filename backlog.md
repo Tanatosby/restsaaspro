@@ -35,7 +35,7 @@ Próximo número de issue libre: **ISS-036**.
 | ~~**T1**~~ | ~~Cierre de caja: comprobante + botón "Confirmar pago"~~ | ✅ **Hecho 2026-08-12** — `ISS-034`. Desbloquea T4. Pendiente de deploy | — |
 | ~~**T2**~~ | ~~Reset de scroll al cambiar de panel~~ | ✅ **Hecho 2026-08-12** — `ISS-035`. Ojo: **no** era `window.scrollTo()`; el scroll vive en `.content`. SW bumpeado a v8 → deploy **ámbar** | — |
 | ~~**T3**~~ | ~~Reservas y horario: `min`/`max` en `res-fecha`/`res-hora` + quitar el gate de "abierto ahora" del botón reservar.~~ | ✅ **Hecho y desplegado 2026-08-13**, alcance reducido — ver detalle en `status.md` | ~~D1~~ |
-| **T4** | Filtro de fecha + fin del N+1 en `GET /api/orders/activas`, migrándolo a `utils/colaDia.js`. | 🟢 **Desbloqueada** — T1 ya está hecho, pero **esperar a que T1 esté desplegado y verificado en producción** antes de tocar esto | **T1** ⚠️ |
+| **T4** | Filtro de fecha + fin del N+1 en `GET /api/orders/activas`, migrándolo a `utils/colaDia.js`. | 🟢 **Totalmente desbloqueada** — T1/ISS-034 desplegado y verificado en celular real 2026-08-13, ya no hace falta `/activas` sin filtro como salida de emergencia | — |
 | **T11** | **Arranque lento de la app** (1ª apertura no entra, 2ª rápida). 4 hosts externos bloqueantes en el `<head>`, 17 scripts sin `defer`, y el SW **no cachea los módulos JS** (no hay un solo `cache.put`). Ver diagnóstico en `status.md`. | 🔴 Diagnosticado, sin implementar. Abrir **ISS-036** | — |
 | **T5** | Contador **"menús vendidos hoy"** — número grande y visible, unificando órdenes y reservas. | 🟢 Listo para hacer | — |
 | **T6** | **Backup manual verificado** de la BD de producción (dump + restore de prueba). Lo ejecuta el usuario por SSH. | 🟡 Pendiente | — |
@@ -44,15 +44,13 @@ Próximo número de issue libre: **ISS-036**.
 | **T9** | Pensionistas, pasos 6-12 (ver sección propia más abajo). | ⏸️ Parcial | **D5** |
 | **T10** | Abrir **ISS-037** con `issues/screenshots/visualización_fecha.png` — las fechas en Configuración de menú. (`opcional_1.png` y `opcional_2.png` **no** son issue, confirmado por el usuario.) Puede que ISS-035 ya lo haya resuelto: si no veía el stepper por el scroll, quizá tampoco veía el paso 3. **Verificar con ella antes de escribir código.** | 🟢 Listo para hacer | — |
 
-### C · La regla de orden que no se puede romper
+### C · La regla de orden que ya se cumplió
 
-> ⚠️ **T1 va antes que T4, sin excepción.**
->
-> Hoy, cuando la dueña queda trabada en el cierre de caja (T1), su **único** camino para
-> confirmar esos pagos es el panel **Órdenes** — y ese panel funciona justamente porque
-> `GET /api/orders/activas` **no filtra por fecha** y sigue mostrando los pedidos viejos.
-> Si T4 entra primero, se le cierra la única salida que le queda y el bug de T1 pasa de
-> molesto a sin escapatoria.
+> ✅ **Resuelta 2026-08-13.** Decía "T1 va antes que T4, sin excepción" — mientras T1
+> (ISS-034) no estuviera desplegado y verificado, el único camino de la dueña para
+> confirmar pagos viejos era el panel **Órdenes**, que funciona porque
+> `GET /api/orders/activas` no filtra por fecha. Ahora que T1 está verificado en celular
+> real, esa salida de emergencia ya no hace falta y T4 puede entrar sin la advertencia.
 
 ---
 

@@ -61,5 +61,6 @@ nota. Es exactamente el escenario de ISS-022.
 `grep` confirma `scrollPanelArriba` definida una vez (`owner.html:1280`) y llamada dos
 (`:1298` en `showPanel`, `:1318` en `switchTab`). 406/406 jest verde.
 
-**Pendiente: prueba manual en un celular** — scrollear hasta abajo en un panel, saltar a
-otro y verificar que abre arriba con la flecha visible.
+**Verificado en celular real 2026-08-13** — el usuario confirmó: el scroll vuelve arriba
+al cambiar de panel y la flecha "← Volver" aparece con claridad. El bump a `menupro-v8`
+sí llegó a la PWA instalada. Issue cerrado por completo.

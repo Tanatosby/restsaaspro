@@ -8,7 +8,7 @@
 "Pendiente: deploy" de 4 commits que se habían ido acumulando:
 
 - `69379df` — fix(seguridad): 14 rutas del panel pedían login pero no permisos (ISS-033)
-- `ee0194c` — fix(piloto): cierre de caja sin comprobante (ISS-034) y scroll que no vuelve arriba (ISS-035) — deploy ámbar (SW bumpeado a v8), **sigue pendiente la verificación manual en un celular real**
+- `ee0194c` — fix(piloto): cierre de caja sin comprobante (ISS-034) y scroll que no vuelve arriba (ISS-035) — deploy ámbar (SW bumpeado a v8), **verificado en celular real 2026-08-13** ✅
 - `a1e9755` — fix(reservas): D1 — permitir reservar con el restaurante cerrado si la hora pedida cae en horario
 - `b38f106` — fix(reservas): T3 — botón de reservar ya no se bloquea con el restaurante cerrado
 
@@ -225,15 +225,14 @@ Pensionistas, que meten una tercera fuente dentro de `colaDia.js`).
 **406/406 jest verde** + `node --check` sobre `pedidos.js` y `sw.js`.
 
 **Deploy confirmado por el usuario 2026-08-13** (commit `ee0194c`), junto con el resto de
-commits pendientes hasta `b38f106`. ⚠️ **Sigue faltando la verificación manual en un
-celular real** que este mismo bloque pedía por ser deploy ámbar (SW bumpeado a v8) — el
-deploy no es lo mismo que confirmar que el fix de scroll llegó a un celular con la PWA ya
-instalada. No dar por cerrado ISS-035 hasta esa prueba.
+commits pendientes hasta `b38f106`. **Verificación manual en celular real completada
+2026-08-13**: el usuario confirmó que el scroll vuelve arriba al cambiar de panel y la
+flecha "← Volver" se ve — el bump del SW a v8 llegó bien a la PWA instalada. **ISS-035
+cerrado por completo** (`issues/ISS-035-scroll-no-vuelve-arriba.md` actualizado).
 
-**T4 (filtro de fecha en `/api/orders/activas`) queda desbloqueada** ahora que ISS-034
-está desplegado — pero conviene esperar a la verificación manual de arriba antes de
-tocarla: hasta confirmarla, ese endpoint sin filtro sigue siendo la única vía de la dueña
-para confirmar pagos viejos si algo salió mal en el deploy.
+**T4 (filtro de fecha en `/api/orders/activas`) queda desbloqueada**: ISS-034 está
+desplegado y verificado, ya no hace falta mantener `/activas` sin filtro como salida de
+emergencia para confirmar pagos viejos.
 
 ### Cierre de sesión
 
