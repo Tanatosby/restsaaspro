@@ -754,7 +754,10 @@ body {
    MODAL DE FOTO (zoom al tap)
    ────────────────────────────────────────────────────────────── */
 .photo-modal {
-  display: none; position: fixed; inset: 0; z-index: 110;
+  /* z-index por encima de MenuModal (.mm-overlay, 1500) — el zoom de foto
+     puede abrirse desde dentro de esa hoja al elegir platos, y debe quedar
+     siempre arriba de lo que lo haya abierto. Ver ISS-038. */
+  display: none; position: fixed; inset: 0; z-index: 1600;
   background: rgba(0,0,0,0.88);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   animation: fadeIn .2s ease;

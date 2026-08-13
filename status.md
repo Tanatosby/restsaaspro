@@ -2,6 +2,36 @@
 
 ---
 
+## 🎯 Sesión 2026-08-13 (parte 3) — ISS-038: modal de foto tapado al elegir platos
+
+El usuario reportó: al elegir platos de un menú del día, tocar la foto no mostraba el
+zoom encima — aparecía "por debajo". Recién al tocar "Agregar pedido" salía el fondo
+negro con la foto.
+
+**Causa:** el paso "elige tus platos" es la hoja `MenuModal` (`.mm-overlay`, `z-index:
+1500`). Dentro de ella, tocar la foto de un plato abre `#photo-modal`, que tenía
+`z-index: 110` — muy por debajo. El modal de foto se abría igual, pero quedaba apilado
+detrás de la hoja. Al cerrar la hoja con "Agregar pedido", el modal de foto (que seguía
+abierto) se hacía visible recién ahí.
+
+**Fix:** `.photo-modal` subido a `z-index: 1600` (`menu.css:757`) — por encima del único
+overlay que carga `menu.html` (`menu-modal.js`; los widgets con z-index más alto —
+`plato-picker.js`, `photo-editor.js`, `form-modal.js` — son de `owner.html`, no de esta
+pantalla).
+
+**Verificación:** nuevo `scripts/test-photo-modal-zindex.js` (Playwright) — abre
+`MenuModal` con datos sintéticos, simula el tap real en la foto y confirma con
+`document.elementFromPoint()` que el modal de foto queda visible en el centro de
+pantalla, no la hoja. **6/6 verde.** `npx jest tests/`: **754/754 verde** (CSS puro, sin
+tocar backend).
+
+**Documentado:** `issues/ISS-038-modal-foto-tapado-por-menumodal.md` + `issues/ISSUES.md`.
+
+**Pendiente: deploy** — este cambio es 🟢 verde (CSS puro, un solo valor), se puede
+desplegar cualquier noche después de las 18:00.
+
+---
+
 ## 🚀 Deploy 2026-08-13 — confirmado por el usuario
 
 `git pull origin main` + reinicio en el servidor, hasta `b38f106`. Quedan resueltos los
