@@ -2,6 +2,57 @@
 
 ---
 
+## 🎯 Sesión 2026-08-13 (parte 6) — Piloto #1: delegación, no rechazo al producto
+
+**Prompt del usuario:** relató en vivo, a lo largo de la conversación, el día 2 de la vuelta
+a pruebas de la dueña del piloto #1: llegó tarde, dejó a un encargado sin entrenar, no
+revisó reservas reales que entraron por QR, y el push no le sonó en su celular (sí suena en
+el demo). Terminó preguntando si convenía pausar este piloto e ir a buscar un restaurante
+que sí delegue en su personal.
+
+**Sin cambios de código en esta sesión** — es una conversación de diagnóstico y estrategia
+de producto/negocio, no una tarea técnica.
+
+**Diagnóstico construido en la conversación:** el fallo de hoy no es rechazo al producto —
+el lado cliente funcionó (reservas reales por QR sin fricción). Es un bloqueo operativo
+estructural: el sistema depende de que la dueña esté presente y atenta porque no delega su
+uso en el personal, pese a que se le sugirió entrenar a alguien varias veces. Hipótesis
+sostenida: no delega porque ella misma todavía no domina el sistema al 100% (pocos días
+reales de uso acumulados desde julio) — la delegación sigue al dominio personal, no lo
+precede. Insistirle de nuevo en que entrene a alguien no es el camino ahora.
+
+**Decisión tomada:** no pausar el piloto #1. No se cumplió el checkpoint propio de 3-4
+semanas fijado el 2026-08-12. Sumar un piloto #3 con perfil de equipo/delegación (para
+validar el flujo mozo/cocinero, que ningún piloto actual permite probar) queda anotado como
+idea a evaluar **en paralelo, no en reemplazo**, sin candidato concreto identificado a la
+fecha.
+
+**Recomendación a transmitirle a la dueña (pendiente, próxima conversación):** revisar el
+celular en el camino si vuelve a llegar tarde — resuelve su miedo puntual sin tocar el tema
+sensible de la confianza en su personal. Es el argumento del producto que no depende de que
+delegue en nadie: a diferencia del cuaderno, la app se puede consultar sin estar en el
+local.
+
+**Chequeo técnico pendiente, sin diagnosticar todavía:** por qué no sonó el push en su
+celular específico (permiso revocado, ahorro de batería, suscripción no confirmada) —
+vinculado a la pieza de `ISS-025` que sigue abierta (visibilidad del estado de suscripción
+en Configuración).
+
+**Documentado:** `pilotos.md` — nueva sección "Piloto #1 — continuación: retoma de pruebas,
+agosto 2026" (timeline, hallazgos, reencuadre, aprendizajes, pendientes), sin sobreescribir
+la entrada de julio. `backlog.md` — actualizada la tabla "Lo que revelaron los pilotos" con
+el hallazgo del 2026-08-13.
+
+**Apreciación:** el hallazgo más valioso de la sesión no es técnico — es haber evitado sacar
+una conclusión prematura sobre el piloto en base a un día atípico (negocio a cargo de un
+encargado sin entrenar, en plena semana de carga real). El mismo rigor que ya se había
+aplicado en julio (cruzar la queja contra el estado técnico real antes de leerla como
+resistencia) se sostuvo acá: la explicación estructural (no delega porque no domina aún) es
+más simple y mejor sustentada que "no es el target", y no requiere abandonar 6+ semanas de
+relación y contexto acumulado con la única señal de vuelta a probar.
+
+---
+
 ## 🎯 Sesión 2026-08-13 (parte 5) — ISS-039: pedido colgado en "Enviando…"
 
 **Prompt del usuario:** "¿Por qué razones dejaría en status 'enviando' el pedido desde la

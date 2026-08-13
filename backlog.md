@@ -148,6 +148,20 @@ pruebas existen para encontrar y arreglar estos problemas, no para esperar.
 
 Con el piloto #2 se va más lento; con la señora de ~45 se retoma el contacto.
 
+**Actualización 2026-08-13 (día 2 de la semana de carga real):** la dueña llegó tarde,
+dejó a un encargado sin entrenar (por elección propia, pese a que se le sugirió varias
+veces) y no revisó las reservas reales que entraron por QR ese día — ni el push le sonó en
+su celular (sí suena en el demo, causa técnica sin confirmar todavía). Diagnóstico: no es
+rechazo al producto — el lado cliente ya funciona — es un bloqueo operativo estructural:
+el sistema depende de que ella esté presente porque no delega, probablemente porque
+todavía no domina la herramienta al 100% ella misma. Se evaluó pausar el piloto e ir a
+buscar un restaurante que sí delegue en su personal (para validar el flujo mozo/cocinero,
+que ningún piloto actual permite probar) — **decisión: no pausar todavía**, no se cumplió
+el plazo propio de 3-4 semanas fijado el 12/08. Sumar un piloto #3 con perfil delegador
+queda anotado como idea en paralelo, sin candidato identificado. Detalle completo,
+timeline y próximos pasos en `pilotos.md` → "Piloto #1 — continuación: retoma de pruebas,
+agosto 2026".
+
 ---
 
 ## P0 — Features que salen directo de las pruebas

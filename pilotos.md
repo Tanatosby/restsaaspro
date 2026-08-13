@@ -76,6 +76,89 @@ La lectura inicial fue "resistencia al cambio". Cruzando el timeline contra el h
 
 ---
 
+## Piloto #1 — continuación: retoma de pruebas, agosto 2026
+
+Cumpliendo el punto 7 de arriba: la dueña volvió de la pausa y retomó pruebas justo en la
+primera semana de carga real del negocio (+60 menús/día, miércoles a sábado). Esta entrada
+no reemplaza la de julio — es la evolución.
+
+### Timeline
+
+| Fecha | Evento |
+|-------|--------|
+| 2026-08-12 (martes) | Visita en persona del usuario. 4 hallazgos — detalle completo en `vision_negocio.md` §16 (percepción mejoró; sigue el cuaderno en paralelo "hasta que los chicos se acostumbren" / "hasta que tenga forma de identificar las mesas"; problema real de numeración de mesas al juntarse, con solución propia de la dueña; fricción confirmada por clientas en el pago Yape/Plin). |
+| 2026-08-13 (miércoles) | Día 2 de la semana de carga real. La dueña llegó tarde y dejó a un encargado a cargo del local. Entraron **más de una reserva real por el QR** y no las revisó — el cuaderno siguió siendo la única fuente que miró. |
+
+### Hallazgos del 2026-08-13
+
+**1. El push no sonó en su celular.** Confirmado explícitamente por ella ("no le vibró ni le
+sonó nada"). En el celular demo del usuario sí suena — descarta que el sistema esté roto en
+general, pero deja abierta la duda sobre su suscripción/celular específico (permiso
+revocado, ahorro de batería matando el service worker, o suscripción nunca confirmada). Sin
+diagnosticar todavía — `Configuración` no muestra el estado de la suscripción (pieza de
+`ISS-025` que sigue abierta, ver `backlog.md` § P0 Operativo).
+
+**2. El encargado que la cubrió no usa la app — por elección de ella, no por falta de
+tiempo.** El usuario ya le había sugerido varias veces que entrene a alguien para cuando
+ella no esté, y no lo hizo. Ella misma, al preguntarle por qué no revisó las reservas,
+contestó: *"hoy el problema es que llegué tarde, así que mañana llegaré temprano"* —
+una explicación real pero parcial: no aborda que, aunque el push hubiera sonado, no había
+nadie presente capaz de actuar sobre él.
+
+### Reencuadre
+
+El fallo de hoy no es evidencia de rechazo al producto ni de "target equivocado" — de hecho
+el lado del cliente funcionó: hubo reservas reales entrando por el QR sin fricción, la señal
+que faltaba en julio. El bloqueo está 100% del lado operativo, y es estructural, no
+anecdótico: **el sistema depende de que una sola persona (la dueña) esté presente y
+atenta**, porque ella no delega su uso en el personal.
+
+La hipótesis más sostenida (del usuario, con base en el patrón observado): no delega porque
+ella misma todavía no domina el sistema al 100% — con solo 2-3 días reales de uso
+acumulados desde julio (cortados por vacaciones), es poco tiempo para pedirle que además
+sea quien capacita a otra persona. La delegación normalmente **sigue** al dominio personal,
+no lo precede.
+
+**Se evaluó pausar el piloto #1** e ir directamente a reclutar un restaurante que sí delegue
+en su personal, para poder validar por fin el flujo multi-rol (mozo/cocinero) que ningún
+piloto actual permite probar — ni este (no delega) ni el piloto #2 (ni siquiera lograba
+loguearse). **Decisión: no pausar todavía.** No se cumplió el plazo propio fijado el
+2026-08-12 (3-4 semanas antes de sacar conclusiones sobre el cuaderno), y el lado cliente ya
+está funcionando. Sumar un piloto #3 con perfil de equipo/delegación queda como algo a hacer
+**en paralelo, no en reemplazo**, si aparece un candidato concreto — a la fecha no hay uno
+identificado. Nota de negocio pendiente si se concreta: `backlog.md` fija que desde el
+restaurante #3 se cobra — habría que decidir explícitamente si este entra gratis o pago.
+
+### Aprendizajes
+
+- **La delegación sigue al dominio personal, no lo precede.** Insistirle a un dueño que
+  entrene a su personal antes de que él mismo se sienta firme con la herramienta es pedirle
+  un paso que todavía no puede dar — no es terquedad, es no poder enseñar lo que uno no
+  domina.
+- **El verdadero diferencial frente al cuaderno, en este caso, no es la velocidad — es que
+  se puede revisar de forma remota.** El cuaderno es inútil si la dueña no está físicamente
+  en el local; la app no. Ese argumento resuelve su miedo puntual (llegar tarde) sin tocar
+  el tema sensible de la confianza en su personal.
+- **Un día cubierto por un encargado sin entrenar es evidencia de baja calidad sobre
+  adopción.** No sorprende que no se haya usado la app — confirma un hueco ya conocido
+  (12/08), no revela uno nuevo. No inflar su peso en la lectura general del piloto.
+
+### Pendiente / próximos pasos
+
+1. Próxima conversación con ella: sugerirle revisar el celular en el camino si vuelve a
+   llegar tarde — resuelve su problema concreto sin pedirle que confíe en su personal.
+2. No insistir por ahora en que entrene a su encargado — ya se le pidió 3 veces sin efecto;
+   dejar que se resuelva con más tiempo de uso propio.
+3. Chequeo técnico pendiente: confirmar si su celular específico recibe el push (posible
+   causa: permiso revocado, ahorro de batería, suscripción no confirmada) — vinculado a la
+   pieza de `ISS-025` aún abierta (visibilidad del estado de suscripción en Configuración).
+4. Mantener el checkpoint de 3-4 semanas fijado el 2026-08-12 antes de concluir nada sobre
+   el cuaderno.
+5. Si aparece un candidato concreto para piloto #3 con perfil de equipo/delegación,
+   evaluarlo en paralelo — sin urgencia, sin candidato identificado a la fecha.
+
+---
+
 ## Plantilla para el próximo piloto
 
 ```
