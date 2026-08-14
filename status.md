@@ -2,6 +2,59 @@
 
 ---
 
+## 🎯 Sesión 2026-08-14 — 3 issues nuevos documentados (sin implementar todavía)
+
+**Prompt del usuario:** trajo 3 problemas encontrados en el flujo real del piloto. Pidió
+explícitamente **documentar primero, con prioridad urgente/la más alta, sin implementar
+nada todavía**.
+
+1. **ISS-040** — al comensal no le aparece el monto a pagar en la pantalla de Yape/Plin,
+   justo cuando lo necesita para hacer la transferencia. El total se calcula
+   (`pagoPendiente.total`) pero nunca se pinta en `#pago-screen` — solo aparece antes (en el
+   carrito) y después (recién en el repaso final, cuando ya pagó). Fix acotado, 100%
+   frontend.
+2. **ISS-041** — un comensal que agrega 2 menús del día distintos (ej. 2 combinaciones de
+   entrada+segundo) en un mismo pedido: al llegar al panel del owner/cocina, los platos
+   aparecen en una lista plana, sin forma de saber qué entrada va con qué segundo. Causa
+   raíz: `confirmarPedido()`/`confirmarReserva()` aplanan (`flatMap`) todos los menús del
+   carrito antes de enviarlos, y las tablas `orden_menu_items`/`reserva_menu_items` no
+   tienen ninguna columna de agrupación — el dato se pierde antes de llegar al backend, no
+   es recuperable sin migración de esquema. Reproducido el mismo listado plano en 4 lugares:
+   `ordenes.js`, `cocina.js` (×2), `pedidos.js`. Es el más grande de los tres — requiere
+   migración de esquema + cambios en frontend y backend.
+3. **ISS-042** — la etiqueta "para llevar" no le llega al cocinero. El dato (`modalidad`) ya
+   viaja del backend (`utils/colaDia.js` lo selecciona), pero `cocina.js` nunca lo lee ni lo
+   muestra en el ticket — a diferencia de otras pantallas del panel que sí lo usan. Fix
+   acotado, 100% frontend, el dato ya está disponible.
+
+**Documentado:** `issues/ISS-040-monto-no-visible-en-pago.md`,
+`issues/ISS-041-menus-multiples-sin-anidar.md`,
+`issues/ISS-042-para-llevar-no-viaja-cocina.md` + `issues/ISSUES.md` (nueva sección "Fix
+pendiente" con los 3, prioridad 🔴 Crítica).
+
+**Sin cambios de código en esta sesión** — a pedido explícito del usuario, es documentación
+pura. Los 3 quedan diagnosticados y listos para implementar cuando se apruebe.
+
+**Además, en la misma sesión:**
+- Formalizada en `pilotos.md` la convención **"Día N de retoma"** para el piloto #1 —
+  Día 1 = 2026-08-12, Día 2 = 2026-08-13, Día 3 = 2026-08-14 (hoy). De acá en adelante cada
+  entrada nueva de esa sección arranca con `### Día N (fecha) — título`, para no depender de
+  inferir la cuenta después.
+- Agregada a `pilotos.md` la entrada del Día 3: balance del usuario (la dueña necesita más
+  acompañamiento; los clientes se adaptaron mejor que ella; el cambio en el flujo de pago
+  mejoró notablemente el uso) + los 3 issues de arriba como evidencia de que esta ronda de
+  uso real está dando información valiosa.
+- `backlog.md` — nueva sección al tope, **"Empezar acá la próxima sesión"**, con ISS-040/041/042
+  como punto de entrada explícito (pedido del usuario: la próxima sesión arranca por las
+  tareas más urgentes). Corregido de paso el "próximo número de issue libre" desactualizado
+  (decía ISS-036, ya vamos por ISS-043).
+
+**Cierre de sesión — commit + push a `main` pedido explícitamente por el usuario**, sin
+deploy asociado (todo el trabajo de la sesión es documentación, sin tocar código de
+producción).
+
+---
+
 ## 🎯 Sesión 2026-08-13 (parte 6) — Piloto #1: delegación, no rechazo al producto
 
 **Prompt del usuario:** relató en vivo, a lo largo de la conversación, el día 2 de la vuelta

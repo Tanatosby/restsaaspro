@@ -8,7 +8,22 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 > (`conversacion_*.md`) y por lo tanto **no viajaba entre las 2 laptops del usuario**. Este archivo sí
 > está en git: es la copia viva del backlog. Actualizarlo al cerrar cada sesión.
 
-**Última actualización:** 2026-08-13
+**Última actualización:** 2026-08-14
+
+---
+
+## 🚨 Empezar acá la próxima sesión — 3 issues 🔴 Crítica sin implementar
+
+Salieron del uso real del piloto #1 el 2026-08-14 (Día 3 de retoma, ver `pilotos.md`).
+Documentados a pedido explícito del usuario, **todavía sin ningún código escrito**:
+
+| # | Título | Tamaño | Detalle |
+|---|--------|--------|---------|
+| [ISS-040](issues/ISS-040-monto-no-visible-en-pago.md) | El comensal no ve el monto a pagar en la pantalla de Yape/Plin | Chico, solo frontend | `menu.html` — `pagoPendiente.total` se calcula pero no se pinta en `#pago-screen` |
+| [ISS-041](issues/ISS-041-menus-multiples-sin-anidar.md) | 2 menús del día en un mismo pedido no se pueden diferenciar en cocina/panel | Grande — requiere migración de esquema | Se pierde el agrupamiento entrada/segundo al aplanar el carrito antes de enviarlo; falta columna `grupo` en `orden_menu_items`/`reserva_menu_items` |
+| [ISS-042](issues/ISS-042-para-llevar-no-viaja-cocina.md) | La etiqueta "para llevar" no le llega al cocinero | Chico, solo frontend | El backend ya devuelve `modalidad`; `cocina.js` nunca lo lee ni lo pinta |
+
+Próximo número de issue libre: **ISS-043**.
 
 ---
 
@@ -16,7 +31,8 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 
 **Lo que hay que resolver a continuación, separado en dos:** decisiones que dependen del
 usuario (nadie puede avanzarlas por su cuenta) y tareas ya definidas listas para ejecutar.
-Próximo número de issue libre: **ISS-036**.
+~~Próximo número de issue libre: ISS-036~~ — desactualizado, ver **ISS-043** en la sección de
+arriba.
 
 ### A · Decisiones pendientes del usuario
 

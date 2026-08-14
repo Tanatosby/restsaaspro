@@ -16,7 +16,11 @@ _(vacío)_
 
 ## Fix pendiente (diagnosticado, sin implementar)
 
-_(vacío)_
+| ID | Título | Módulo | Prioridad |
+|----|--------|--------|-----------|
+| [ISS-040](ISS-040-monto-no-visible-en-pago.md) | Monto a pagar no visible en la pantalla de Yape/Plin | `public/menu.html` | 🔴 Crítica |
+| [ISS-041](ISS-041-menus-multiples-sin-anidar.md) | Dos menús del día en un mismo pedido no se pueden diferenciar (requiere migración de esquema) | `menu.html`, `orders.js`, `reservations.js`, `ordenes.js`, `cocina.js`, `pedidos.js` | 🔴 Crítica |
+| [ISS-042](ISS-042-para-llevar-no-viaja-cocina.md) | Etiqueta "para llevar" no llega a la vista de Cocina | `public/js/modules/cocina.js` | 🔴 Crítica |
 
 ## Resueltos
 

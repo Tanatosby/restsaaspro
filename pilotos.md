@@ -82,14 +82,23 @@ Cumpliendo el punto 7 de arriba: la dueña volvió de la pausa y retomó pruebas
 primera semana de carga real del negocio (+60 menús/día, miércoles a sábado). Esta entrada
 no reemplaza la de julio — es la evolución.
 
+> **Convención de conteo, formalizada 2026-08-14:** esta vuelta a pruebas se cuenta en
+> **"Día N de retoma"**, empezando en **Día 1 = 2026-08-12** (visita en persona, primer
+> contacto de esta etapa). Cada día calendario que pasa suma uno, tenga o no un hallazgo
+> para registrar. De acá en adelante cada entrada nueva de esta sección arranca con
+> `### Día N (fecha) — título corto`, para no depender de inferir la cuenta después. El
+> checkpoint de 3-4 semanas fijado el 2026-08-12 sigue siendo una fecha calendario aparte
+> (no depende de este conteo de días).
+
 ### Timeline
 
-| Fecha | Evento |
-|-------|--------|
-| 2026-08-12 (martes) | Visita en persona del usuario. 4 hallazgos — detalle completo en `vision_negocio.md` §16 (percepción mejoró; sigue el cuaderno en paralelo "hasta que los chicos se acostumbren" / "hasta que tenga forma de identificar las mesas"; problema real de numeración de mesas al juntarse, con solución propia de la dueña; fricción confirmada por clientas en el pago Yape/Plin). |
-| 2026-08-13 (miércoles) | Día 2 de la semana de carga real. La dueña llegó tarde y dejó a un encargado a cargo del local. Entraron **más de una reserva real por el QR** y no las revisó — el cuaderno siguió siendo la única fuente que miró. |
+| Día de retoma | Fecha | Evento |
+|---|-------|--------|
+| Día 1 | 2026-08-12 (martes) | Visita en persona del usuario. 4 hallazgos — detalle completo en `vision_negocio.md` §16 (percepción mejoró; sigue el cuaderno en paralelo "hasta que los chicos se acostumbren" / "hasta que tenga forma de identificar las mesas"; problema real de numeración de mesas al juntarse, con solución propia de la dueña; fricción confirmada por clientas en el pago Yape/Plin). |
+| Día 2 | 2026-08-13 (miércoles) | Día 2 de la semana de carga real del negocio. La dueña llegó tarde y dejó a un encargado a cargo del local. Entraron **más de una reserva real por el QR** y no las revisó — el cuaderno siguió siendo la única fuente que miró. |
+| Día 3 | 2026-08-14 (jueves) | Check-in sin incidente puntual — balance general de adaptación (ver abajo) + 3 detalles de uso real que se documentaron como issues nuevos. |
 
-### Hallazgos del 2026-08-13
+### Día 2 (2026-08-13) — llegó tarde, encargado sin entrenar no revisó reservas
 
 **1. El push no sonó en su celular.** Confirmado explícitamente por ella ("no le vibró ni le
 sonó nada"). En el celular demo del usuario sí suena — descarta que el sistema esté roto en
@@ -156,6 +165,42 @@ restaurante #3 se cobra — habría que decidir explícitamente si este entra gr
    el cuaderno.
 5. Si aparece un candidato concreto para piloto #3 con perfil de equipo/delegación,
    evaluarlo en paralelo — sin urgencia, sin candidato identificado a la fecha.
+
+### Día 3 (2026-08-14) — seguimos en pruebas, adaptación gradual
+
+Seguimos en la misma etapa: la dueña se sigue adecuando al sistema poco a poco, todavía sin
+checkpoint cumplido (punto 4 de arriba). No es un evento puntual como el del Día 2 — es una
+lectura de cómo va el uso en general, útil precisamente porque de ahí van saliendo detalles
+concretos que ninguna prueba de escritorio muestra.
+
+**Balance reportado por el usuario:**
+
+- **La dueña necesita más acompañamiento al usar la app** — sigue sin sentirse del todo
+  autónoma. Coincide con la hipótesis ya registrada arriba (2026-08-13): la delegación en su
+  personal sigue frenada porque ella misma todavía no domina el sistema al 100%.
+- **Los clientes se adaptaron mejor que ella** — el lado comensal (pedir/reservar por QR) se
+  percibe más fácil de usar que el lado dueña/operación. Consistente con lo ya visto: el
+  flujo de cliente viene funcionando bien desde el hallazgo del 12/08 (reservas reales por
+  QR sin fricción).
+- **El cambio en el flujo de pago mejoró notablemente el uso.** No se precisó a cuál cambio
+  puntual se refiere (candidatos recientes: ISS-039, timeouts y mensajes de paso en
+  "Enviando…"; o mejoras previas de la pantalla de pago) — a confirmar en una próxima
+  conversación si vale la pena identificar cuál tuvo más impacto.
+
+**De esta ronda de uso real salieron 3 issues nuevos**, documentados el mismo día (sin
+implementar todavía, a pedido del usuario — quedan con prioridad 🔴 Crítica en
+`issues/ISSUES.md`):
+
+- [`ISS-040`](issues/ISS-040-monto-no-visible-en-pago.md) — el comensal no ve cuánto tiene
+  que pagar justo al momento de hacer el Yape/Plin.
+- [`ISS-041`](issues/ISS-041-menus-multiples-sin-anidar.md) — dos menús del día en un mismo
+  pedido no se pueden diferenciar en cocina/panel (qué entrada va con qué segundo).
+- [`ISS-042`](issues/ISS-042-para-llevar-no-viaja-cocina.md) — la etiqueta "para llevar" no
+  le llega al cocinero, aunque el dato ya existe en el backend.
+
+**Lectura:** el patrón se sostiene. Cuantas más horas reales acumula la dueña, más aparecen
+estos detalles finos (no fallas graves, sino fricciones puntuales en momentos específicos del
+flujo) — es la señal de que el uso está avanzando, no de que el producto esté fallando.
 
 ---
 
