@@ -1,6 +1,6 @@
 # ISS-041 — Dos menús del día en el mismo pedido no se pueden diferenciar
 
-**Estado:** ✅ **Resuelto 2026-08-16** — pendiente de deploy
+**Estado:** ✅ **Resuelto y desplegado 2026-08-16** (`291c15b`)
 **Módulo:** `public/menu.html` (`agregarMenu`, `confirmarPedido`, `confirmarReserva`),
 `routes/public.js` (`POST /orders`, `POST /reservations`), `routes/orders.js`,
 `routes/reservations.js`, tabla `orden_menu_items` / `reserva_menu_items`,
@@ -116,11 +116,33 @@ Reglas: no agrupa si algún ítem viene sin `grupo`, no agrupa si hay un solo me
 encabezado sobraría), y agrega el nombre solo si hay más de un tipo. Nueva clase
 `.menu-grupo-head` en `owner.css`, en línea propia entre el header y los platos.
 
-**Lo que NO se tocó, a propósito:** `contarUnidadesMenu()` en `utils/menuPricing.js` deduce
-cuántos menús físicos hay contando filas obligatorias, con un caso borde documentado que
-subestima cuando el menú no tiene secciones obligatorias. Ahora que existe `grupo`, ese
-conteo se podría hacer exacto — pero afecta el **cobro del tapper** (Gap 5), no la vista, y
-queda fuera del alcance acordado para este issue.
+**Lo que NO se tocó, a propósito → derivó en ISS-043.** `contarUnidadesMenu()` en
+`utils/menuPricing.js` deduce cuántos menús físicos hay contando filas de secciones
+obligatorias. Al revisar el alcance apareció que su caso borde documentado —menú con
+**todas** las secciones opcionales— no solo desajusta el conteo de tappers: **también cobra
+de menos el menú**. Verificado ejecutando `contarUnidadesMenu()` y `calcularMenuTotal()`
+sobre 7 escenarios:
+
+| Pedido | Debería | Cobra |
+|---|---|---|
+| 2 menús **sin** secciones obligatorias | S/ 22.00 · 2 unidades | **S/ 11.00 · 1 unidad** |
+| 3 menús **sin** secciones obligatorias | S/ 33.00 · 3 unidades | **S/ 11.00 · 1 unidad** |
+| 1, 2 o 3 menús **con** al menos 1 obligatoria | correcto | correcto |
+
+La causa es la otra mitad del archivo: `calcularPrecioUnitario()` reparte el precio de **un**
+menú entre todas las filas cuando `total_obligatorias = 0`, sin importar cuántas unidades se
+pidieron. Queda fuera del alcance de este issue porque es un problema de **cobro**, no de
+vista — se abre como **ISS-043**, y ahora se puede resolver bien contando grupos distintos en
+vez de deducirlos. Para confirmar si hay menús así en producción:
+
+```sql
+SELECT md.id, md.nombre, COUNT(ms.id_seccion_menu) AS secciones,
+       SUM(CASE WHEN ms.requerido=1 THEN 1 ELSE 0 END) AS obligatorias
+FROM menus_dia md
+LEFT JOIN menu_secciones ms ON ms.id_menu_dia = md.id
+GROUP BY md.id
+HAVING secciones > 0 AND obligatorias = 0;
+```
 
 ---
 
@@ -147,5 +169,5 @@ queda fuera del alcance acordado para este issue.
 
 ## Pendiente
 
-- **Deploy** (lo hace el usuario).
+- ~~Deploy~~ ✅ hecho el 2026-08-16 (`291c15b`).
 - Verificar en el servicio real del piloto #1 con un pedido de 2 menús.

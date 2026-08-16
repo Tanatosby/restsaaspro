@@ -1,6 +1,6 @@
 # ISS-042 — La etiqueta "para llevar" no llega a la vista de cocina
 
-**Estado:** ✅ **Resuelto 2026-08-16** — pendiente de deploy
+**Estado:** ✅ **Resuelto y desplegado 2026-08-16** (`291c15b`)
 **Módulo:** `public/js/modules/cocina.js` (`renderCocinaTicket`, `renderCocinaReserva`)
 **Prioridad:** 🔴 Crítica — el cocinero prepara el plato sin saber si va servido en mesa o
 tiene que envasarse para llevar, con riesgo real de preparar/emplatar distinto a lo pedido
@@ -95,5 +95,5 @@ cuatro casos juntos: para llevar, delivery, en local y reserva para llevar.
 
 ## Pendiente
 
-- **Deploy** (lo hace el usuario).
+- ~~Deploy~~ ✅ hecho el 2026-08-16 (`291c15b`).
 - Confirmar con la persona de cocina del piloto #1 que el badge se ve durante el servicio.

@@ -12,24 +12,57 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 
 ---
 
-## ✅ Los 3 críticos del piloto #1 están cerrados — falta desplegarlos
+## ✅ Los 3 críticos del piloto #1: resueltos y desplegados (2026-08-16, `291c15b`)
 
-Salieron del uso real el 2026-08-14 (Día 3 de retoma, ver `pilotos.md`) y **los tres se
-resolvieron el 2026-08-16**. Ninguno está en producción todavía:
+Salieron del uso real el 2026-08-14 (Día 3 de retoma, ver `pilotos.md`), se resolvieron y se
+desplegaron el 2026-08-16:
 
 | # | Título | Estado |
 |---|--------|--------|
-| ~~[ISS-040](issues/ISS-040-monto-no-visible-en-pago.md)~~ | El comensal no ve el monto a pagar en la pantalla de Yape/Plin | ✅ Bloque "Total a pagar" sticky en `#pago-screen`. SW → `menupro-v9`. **Deploy pendiente** |
-| ~~[ISS-042](issues/ISS-042-para-llevar-no-viaja-cocina.md)~~ | La etiqueta "para llevar" no le llega al cocinero | ✅ Badge 🥡/🛵 en los tickets; `badgeModalidad()` movida a `utils.js`. **Deploy pendiente** |
-| ~~[ISS-041](issues/ISS-041-menus-multiples-sin-anidar.md)~~ | 2 menús del día en un pedido no se pueden diferenciar | ✅ Columna `grupo` + `renderMenuAgrupado()` en las 4 vistas. **Migración de esquema — ver nota de deploy abajo.** |
+| ~~[ISS-040](issues/ISS-040-monto-no-visible-en-pago.md)~~ | El comensal no ve el monto a pagar en la pantalla de Yape/Plin | ✅ **En producción** — bloque "Total a pagar" sticky en `#pago-screen` |
+| ~~[ISS-042](issues/ISS-042-para-llevar-no-viaja-cocina.md)~~ | La etiqueta "para llevar" no le llega al cocinero | ✅ **En producción** — badge 🥡/🛵 en los tickets de cocina |
+| ~~[ISS-041](issues/ISS-041-menus-multiples-sin-anidar.md)~~ | 2 menús del día en un pedido no se pueden diferenciar | ✅ **En producción** — columna `grupo` + `renderMenuAgrupado()` en las 4 vistas |
 
-> ⚠️ **ISS-041 toca el esquema.** La migración es idempotente y corre sola al arrancar la app
-> (`config/database.js`, patrón `try { ALTER TABLE } catch {}`), así que el deploy no pide
-> ningún paso manual. Pero **conviene tener el backup de T6 hecho antes** — es la primera
-> migración que se despliega desde que el piloto tiene datos reales.
+### 🚨 Empezar acá la próxima sesión
 
-**Lo que sigue después del deploy:** verificar en el servicio real un pedido de 2 menús, y
-retomar la lista de tareas de abajo (T4, T5, T11 y T12 son las que quedan con más valor).
+1. **Verificar en el servicio real** un pedido con 2 menús: que el ticket de cocina los
+   separe, y que la persona de cocina vea la etiqueta "para llevar".
+2. **ISS-043 — el menú sin secciones obligatorias cobra de menos** (ver sección siguiente).
+   Es de cobro, no de vista.
+3. **T6, el backup de la BD.** Sigue pendiente y ya se desplegó una migración de esquema sin
+   él. Es lo que más riesgo acumula del backlog.
+
+Después de eso, las tareas con más valor de la lista de abajo son **T4, T5, T11 y T12**.
+
+---
+
+## 🔴 ISS-043 (por abrir) — un menú sin secciones obligatorias cobra de menos
+
+**Encontrado el 2026-08-16** al revisar el alcance de ISS-041, verificado ejecutando
+`contarUnidadesMenu()` y `calcularMenuTotal()` sobre 7 escenarios.
+
+Si un menú tiene **todas** sus secciones marcadas como opcionales (`requerido = 0`), el
+precio y el conteo de unidades se calculan mal:
+
+| Pedido | Debería | Cobra |
+|---|---|---|
+| 2 menús sin secciones obligatorias | S/ 22.00 · 2 unidades | **S/ 11.00 · 1 unidad** |
+| 3 menús sin secciones obligatorias | S/ 33.00 · 3 unidades | **S/ 11.00 · 1 unidad** |
+
+Con **al menos una** sección obligatoria todo es exacto — verificado con 1, 2 y 3 menús, con
+tipos mezclados y con opcionales de por medio. El caso borde ya estaba documentado en
+`utils/menuPricing.js` como "subestima, nunca cobra de más", pero ahí se lo trataba como un
+problema de conteo de tappers: **también afecta el precio del menú**, porque
+`calcularPrecioUnitario()` reparte el precio de UN menú entre todas las filas cuando
+`total_obligatorias = 0`.
+
+- **Es configurable desde el panel** (botón "Opcional" por sección), así que no es teórico:
+  en la BD local hay un menú así (#4, 2 secciones, 0 obligatorias).
+- **Falta confirmar si existe en producción.** Consulta en `issues/ISS-041...md` y en
+  `status.md`; devuelve los menús afectados.
+- **Ahora se puede arreglar bien:** con la columna `grupo` de ISS-041 se cuentan grupos
+  distintos y se reparte el precio por grupo, sin heurística. Solo aplica a pedidos nuevos —
+  los viejos no tienen el dato.
 
 Próximo número de issue libre: **ISS-043** (ojo: **ISS-036 y ISS-037 están reservados**, no
 usados todavía — ver T10 y T11 más abajo).

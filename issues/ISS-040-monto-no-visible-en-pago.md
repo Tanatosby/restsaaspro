@@ -1,6 +1,6 @@
 # ISS-040 — El monto a pagar no se muestra en la pantalla de Yape/Plin
 
-**Estado:** ✅ **Resuelto 2026-08-16** — pendiente de deploy
+**Estado:** ✅ **Resuelto y desplegado 2026-08-16** (`291c15b`)
 **Módulo:** `public/menu.html` (`showPagoStep`, `pagoPendiente`, `#pago-screen`)
 **Prioridad:** 🔴 Crítica — ocurre en el momento exacto en que el comensal necesita el dato
 para completar el pago; sin él, no puede terminar la transacción con confianza
@@ -93,5 +93,5 @@ Revisado además en captura clara y oscura: el contraste del bloque funciona en 
 
 ## Pendiente
 
-- **Deploy** (lo hace el usuario).
+- ~~Deploy~~ ✅ hecho el 2026-08-16 (`291c15b`).
 - Confirmar con la dueña del piloto #1, en uso real, que el comensal ya no pregunta el monto.

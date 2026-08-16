@@ -67,11 +67,25 @@ afecta el **cobro del tapper** (Gap 5), no la vista. Queda anotado en el issue, 
   horizontal en ninguna combinación**, con los 4 casos juntos (2 menús iguales, 2 de tipos
   distintos, 1 solo menú, pedido viejo).
 
-**Pendiente: deploy.** Es la **primera migración de esquema que se despliega con el piloto ya
-cargando datos reales**. Corre sola al arrancar la app y es idempotente, pero conviene tener
-hecho el backup de T6 antes. SW bumpeado a **`menupro-v10`**: cambian `menu.html` (numera los
-grupos al confirmar) y `owner.css` (`.menu-grupo-head`), los dos precacheados — sin el bump,
-un celular con la PWA instalada seguiría mandando pedidos sin `grupo`.
+SW bumpeado a **`menupro-v10`**: cambian `menu.html` (numera los grupos al confirmar) y
+`owner.css` (`.menu-grupo-head`), los dos precacheados — sin el bump, un celular con la PWA
+instalada seguiría mandando pedidos sin `grupo`.
+
+### ✅ DESPLEGADO 2026-08-16 — `291c15b`
+
+Lo hizo el usuario por SSH: `git pull` + `pm2 restart menupro`. La app quedó `online` y
+`/health` respondió `{"status":"ok"}`.
+
+**Producción venía de `1a85a89`, no de `120da5f`:** el mismo deploy subió además la
+documentación del Día 2 y 3 del piloto (`1ce00ac`, `7e3dc76`, `120da5f`) y el fix de ISS-039
+ya estaba, pero los docs que lo confirmaban no. Los 3 issues críticos entraron juntos:
+**ISS-040, ISS-041 y ISS-042 están en producción.**
+
+**Era la primera migración de esquema con el piloto ya cargando datos reales.** Corre sola al
+arrancar (`config/database.js`), y el arranque limpio + `/health` ok indican que no falló —
+si el `ALTER TABLE` hubiera reventado fuera del `try/catch`, la app no habría levantado.
+Queda por confirmar a mano que las columnas existen (`PRAGMA table_info`), y **sigue
+pendiente el backup de T6**, que se desplegó sin él.
 
 ---
 
