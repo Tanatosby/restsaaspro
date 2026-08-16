@@ -1,5 +1,32 @@
 # Features — Menú Pro
 
+## ~~El monto a pagar, visible cuando el comensal abre Yape~~ ✅ Completado 2026-08-16
+*Ver [ISS-040](issues/ISS-040-monto-no-visible-en-pago.md). Salió del uso real del piloto #1.*
+
+La pantalla de pago mostraba el número al que transferir y el campo del comprobante, pero **no cuánto
+pagar**: el monto aparecía antes (en el carrito, ya cerrado) y después (en el repaso final, cuando ya
+había transferido). El comensal se olvidaba justo al abrir su app.
+
+Nuevo bloque **"Total a pagar"** en `#pago-screen`, alimentado por `pagoPendiente.total` — que ya se
+calculaba e incluye el cargo por tapper y la tarifa de delivery. Va **sticky**: el hueco real no era
+entrar a la pantalla sino *bajar a subir el comprobante*, cuando el monto se iba arriba. Sirve igual
+para efectivo (cuánto preparar). SW → `menupro-v9`. Verificación:
+`scripts/test-monto-pago-visible.js`, 9/9 a 360×600.
+
+## ~~"Para llevar" ahora se ve en el ticket de cocina~~ ✅ Completado 2026-08-16
+*Ver [ISS-042](issues/ISS-042-para-llevar-no-viaja-cocina.md).*
+
+El cocinero veía el mismo ticket para comer en el local que para llevar, y emplataba sin saber si
+había que envasar. El dato (`modalidad`) ya viajaba desde el backend; `cocina.js` nunca lo leía.
+Badge 🥡/🛵 en órdenes y reservas, en línea propia entre el header y los platos (en 360px competía
+con el badge de estatus, y va antes de los platos porque define cómo se emplata).
+
+**ARCH:** `badgeModalidad()` **se movió de `ordenes.js` a `utils.js`** en vez de duplicarse — es el
+mismo widget que ya usaban Órdenes, Reservas y Cola del día, y desde `utils.js` deja de depender del
+orden de carga de los `<script>` de `owner.html` (`cocina.js` se carga *antes* que `ordenes.js`).
+Parámetro `grande` para el tamaño del ticket de cocina, sin alterar las otras tres pantallas.
+Verificación: `scripts/test-badge-modalidad-cocina.js`, 15/15.
+
 ## ~~Letra más grande en el panel del owner~~ ✅ Completado 2026-08-10
 *Punto 3.1 del backlog. Ver [ISS-028](issues/ISS-028-overflow-letra-grande.md).*
 

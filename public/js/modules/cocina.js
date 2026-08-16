@@ -3,7 +3,8 @@
 // Vista del cocinero — órdenes pendientes/en preparación + reservas en preparación.
 // Solo muestra lo de HOY (antes se acumulaban pedidos viejos sin cerrar —
 // ver ISS-030). Hace polling cada 30 s mientras el panel está activo.
-// Usa playAlertSound() y detectNuevasOrdenes() de owner.html (globals).
+// Usa playAlertSound() y detectNuevasOrdenes() de owner.html (globals),
+// y badgeEst()/badgeModalidad() de utils.js.
 // ════════════════════════════════════════════════════════
 
 let _cocinaPollTimer = null;
@@ -82,6 +83,10 @@ function renderCocinaTicket(o) {
     ? `<button class="btn btn-success btn-sm" onclick="avanzarCocina(${o.id},'es_listo')">✅ Listo</button>`
     : '';
 
+  // Para llevar / delivery cambia cómo se emplata y envasa — ISS-042.
+  // En línea propia, no dentro del header: en 360px compite con el estatus.
+  const modBadge = badgeModalidad(o.modalidad, true);
+
   return `
     <div class="order-card" id="cocina-ord-${o.id}" style="border-left:4px solid ${o.es_inicial ? '#fbbf24' : '#3b82f6'}">
       <div class="order-card-header">
@@ -92,6 +97,7 @@ function renderCocinaTicket(o) {
         </div>
         ${badgeEst(o.estatus)}
       </div>
+      ${modBadge ? `<div style="margin:0.4rem 0 0.1rem">${modBadge}</div>` : ''}
       <div class="order-items">${cartaLines}${menuLines}</div>
       <div class="order-actions">${btnAccion}</div>
     </div>`;
@@ -114,6 +120,10 @@ function renderCocinaReserva(r) {
     ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${r.mesa}</span>`
     : '';
 
+  // Igual que en las órdenes (ISS-042). En reservas además explica la falta de
+  // mesa: para llevar y delivery nunca la tienen.
+  const modBadge = badgeModalidad(r.modalidad, true);
+
   return `
     <div class="order-card" id="cocina-res-${r.id}" style="border-left:4px solid #818cf8">
       <div class="order-card-header">
@@ -123,6 +133,7 @@ function renderCocinaReserva(r) {
         </div>
         <span class="badge" style="background:#eef2ff;color:#4338ca;font-size:0.785714rem">Reserva</span>
       </div>
+      ${modBadge ? `<div style="margin:0.4rem 0 0.1rem">${modBadge}</div>` : ''}
       <div class="order-items">${menuLines}${cartaLines}</div>
       <div class="order-actions">
         <button class="btn btn-success btn-sm" onclick="marcarReservaListaCocina(${r.id})">✅ Listo</button>

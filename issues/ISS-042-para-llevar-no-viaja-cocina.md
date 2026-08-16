@@ -1,7 +1,6 @@
 # ISS-042 — La etiqueta "para llevar" no llega a la vista de cocina
 
-**Estado:** 🔎 Diagnosticado — fix pendiente (no implementado a pedido del usuario, se
-documenta primero)
+**Estado:** ✅ **Resuelto 2026-08-16** — pendiente de deploy
 **Módulo:** `public/js/modules/cocina.js` (`renderCocinaTicket`, `renderCocinaReserva`)
 **Prioridad:** 🔴 Crítica — el cocinero prepara el plato sin saber si va servido en mesa o
 tiene que envasarse para llevar, con riesgo real de preparar/emplatar distinto a lo pedido
@@ -47,21 +46,54 @@ decidir cómo emplatar y envasar— nunca lo recibió visualmente.
 
 ---
 
-## Solución propuesta (sin implementar)
+## Solución implementada (2026-08-16)
 
-Fix acotado y de bajo riesgo, 100% frontend — el dato ya llega desde el backend:
+Resuelto **antes que ISS-041 y por separado**, decisión del usuario: este es 100% frontend
+y ISS-041 requiere migración de esquema. Aunque los dos tocan `cocina.js`, mezclarlos habría
+atado un fix chico y seguro a uno grande.
 
-1. Agregar un badge/etiqueta visible en `renderCocinaTicket()` y `renderCocinaReserva()`
-   cuando `o.modalidad`/`r.modalidad` sea `'para_llevar'` o `'delivery'` (ej. "🥡 Para
-   llevar" / "🚚 Delivery"), igual de prominente que el badge de estatus que ya existe.
-2. Verificar que el badge sea legible en el ticket sin romper el layout mobile-first (el
-   panel de Cocina se usa en celular, igual que el resto).
-3. `npx jest` — no debería haber impacto en backend, es un cambio de renderizado puro.
+1. **`badgeModalidad()` se movió de `ordenes.js` a `utils.js`.** No se duplicó en `cocina.js`:
+   es el mismo widget que ya usaban Órdenes, Reservas y Cola del día, y duplicarlo dejaba
+   cuatro copias del mismo badge para mantener. Desde `utils.js` además **deja de depender
+   del orden de carga** de los `<script>` de `owner.html`, donde `cocina.js` se carga en la
+   línea 18 y `ordenes.js` recién en la 19.
+2. **Nuevo parámetro `grande`** en `badgeModalidad(modalidad, grande = false)`: sube el badge
+   de 11px a 15px para el ticket de cocina, sin tocar cómo se ve en las otras tres pantallas
+   (que lo siguen llamando con un solo argumento). El cocinero lee este dato de reojo
+   mientras cocina.
+3. **`renderCocinaTicket()` y `renderCocinaReserva()`** pintan el badge **en línea propia,
+   entre el header y la lista de platos** — no dentro del header: a 360px competiría con el
+   badge de estatus / "Reserva", y va antes de los platos porque es lo que define cómo se
+   emplata. En reservas explica de paso por qué no hay mesa (para llevar y delivery nunca
+   la tienen).
+
+Se mantuvo el 🛵 de delivery que ya usa el resto del panel, en vez del 🚚 que proponía el
+diagnóstico: el cocinero ya asocia ese ícono con delivery en las otras pantallas.
+
+Sin cambios de backend ni de esquema. **No hace falta bumpear el SW:** los módulos JS no
+están en `ASSETS` de `sw.js` (se sirven de red — ver T11 en `backlog.md`).
+
+---
+
+## Verificación
+
+`scripts/test-badge-modalidad-cocina.js` — sin navegador ni servidor: `renderCocinaTicket()`
+y `renderCocinaReserva()` solo devuelven strings, así que se cargan `utils.js` + `cocina.js`
+en un contexto de `vm` y se inspecciona el HTML. **15/15:**
+
+- para llevar y delivery pintan su badge, en órdenes y en reservas;
+- `en_local`, `null` y una orden **sin** la propiedad `modalidad` (registros viejos) no
+  pintan nada ni imprimen `"undefined"`;
+- `grande` cambia el tamaño solo cuando se pide;
+- regresión: platos, botones de acción y el resto del ticket siguen intactos, y el badge
+  queda antes de la lista de platos.
+
+`npx jest` → **408/408 verde**. Revisado también en captura a 360px (claro y oscuro) con los
+cuatro casos juntos: para llevar, delivery, en local y reserva para llevar.
 
 ---
 
 ## Pendiente
 
-- Confirmar con el usuario si conviene resolver junto con ISS-041 (ambos tocan el
-  renderizado de tickets en `cocina.js`) o antes, ya que este es más simple (no requiere
-  migración de esquema).
+- **Deploy** (lo hace el usuario).
+- Confirmar con la persona de cocina del piloto #1 que el badge se ve durante el servicio.

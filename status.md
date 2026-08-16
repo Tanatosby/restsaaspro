@@ -2,6 +2,79 @@
 
 ---
 
+## 🎯 Sesión 2026-08-16 — ISS-040 e ISS-042 implementados (2 de los 3 críticos)
+
+**Prompt del usuario:** pull del repo avisando primero de los cambios sin commitear, y
+después implementar **ISS-040 e ISS-042 juntos** + commitear la captura huérfana.
+
+**Antes de tocar nada — los cambios locales sin commitear resultaron ser:**
+- `features.md`: un salto de línea accidental **en medio de la palabra "mostraba"**
+  (`mos`/`traba`). Sin contenido nuevo, se descartó.
+- 3 capturas sin trackear del 2026-08-11, que **ningún issue referenciaba**. `backlog.md`
+  T10 ya tenía la respuesta de la sesión anterior: `opcional_1/2.png` **no son issue**
+  (confirmado por el usuario en su momento), y `visualización_fecha.png` sí alimenta el
+  futuro **ISS-037**. Esa última se commiteó — vivía solo en una de las 2 laptops.
+
+**Pull:** fast-forward limpio de 11 commits (`ee0194c` → `120da5f`), sin conflictos.
+
+### ISS-040 — monto a pagar visible en la pantalla de Yape/Plin
+
+El total ya se calculaba en `pagoPendiente.total` (incluye cargo por tapper y tarifa de
+delivery); lo único que faltaba era pintarlo. Nuevo bloque **"Total a pagar"** en
+`#pago-screen` (`public/menu.html`), y `showPagoStep()` lo llena.
+
+El detalle que no estaba en el diagnóstico: el bloque va **`position:sticky; top:0`**. El
+hueco real no era solo entrar a la pantalla, sino **bajar a subir el comprobante** — sin
+sticky el monto se va arriba justo cuando el comensal vuelve de su app de Yape con la
+captura, que es el momento exacto que reportó la dueña. Sirve igual para efectivo.
+
+`public/sw.js` → **`menupro-v9`**: `menu.html` está en `ASSETS`, sin el bump los celulares
+con la PWA instalada seguirían viendo la pantalla vieja (ISS-022).
+
+### ISS-042 — la etiqueta "para llevar" ahora llega a cocina
+
+`modalidad` ya viajaba desde el backend (`utils/colaDia.js`), `cocina.js` no la leía.
+
+**`badgeModalidad()` se movió de `ordenes.js` a `utils.js`** en vez de duplicarla: es el
+mismo widget que ya usaban Órdenes, Reservas y Cola del día, y copiarlo dejaba 4 versiones
+del mismo badge. Además, desde `utils.js` **deja de depender del orden de los `<script>`**
+de `owner.html`, donde `cocina.js` se carga *antes* que `ordenes.js` (líneas 18 y 19) —
+llamarla desde cocina.js con la función viviendo en ordenes.js funcionaba solo por
+casualidad del timing de runtime.
+
+Nuevo parámetro `grande` para el ticket de cocina (11px → 15px) sin alterar las otras tres
+pantallas. El badge va **en línea propia** entre el header y los platos: en 360px competía
+con el badge de estatus si iba en el header, y va antes de los platos porque es lo que
+define cómo se emplata.
+
+### Verificación
+
+Dos scripts nuevos de verificación manual, siguiendo el patrón de
+`scripts/test-photo-modal-zindex.js` (no forman parte de la suite jest):
+
+- `scripts/test-monto-pago-visible.js` — Playwright a 360×600. **9/9**: monto visible,
+  24px, 2 decimales, sin overflow horizontal, **sticky confirmado con la pantalla
+  scrolleada al fondo** (`y=56`), visible también con efectivo y coincidente con el repaso.
+- `scripts/test-badge-modalidad-cocina.js` — sin navegador ni servidor: los `render*` de
+  cocina solo devuelven strings, así que carga `utils.js` + `cocina.js` en un contexto de
+  `vm`. **15/15**, incluyendo que una orden **sin** la propiedad `modalidad` (registros
+  viejos) no imprima `"undefined"`.
+
+`npx jest` → **408/408 verde**, 31 suites.
+
+> ⚠️ **Ojo con el número de tests:** las entradas anteriores de este archivo dicen
+> "754/754 jest verde". Hoy la suite completa da **408 en 31 suites**, que son todos los
+> archivos de `tests/`. No hubo ninguna regresión —ningún test falla ni desapareció—, así
+> que el 754 parece haber sido un dato mal anotado. Anotar 408 de acá en adelante.
+
+**Pendiente: deploy** (lo hace el usuario). Los dos fixes son 100% frontend, sin cambios de
+backend ni de esquema.
+
+**Queda sin implementar de los 3 críticos:** `ISS-041` (2 menús del día en un pedido sin
+poder diferenciarse) — el único que requiere migración de esquema.
+
+---
+
 ## 🎯 Sesión 2026-08-14 — 3 issues nuevos documentados (sin implementar todavía)
 
 **Prompt del usuario:** trajo 3 problemas encontrados en el flujo real del piloto. Pidió

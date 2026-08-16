@@ -2,16 +2,9 @@
 // MÓDULO: ÓRDENES
 // badgePago() es compartida — usada también por reservas.js.
 // ordenes.js debe cargarse ANTES que reservas.js.
+// badgeModalidad() vivía acá; se movió a utils.js cuando cocina.js también
+// pasó a usarla (ISS-042) — utils.js se carga primero y no depende del orden.
 // ════════════════════════════════════════════════════════
-
-function badgeModalidad(modalidad) {
-  if (!modalidad || modalidad === 'en_local') return '';
-  if (modalidad === 'para_llevar')
-    return `<span style="font-size:0.785714rem;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:20px;font-weight:600">🥡 Para llevar</span>`;
-  if (modalidad === 'delivery')
-    return `<span style="font-size:0.785714rem;background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:20px;font-weight:600">🛵 Delivery</span>`;
-  return '';
-}
 
 function badgePago(o) {
   if (!o.metodo_pago) return '';

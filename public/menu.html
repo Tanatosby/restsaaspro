@@ -220,7 +220,16 @@
   <div class="confirm-screen" id="pago-screen" style="justify-content:flex-start;overflow-y:auto">
     <div style="width:100%;max-width:400px;padding:0 1rem">
       <div class="confirm-title" style="font-size:1.4rem">💳 ¿Cómo vas a pagar?</div>
-      <div id="pago-orden-ref" style="font-size:13px;color:var(--muted);margin-bottom:1.25rem"></div>
+      <div id="pago-orden-ref" style="font-size:13px;color:var(--muted);margin-bottom:0.75rem"></div>
+
+      <!-- Monto a pagar — ISS-040. Va sticky porque el comensal lo necesita a
+           la vista mientras abre Yape/Plin y mientras sube el comprobante, no
+           solo al entrar a la pantalla. Antes solo aparecía en el carrito
+           (ya cerrado) y en el repaso final (ya pagó). -->
+      <div style="position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:0.75rem;background:var(--accent-light);border:1px solid var(--accent);border-radius:12px;padding:0.85rem 1rem;margin-bottom:1.25rem">
+        <span style="font-size:14px;font-weight:700;color:var(--text)">Total a pagar</span>
+        <span id="pago-total" style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--accent);white-space:nowrap">S/ 0.00</span>
+      </div>
 
       <!-- Botones de método -->
       <div id="pago-metodos" style="display:flex;flex-direction:column;gap:0.6rem"></div>
@@ -1021,9 +1030,12 @@ async function renderReservarContent() {
   // ── Payment step ─────────────────────────────────
   function showPagoStep() {
     pagoMetodo = null;
-    const { tipo, items } = pagoPendiente;
+    const { tipo, items, total } = pagoPendiente;
     document.getElementById('pago-orden-ref').textContent =
       `${tipo === 'reserva' ? 'Tu reserva' : 'Tu pedido'} — ${items.length} ítem${items.length === 1 ? '' : 's'}`;
+    // ISS-040 — el monto ya venía calculado en pagoPendiente.total (incluye
+    // tapper/delivery); lo único que faltaba era pintarlo acá.
+    document.getElementById('pago-total').textContent = `S/ ${Number(total || 0).toFixed(2)}`;
     document.getElementById('pago-metodo-detalle').innerHTML = '';
     document.getElementById('pago-comprobante-wrap').style.display = 'none';
     const btnPague = document.getElementById('btn-ya-pague');

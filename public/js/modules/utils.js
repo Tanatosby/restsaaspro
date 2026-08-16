@@ -37,6 +37,24 @@ function emptyState(icon, text) {
   return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div></div>`;
 }
 
+// ── Badge de modalidad — compartido por ordenes.js/reservas.js/pedidos.js/cocina.js ──
+// Vive acá y no en ordenes.js para que cocina.js no dependa del orden de carga
+// de los <script> de owner.html (cocina.js se carga antes que ordenes.js).
+// `grande` agranda el badge para el ticket de cocina (ISS-042): el cocinero
+// decide con este dato si emplata o envasa, y lo lee de reojo mientras cocina.
+function badgeModalidad(modalidad, grande = false) {
+  if (!modalidad || modalidad === 'en_local') return '';
+  const base = grande
+    ? 'font-size:0.9375rem;padding:5px 12px;'
+    : 'font-size:0.785714rem;padding:2px 8px;';
+  const estilo = colores => `${base}border-radius:20px;font-weight:600;${colores}`;
+  if (modalidad === 'para_llevar')
+    return `<span style="${estilo('background:#e0f2fe;color:#0369a1')}">🥡 Para llevar</span>`;
+  if (modalidad === 'delivery')
+    return `<span style="${estilo('background:#fef9c3;color:#854d0e')}">🛵 Delivery</span>`;
+  return '';
+}
+
 // ── Comprobante de pago (foto) — compartido por ordenes.js/reservas.js/pedidos.js ──
 // No usar <a target="_blank">: dentro de la PWA instalada (standalone) rompe la
 // app en iOS/Android al intentar abrir una pestaña nueva. Se abre en modal in-app.

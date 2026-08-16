@@ -8,22 +8,26 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 > (`conversacion_*.md`) y por lo tanto **no viajaba entre las 2 laptops del usuario**. Este archivo sí
 > está en git: es la copia viva del backlog. Actualizarlo al cerrar cada sesión.
 
-**Última actualización:** 2026-08-14
+**Última actualización:** 2026-08-16
 
 ---
 
-## 🚨 Empezar acá la próxima sesión — 3 issues 🔴 Crítica sin implementar
+## 🚨 Empezar acá la próxima sesión — ISS-041, el único de los 3 que queda
 
-Salieron del uso real del piloto #1 el 2026-08-14 (Día 3 de retoma, ver `pilotos.md`).
-Documentados a pedido explícito del usuario, **todavía sin ningún código escrito**:
+Los 3 salieron del uso real del piloto #1 el 2026-08-14 (Día 3 de retoma, ver `pilotos.md`).
+**Dos ya están resueltos** el 2026-08-16 (pendientes de deploy):
 
-| # | Título | Tamaño | Detalle |
-|---|--------|--------|---------|
-| [ISS-040](issues/ISS-040-monto-no-visible-en-pago.md) | El comensal no ve el monto a pagar en la pantalla de Yape/Plin | Chico, solo frontend | `menu.html` — `pagoPendiente.total` se calcula pero no se pinta en `#pago-screen` |
-| [ISS-041](issues/ISS-041-menus-multiples-sin-anidar.md) | 2 menús del día en un mismo pedido no se pueden diferenciar en cocina/panel | Grande — requiere migración de esquema | Se pierde el agrupamiento entrada/segundo al aplanar el carrito antes de enviarlo; falta columna `grupo` en `orden_menu_items`/`reserva_menu_items` |
-| [ISS-042](issues/ISS-042-para-llevar-no-viaja-cocina.md) | La etiqueta "para llevar" no le llega al cocinero | Chico, solo frontend | El backend ya devuelve `modalidad`; `cocina.js` nunca lo lee ni lo pinta |
+| # | Título | Estado |
+|---|--------|--------|
+| ~~[ISS-040](issues/ISS-040-monto-no-visible-en-pago.md)~~ | El comensal no ve el monto a pagar en la pantalla de Yape/Plin | ✅ **Hecho 2026-08-16** — bloque "Total a pagar" sticky en `#pago-screen`. SW → `menupro-v9`, **deploy pendiente** |
+| ~~[ISS-042](issues/ISS-042-para-llevar-no-viaja-cocina.md)~~ | La etiqueta "para llevar" no le llega al cocinero | ✅ **Hecho 2026-08-16** — badge 🥡/🛵 en los tickets de cocina; `badgeModalidad()` movida a `utils.js`. **Deploy pendiente** |
+| [ISS-041](issues/ISS-041-menus-multiples-sin-anidar.md) | 2 menús del día en un mismo pedido no se pueden diferenciar en cocina/panel | 🔴 **Sin implementar.** Grande: requiere migración de esquema. Se pierde el agrupamiento entrada/segundo al aplanar el carrito antes de enviarlo; falta columna `grupo` en `orden_menu_items`/`reserva_menu_items`, y hay que agrupar al renderizar en 4 lugares |
 
-Próximo número de issue libre: **ISS-043**.
+**Nota para ISS-041:** el badge de modalidad de ISS-042 ya ordenó el ticket de cocina —
+al agrupar por `grupo` hay que respetar ese bloque, que va entre el header y los platos.
+
+Próximo número de issue libre: **ISS-043** (ojo: **ISS-036 y ISS-037 están reservados**, no
+usados todavía — ver T10 y T11 más abajo).
 
 ---
 
@@ -58,7 +62,7 @@ arriba.
 | **T7** | Editar el nombre del restaurante. | ⏸️ Bloqueada | **D3** |
 | **T8** | Resolver `authorizeRestaurante()`. | ⏸️ Bloqueada | **D2** |
 | **T9** | Pensionistas, pasos 6-12 (ver sección propia más abajo). | ⏸️ Parcial | **D5** |
-| **T10** | Abrir **ISS-037** con `issues/screenshots/visualización_fecha.png` — las fechas en Configuración de menú. (`opcional_1.png` y `opcional_2.png` **no** son issue, confirmado por el usuario.) Puede que ISS-035 ya lo haya resuelto: si no veía el stepper por el scroll, quizá tampoco veía el paso 3. **Verificar con ella antes de escribir código.** | 🟢 Listo para hacer | — |
+| **T10** | Abrir **ISS-037** con `issues/screenshots/visualización_fecha.png` — las fechas en Configuración de menú. (`opcional_1.png` y `opcional_2.png` **no** son issue, confirmado por el usuario.) Puede que ISS-035 ya lo haya resuelto: si no veía el stepper por el scroll, quizá tampoco veía el paso 3. **Verificar con ella antes de escribir código.** La captura ya está commiteada (2026-08-16) — antes vivía solo en una de las 2 laptops. | 🟢 Listo para hacer | — |
 | **T12** | Generador masivo de QR de mesas (`generarQRsMesas()`, `config.js:262`): el PNG descargado por mesa hoy es **solo el QR**, sin el número "Mesa X" — es un `<span>` aparte que no viaja en la imagen exportada. Componer un canvas nuevo (QR + etiqueta) antes de exportar, listo para imprimir/cortar. Surgió del feedback de campo del piloto #1 (`vision_negocio.md` §16, hallazgo 3) — la dueña quiere acrílicos portátiles con número + QR para reasignar a mesas que se juntan; el generador `1..N` ya le sirve tal cual, solo falta que el PNG incluya el número. | 🟢 Listo para hacer, no urgente | — |
 
 ### C · La regla de orden que ya se cumplió

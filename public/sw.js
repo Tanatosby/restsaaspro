@@ -6,7 +6,8 @@
 // lo pintaba como un cuadrado gris plano al no poder generar una silueta).
 // v8: reset de scroll al cambiar de panel en owner.html (la dueña del piloto
 // no encontraba el botón "← Volver" porque nacía fuera de pantalla).
-const CACHE = 'menupro-v8';
+// v9: monto a pagar visible en la pantalla de Yape/Plin de menu.html (ISS-040).
+const CACHE = 'menupro-v9';
 
 const ASSETS = [
   '/owner.html',

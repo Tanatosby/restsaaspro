@@ -1,7 +1,6 @@
 # ISS-040 — El monto a pagar no se muestra en la pantalla de Yape/Plin
 
-**Estado:** 🔎 Diagnosticado — fix pendiente (no implementado a pedido del usuario, se
-documenta primero)
+**Estado:** ✅ **Resuelto 2026-08-16** — pendiente de deploy
 **Módulo:** `public/menu.html` (`showPagoStep`, `pagoPendiente`, `#pago-screen`)
 **Prioridad:** 🔴 Crítica — ocurre en el momento exacto en que el comensal necesita el dato
 para completar el pago; sin él, no puede terminar la transacción con confianza
@@ -50,16 +49,49 @@ justo antes de adjuntar la captura.
 
 ---
 
-## Solución propuesta (sin implementar)
+## Solución implementada (2026-08-16)
 
-Mostrar `pagoPendiente.total` en `#pago-screen`, visible desde que se entra a la pantalla
-hasta que se sube el comprobante — no solo en el repaso final. Cambio acotado a
-`showPagoStep()` y al HTML de `#pago-screen`, 100% frontend, sin tocar backend.
+Bloque "Total a pagar" en `#pago-screen`, entre el subtítulo de ítems y los botones de
+método — lo primero que se ve al entrar a la pantalla.
+
+1. **`public/menu.html`, `#pago-screen`:** nuevo bloque con `#pago-total`, en caja
+   `--accent-light` con borde `--accent`. Va **`position:sticky; top:0`** dentro del
+   contenedor scrolleable: el hueco real no era solo "entrar a la pantalla" sino *bajar a
+   subir el comprobante* — sin sticky, el monto se iba arriba justo cuando el comensal
+   vuelve de su app de Yape con la captura.
+2. **`showPagoStep()`:** desestructura `total` de `pagoPendiente` y lo pinta con
+   `Number(total || 0).toFixed(2)`. El valor ya venía calculado e **incluye el cargo por
+   tapper y la tarifa de delivery** (`menu.html:893` para pedidos, `:1003` para reservas) —
+   no se recalculó nada, solo faltaba mostrarlo.
+3. **`public/sw.js`:** `CACHE` a `menupro-v9`. `menu.html` está en `ASSETS`, así que sin el
+   bump los celulares con la PWA instalada seguirían viendo la pantalla vieja (ISS-022).
+
+Sirve igual para **efectivo**: el bloque no depende del método elegido, así que el comensal
+que paga en efectivo también ve cuánto tiene que preparar.
+
+---
+
+## Verificación
+
+`scripts/test-monto-pago-visible.js` (Playwright, viewport 360×600 — gama media real, con
+poca altura a propósito para forzar el scroll). **9/9:**
+
+- el monto es visible al entrar y muestra `S/ 33.50` (2 decimales);
+- se lee de lejos: 24px computados;
+- sin overflow horizontal a 360px y el bloque entra completo en el ancho;
+- **sticky confirmado:** con `#pago-screen` scrolleado al fondo y el campo de comprobante
+  abierto, el monto sigue en pantalla (`y=56`);
+- con efectivo el monto sigue visible;
+- coincide con el total del repaso final (si divergieran, el comensal transferiría un
+  importe distinto al que confirma).
+
+`npx jest` → **408/408 verde** (el fix no toca backend).
+
+Revisado además en captura clara y oscura: el contraste del bloque funciona en los dos temas.
 
 ---
 
 ## Pendiente
 
-- Implementar y verificar con `npx jest` (no debería afectar backend).
-- Confirmar que el monto se ve claro también en la pantalla de "efectivo" (sin comprobante,
-  pero el comensal igual necesita saber cuánto preparar).
+- **Deploy** (lo hace el usuario).
+- Confirmar con la dueña del piloto #1, en uso real, que el comensal ya no pregunta el monto.
