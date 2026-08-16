@@ -11,9 +11,10 @@ después implementar **ISS-040 e ISS-042 juntos** + commitear la captura huérfa
 - `features.md`: un salto de línea accidental **en medio de la palabra "mostraba"**
   (`mos`/`traba`). Sin contenido nuevo, se descartó.
 - 3 capturas sin trackear del 2026-08-11, que **ningún issue referenciaba**. `backlog.md`
-  T10 ya tenía la respuesta de la sesión anterior: `opcional_1/2.png` **no son issue**
-  (confirmado por el usuario en su momento), y `visualización_fecha.png` sí alimenta el
-  futuro **ISS-037**. Esa última se commiteó — vivía solo en una de las 2 laptops.
+  T10 ya tenía la respuesta de la sesión anterior: `opcional_1/2.png` **no eran issue**
+  (confirmado por el usuario en su momento) — **borradas a su pedido, nunca llegaron a
+  git**; y `visualización_fecha.png` sí alimenta el futuro **ISS-037**, así que esa se
+  commiteó: vivía solo en una de las 2 laptops.
 
 **Pull:** fast-forward limpio de 11 commits (`ee0194c` → `120da5f`), sin conflictos.
 
@@ -62,10 +63,24 @@ Dos scripts nuevos de verificación manual, siguiendo el patrón de
 
 `npx jest` → **408/408 verde**, 31 suites.
 
-> ⚠️ **Ojo con el número de tests:** las entradas anteriores de este archivo dicen
-> "754/754 jest verde". Hoy la suite completa da **408 en 31 suites**, que son todos los
-> archivos de `tests/`. No hubo ninguna regresión —ningún test falla ni desapareció—, así
-> que el 754 parece haber sido un dato mal anotado. Anotar 408 de acá en adelante.
+> ⚠️ **Corregido en esta sesión — el conteo de tests decía "754/754":** ese número aparecía
+> en 9 lugares (`status.md` ×4, `backlog.md` D1, `ISSUES.md`, `ISS-038`, `ISS-039`) y **no
+> correspondía a nada medible**: la suite tiene 31 archivos y 381 `it()`/`test()` literales,
+> que jest expande a **408 casos**. Ni los `expect()` sumados (600) llegan a 754.
+>
+> **Verificado que no fue una regresión, no una suposición:** se contaron los `it()`/`test()`
+> de `tests/` en los 4 commits del 2026-08-13 donde se anotó el 754 (`1a85a89`, `b351e88`,
+> `b38f106`, `a1e9755`) → **31 archivos y 381 casos en todos, idéntico a hoy**. Además
+> `git log --diff-filter=D` sobre `tests/*.test.js` no devuelve nada: **nunca se borró un
+> archivo de test** en toda la historia del repo. El 754 nació mal en una sesión y se copió
+> hacia adelante — la firma típica es que aparece siempre idéntico, "754/754", en vez de
+> variar como varía una suite que crece.
+>
+> Las 9 referencias quedaron corregidas a **408/408**. **Anotar 408 de acá en adelante**, y
+> releerlo del output de jest en vez de copiarlo de la entrada anterior: es el mismo patrón
+> que ya costó caro con el log de deploys (ver `CLAUDE.md`) — un número arrastrado por
+> copy-paste que después se usa para decidir. Con el 754 en el log, la próxima sesión que
+> corriera la suite habría leído "faltan 346 tests" y salido a cazar un fantasma.
 
 **Pendiente: deploy** (lo hace el usuario). Los dos fixes son 100% frontend, sin cambios de
 backend ni de esquema.
@@ -206,7 +221,7 @@ usuario, antes de tocar código.
   "Enviando reserva…" (paso 1), "Subiendo comprobante…" / "Confirmando pago…" (paso 2).
 
 **Verificación:** sintaxis de los 2 bloques `<script>` de `menu.html` compilada con
-`new Function()` sin errores. `npx jest` completo — **754/754 verde**, sin regresiones
+`new Function()` sin errores. `npx jest` completo — **408/408 verde**, sin regresiones
 (fix 100% frontend). No se armó script Playwright end-to-end: los timeouts están fijos en
 código (15s/30s), no hay forma rápida de simularlos acortados sin exponerlos como parámetro.
 
@@ -335,7 +350,7 @@ pantalla).
 **Verificación:** nuevo `scripts/test-photo-modal-zindex.js` (Playwright) — abre
 `MenuModal` con datos sintéticos, simula el tap real en la foto y confirma con
 `document.elementFromPoint()` que el modal de foto queda visible en el centro de
-pantalla, no la hoja. **6/6 verde.** `npx jest tests/`: **754/754 verde** (CSS puro, sin
+pantalla, no la hoja. **6/6 verde.** `npx jest tests/`: **408/408 verde** (CSS puro, sin
 tocar backend).
 
 **Documentado:** `issues/ISS-038-modal-foto-tapado-por-menumodal.md` + `issues/ISSUES.md`.
@@ -380,7 +395,7 @@ reservar es pedir para después.
 **Tests:** reescrito el caso obsoleto (`'ahora cerrado — bloquea sin importar
 hora_llegada'`) en `tests/horario-atencion.test.js` por el comportamiento nuevo, más 2
 casos nuevos (hora futura fuera de horario con "ahora" cerrado → bloqueado; sin
-`hora_llegada` con "ahora" cerrado → bloqueado). **754/754 jest verde** (suite completa).
+`hora_llegada` con "ahora" cerrado → bloqueado). **408/408 jest verde** (suite completa).
 
 **Alcance de este cambio:** solo `utils/horarioAtencion.js`, usado hoy por
 `routes/public.js:399` (reservas del cliente). **No toca** `routes/reservations.js`
@@ -421,7 +436,7 @@ restaurante piloto pide reservar por teléfono, se retoma en ese momento con ese
 real. Comentario del endpoint actualizado para dejarlo explícito.
 
 **Verificación:**
-- `npx jest tests/` → **754/754 verde** (sin cambios de backend en esta parte).
+- `npx jest tests/` → **408/408 verde** (sin cambios de backend en esta parte).
 - `scripts/test-horario-atencion.js` corrido de punta a punta contra un server local
   (Playwright): **11/11 verde**, incluyendo el caso nuevo (Test 3) que prueba
   exactamente D1 — restaurante cerrado ahora + hora futura válida → reserva permitida

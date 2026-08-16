@@ -42,7 +42,7 @@ arriba.
 
 | # | Decisión | Por qué no se puede decidir sola | Bloquea |
 |---|---|---|---|
-| ~~**D1**~~ | ✅ **Resuelta 2026-08-13.** Se puede crear una reserva con el restaurante cerrado, siempre que la `hora_llegada` pedida caiga dentro del horario de atención. `validarHorarioReserva()` (`utils/horarioAtencion.js`) ya no exige que el restaurante esté abierto "ahora" cuando hay `hora_llegada`; solo cae a ese chequeo si no la hay. 754/754 jest verde. | — | Desbloquea T3 |
+| ~~**D1**~~ | ✅ **Resuelta 2026-08-13.** Se puede crear una reserva con el restaurante cerrado, siempre que la `hora_llegada` pedida caiga dentro del horario de atención. `validarHorarioReserva()` (`utils/horarioAtencion.js`) ya no exige que el restaurante esté abierto "ahora" cuando hay `hora_llegada`; solo cae a ese chequeo si no la hay. 408/408 jest verde. | — | Desbloquea T3 |
 | **D2** | `authorizeRestaurante()` — ¿arreglar o borrar? | Es **código muerto**: importado en `routes/menu.js:5`, usado en ninguna ruta, y lee `req.user.restaurante_id` cuando el JWT guarda `restaurant_id` (`routes/auth.js:27`). Si se deja así, tarde o temprano alguien lo enchufa creyendo que protege algo. | T8 |
 | **D3** | Nombre del restaurante: ¿`UPDATE` puntual por SSH ahora, o campo editable en Configuración? | Hoy **no existe forma de renombrar** un restaurante: `restaurantes.nombre` solo se escribe en el `INSERT` de creación (`routes/admin.js:411`). La única salida actual es borrar y recrear, perdiendo todos los datos. | T7 |
 | **D4** | ¿Cuándo se despliega `ISS-033`? | Hoy es el día de la atención masiva. Desplegar en pleno servicio vs. esperar a que termine. | — |
@@ -62,7 +62,7 @@ arriba.
 | **T7** | Editar el nombre del restaurante. | ⏸️ Bloqueada | **D3** |
 | **T8** | Resolver `authorizeRestaurante()`. | ⏸️ Bloqueada | **D2** |
 | **T9** | Pensionistas, pasos 6-12 (ver sección propia más abajo). | ⏸️ Parcial | **D5** |
-| **T10** | Abrir **ISS-037** con `issues/screenshots/visualización_fecha.png` — las fechas en Configuración de menú. (`opcional_1.png` y `opcional_2.png` **no** son issue, confirmado por el usuario.) Puede que ISS-035 ya lo haya resuelto: si no veía el stepper por el scroll, quizá tampoco veía el paso 3. **Verificar con ella antes de escribir código.** La captura ya está commiteada (2026-08-16) — antes vivía solo en una de las 2 laptops. | 🟢 Listo para hacer | — |
+| **T10** | Abrir **ISS-037** con `issues/screenshots/visualización_fecha.png` — las fechas en Configuración de menú. (`opcional_1.png` y `opcional_2.png` **no** eran issue, confirmado por el usuario — **borradas el 2026-08-16**, no las busques.) Puede que ISS-035 ya lo haya resuelto: si no veía el stepper por el scroll, quizá tampoco veía el paso 3. **Verificar con ella antes de escribir código.** La captura ya está commiteada (2026-08-16) — antes vivía solo en una de las 2 laptops. | 🟢 Listo para hacer | — |
 | **T12** | Generador masivo de QR de mesas (`generarQRsMesas()`, `config.js:262`): el PNG descargado por mesa hoy es **solo el QR**, sin el número "Mesa X" — es un `<span>` aparte que no viaja en la imagen exportada. Componer un canvas nuevo (QR + etiqueta) antes de exportar, listo para imprimir/cortar. Surgió del feedback de campo del piloto #1 (`vision_negocio.md` §16, hallazgo 3) — la dueña quiere acrílicos portátiles con número + QR para reasignar a mesas que se juntan; el generador `1..N` ya le sirve tal cual, solo falta que el PNG incluya el número. | 🟢 Listo para hacer, no urgente | — |
 
 ### C · La regla de orden que ya se cumplió

@@ -80,7 +80,7 @@ Todo en `public/menu.html`, sin tocar backend:
      a `"Enviando pedido…"` / `"Enviando reserva…"` por consistencia.
 
 **Verificación:** sintaxis del script de `menu.html` chequeada con `new Function()` (ambos
-bloques `<script>` compilan). Suite completa `npx jest` — **754/754 verde**, sin
+bloques `<script>` compilan). Suite completa `npx jest` — **408/408 verde**, sin
 regresiones (el fix es 100% frontend, no se tocó ninguna ruta ni util del backend).
 
 No se armó un script Playwright de verificación end-to-end: los timeouts (15s/30s) están
