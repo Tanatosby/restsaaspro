@@ -77,9 +77,12 @@ function renderOrdenCard(o, withActions) {
   const cartaLines = o.carta_items.map(i =>
     `<div class="order-item-line">🍽️ ${esc(i.nombre)} x${i.cantidad} — S/ ${Number(i.precio_unitario).toFixed(2)}</div>`
   ).join('');
-  const menuLines = o.menu_items.map(i =>
-    `<div class="order-item-line">📋 [${esc(i.seccion)}] ${esc(i.plato)} x${i.cantidad}</div>`
-  ).join('');
+  // Agrupado por instancia de menú cuando el pedido trae 2 o más — ISS-041
+  const menuLines = renderMenuAgrupado(
+    o.menu_items,
+    i => `<div class="order-item-line">📋 [${esc(i.seccion)}] ${esc(i.plato)} x${i.cantidad}</div>`,
+    texto => `<div class="menu-grupo-head">${texto}</div>`
+  );
 
   const comprobanteHtml = comprobanteThumb(o);
 

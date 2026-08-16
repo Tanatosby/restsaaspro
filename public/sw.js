@@ -7,7 +7,10 @@
 // v8: reset de scroll al cambiar de panel en owner.html (la dueña del piloto
 // no encontraba el botón "← Volver" porque nacía fuera de pantalla).
 // v9: monto a pagar visible en la pantalla de Yape/Plin de menu.html (ISS-040).
-const CACHE = 'menupro-v9';
+// v10: agrupamiento de menús por instancia (ISS-041) — toca menu.html (numera
+// los grupos al confirmar) y owner.css (.menu-grupo-head). Sin el bump, un
+// celular con la PWA instalada seguiría mandando pedidos sin `grupo`.
+const CACHE = 'menupro-v10';
 
 const ASSETS = [
   '/owner.html',

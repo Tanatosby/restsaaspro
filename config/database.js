@@ -293,6 +293,18 @@ if (!hayFull) {
 try { db.exec(`ALTER TABLE ordenes  ADD COLUMN total REAL DEFAULT NULL`); } catch (_) {}
 try { db.exec(`ALTER TABLE reservas ADD COLUMN total REAL DEFAULT NULL`); } catch (_) {}
 
+// Migración idempotente: columna `grupo` en las líneas de menú — ISS-041.
+// Identifica a qué "instancia de menú" pertenece cada plato dentro de un mismo
+// pedido: si el comensal pide 2 menús del día con entrada y segundo distintos,
+// sin esto las 4 filas quedan indistinguibles y el cocinero no sabe qué entrada
+// va con qué segundo. Numerada 1..N por pedido, en el orden en que se agregaron
+// al carrito.
+// NULL = fila anterior a esta migración. No se rellena hacia atrás a propósito:
+// el agrupamiento de esos pedidos se perdió de verdad y deducirlo inventaría
+// combinaciones falsas en el ticket de cocina. Las vistas los pintan planos.
+try { db.exec(`ALTER TABLE orden_menu_items   ADD COLUMN grupo INTEGER DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE reserva_menu_items ADD COLUMN grupo INTEGER DEFAULT NULL`); } catch (_) {}
+
 // Migración idempotente: flags semánticos en estatus_orden
 try { db.exec(`ALTER TABLE estatus_orden ADD COLUMN es_inicial    INTEGER DEFAULT 0`); } catch (_) {}
 try { db.exec(`ALTER TABLE estatus_orden ADD COLUMN es_pagado     INTEGER DEFAULT 0`); } catch (_) {}

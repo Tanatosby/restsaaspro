@@ -1,5 +1,28 @@
 # Features — Menú Pro
 
+## ~~Dos menús en un pedido: el cocinero ve qué entrada va con qué segundo~~ ✅ Completado 2026-08-16
+*Ver [ISS-041](issues/ISS-041-menus-multiples-sin-anidar.md). Salió del uso real del piloto #1.*
+
+Un comensal que pedía 2 menús del día con combinaciones distintas llegaba a cocina como una lista plana
+de 4 platos. No era un problema de vista: el dato se perdía **antes** del backend, en el `flatMap` que
+aplanaba el carrito, y las tablas no tenían dónde guardarlo.
+
+Nueva columna **`grupo`** en `orden_menu_items` y `reserva_menu_items` (migración idempotente), numerada
+por posición en el carrito. Viaja por los 4 INSERT —incluido el que convierte una reserva en orden, que
+la hereda— y vuelve en los SELECT de detalle junto con el nombre del menú.
+
+**ARCH:** el agrupamiento se renderiza con una sola **`renderMenuAgrupado()`** en `utils.js`, usada por
+las 4 vistas que pintan el detalle (Cocina ×2, Órdenes, Reservas, Cola). Cada vista pasa su propio
+formato de línea —los 4 son distintos— pero la lógica de agrupar vive en un lugar. No agrupa si hay un
+solo menú, ni si algún ítem viene sin `grupo` (pedidos anteriores a la migración: se pintan planos, sin
+inventar combinaciones).
+
+**Decidido sobre mockups renderizados a 360 px, no sobre descripciones:** encabezado por menú (el
+recuadro empujaba el botón "Preparando" fuera de pantalla con 3 menús), numerar siempre, y el nombre del
+menú **solo cuando el pedido mezcla tipos** — medido: con la letra en escala Máxima el encabezado largo
+parte en dos líneas y suma 50 px. Verificación: `scripts/test-menus-agrupados.js` 26/26,
+`scripts/test-grupo-punta-a-punta.js` 13/13 (HTTP real), 412/412 jest.
+
 ## ~~El monto a pagar, visible cuando el comensal abre Yape~~ ✅ Completado 2026-08-16
 *Ver [ISS-040](issues/ISS-040-monto-no-visible-en-pago.md). Salió del uso real del piloto #1.*
 

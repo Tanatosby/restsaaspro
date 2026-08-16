@@ -48,13 +48,18 @@ function itemsDeOrdenes(db, ids) {
     WHERE oci.id_orden IN (${placeholders(ids)})
   `).all(...ids);
 
+  // `grupo` + `menu_nombre` alimentan el agrupamiento por instancia de menú en
+  // la vista de Cocina y en Cola del día — ISS-041.
   const menu = db.prepare(`
-    SELECT omi.id_orden, omi.id, omi.cantidad, pm.nombre AS plato, sm.nombre AS seccion
+    SELECT omi.id_orden, omi.id, omi.cantidad, omi.grupo, omi.id_menu_dia,
+           pm.nombre AS plato, sm.nombre AS seccion, md.nombre AS menu_nombre
     FROM orden_menu_items omi
     JOIN componentes_menu_dia cmd ON omi.id_componente  = cmd.id
     JOIN platos_menu pm           ON cmd.id_plato_menu  = pm.id
     JOIN secciones_menu sm        ON cmd.id_seccion_menu = sm.id
+    JOIN menus_dia md             ON omi.id_menu_dia    = md.id
     WHERE omi.id_orden IN (${placeholders(ids)})
+    ORDER BY omi.grupo, omi.id
   `).all(...ids);
 
   return {
@@ -74,13 +79,15 @@ function itemsDeReservas(db, ids) {
   `).all(...ids);
 
   const menu = db.prepare(`
-    SELECT rmi.id_reserva, rmi.id, rmi.cantidad, rmi.id_menu_dia,
-           pm.nombre AS plato, sm.nombre AS seccion
+    SELECT rmi.id_reserva, rmi.id, rmi.cantidad, rmi.grupo, rmi.id_menu_dia,
+           pm.nombre AS plato, sm.nombre AS seccion, md.nombre AS menu_nombre
     FROM reserva_menu_items rmi
     JOIN componentes_menu_dia cmd ON rmi.id_componente  = cmd.id
     JOIN platos_menu pm           ON cmd.id_plato_menu  = pm.id
     JOIN secciones_menu sm        ON cmd.id_seccion_menu = sm.id
+    JOIN menus_dia md             ON rmi.id_menu_dia    = md.id
     WHERE rmi.id_reserva IN (${placeholders(ids)})
+    ORDER BY rmi.grupo, rmi.id
   `).all(...ids);
 
   return {

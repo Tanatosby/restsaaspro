@@ -601,9 +601,14 @@ async function cerrarPedidoViejo(tipo, id, resultado) {
 // ── Helpers ───────────────────────────────────────────────
 
 function renderItemLines(cartaItems = [], menuItems = []) {
-  const lineas = [
-    ...cartaItems.map(i => `<span class="cola-item-line">🍽 ${esc(i.nombre)} ×${i.cantidad}</span>`),
-    ...menuItems.map(i  => `<span class="cola-item-line">📋 ${esc(i.plato)} ×${i.cantidad} <em>${esc(i.seccion)}</em></span>`),
-  ];
-  return lineas.join('');
+  const carta = cartaItems
+    .map(i => `<span class="cola-item-line">🍽 ${esc(i.nombre)} ×${i.cantidad}</span>`)
+    .join('');
+  // Agrupado por instancia de menú cuando el pedido trae 2 o más — ISS-041
+  const menu = renderMenuAgrupado(
+    menuItems,
+    i => `<span class="cola-item-line">📋 ${esc(i.plato)} ×${i.cantidad} <em>${esc(i.seccion)}</em></span>`,
+    texto => `<span class="menu-grupo-head">${texto}</span>`
+  );
+  return carta + menu;
 }

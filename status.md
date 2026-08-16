@@ -2,6 +2,79 @@
 
 ---
 
+## 🎯 Sesión 2026-08-16 (parte 2) — ISS-041: los 3 críticos del piloto quedaron cerrados
+
+**Prompt del usuario:** seguir con ISS-041. Antes de decidir la forma del agrupamiento pidió
+**ver las opciones renderizadas**, y después pidió verlas también **con la letra grande**.
+
+### Las decisiones se tomaron sobre mockups, no sobre descripciones
+
+Se publicó una hoja de decisión con las opciones dibujadas **con el CSS real de `owner.css` a
+360 px**, no con aproximaciones. Cuatro decisiones, todas del usuario:
+
+1. **Sin backfill** de pedidos viejos — quedan con `grupo = NULL` y se pintan planos.
+2. **Encabezado por menú** (`🍽️ Menú 1`), no recuadro ni número al costado.
+3. **Numerar siempre**, aunque los menús sean de tipos distintos.
+4. **El nombre del menú solo cuando el pedido mezcla tipos.**
+
+**La 4 salió de medir, no de opinar.** Al renderizar la opción elegida en las 3 escalas
+tipográficas reales del panel (16,1 / 19,6 / 23,8 px — la dueña usa las grandes) apareció que
+el encabezado largo "🍽️ Menú 1 · Menú del día" **parte en dos líneas en la escala Máxima** y
+suma 50 px al ticket (552 → 602 px). El corto aguanta en una línea en las tres. Como el caso
+normal es que los dos menús sean del mismo tipo, ahí el nombre no aportaba nada y costaba
+esos 50 px. **Ninguna escala desborda a lo ancho**, que era el riesgo real a 360 px.
+
+### El fix, en 5 capas
+
+1. **Esquema** — `grupo INTEGER DEFAULT NULL` en `orden_menu_items` y `reserva_menu_items`,
+   migración idempotente en `config/database.js`.
+2. **Armado del pedido** — `numerarGrupos()` en `menu.html` reemplaza al `flatMap` pelado que
+   era donde se perdía el dato. Numera por **posición en el carrito**: si el comensal borra un
+   menú antes de confirmar, se recalcula sin huecos.
+3. **Escritura** — los **4** INSERT guardan `grupo`, incluido el que convierte una reserva en
+   orden (ahí se hereda; si no, se perdía en el traspaso). Todos con `item.grupo ?? null`,
+   así un `menu.html` viejo cacheado no rompe nada.
+4. **Lectura** — `grupo` + `menu_nombre` en los SELECT de detalle de `colaDia.js`,
+   `orders.js` (×3), `reservations.js` (×2) y `public.js`. **No se tocaron** los de
+   `stock.js`, `totales.js` ni `reportes.js`: suman cantidades, el agrupamiento les da igual.
+5. **Render** — una sola `renderMenuAgrupado()` en `utils.js` para las 4 vistas
+   (`cocina.js` ×2, `ordenes.js`, `reservas.js`, `pedidos.js`). Cada vista pasa su formato de
+   línea, que en las 4 es distinto; el agrupamiento vive en un solo lugar. Nueva clase
+   `.menu-grupo-head` en `owner.css`.
+
+**El alcance real era mayor que el del diagnóstico:** el issue hablaba de 2 archivos de
+backend; hay **4 INSERT y 8 SELECT** de `orden_menu_items` y otros tantos de
+`reserva_menu_items`.
+
+### Lo que se dejó fuera a propósito
+
+`contarUnidadesMenu()` (`utils/menuPricing.js`) deduce cuántos menús físicos hay contando
+filas de secciones obligatorias, con un caso borde documentado que **subestima** cuando el
+menú no tiene secciones obligatorias. Con `grupo` ese conteo se podría hacer exacto — pero
+afecta el **cobro del tapper** (Gap 5), no la vista. Queda anotado en el issue, sin tocar.
+
+### Verificación
+
+- `npx jest` → **412/412 verde**, 31 suites (408 + 4 nuevos en `tests/cola-dia.test.js`,
+  incluido uno que confirma que **el total no cambia** por agregar la columna). Hubo que
+  agregar `menus_dia` al fixture del test, que no la tenía.
+- `scripts/test-menus-agrupados.js` — **26/26**, sin navegador (`vm`): incluye pedidos viejos
+  sin grupo, huecos en la numeración, ítems desordenados y escape del nombre del menú.
+- `scripts/test-grupo-punta-a-punta.js` — **13/13**, cadena completa por HTTP real contra
+  `POST /api/public/orders`: cada grupo conserva la combinación exacta que eligió el comensal
+  y llega así hasta el ticket. Crea el pedido de prueba y lo borra.
+- Visual a 360 px con `owner.css`, claro y oscuro, escalas Normal y Máxima: **sin overflow
+  horizontal en ninguna combinación**, con los 4 casos juntos (2 menús iguales, 2 de tipos
+  distintos, 1 solo menú, pedido viejo).
+
+**Pendiente: deploy.** Es la **primera migración de esquema que se despliega con el piloto ya
+cargando datos reales**. Corre sola al arrancar la app y es idempotente, pero conviene tener
+hecho el backup de T6 antes. SW bumpeado a **`menupro-v10`**: cambian `menu.html` (numera los
+grupos al confirmar) y `owner.css` (`.menu-grupo-head`), los dos precacheados — sin el bump,
+un celular con la PWA instalada seguiría mandando pedidos sin `grupo`.
+
+---
+
 ## 🎯 Sesión 2026-08-16 — ISS-040 e ISS-042 implementados (2 de los 3 críticos)
 
 **Prompt del usuario:** pull del repo avisando primero de los cambios sin commitear, y

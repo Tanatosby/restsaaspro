@@ -97,7 +97,9 @@ router.get('/', authorizePermiso(), (req, res) => {
         rmi.id,
         rmi.cantidad,
         rmi.id_menu_dia,
+        rmi.grupo,
         md.precio   AS precio_menu,
+        md.nombre   AS menu_nombre,
         pm.nombre   AS plato,
         sm.nombre   AS seccion,
         ms.requerido
@@ -208,14 +210,14 @@ router.post('/', authorizePermiso(), (req, res) => {
         }
       }
 
-      // Insertar ítems de menú si vienen
+      // Insertar ítems de menú si vienen. `grupo` → ISS-041.
       if (menu_items?.length) {
         const stmt = db.prepare(`
-          INSERT INTO reserva_menu_items (id_reserva, id_menu_dia, id_componente, cantidad)
-          VALUES (?, ?, ?, ?)
+          INSERT INTO reserva_menu_items (id_reserva, id_menu_dia, id_componente, cantidad, grupo)
+          VALUES (?, ?, ?, ?, ?)
         `);
         for (const item of menu_items) {
-          stmt.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
+          stmt.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1, item.grupo ?? null);
         }
       }
 
@@ -449,7 +451,9 @@ router.get('/export', authorizePermiso(), async (req, res) => {
       SELECT
         rmi.cantidad,
         rmi.id_menu_dia,
+        rmi.grupo,
         md.precio   AS precio_menu,
+        md.nombre   AS menu_nombre,
         pm.nombre   AS plato,
         sm.nombre   AS seccion,
         ms.requerido
@@ -568,14 +572,15 @@ function autoMergeReservaEnOrden(reservaId, restauranteId) {
     );
     for (const i of cartaItems) stmtCarta.run(orden.id, i.id_plato_carta, i.cantidad, i.precio_unitario);
 
-    // Copiar ítems de menú
+    // Copiar ítems de menú. `grupo` viaja tal cual: si la reserva tenía 2 menús
+    // diferenciados, la orden que sale de ella los mantiene separados (ISS-041).
     const menuItems = db.prepare(
-      `SELECT id_menu_dia, id_componente, cantidad FROM reserva_menu_items WHERE id_reserva = ?`
+      `SELECT id_menu_dia, id_componente, cantidad, grupo FROM reserva_menu_items WHERE id_reserva = ?`
     ).all(reservaId);
     const stmtMenu = db.prepare(
-      `INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad) VALUES (?, ?, ?, ?)`
+      `INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo) VALUES (?, ?, ?, ?, ?)`
     );
-    for (const i of menuItems) stmtMenu.run(orden.id, i.id_menu_dia, i.id_componente, i.cantidad);
+    for (const i of menuItems) stmtMenu.run(orden.id, i.id_menu_dia, i.id_componente, i.cantidad, i.grupo ?? null);
 
     // Copiar cargo_modalidad de la reserva a la orden
     const { cargo_modalidad } = db.prepare(`SELECT cargo_modalidad FROM reservas WHERE id = ?`).get(reservaId);

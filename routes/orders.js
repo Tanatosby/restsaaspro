@@ -66,17 +66,23 @@ router.get('/activas', authorizePermiso(), (req, res) => {
       WHERE oci.id_orden = ?
     `).all(o.id);
 
+    // `grupo` + `menu_nombre` → agrupamiento por instancia de menú (ISS-041)
     const menuItems = db.prepare(`
       SELECT
         omi.id,
         omi.cantidad,
+        omi.grupo,
+        omi.id_menu_dia,
         pm.nombre     AS plato,
-        sm.nombre     AS seccion
+        sm.nombre     AS seccion,
+        md.nombre     AS menu_nombre
       FROM orden_menu_items omi
       JOIN componentes_menu_dia cmd ON omi.id_componente = cmd.id
       JOIN platos_menu pm           ON cmd.id_plato_menu = pm.id
       JOIN secciones_menu sm        ON cmd.id_seccion_menu = sm.id
+      JOIN menus_dia md             ON omi.id_menu_dia   = md.id
       WHERE omi.id_orden = ?
+      ORDER BY omi.grupo, omi.id
     `).all(o.id);
 
     const total = cartaItems.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0);
@@ -235,8 +241,10 @@ router.get('/', authorizePermiso(), (req, res) => {
         omi.id,
         omi.cantidad,
         omi.id_menu_dia,
+        omi.grupo,
         pm.nombre   AS plato,
         sm.nombre   AS seccion,
+        md.nombre   AS menu_nombre,
         md.precio   AS precio_menu,
         ms.requerido
       FROM orden_menu_items omi
@@ -344,12 +352,13 @@ router.post('/', authorizePermiso(), (req, res) => {
         stmtCarta.run(lastInsertRowid, item.id_plato_carta, item.cantidad || 1, item.id_plato_carta);
       }
 
+      // `grupo` distingue instancias del mismo menú en el pedido — ISS-041.
       const stmtMenu = db.prepare(`
-        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo)
+        VALUES (?, ?, ?, ?, ?)
       `);
       for (const item of (menu_items || [])) {
-        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
+        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1, item.grupo ?? null);
       }
 
       // Descuenta stock de los platos con control; lanza 409 si no alcanza
@@ -556,7 +565,8 @@ router.get('/export', authorizePermiso(), async (req, res) => {
 
     const menuItems = db.prepare(`
       SELECT omi.cantidad, pm.nombre AS plato, sm.nombre AS seccion,
-             md.precio AS precio_menu, omi.id_menu_dia, ms.requerido
+             md.precio AS precio_menu, md.nombre AS menu_nombre,
+             omi.id_menu_dia, omi.grupo, ms.requerido
       FROM orden_menu_items omi
       JOIN componentes_menu_dia cmd ON omi.id_componente  = cmd.id
       JOIN platos_menu pm           ON cmd.id_plato_menu  = pm.id

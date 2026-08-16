@@ -37,6 +37,54 @@ function emptyState(icon, text) {
   return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div></div>`;
 }
 
+// ── Agrupamiento de platos por instancia de menú — ISS-041 ──────────────────
+// Compartido por cocina.js, ordenes.js, reservas.js y pedidos.js: si un pedido
+// trae 2 menús del día con entrada y segundo distintos, cada vista tiene que
+// mostrar qué entrada va con qué segundo, y las 4 pintan la línea de plato con
+// un formato propio. Por eso el agrupamiento vive acá una sola vez y cada vista
+// pasa su `pintarLinea` y su `pintarEncabezado`.
+//
+// Reglas:
+// - Ítems sin `grupo` (pedidos anteriores a la migración): se pintan planos,
+//   igual que antes. No se inventa agrupamiento — ese dato se perdió de verdad.
+// - Un solo menú en el pedido: tampoco se agrupa. El encabezado sobraría; el
+//   problema aparece recién con 2 o más.
+// - El nombre del menú se agrega al encabezado SOLO si el pedido mezcla menús
+//   de tipos distintos. Cuando son todos del mismo tipo (el caso normal) el
+//   nombre es redundante, y con la letra en escala máxima parte el encabezado
+//   en dos líneas.
+function renderMenuAgrupado(menuItems, pintarLinea, pintarEncabezado) {
+  const items = menuItems || [];
+  if (!items.length) return '';
+
+  const planas = () => items.map(pintarLinea).join('');
+  if (!pintarEncabezado) return planas();
+  if (items.some(i => i.grupo == null)) return planas();
+
+  const grupos = new Map();
+  for (const i of items) {
+    if (!grupos.has(i.grupo)) grupos.set(i.grupo, []);
+    grupos.get(i.grupo).push(i);
+  }
+  if (grupos.size < 2) return planas();
+
+  // El nombre solo aporta cuando hay más de un tipo de menú en el pedido
+  const tipos = new Set(items.map(i => i.menu_nombre).filter(Boolean));
+  const conNombre = tipos.size > 1;
+
+  // Se numera por posición, no por el valor de `grupo`: si quedara un hueco
+  // (ej. grupos 1 y 3), el cocinero igual lee "Menú 1" y "Menú 2".
+  let n = 0;
+  return [...grupos.keys()].sort((a, b) => a - b).map(clave => {
+    n++;
+    const delGrupo = grupos.get(clave);
+    const nombre = conNombre && delGrupo[0].menu_nombre
+      ? ` · ${esc(delGrupo[0].menu_nombre)}`
+      : '';
+    return pintarEncabezado(`🍽️ Menú ${n}${nombre}`) + delGrupo.map(pintarLinea).join('');
+  }).join('');
+}
+
 // ── Badge de modalidad — compartido por ordenes.js/reservas.js/pedidos.js/cocina.js ──
 // Vive acá y no en ordenes.js para que cocina.js no dependa del orden de carga
 // de los <script> de owner.html (cocina.js se carga antes que ordenes.js).

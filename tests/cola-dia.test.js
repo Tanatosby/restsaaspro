@@ -74,7 +74,8 @@ function crearDB() {
     );
     CREATE TABLE orden_menu_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      id_orden INTEGER, id_menu_dia INTEGER, id_componente INTEGER, cantidad INTEGER
+      id_orden INTEGER, id_menu_dia INTEGER, id_componente INTEGER, cantidad INTEGER,
+      grupo INTEGER DEFAULT NULL
     );
     CREATE TABLE reserva_carta_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,13 +83,19 @@ function crearDB() {
     );
     CREATE TABLE reserva_menu_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      id_reserva INTEGER, id_menu_dia INTEGER, id_componente INTEGER, cantidad INTEGER
+      id_reserva INTEGER, id_menu_dia INTEGER, id_componente INTEGER, cantidad INTEGER,
+      grupo INTEGER DEFAULT NULL
     );
 
     INSERT INTO platos_carta (nombre, precio) VALUES ('Ceviche', 25.0);
     INSERT INTO platos_menu  (nombre) VALUES ('Arroz con pollo');
     INSERT INTO secciones_menu (nombre) VALUES ('Segundo');
     INSERT INTO componentes_menu_dia (id_menu_dia, id_plato_menu, id_seccion_menu) VALUES (1, 1, 1);
+
+    -- El nombre del menú viaja al frontend para poder rotular los grupos
+    -- cuando un pedido mezcla tipos distintos (ISS-041)
+    CREATE TABLE menus_dia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, precio REAL);
+    INSERT INTO menus_dia (nombre, precio) VALUES ('Menú del día', 11.0);
   `);
   return db;
 }
@@ -287,6 +294,60 @@ describe('ítems agrupados (sin N+1)', () => {
     expect(ordenB.carta_items).toHaveLength(0);
     expect(ordenB.menu_items).toHaveLength(1);
     expect(ordenB.menu_items[0].cantidad).toBe(3);
+  });
+
+  // ── ISS-041 ────────────────────────────────────────────────────────────────
+  // El cocinero necesita saber qué entrada va con qué segundo cuando el mismo
+  // pedido trae 2 menús. El agrupamiento visual lo hace el frontend, pero solo
+  // puede hacerlo si `grupo` y `menu_nombre` llegan hasta acá.
+  test('los ítems de menú llegan con su grupo y el nombre del menú', () => {
+    const db = crearDB();
+    const id = crearOrden(db, { fecha: HOY });
+    const ins = db.prepare(
+      `INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo) VALUES (?,1,1,1,?)`
+    );
+    ins.run(id, 1);
+    ins.run(id, 2);
+
+    const items = colaDelDia(db, 1, HOY).ordenes[0].menu_items;
+    expect(items).toHaveLength(2);
+    expect(items.map(i => i.grupo)).toEqual([1, 2]);
+    expect(items[0].menu_nombre).toBe('Menú del día');
+  });
+
+  test('los ítems viejos, sin grupo, siguen llegando con grupo null', () => {
+    const db = crearDB();
+    const id = crearOrden(db, { fecha: HOY });
+    // Insert sin la columna `grupo`, como los pedidos anteriores a la migración
+    db.prepare(`INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad) VALUES (?,1,1,1)`).run(id);
+
+    const items = colaDelDia(db, 1, HOY).ordenes[0].menu_items;
+    expect(items).toHaveLength(1);
+    expect(items[0].grupo).toBeNull();
+  });
+
+  test('las reservas también traen el grupo — la orden que sale de una reserva lo hereda', () => {
+    const db = crearDB();
+    const id = crearReserva(db, { fecha: HOY, estatus: 'en_cocina' });
+    const ins = db.prepare(
+      `INSERT INTO reserva_menu_items (id_reserva, id_menu_dia, id_componente, cantidad, grupo) VALUES (?,1,1,1,?)`
+    );
+    ins.run(id, 1);
+    ins.run(id, 2);
+
+    const items = cocinaDelDia(db, 1, HOY).reservas[0].menu_items;
+    expect(items.map(i => i.grupo)).toEqual([1, 2]);
+    expect(items[0].menu_nombre).toBe('Menú del día');
+  });
+
+  test('el total no cambia por agregar grupo — el precio no depende de la instancia', () => {
+    const db = crearDB();
+    const id = crearOrden(db, { fecha: HOY });
+    db.prepare(`INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario) VALUES (?,1,2,25.0)`).run(id);
+    db.prepare(`INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo) VALUES (?,1,1,1,1)`).run(id);
+    db.prepare(`INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo) VALUES (?,1,1,1,2)`).run(id);
+
+    expect(colaDelDia(db, 1, HOY).ordenes[0].total).toBe(50);
   });
 
   test('el total sale de los ítems de carta', () => {

@@ -9,6 +9,16 @@
 
 let _cocinaPollTimer = null;
 
+// Formato de línea y de encabezado de grupo del ticket de cocina (ISS-041).
+// El agrupamiento en sí lo hace renderMenuAgrupado() en utils.js, compartida
+// con Órdenes, Reservas y Cola del día.
+const lineaPlatoCocina = i =>
+  `<div class="order-item-line">📋 <strong>${esc(i.plato)}</strong> ×${i.cantidad}
+    <span style="font-size:0.785714rem;color:var(--muted)">[${esc(i.seccion)}]</span>
+  </div>`;
+
+const encabezadoMenuCocina = texto => `<div class="menu-grupo-head">${texto}</div>`;
+
 async function loadColaCocina() {
   const el = document.getElementById('cocina-cola');
   if (!el) return;
@@ -71,11 +81,7 @@ function renderCocinaTicket(o) {
   const cartaLines = o.carta_items.map(i =>
     `<div class="order-item-line">🍽️ <strong>${esc(i.nombre)}</strong> ×${i.cantidad}</div>`
   ).join('');
-  const menuLines = o.menu_items.map(i =>
-    `<div class="order-item-line">📋 <strong>${esc(i.plato)}</strong> ×${i.cantidad}
-      <span style="font-size:0.785714rem;color:var(--muted)">[${esc(i.seccion)}]</span>
-    </div>`
-  ).join('');
+  const menuLines = renderMenuAgrupado(o.menu_items, lineaPlatoCocina, encabezadoMenuCocina);
 
   const btnAccion = o.es_inicial
     ? `<button class="btn btn-primary btn-sm" onclick="avanzarCocina(${o.id},'es_en_cocina')">🍳 Preparando</button>`
@@ -104,11 +110,7 @@ function renderCocinaTicket(o) {
 }
 
 function renderCocinaReserva(r) {
-  const menuLines = (r.menu_items || []).map(i =>
-    `<div class="order-item-line">📋 <strong>${esc(i.plato)}</strong> ×${i.cantidad}
-      <span style="font-size:0.785714rem;color:var(--muted)">[${esc(i.seccion)}]</span>
-    </div>`
-  ).join('');
+  const menuLines = renderMenuAgrupado(r.menu_items, lineaPlatoCocina, encabezadoMenuCocina);
   const cartaLines = (r.carta_items || []).map(i =>
     `<div class="order-item-line">🍽️ <strong>${esc(i.nombre)}</strong> ×${i.cantidad}</div>`
   ).join('');

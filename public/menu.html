@@ -652,6 +652,21 @@ async function renderReservarContent() {
     if (mode === 'reservar') updateResCartSummary();
   }
 
+  // Aplana los menús del carrito para enviarlos, pero numerando cada uno —
+  // ISS-041. Antes esto era un `flatMap` pelado y ahí se perdía el dato: dos
+  // menús del día con entrada y segundo distintos llegaban al backend como 4
+  // filas sueltas, y el cocinero no podía saber qué entrada iba con qué segundo.
+  // El número sale de la posición en el carrito (1..N), no de un id guardado en
+  // el ítem: si el comensal borra un menú del carrito, la numeración se vuelve a
+  // calcular sin huecos.
+  function numerarGrupos(carrito) {
+    let grupo = 0;
+    return carrito.filter(i => i.type === 'menu').flatMap(i => {
+      grupo++;
+      return i.payload.menuItems.map(mi => ({ ...mi, grupo }));
+    });
+  }
+
   function agregarMenu(mode, menuId, elegible, precio, nombreMenu) {
     const source = mode === 'pedir' ? menusDia : resMenusDia;
     const menu = source.find(m => m.id === menuId);
@@ -879,7 +894,7 @@ async function renderReservarContent() {
     if (!nombre) return showMsg('Tu nombre es requerido', true);
 
     const cartaItems = cart.filter(i => i.type === 'carta').map(i => ({ id_plato_carta: i.platoId, cantidad: i.cantidad }));
-    const menuItems  = cart.filter(i => i.type === 'menu').flatMap(i => i.payload.menuItems);
+    const menuItems  = numerarGrupos(cart);
     const payload = {
       id_restaurante: parseInt(restauranteId),
       mesa:           mesa ? parseInt(mesa) : null,
@@ -985,7 +1000,7 @@ async function renderReservarContent() {
     if (!resCart.length) return showMsg('Agrega al menos un ítem a la reserva', true);
 
     const cartaItems = resCart.filter(i => i.type === 'carta').map(i => ({ id_plato_carta: i.platoId, cantidad: i.cantidad }));
-    const menuItems  = resCart.filter(i => i.type === 'menu').flatMap(i => i.payload.menuItems);
+    const menuItems  = numerarGrupos(resCart);
     const payload = {
       id_restaurante:   parseInt(restauranteId),
       nombre_cliente:   nombre,

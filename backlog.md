@@ -12,19 +12,24 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 
 ---
 
-## 🚨 Empezar acá la próxima sesión — ISS-041, el único de los 3 que queda
+## ✅ Los 3 críticos del piloto #1 están cerrados — falta desplegarlos
 
-Los 3 salieron del uso real del piloto #1 el 2026-08-14 (Día 3 de retoma, ver `pilotos.md`).
-**Dos ya están resueltos** el 2026-08-16 (pendientes de deploy):
+Salieron del uso real el 2026-08-14 (Día 3 de retoma, ver `pilotos.md`) y **los tres se
+resolvieron el 2026-08-16**. Ninguno está en producción todavía:
 
 | # | Título | Estado |
 |---|--------|--------|
-| ~~[ISS-040](issues/ISS-040-monto-no-visible-en-pago.md)~~ | El comensal no ve el monto a pagar en la pantalla de Yape/Plin | ✅ **Hecho 2026-08-16** — bloque "Total a pagar" sticky en `#pago-screen`. SW → `menupro-v9`, **deploy pendiente** |
-| ~~[ISS-042](issues/ISS-042-para-llevar-no-viaja-cocina.md)~~ | La etiqueta "para llevar" no le llega al cocinero | ✅ **Hecho 2026-08-16** — badge 🥡/🛵 en los tickets de cocina; `badgeModalidad()` movida a `utils.js`. **Deploy pendiente** |
-| [ISS-041](issues/ISS-041-menus-multiples-sin-anidar.md) | 2 menús del día en un mismo pedido no se pueden diferenciar en cocina/panel | 🔴 **Sin implementar.** Grande: requiere migración de esquema. Se pierde el agrupamiento entrada/segundo al aplanar el carrito antes de enviarlo; falta columna `grupo` en `orden_menu_items`/`reserva_menu_items`, y hay que agrupar al renderizar en 4 lugares |
+| ~~[ISS-040](issues/ISS-040-monto-no-visible-en-pago.md)~~ | El comensal no ve el monto a pagar en la pantalla de Yape/Plin | ✅ Bloque "Total a pagar" sticky en `#pago-screen`. SW → `menupro-v9`. **Deploy pendiente** |
+| ~~[ISS-042](issues/ISS-042-para-llevar-no-viaja-cocina.md)~~ | La etiqueta "para llevar" no le llega al cocinero | ✅ Badge 🥡/🛵 en los tickets; `badgeModalidad()` movida a `utils.js`. **Deploy pendiente** |
+| ~~[ISS-041](issues/ISS-041-menus-multiples-sin-anidar.md)~~ | 2 menús del día en un pedido no se pueden diferenciar | ✅ Columna `grupo` + `renderMenuAgrupado()` en las 4 vistas. **Migración de esquema — ver nota de deploy abajo.** |
 
-**Nota para ISS-041:** el badge de modalidad de ISS-042 ya ordenó el ticket de cocina —
-al agrupar por `grupo` hay que respetar ese bloque, que va entre el header y los platos.
+> ⚠️ **ISS-041 toca el esquema.** La migración es idempotente y corre sola al arrancar la app
+> (`config/database.js`, patrón `try { ALTER TABLE } catch {}`), así que el deploy no pide
+> ningún paso manual. Pero **conviene tener el backup de T6 hecho antes** — es la primera
+> migración que se despliega desde que el piloto tiene datos reales.
+
+**Lo que sigue después del deploy:** verificar en el servicio real un pedido de 2 menús, y
+retomar la lista de tareas de abajo (T4, T5, T11 y T12 son las que quedan con más valor).
 
 Próximo número de issue libre: **ISS-043** (ojo: **ISS-036 y ISS-037 están reservados**, no
 usados todavía — ver T10 y T11 más abajo).

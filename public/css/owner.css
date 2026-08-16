@@ -449,6 +449,19 @@ tbody tr:hover { background: var(--surface-2); }
 .order-items { font-size:1rem; color: var(--text-2); margin-bottom: 0.75rem; }
 .order-item-line { padding: 3px 0; border-bottom: 1px dashed var(--border); }
 .order-item-line:last-child { border-bottom: none; }
+
+/* Encabezado de instancia de menú dentro de un pedido — ISS-041.
+   Aparece solo cuando hay 2+ menús: separa qué entrada va con qué segundo.
+   Va en línea propia y no dentro del header porque en 360px compite con el
+   badge de estatus. `display:block` para que también funcione en la Cola,
+   donde las líneas son <span>. */
+.menu-grupo-head {
+  display: block; font-size:0.785714rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--accent); padding: 0.5rem 0 0.15rem;
+}
+/* El primero también lleva aire arriba: en Cocina viene justo debajo del badge
+   de modalidad y sin separación los dos se leen como un solo bloque. */
 .order-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* ── Stat cards ── */

@@ -323,13 +323,15 @@ router.post('/orders', (req, res) => {
         stmtCarta.run(lastInsertRowid, item.cantidad || 1, item.id_plato_carta);
       }
 
-      // Ítems de menú
+      // Ítems de menú. `grupo` distingue instancias del mismo menú dentro del
+      // pedido (ISS-041); si el cliente es de una versión vieja de menu.html y
+      // no lo manda, queda NULL y la vista los pinta planos como antes.
       const stmtMenu = db.prepare(`
-        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo)
+        VALUES (?, ?, ?, ?, ?)
       `);
       for (const item of menu_items) {
-        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
+        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1, item.grupo ?? null);
       }
 
       // Descuenta stock de los platos con control; lanza 409 si no alcanza
@@ -462,13 +464,13 @@ router.post('/reservations', (req, res) => {
       stmtCarta.run(lastInsertRowid, item.cantidad || 1, item.id_plato_carta);
     }
 
-    // Ítems de menú
+    // Ítems de menú. Ver nota sobre `grupo` en POST /orders (ISS-041).
     const stmtMenu = db.prepare(`
-      INSERT INTO reserva_menu_items (id_reserva, id_menu_dia, id_componente, cantidad)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO reserva_menu_items (id_reserva, id_menu_dia, id_componente, cantidad, grupo)
+      VALUES (?, ?, ?, ?, ?)
     `);
     for (const item of menu_items) {
-      stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1);
+      stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1, item.grupo ?? null);
     }
 
     // Descuenta stock de los platos con control; lanza 409 si no alcanza.
@@ -571,12 +573,15 @@ router.get('/reserva/:codigo', (req, res) => {
   `).all(reserva.id);
 
   const menu_items = db.prepare(`
-    SELECT pm.nombre AS plato, sm.nombre AS seccion, rmi.cantidad
+    SELECT pm.nombre AS plato, sm.nombre AS seccion, rmi.cantidad,
+           rmi.grupo, md.nombre AS menu_nombre
     FROM reserva_menu_items rmi
     JOIN componentes_menu_dia cmd ON rmi.id_componente  = cmd.id
     JOIN platos_menu pm           ON cmd.id_plato_menu  = pm.id
     JOIN secciones_menu sm        ON cmd.id_seccion_menu = sm.id
+    JOIN menus_dia md             ON rmi.id_menu_dia    = md.id
     WHERE rmi.id_reserva = ?
+    ORDER BY rmi.grupo, rmi.id
   `).all(reserva.id);
 
   res.json({ ...reserva, carta_items, menu_items });

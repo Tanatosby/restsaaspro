@@ -1,7 +1,6 @@
 # ISS-041 — Dos menús del día en el mismo pedido no se pueden diferenciar
 
-**Estado:** 🔎 Diagnosticado — fix pendiente (no implementado a pedido del usuario, se
-documenta primero). Requiere migración de esquema, no es solo un cambio de vista.
+**Estado:** ✅ **Resuelto 2026-08-16** — pendiente de deploy
 **Módulo:** `public/menu.html` (`agregarMenu`, `confirmarPedido`, `confirmarReserva`),
 `routes/public.js` (`POST /orders`, `POST /reservations`), `routes/orders.js`,
 `routes/reservations.js`, tabla `orden_menu_items` / `reserva_menu_items`,
@@ -72,23 +71,81 @@ o al revés.
 
 ---
 
-## Solución propuesta (sin implementar) — requiere cambio de esquema
+## Decisiones de producto (tomadas por el usuario sobre mockups, 2026-08-16)
 
-1. Migración idempotente: columna `grupo` (o `linea`) en `orden_menu_items` y
-   `reserva_menu_items`.
-2. Frontend: asignar un índice de grupo por cada menú agregado al carrito y viajarlo en el
-   payload en vez de aplanarlo sin esa info.
-3. Backend: guardar `grupo` al insertar (`routes/public.js`), devolverlo en los `SELECT` de
-   detalle (`routes/orders.js`, `routes/reservations.js` — varios puntos cada uno).
-4. Frontend: agrupar por `grupo` antes de renderizar en los 4 lugares identificados — algo
-   como "🍽️ Menú 1: Entrada X + Segundo Y" / "🍽️ Menú 2: Entrada A + Segundo B".
-5. Tests nuevos/actualizados + `npx jest` completo.
+Se le presentaron las opciones renderizadas con el CSS real a 360 px antes de escribir
+código. Lo decidido:
+
+| # | Decisión | Elegido | Descartado y por qué |
+|---|---|---|---|
+| 1 | Pedidos ya existentes | **Sin backfill.** Quedan con `grupo = NULL` y se pintan planos | Deducir el agrupamiento de datos viejos inventaría combinaciones falsas en el ticket, peor que no agrupar |
+| 2 | Forma del agrupamiento | **Encabezado por menú** (`🍽️ Menú 1` + platos debajo) | *Recuadro por menú*: con 3 menús empuja el botón "Preparando" fuera de pantalla. *Número al costado*: roba ~30 px de ancho a los nombres de plato, que a 360 px ya se cortan |
+| 3 | Cuándo numerar | **Siempre**, aunque los menús sean de tipos distintos | *Solo si se repite* obliga a numerar unos sí y otros no en el caso "2 menús del día + 1 ejecutivo", y duplica la lógica en 4 renders |
+| 4 | Nombre del menú en el encabezado | **Solo cuando el pedido mezcla tipos distintos** | Salió de medir: con la letra en escala Máxima, "🍽️ Menú 1 · Menú del día" parte en 2 líneas y suma 50 px. Cuando los menús son del mismo tipo (el caso normal) el nombre no aporta nada |
+
+---
+
+## Solución implementada (2026-08-16)
+
+**1 · Esquema** — `config/database.js`: columna `grupo INTEGER DEFAULT NULL` en
+`orden_menu_items` y `reserva_menu_items`, con el patrón `try { ALTER TABLE } catch {}`
+idempotente que ya usa el resto del archivo. `NULL` = fila anterior a la migración.
+
+**2 · Armado del pedido** — `public/menu.html`: nueva `numerarGrupos(carrito)` reemplaza al
+`flatMap` pelado de `confirmarPedido()` y `confirmarReserva()`, que era donde se perdía el
+dato. El número sale de la **posición en el carrito** (1..N), no de un id guardado en el
+ítem: si el comensal borra un menú antes de confirmar, la numeración se recalcula sin huecos.
+
+**3 · Escritura** — `grupo` se guarda en los 4 INSERT: `routes/public.js` (orden y reserva
+del cliente), `routes/orders.js` (alta desde el panel) y `routes/reservations.js` (el que
+convierte una reserva en orden — ahí el grupo se **hereda**, si no se perdería en el
+traspaso). Todos usan `item.grupo ?? null`: un cliente con una versión vieja de `menu.html`
+cacheada no rompe nada, solo guarda NULL.
+
+**4 · Lectura** — `grupo` + `menu_nombre` (con JOIN a `menus_dia`) se devuelven en los SELECT
+de detalle de `utils/colaDia.js` (Cocina y Cola), `routes/orders.js` (×3),
+`routes/reservations.js` (×2) y `routes/public.js` (estado de la reserva del cliente).
+**No se tocaron** los SELECT de `utils/stock.js`, `utils/totales.js` ni `routes/reportes.js`:
+suman cantidades y el agrupamiento les da igual.
+
+**5 · Render** — nueva `renderMenuAgrupado(menuItems, pintarLinea, pintarEncabezado)` en
+`public/js/modules/utils.js`, **una sola vez**, usada por las 4 vistas que pintan el detalle
+(`cocina.js` ×2, `ordenes.js`, `reservas.js`, `pedidos.js`). Cada vista pasa su propio
+formato de línea porque las 4 lo tienen distinto; el agrupamiento vive en un solo lugar.
+Reglas: no agrupa si algún ítem viene sin `grupo`, no agrupa si hay un solo menú (el
+encabezado sobraría), y agrega el nombre solo si hay más de un tipo. Nueva clase
+`.menu-grupo-head` en `owner.css`, en línea propia entre el header y los platos.
+
+**Lo que NO se tocó, a propósito:** `contarUnidadesMenu()` en `utils/menuPricing.js` deduce
+cuántos menús físicos hay contando filas obligatorias, con un caso borde documentado que
+subestima cuando el menú no tiene secciones obligatorias. Ahora que existe `grupo`, ese
+conteo se podría hacer exacto — pero afecta el **cobro del tapper** (Gap 5), no la vista, y
+queda fuera del alcance acordado para este issue.
+
+---
+
+## Verificación
+
+- **`tests/cola-dia.test.js`** — 4 tests nuevos: los ítems llegan con su grupo y el nombre
+  del menú; los viejos llegan con `grupo: null`; las reservas también lo traen; y el total
+  **no cambia** por agregar la columna. Hubo que agregar `menus_dia` al fixture, que no la
+  tenía. `npx jest` → **412/412 verde**, 31 suites (eran 408 antes de estos 4).
+- **`scripts/test-menus-agrupados.js`** (sin navegador, `vm`) — **26/26**: agrupa con 2+,
+  no agrupa con 1 solo, no agrupa pedidos viejos, no agrupa si algún ítem viene sin grupo,
+  numera por posición aunque haya huecos (grupos 1 y 3 → "Menú 1" y "Menú 2"), ordena grupos
+  desordenados, escapa el nombre del menú (lo escribe el owner), y el badge de ISS-042 sigue
+  arriba de los grupos.
+- **`scripts/test-grupo-punta-a-punta.js`** — **13/13**, la cadena completa por HTTP real
+  contra `POST /api/public/orders`: cada grupo conserva **la combinación exacta** que eligió
+  el comensal, llega así a `cocinaDelDia()` y el ticket la pinta separada. Crea el pedido de
+  prueba y lo borra al terminar.
+- **Visual** a 360 px con `owner.css`, en tema claro y oscuro y en las escalas Normal y
+  Máxima: **sin overflow horizontal en ninguna combinación**. Se revisaron los 4 casos
+  juntos (2 menús iguales, 2 de tipos distintos, 1 solo menú, pedido viejo sin grupo).
 
 ---
 
 ## Pendiente
 
-- Decidir si se implementa junto con ISS-042 (comparten el mismo módulo de renderizado en
-  cocina) o por separado — este toca esquema de datos, ISS-042 es solo frontend.
-- Confirmar alcance: ¿aplica también cuando se mezclan tipos de menú distintos en el mismo
-  pedido (no solo 2 del mismo tipo)? El diseño de `grupo` propuesto cubre ambos casos igual.
+- **Deploy** (lo hace el usuario).
+- Verificar en el servicio real del piloto #1 con un pedido de 2 menús.
