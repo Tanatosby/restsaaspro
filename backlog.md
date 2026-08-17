@@ -25,16 +25,76 @@ desplegaron el 2026-08-16:
 
 ### 🚨 Empezar acá la próxima sesión
 
-1. **T6, el backup de la BD.** Es lo único verdaderamente urgente que queda. El susto del
-   2026-08-16 (ISS-044) lo dejó clarísimo: si algún día el problema es real, **no hay a dónde
-   volver**. Ya se desplegaron dos migraciones de esquema sin backup.
-2. **Desplegar ISS-044 + T11** — hechos el 2026-08-16, sin desplegar. Ojo: a partir de este
-   deploy hay que **subir `BUILD` en `utils/buildVersion.js`** en cada cambio de frontend
-   (ver el aviso al inicio de la sección 6 de `deploy.md`).
-3. **Verificar en el servicio real** un pedido con 2 menús: que el ticket de cocina los
-   separe, y que la persona de cocina vea la etiqueta "para llevar".
-4. **ISS-043 — el menú sin secciones obligatorias cobra de menos** (ver sección siguiente).
-   Es de cobro, no de vista.
+**Primero lo comprometido:** T0 (abajo) quedó a medio camino en la sesión del 2026-08-16 — es
+un cambio chico y ya está diseñado, así que conviene cerrarlo antes de abrir frente nuevo.
+
+| # | Qué | Por qué ahora |
+|---|---|---|
+| **T0** | **`BUILD` automático por hash** — las "15 líneas" (diseño completo abajo) | Es el único paso manual del deploy y si se olvida vuelve ISS-044. Ya está decidido, solo falta escribirlo |
+| **T6** | **Backup de la BD** | Lo más riesgoso del proyecto. Ya se desplegaron **dos migraciones** sobre datos reales sin backup; el 2026-08-16 la respuesta a "¿restauramos?" fue *no hay* |
+| — | **Desplegar** `e12d13b` + `02a5bc2` (ISS-044 + T11 + docs) | Hechos el 2026-08-16, **sin desplegar todavía**. `BUILD` ya está en `11`, no hay que tocarlo para este deploy |
+| — | **Verificar en el servicio real** un pedido con 2 menús y la etiqueta "para llevar" | Los 3 críticos están en producción pero nadie los vio funcionar en un servicio de verdad |
+| **ISS-043** | El menú sin secciones obligatorias **cobra de menos** (ver sección propia) | Es de cobro, no de vista. Falta correr la consulta en producción para saber si aplica |
+
+**Decisión del usuario pendiente, sin bloquear nada:** el ícono de calendario con la fecha real
+(reemplazo del emoji 📅, que dibuja "17 de julio" fijo). Están las 3 variantes renderizadas y
+medidas en las 3 escalas de letra; falta que elija **A**, **B** o **C**. Recomendada: **A**
+(banda con el mes + número del día). El alcance ya está mapeado: de los 17 emojis del código,
+se cambian los que acompañan una fecha real y los que hacen de ícono de "Reservas"; los 3 que
+van pegados al nombre del cliente (`cocina.js:133`, `pedidos.js:249` y `:515`) **no se tocan**.
+
+---
+
+### T0 · `BUILD` automático — el diseño ya está decidido
+
+**El problema:** hoy `utils/buildVersion.js` tiene un número escrito a mano que hay que subir
+en cada cambio de `public/`. Si alguien se olvida, los navegadores siguen sirviendo archivos
+viejos y **vuelve exactamente ISS-044**: el panel vacío que parece pérdida de datos. Un aviso
+en `deploy.md` no es una garantía; el paso manual hay que eliminarlo.
+
+**La solución:** que `BUILD` se calcule solo, como hash del contenido de los archivos servidos.
+
+```js
+// utils/buildVersion.js — reemplaza la constante escrita a mano
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+const PUBLIC = path.join(__dirname, '..', 'public');
+// Los mismos archivos que el SW precachea + los HTML que los referencian
+const RUTAS = ['owner.html', 'menu.html', 'css/owner.css', 'css/menu.css', 'js'];
+
+function calcular() {
+  const h = crypto.createHash('sha1');
+  const recorrer = p => {
+    const st = fs.statSync(p);
+    if (st.isDirectory()) return fs.readdirSync(p).sort().forEach(f => recorrer(path.join(p, f)));
+    if (/\.(js|css|html)$/.test(p)) h.update(fs.readFileSync(p));
+  };
+  for (const r of RUTAS) recorrer(path.join(PUBLIC, r));
+  return h.digest('hex').slice(0, 8);
+}
+
+let BUILD;
+try { BUILD = calcular(); }
+catch (e) { BUILD = String(Date.now()); }  // nunca dejar la app sin arrancar por esto
+
+module.exports = { BUILD };
+```
+
+**Puntos ya pensados, no hace falta volver a discutirlos:**
+- **Es determinista.** Mismo código → mismo hash. Un `pm2 restart` sin cambios **no** invalida
+  los cachés de nadie (que es justo lo que no queremos hacerle a los celulares del piloto).
+- **No hay recursión** con `sw.js`: el archivo en disco guarda el placeholder `__BUILD__`, así
+  que su contenido no depende del hash. Igual `sw.js` **no** entra en el cálculo.
+- **Se calcula una sola vez al arrancar**, no por request. Son ~25 archivos chicos.
+- **Fallback obligatorio:** si la lectura falla, `Date.now()`. Peor caso, se invalida caché de
+  más; nunca que la app no levante.
+- El hash queda en la URL (`?v=a1b2c3d4`) y en el nombre del caché (`menupro-va1b2c3d4`).
+
+**Al terminar:** actualizar `deploy.md` §6.1, que hoy explica el paso manual, y borrar el aviso
+de "subir BUILD" del resto de la documentación. `scripts/test-version-assets.js` debería seguir
+pasando tal cual — no asume que `BUILD` sea un número.
 
 **Menor, encontrado de paso el 2026-08-16:** `owner.html:1145` hace
 `window.location.replace('/login.html')` en el auth guard, pero eso **no corta la ejecución**

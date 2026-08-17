@@ -2,6 +2,37 @@
 
 ---
 
+## 📍 DÓNDE ESTAMOS — cierre de la sesión del 2026-08-16
+
+**Lo que está en producción** (deploy `291c15b`, hecho por el usuario ese día): los 3 issues
+críticos del piloto — **ISS-040** (monto visible al pagar), **ISS-041** (dos menús separados en
+el ticket) y **ISS-042** ("para llevar" en cocina).
+
+**Lo que está hecho pero SIN DESPLEGAR:** `e12d13b` (ISS-044 + T11, el versionado de assets y
+el precache del SW) y `02a5bc2` (`deploy.md` actualizado). `BUILD` ya está en `11`, así que ese
+deploy no requiere tocar nada.
+
+**Lo que quedó a medio camino, y es por donde hay que seguir:** el `BUILD` automático por hash
+— "las 15 líneas". Está **decidido y diseñado**, con el código propuesto y los puntos finos ya
+resueltos en `backlog.md` → sección **T0**. No hace falta volver a pensarlo, solo escribirlo.
+
+**Por qué importa T0:** el fix de ISS-044 dejó un paso manual (subir `BUILD` en cada cambio de
+`public/`). Si alguien se lo olvida, vuelve exactamente el bug que acabamos de arreglar: el
+panel vacío que parece pérdida de datos. Un aviso en la documentación no alcanza; hay que
+eliminar el paso.
+
+**Lo más riesgoso que sigue abierto:** **T6, el backup de la BD**. Van dos migraciones de
+esquema desplegadas sobre datos reales del piloto sin ningún backup. El 2026-08-16, cuando el
+usuario creyó haber perdido todos sus menús, la respuesta honesta a "¿restauramos el backup?"
+fue **no hay**.
+
+**Decisión pendiente del usuario, sin bloquear nada:** elegir variante (**A**, B o C) para el
+ícono de calendario que reemplaza al emoji 📅 — hoy dibuja "17 de julio" fijo al lado de la
+fecha real de cada reserva. Las 3 variantes están renderizadas y medidas en las 3 escalas de
+letra del panel; el alcance de los 17 usos ya está clasificado (ver `backlog.md`).
+
+---
+
 ## 🎯 Sesión 2026-08-16 (parte 3) — ISS-044 + T11: que un deploy no pueda dejar el panel vacío
 
 **Prompt del usuario:** "hagamos ISS-044 y T11 juntos", después del susto del panel vacío.
