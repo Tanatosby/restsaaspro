@@ -168,12 +168,15 @@ router.get('/menus-dia', authorizePermiso(), (req, res) => {
           cmd.agotado,
           cmd.stock_inicial,
           cmd.stock_restante,
+          cmd.requiere_seccion_id,
+          sm2.nombre  AS requiere_seccion_nombre,
           pm.id       AS id_plato,
           pm.nombre,
           pm.descripcion,
           pm.url_foto
         FROM componentes_menu_dia cmd
         JOIN platos_menu pm ON cmd.id_plato_menu = pm.id
+        LEFT JOIN secciones_menu sm2 ON cmd.requiere_seccion_id = sm2.id
         WHERE cmd.id_menu_dia = ? AND cmd.id_seccion_menu = ?
       `).all(menu.id, s.id_seccion);
 
@@ -495,7 +498,7 @@ router.post('/menus-dia/:id/secciones/:seccionId/platos', authorizePermiso(), (r
   if (!menu)
     return res.status(404).json({ error: 'Menú no encontrado' });
 
-  const { id_plato_menu } = req.body;
+  const { id_plato_menu, requiere_seccion_id } = req.body;
   if (!id_plato_menu)
     return res.status(400).json({ error: 'id_plato_menu es requerido' });
 
@@ -516,19 +519,79 @@ router.post('/menus-dia/:id/secciones/:seccionId/platos', authorizePermiso(), (r
   if (!seccionEnMenu)
     return res.status(400).json({ error: 'La sección no pertenece a este menú' });
 
+  // requiere_seccion_id (ISS-046): si se manda, tiene que ser OTRA sección
+  // que también forme parte de este mismo menú — no tendría sentido exigir
+  // una sección de otro menú, ni que el plato se exija a sí mismo.
+  let requiereSeccion = null;
+  if (requiere_seccion_id) {
+    if (Number(requiere_seccion_id) === Number(req.params.seccionId))
+      return res.status(400).json({ error: 'Un plato no puede exigir su propia sección' });
+
+    const seccionExigidaEnMenu = db.prepare(`
+      SELECT id FROM menu_secciones
+      WHERE id_menu_dia = ? AND id_seccion_menu = ?
+    `).get(req.params.id, requiere_seccion_id);
+
+    if (!seccionExigidaEnMenu)
+      return res.status(400).json({ error: 'La sección exigida no pertenece a este menú' });
+
+    requiereSeccion = requiere_seccion_id;
+  }
+
   const { lastInsertRowid } = db.prepare(`
     INSERT INTO componentes_menu_dia
-      (id_menu_dia, dia, id_seccion_menu, id_plato_menu, id_restaurante)
-    VALUES (?, ?, ?, ?, ?)
+      (id_menu_dia, dia, id_seccion_menu, id_plato_menu, id_restaurante, requiere_seccion_id)
+    VALUES (?, ?, ?, ?, ?, ?)
   `).run(
     req.params.id,
     menu.dia,
     req.params.seccionId,
     id_plato_menu,
-    req.user.restaurant_id
+    req.user.restaurant_id,
+    requiereSeccion
   );
 
   res.status(201).json({ id: lastInsertRowid, message: 'Plato agregado al menú' });
+});
+
+// PATCH /api/menu/menus-dia/:id/secciones/:seccionId/platos/:componenteId/requiere-seccion
+// Marca (o quita) que este plato en particular exija otra sección del mismo
+// menú, aunque esa sección esté configurada como opcional en general — ISS-046.
+// Body: { requiere_seccion_id: <id de sección | null> }
+router.patch('/menus-dia/:id/secciones/:seccionId/platos/:componenteId/requiere-seccion', authorizePermiso(), (req, res) => {
+  const menu = db.prepare(`
+    SELECT id FROM menus_dia WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, req.user.restaurant_id);
+  if (!menu) return res.status(404).json({ error: 'Menú no encontrado' });
+
+  const componente = db.prepare(`
+    SELECT id FROM componentes_menu_dia
+    WHERE id = ? AND id_menu_dia = ? AND id_seccion_menu = ?
+  `).get(req.params.componenteId, req.params.id, req.params.seccionId);
+  if (!componente) return res.status(404).json({ error: 'Componente no encontrado' });
+
+  const { requiere_seccion_id } = req.body;
+  let requiereSeccion = null;
+
+  if (requiere_seccion_id !== null && requiere_seccion_id !== undefined && requiere_seccion_id !== '') {
+    if (Number(requiere_seccion_id) === Number(req.params.seccionId))
+      return res.status(400).json({ error: 'Un plato no puede exigir su propia sección' });
+
+    const seccionExigidaEnMenu = db.prepare(`
+      SELECT id FROM menu_secciones
+      WHERE id_menu_dia = ? AND id_seccion_menu = ?
+    `).get(req.params.id, requiere_seccion_id);
+
+    if (!seccionExigidaEnMenu)
+      return res.status(400).json({ error: 'La sección exigida no pertenece a este menú' });
+
+    requiereSeccion = requiere_seccion_id;
+  }
+
+  db.prepare(`UPDATE componentes_menu_dia SET requiere_seccion_id = ? WHERE id = ?`)
+    .run(requiereSeccion, componente.id);
+
+  res.json({ message: 'Plato actualizado', requiere_seccion_id: requiereSeccion });
 });
 
 // PATCH /api/menu/menus-dia/:id/secciones/:seccionId/platos/:componenteId/agotado

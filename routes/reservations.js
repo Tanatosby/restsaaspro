@@ -8,6 +8,7 @@ const { calcularPrecioUnitario, calcularMenuTotal } = require('../utils/menuPric
 const { calcularTotalReserva } = require('../utils/totales');
 const { descontarStock, devolverStock, itemsMenuDeReserva } = require('../utils/stock');
 const { requiereConfirmarPagoAntes } = require('../utils/verificacionPago');
+const { validarSeccionesMenu } = require('../utils/validarSeccionesMenu');
 
 router.use(authenticate);
 
@@ -182,6 +183,11 @@ router.post('/', authorizePermiso(), (req, res) => {
 
   if (!restaurante)
     return res.status(404).json({ error: 'Restaurante no encontrado o inactivo' });
+
+  // Secciones obligatorias / condicionales completas — ISS-046
+  const errorSecciones = validarSeccionesMenu(db, menu_items || []);
+  if (errorSecciones)
+    return res.status(400).json({ error: errorSecciones });
 
   // Insertar en transacción (si el stock no alcanza, revierte todo)
   let reservaId;

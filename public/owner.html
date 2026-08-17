@@ -1634,6 +1634,10 @@ function mcSeccionAcordeon(m, s) {
     const badgeStock = !tieneStock ? ''
       : p.stock_restante <= 0 ? '<span class="mc-badge-mini rojo">Sin stock</span>'
       : `<span class="mc-badge-mini ${p.stock_restante <= 5 ? 'ambar' : ''}">quedan ${p.stock_restante}</span>`;
+    // Badge: si este plato exige otra sección (ISS-046), ej. "arroz con papas
+    // fritas" exige "Proteínas" aunque esa sección sea opcional en general.
+    const badgeExige = p.requiere_seccion_id
+      ? `<span class="mc-badge-mini ambar">🔗 Exige ${esc(p.requiere_seccion_nombre || '')}</span>` : '';
     return `
     <div class="mc-plato-row ${p.agotado ? 'agotado' : ''}">
       <span class="mc-plato-nom">
@@ -1641,12 +1645,14 @@ function mcSeccionAcordeon(m, s) {
         ${m.id_plato_portada === p.id_plato ? '<span class="mc-badge-mini">📷 Portada</span>' : ''}
         ${p.agotado ? '<span class="mc-badge-mini rojo">Agotado</span>' : ''}
         ${badgeStock}
+        ${badgeExige}
       </span>
       <button class="mc-dots" onclick="toggleAccionesPlato(this)" aria-label="Más acciones">⋯</button>
     </div>
     <div class="mc-plato-acts">
       <button class="mc-mini-act" onclick="abrirStockPlato(${m.id},${s.id_seccion},${p.id_componente},${tieneStock ? p.stock_restante : 'null'})">📦 Stock</button>
       <button class="mc-mini-act" onclick="toggleAgotadoPlato(${m.id},${s.id_seccion},${p.id_componente},${p.agotado?1:0})">${p.agotado ? '✔ Disponible' : '⛔ Agotado'}</button>
+      <button class="mc-mini-act" onclick="abrirRequiereSeccion(${m.id},${s.id_seccion},${p.id_componente},${p.requiere_seccion_id ?? 'null'})">🔗 ${p.requiere_seccion_id ? 'Cambiar exige' : 'Exige sección'}</button>
       ${p.url_foto ? `<button class="mc-mini-act" onclick="setPortada(${m.id},${p.id_plato})">📷 ${m.id_plato_portada === p.id_plato ? 'Quitar portada' : 'Portada'}</button>` : ''}
       <button class="mc-mini-act danger" onclick="eliminarComponente(${m.id},${s.id_seccion},${p.id_componente})">✕ Quitar</button>
     </div>`;
@@ -1816,6 +1822,34 @@ function abrirStockPlato(menuId, seccionId, componenteId, actual) {
       const stock = (vals.stock === '' || vals.stock === null || vals.stock === undefined) ? null : Number(vals.stock);
       const r = await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/stock`, { stock });
       toast(r.message || 'Stock actualizado');
+      recargarModalConfig();
+    },
+  });
+}
+
+// Marca (o quita) que este plato en particular exija otra sección del mismo
+// menú, aunque esa sección esté configurada como opcional en general —
+// ISS-046. Ej: "arroz con papas fritas" exige "Proteínas"; "arroz con pollo"
+// no exige nada porque ya está completo.
+function abrirRequiereSeccion(menuId, seccionId, componenteId, actual) {
+  const otras = (configMenuData?.secciones || []).filter(s => s.id_seccion !== seccionId);
+  if (!otras.length) return toast('Este menú no tiene otra sección para exigir', 'err');
+
+  FormModal.open({
+    title: '🔗 ¿Exige otra sección?',
+    fields: [
+      { name: 'requiere_seccion_id', label: 'Si eligen este plato, también hay que elegir:', type: 'select',
+        value: actual ?? '',
+        options: [
+          { value: '', label: 'Nada más (el plato ya está completo)' },
+          ...otras.map(s => ({ value: s.id_seccion, label: s.nombre_seccion })),
+        ] },
+    ],
+    submitLabel: 'Guardar',
+    onSubmit: async (vals) => {
+      const requiere_seccion_id = vals.requiere_seccion_id === '' ? null : Number(vals.requiere_seccion_id);
+      const r = await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/requiere-seccion`, { requiere_seccion_id });
+      toast(r.message || 'Plato actualizado');
       recargarModalConfig();
     },
   });

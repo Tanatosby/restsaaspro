@@ -14,6 +14,7 @@ const { dentroDeVentanaCancelacion } = require('../utils/cancelacionReserva');
 const { estadoHorario, mensajeHorario, validarHorarioAhora, validarHorarioReserva } = require('../utils/horarioAtencion');
 const { enviarPushRestaurante } = require('../utils/pushNotificaciones');
 const { contarUnidadesMenu } = require('../utils/menuPricing');
+const { validarSeccionesMenu } = require('../utils/validarSeccionesMenu');
 const db      = require('../config/database');
 
 // Multer para comprobantes de pago (subidos por el cliente)
@@ -181,6 +182,7 @@ router.get('/menu', (req, res) => {
       const platos = db.prepare(`
         SELECT
           cmd.id   AS id_componente,
+          cmd.requiere_seccion_id,
           pm.id    AS id_plato,
           pm.nombre,
           pm.descripcion,
@@ -302,6 +304,11 @@ router.post('/orders', (req, res) => {
     if (!componente)
       return res.status(400).json({ error: `Componente #${item.id_componente} no válido` });
   }
+
+  // Secciones obligatorias / condicionales completas — ISS-046
+  const errorSecciones = validarSeccionesMenu(db, menu_items);
+  if (errorSecciones)
+    return res.status(400).json({ error: errorSecciones });
 
   const cargo_modalidad = calcularCargoModalidad(modalidad, rest, id_restaurante, carta_items, menu_items);
 
@@ -432,6 +439,11 @@ router.post('/reservations', (req, res) => {
     if (!componente)
       return res.status(400).json({ error: `Componente #${item.id_componente} no válido` });
   }
+
+  // Secciones obligatorias / condicionales completas — ISS-046
+  const errorSecciones = validarSeccionesMenu(db, menu_items);
+  if (errorSecciones)
+    return res.status(400).json({ error: errorSecciones });
 
   const cargo_modalidad_res = calcularCargoModalidad(modalidad, rest, id_restaurante, carta_items, menu_items);
 

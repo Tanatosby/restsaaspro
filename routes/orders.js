@@ -10,6 +10,7 @@ const { fechaLima } = require('../utils/fecha');
 const { descontarStock, devolverStock, itemsMenuDeOrden } = require('../utils/stock');
 const { requiereConfirmarPagoAntes } = require('../utils/verificacionPago');
 const { colaDelDia, cocinaDelDia, pedidosSinCerrar } = require('../utils/colaDia');
+const { validarSeccionesMenu } = require('../utils/validarSeccionesMenu');
 
 router.use(authenticate);
 
@@ -334,6 +335,11 @@ router.post('/', authorizePermiso(), (req, res) => {
     if (!componente)
       return res.status(400).json({ error: `Componente #${item.id_componente} no válido` });
   }
+
+  // Secciones obligatorias / condicionales completas — ISS-046
+  const errorSecciones = validarSeccionesMenu(db, menu_items || []);
+  if (errorSecciones)
+    return res.status(400).json({ error: errorSecciones });
 
   // Insertar en transacción (si el stock no alcanza, revierte todo)
   let ordenId;

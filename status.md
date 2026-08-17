@@ -2,6 +2,85 @@
 
 ---
 
+## 🎯 Sesión 2026-08-17 (parte 4) — ISS-046: plato exige sección condicional + día 4 del piloto
+
+**Prompt del usuario:** recopilación del día 4 del piloto (cocinera adaptándose bien, dueña
+todavía no, 4 clientes que no pidieron por la app, pedido de un contador "menús de hoy") y,
+como hallazgo central, el incidente real: un plato "arroz con papas fritas" pedido sin su
+proteína porque el sistema no distinguía platos autocontenidos de platos que sí la necesitan.
+Ver `ISS-046` para el detalle técnico completo.
+
+**El cambio:** `componentes_menu_dia.requiere_seccion_id` (nullable, genérico — no hardcodea
+"proteína") + `utils/validarSeccionesMenu.js` nuevo, compartido por los 4 endpoints que crean
+pedidos/reservas (`orders.js`, `reservations.js`, `public.js` ×2). Valida **por instancia de
+menú** (agrupando por `grupo`, ISS-041) para no dejar pasar una instancia incompleta
+"prestándose" la selección de otra — mismo patrón de bug que el encontrado en el conteo de
+`reportes.js` (ver abajo). UI en `owner.html` para marcar el plato + bloqueo real en
+`menu.html` al armar el pedido.
+
+**De paso, dos hallazgos que no eran parte del pedido original:**
+1. **Bug de conteo en `reportes.js`** ("Menús pedidos"/"Menús reservados"): divide por el total
+   de secciones del menú en vez de por las obligatorias — subcuenta cuando hay secciones
+   opcionales. **Queda pendiente de arreglar** (no se tocó en esta sesión, prioridad P0 para la
+   próxima). La lógica correcta ya existe en `utils/menuPricing.js::contarUnidadesMenu()`
+   (usada para el cobro) — falta que `reportes.js` la reuse en vez de su propio cálculo.
+2. **Conteo de tests inflado**: un git worktree abandonado en `.claude/worktrees/` (del
+   2026-08-11) hacía que `npx jest` contara sus tests duplicados — 758 en vez de los 412 reales.
+   Se agregó `testPathIgnorePatterns` al jest de `package.json`. El worktree en sí no se pudo
+   borrar (el comando fue bloqueado por el clasificador de permisos) — pendiente de que lo
+   borre el usuario: `git worktree remove --force .claude/worktrees/foamy-moseying-nebula`.
+   Se corrigieron los "758/758" ya anotados en `ISS-045` y en la sesión de T0, arriba.
+
+**Backlog nuevo del día 4 del piloto** (ver `backlog.md` para el detalle y la razón de cada
+prioridad):
+- 🔴 P0: bug de conteo en `reportes.js` (arriba).
+- 🟡 P1: cajita "Menús de hoy" en Análisis (menús cobrados + entregados, filtrado a hoy, suma
+  órdenes + reservas) — depende del P0.
+- 🟡 P1: botón "Agregar manual" en la cola, para los clientes que no pueden usar la app (hoy 4:
+  2 se rehusaron, 1 sin internet, 1 sin celular) — entra directo a cocina con status "validar
+  pago".
+- 🟢 P2: imagen descargable del menú para compartir por WhatsApp (complementaria al link).
+- 🟢 P2 / backlog explícito: fiados/pago diferido (cliente sin dinero que promete pagar
+  después) — el usuario lo bajó de prioridad a propósito.
+- Sin definir todavía: validar comprobantes de pago (yape) duplicados o reenviados — problema
+  real mencionado por la dueña, sin alcance definido aún.
+
+**Verificación:**
+- `tests/validar-secciones-menu.test.js` nuevo, 11/11 (incluye el caso real del incidente y el
+  de múltiples instancias del mismo menú en un pedido).
+- Suite completa: **32/32 suites, 423/423 tests**.
+- Migración de schema verificada localmente (columna se crea sola, no rompe datos existentes).
+
+**Estado:** resuelto, **pendiente de deploy**. Backup mínimo ya hecho antes del deploy (ver
+sesión de abajo) — falta el T6 completo (script + cron + restore verificado).
+
+**Documentación actualizada:** `issues/ISS-046-plato-exige-seccion-condicional.md` (nuevo),
+`issues/ISSUES.md`, `backlog.md` (T6 + prioridades del día 4), `status.md` (esta entrada).
+Falta trasladar los hallazgos del día 4 a `vision_negocio.md` si corresponde — pendiente para
+el cierre de una sesión futura.
+
+---
+
+## 🎯 Sesión 2026-08-17 (parte 3) — Backup mínimo antes de ISS-046
+
+Antes de desplegar la migración de ISS-046 (ver sección propia abajo), se corrió el backup
+mínimo de `deploy.md` §7 por SSH en el Droplet:
+
+```bash
+cd /var/www/menupro && cp database.sqlite ~/database-$(date +%F-%H%M).sqlite
+```
+
+**Confirmado:** `/root/database-2026-08-17-2354.sqlite`, 233472 bytes (no vacío). De paso
+aparece otro backup manual previo del mismo día, `database-ANTES-DE-TOCAR-2026-08-17-0006.sqlite`,
+no registrado hasta ahora en este log.
+
+**Esto NO es T6 completo** — es el mínimo (`cp` puntual) para tener un punto de retorno antes
+de este deploy puntual. Falta el script `backup.sh` + cron diario + un restore de prueba
+verificado (`deploy.md` §7, `backlog.md` T6) para que deje de ser la deuda de mayor riesgo del
+proyecto.
+
+---
+
 ## 🎯 Sesión 2026-08-17 (parte 2) — T0: `BUILD` automático por hash
 
 **Prompt del usuario:** "sí en orden, T0" — retomando la lista de `backlog.md`, después de
@@ -29,7 +108,8 @@ controlado después de disparar el redirect: corta el resto del script igual que
 haría dentro de una función, sin el riesgo de sintaxis inválida.
 
 **Verificación:**
-- 758/758 jest.
+- 412/412 jest (corregido 2026-08-17: el "758/758" anotado originalmente contaba duplicado
+  un git worktree abandonado en `.claude/worktrees/` — ver ISS-046).
 - `scripts/test-version-assets.js` — 25/25 contra un servidor real, con el hash real
   (`1fc212d9`, 8 hex) en vez de un número. Confirma que `utils.js` y `cocina.js` siempre piden
   la misma versión.

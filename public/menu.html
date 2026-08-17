@@ -688,6 +688,21 @@ async function renderReservarContent() {
           showMsg(`Selecciona: ${s.nombre_seccion}`, true); return;
         }
       }
+
+      // Validación condicional por plato (ISS-046): una sección opcional
+      // puede tener platos que en realidad NO están completos por sí solos
+      // (ej. "arroz con papas fritas" necesita elegir Proteínas), a diferencia
+      // de otros platos de esa misma sección que sí lo están (ej. "arroz con
+      // pollo"). Sin esto, el pedido puede llegar incompleto a cocina.
+      for (const seccionId of Object.keys(sel[menuId] || {})) {
+        const seccionOrigen = menu.secciones.find(s => s.id_seccion === Number(seccionId));
+        const plato = seccionOrigen?.platos.find(p => p.id_componente === sel[menuId][seccionId].id_componente);
+        if (plato?.requiere_seccion_id && !sel[menuId]?.[plato.requiere_seccion_id]) {
+          const seccionExigida = menu.secciones.find(s => s.id_seccion === plato.requiere_seccion_id);
+          showMsg(`"${plato.nombre}" también necesita que elijas: ${seccionExigida?.nombre_seccion || 'otra sección'}`, true);
+          return;
+        }
+      }
     }
 
     const selections = sel[menuId] || {};

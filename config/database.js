@@ -612,6 +612,14 @@ db.exec(`CREATE INDEX IF NOT EXISTS idx_pedidos_pensionista_restaurante ON pedid
 db.exec(`CREATE INDEX IF NOT EXISTS idx_pedidos_pensionista_fecha       ON pedidos_pensionista(fecha)`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_pensionista_movimientos_pensionista ON pensionista_movimientos(id_pensionista)`);
 
+// Migración idempotente: sección condicional por plato (ISS-046)
+// Un plato de una sección puede exigir que OTRA sección (normalmente opcional,
+// ej. "Proteínas") pase a ser obligatoria si ese plato en particular fue
+// elegido. Ej: "arroz con pollo" no necesita Proteínas (ya está completo),
+// pero "arroz con papas fritas" sí — sin esto, el comensal puede pedir un
+// plato incompleto y llega así a cocina.
+try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN requiere_seccion_id INTEGER DEFAULT NULL REFERENCES secciones_menu(id)`); } catch (_) {}
+
 console.log('✅ Database ready');
 
 module.exports = db;

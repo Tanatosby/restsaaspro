@@ -69,4 +69,6 @@ Aplica tanto a `/:slug` como a `/:slug/:mesa` (QR de mesa).
 - Restaurante de prueba con slug temporal `testslug045`: `/testslug045`, `/Testslug045` y
   `/TESTSLUG045` redirigen los tres al mismo `id` (302 → `/menu?restaurante=1`).
 - Slug inexistente sigue devolviendo 404 (sin falsos positivos).
-- 758/758 tests de Jest en verde tras el cambio.
+- 412/412 tests de Jest en verde tras el cambio (corregido 2026-08-17: el "758/758" anotado
+  originalmente contaba duplicado un git worktree abandonado en `.claude/worktrees/` — ver
+  ISS-046, mismo patrón que el 754 de `ee650bf`).

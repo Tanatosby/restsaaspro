@@ -16,6 +16,10 @@
     "testEnvironment": "jsdom",
     "testMatch": [
       "**/tests/**/*.test.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/.claude/worktrees/"
     ]
   },
   "keywords": [],

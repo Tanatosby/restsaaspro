@@ -30,7 +30,7 @@ lo que sigue.
 
 | # | Qué | Por qué ahora |
 |---|---|---|
-| **T6** | **Backup de la BD** | Lo más riesgoso del proyecto. Ya se desplegaron **dos migraciones** sobre datos reales sin backup; el 2026-08-16 la respuesta a "¿restauramos?" fue *no hay* |
+| **T6** | **Backup de la BD** — 🟡 mínimo hecho el 2026-08-17 23:54 (`cp` manual antes del deploy de ISS-046, ver `status.md`); **falta el T6 completo** (script + cron + restore de prueba verificado, `deploy.md` §7) | Lo más riesgoso del proyecto. Ya se desplegaron **dos migraciones** sobre datos reales sin backup verificado; el 2026-08-16 la respuesta a "¿restauramos?" fue *no hay* |
 | — | **Desplegar** `e12d13b` + `02a5bc2` (ISS-044 + T11 + docs) | Hechos el 2026-08-16, **sin desplegar todavía**. `BUILD` ya está en `11`, no hay que tocarlo para este deploy |
 | — | **Verificar en el servicio real** un pedido con 2 menús y la etiqueta "para llevar" | Los 3 críticos están en producción pero nadie los vio funcionar en un servicio de verdad |
 | **ISS-043** | El menú sin secciones obligatorias **cobra de menos** (ver sección propia) | Es de cobro, no de vista. Falta correr la consulta en producción para saber si aplica |
@@ -171,7 +171,7 @@ arriba.
 | **T4** | Filtro de fecha + fin del N+1 en `GET /api/orders/activas`, migrándolo a `utils/colaDia.js`. | 🟢 **Totalmente desbloqueada** — T1/ISS-034 desplegado y verificado en celular real 2026-08-13, ya no hace falta `/activas` sin filtro como salida de emergencia | — |
 | ~~**T11**~~ | ~~**Arranque lento de la app**~~ | ✅ **Hecho 2026-08-16** junto con ISS-044, que compartía causa raíz. El SW pasó de precachear 7 archivos a 22 (antes **ningún** JS); los CDN pesados y las fuentes dejaron de bloquear el render. **Pendiente de deploy.** Quedó fuera el `defer` de los 15 scripts locales: el inline de `owner.html:1138` llama a `leerSesion()` en top-level y define las globales de los `onclick`, así que `defer` rompería el arranque — requiere mover ~1200 líneas de inline a un archivo, refactor propio. Nunca se abrió ISS-036: **ese número sigue libre** | — |
 | **T5** | Contador **"menús vendidos hoy"** — número grande y visible, unificando órdenes y reservas. | 🟢 Listo para hacer | — |
-| **T6** | **Backup manual verificado** de la BD de producción (dump + restore de prueba). Lo ejecuta el usuario por SSH. | 🟡 Pendiente | — |
+| **T6** | **Backup manual verificado** de la BD de producción (dump + restore de prueba). Lo ejecuta el usuario por SSH. | 🟡 Parcial — `cp` mínimo hecho 2026-08-17 antes del deploy de ISS-046; falta script+cron+restore de prueba | — |
 | **T7** | Editar el nombre del restaurante. | ⏸️ Bloqueada | **D3** |
 | **T8** | Resolver `authorizeRestaurante()`. | ⏸️ Bloqueada | **D2** |
 | **T9** | Pensionistas, pasos 6-12 (ver sección propia más abajo). | ⏸️ Parcial | **D5** |
