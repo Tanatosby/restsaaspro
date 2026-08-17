@@ -25,12 +25,11 @@ desplegaron el 2026-08-16:
 
 ### 🚨 Empezar acá la próxima sesión
 
-**Primero lo comprometido:** T0 (abajo) quedó a medio camino en la sesión del 2026-08-16 — es
-un cambio chico y ya está diseñado, así que conviene cerrarlo antes de abrir frente nuevo.
+**T0 ✅ hecho el 2026-08-17** (ver detalle abajo y `status.md`) — **pendiente de deploy**, no
+lo que sigue.
 
 | # | Qué | Por qué ahora |
 |---|---|---|
-| **T0** | **`BUILD` automático por hash** — las "15 líneas" (diseño completo abajo) | Es el único paso manual del deploy y si se olvida vuelve ISS-044. Ya está decidido, solo falta escribirlo |
 | **T6** | **Backup de la BD** | Lo más riesgoso del proyecto. Ya se desplegaron **dos migraciones** sobre datos reales sin backup; el 2026-08-16 la respuesta a "¿restauramos?" fue *no hay* |
 | — | **Desplegar** `e12d13b` + `02a5bc2` (ISS-044 + T11 + docs) | Hechos el 2026-08-16, **sin desplegar todavía**. `BUILD` ya está en `11`, no hay que tocarlo para este deploy |
 | — | **Verificar en el servicio real** un pedido con 2 menús y la etiqueta "para llevar" | Los 3 críticos están en producción pero nadie los vio funcionar en un servicio de verdad |
@@ -45,12 +44,17 @@ van pegados al nombre del cliente (`cocina.js:133`, `pedidos.js:249` y `:515`) *
 
 ---
 
-### T0 · `BUILD` automático — el diseño ya está decidido
+### T0 · `BUILD` automático — ✅ Hecho 2026-08-17, pendiente de deploy
 
-**El problema:** hoy `utils/buildVersion.js` tiene un número escrito a mano que hay que subir
-en cada cambio de `public/`. Si alguien se olvida, los navegadores siguen sirviendo archivos
-viejos y **vuelve exactamente ISS-044**: el panel vacío que parece pérdida de datos. Un aviso
-en `deploy.md` no es una garantía; el paso manual hay que eliminarlo.
+**El problema (resuelto):** `utils/buildVersion.js` tenía un número escrito a mano que había
+que subir en cada cambio de `public/`. Si alguien se olvidaba, los navegadores seguían
+sirviendo archivos viejos y **volvía exactamente ISS-044**: el panel vacío que parece pérdida
+de datos.
+
+**Implementado tal cual el diseño de abajo**, sin cambios de fondo. Verificado con 758/758
+jest + `scripts/test-version-assets.js` 25/25 contra servidor real + determinismo confirmado
+aparte (mismo código → mismo hash en corridas consecutivas). Detalle completo en `status.md`,
+sesión 2026-08-17 parte 2.
 
 **La solución:** que `BUILD` se calcule solo, como hash del contenido de los archivos servidos.
 
@@ -92,15 +96,16 @@ module.exports = { BUILD };
   más; nunca que la app no levante.
 - El hash queda en la URL (`?v=a1b2c3d4`) y en el nombre del caché (`menupro-va1b2c3d4`).
 
-**Al terminar:** actualizar `deploy.md` §6.1, que hoy explica el paso manual, y borrar el aviso
-de "subir BUILD" del resto de la documentación. `scripts/test-version-assets.js` debería seguir
-pasando tal cual — no asume que `BUILD` sea un número.
+**Hecho:** `deploy.md` §6.1 actualizado, y los avisos de "subir BUILD" en el resto de la
+documentación quedaron marcados como superados (sin borrar el registro histórico de por qué
+existían). `scripts/test-version-assets.js` pasó 25/25 tal cual — no asumía que `BUILD` fuera
+un número.
 
-**Menor, encontrado de paso el 2026-08-16:** `owner.html:1145` hace
-`window.location.replace('/login.html')` en el auth guard, pero eso **no corta la ejecución**
-del script; la línea siguiente lee `session.name` con `session` en `null` y tira un error en
-consola en toda visita sin sesión. No impide el redirect. Se arregla con un `return` — no se
-tocó para no mezclarlo con el trabajo de caché.
+**Menor, encontrado de paso el 2026-08-16 — ✅ resuelto junto con T0:** `owner.html:1161`
+(el número de línea corrió desde el 1145 original) hacía `window.location.replace(...)` en el
+auth guard sin cortar la ejecución. El apunte decía "se arregla con un `return`", pero el
+`<script>` es top-level, no una función — `return` ahí es `SyntaxError`. Se resolvió con
+`throw` de un error controlado después del redirect, que sí corta el resto del script.
 
 Después de eso, las tareas con más valor de la lista de abajo son **T4, T5 y T12**.
 

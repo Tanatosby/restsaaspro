@@ -155,5 +155,6 @@ pérdida de datos. Verificado en producción el 2026-08-16.
 ## Pendiente
 
 - **Deploy.**
-- Al desplegar cambios de frontend, subir `BUILD` en `utils/buildVersion.js` — ver el aviso al
-  inicio de la sección 6 de `deploy.md`.
+- ~~Al desplegar cambios de frontend, subir `BUILD` en `utils/buildVersion.js`~~ — ✅ **ya no
+  aplica, T0 (2026-08-17):** `BUILD` se calcula solo (hash del contenido), no hay número que
+  subir a mano.

@@ -201,27 +201,29 @@ curl http://localhost:3000/health   # {"status":"ok", ...}
 > **Ojo con `main`.** Este documento decía `git pull origin master` hasta el 2026-08-16, pero
 > la rama del repo es **`main`**. El comando de arriba es el correcto.
 
-### 6.1 ¿Y lo del `BUILD`? — no es un paso tuyo en el servidor
+### 6.1 ¿Y lo del `BUILD`? — no es un paso de nadie, ni en la laptop ni en el servidor
 
 Desde ISS-044, cada archivo de `public/` se sirve con un número de versión en la URL
-(`/js/modules/utils.js?v=11`). Ese número sale de **`utils/buildVersion.js`**, que es un
-archivo del repositorio.
+(`/js/modules/utils.js?v=a1b2c3d4`). Ese número sale de **`utils/buildVersion.js`**.
 
-**Quién lo sube:** quien programa, en la laptop, **antes de commitear**. Viaja como una línea
-más del commit, así que llega al servidor con el `git pull` — igual que cualquier otro cambio
-de código.
+**Quién lo sube: nadie, desde T0 (2026-08-17).** `buildVersion.js` calcula un hash sha1 del
+contenido de `owner.html`, `menu.html`, `owner.css`, `menu.css` y todo `js/` **al arrancar el
+servidor**. Mismo código → mismo hash; distinto código → hash distinto. No es un número que se
+edita a mano ni en la laptop antes de commitear, ni en el Droplet.
 
-**Qué tenés que hacer vos en el servidor: nada.** Por eso no aparece en los 4 comandos de
-arriba. No hay build step, no hay variable de entorno que tocar, no hay archivo que editar en
-el Droplet.
+**Qué tenés que hacer vos en el servidor: nada**, igual que antes. No hay build step, no hay
+variable de entorno que tocar, no hay archivo que editar en el Droplet — con el agregado de que
+ahora tampoco es un paso de quien programa. Antes de T0 había que acordarse de subir el número
+a mano en cada commit que tocara `public/`; si alguien se olvidaba, volvía el bug de ISS-044.
+Ahora es matemáticamente imposible olvidarlo porque no hay nada que subir.
 
-Lo único útil de tu lado es **verificar** que llegó bien, después del `pm2 restart`:
+Lo único útil de tu lado sigue siendo **verificar** que llegó bien, después del `pm2 restart`:
 
 ```bash
-curl -s https://menupro.tech/owner.html | grep -o 'utils\.js?v=[0-9]*' | head -1
+curl -s https://menupro.tech/owner.html | grep -o 'utils\.js?v=[a-z0-9]*' | head -1
 ```
 
-- Devuelve `utils.js?v=12` (o el número que sea) → ✅ todo bien.
+- Devuelve `utils.js?v=a1b2c3d4` (8 caracteres hex) → ✅ todo bien.
 - Devuelve `utils.js?v=__BUILD__` → ❌ el middleware de `app.js` no se aplicó. Revisar
   `pm2 logs menupro` buscando líneas que empiecen con `[build]`.
 - No devuelve nada → el `grep` no encontró el patrón; revisá que la app esté sirviendo.

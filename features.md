@@ -9,10 +9,12 @@ Los assets no tenían **ninguna** estrategia de versión: `owner.html` pedía si
 tenía, y **el panel aparecía vacío con los datos intactos** — que el owner lee como "se borraron mis
 platos". Pasó en producción el 2026-08-16.
 
-**ARCH:** `utils/buildVersion.js` exporta `BUILD`, **el único número que se toca por deploy**. Los HTML
-y el `sw.js` guardan `__BUILD__` en disco y `app.js` lo reemplaza al servirlos (middleware antes de
-`express.static`, con fallback a servir el archivo tal cual si algo falla). Cada asset se pide como
-`?v=BUILD`, así que **todas las URLs cambian juntas** y la mezcla de versiones deja de ser posible.
+**ARCH:** `utils/buildVersion.js` exporta `BUILD`. Los HTML y el `sw.js` guardan `__BUILD__` en disco
+y `app.js` lo reemplaza al servirlos (middleware antes de `express.static`, con fallback a servir el
+archivo tal cual si algo falla). Cada asset se pide como `?v=BUILD`, así que **todas las URLs cambian
+juntas** y la mezcla de versiones deja de ser posible. Al principio `BUILD` era un número escrito a
+mano por deploy; desde **T0 (2026-08-17)** es un hash sha1 automático del contenido de los assets,
+calculado al arrancar — ya no depende de que nadie se acuerde de subirlo.
 
 De paso, el arranque (**T11**): `ASSETS` del service worker pasó de 7 a 22 entradas — antes no
 precacheaba **ni un solo** módulo JS, así que cada apertura los pedía a la red uno por uno. El precache

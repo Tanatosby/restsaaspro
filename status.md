@@ -2,6 +2,49 @@
 
 ---
 
+## 🎯 Sesión 2026-08-17 (parte 2) — T0: `BUILD` automático por hash
+
+**Prompt del usuario:** "sí en orden, T0" — retomando la lista de `backlog.md`, después de
+cerrar ISS-045. El diseño ya estaba decidido en la sesión del 16, solo faltaba escribirlo.
+
+**El cambio:** `utils/buildVersion.js` dejó de exportar un número escrito a mano (`'11'`) y
+ahora calcula un **hash sha1** del contenido de `owner.html`, `menu.html`, `owner.css`,
+`menu.css` y todo `js/`, una sola vez al arrancar el servidor. Mismo código → mismo hash (un
+`pm2 restart` sin cambios no invalida cachés de nadie); código distinto → hash distinto (toda
+URL de asset cambia junta). `sw.js` queda fuera del cálculo para no generar recursión — guarda
+el placeholder `__BUILD__` en disco, igual que antes. Con `try/catch`: si la lectura de disco
+falla por lo que sea, cae a `Date.now()` en vez de dejar la app sin arrancar.
+
+**Por qué importaba:** era el único paso manual que dejó ISS-044 — subir el número en cada
+cambio de `public/`. Si alguien se olvidaba, volvía exactamente ese bug (panel vacío que
+parece pérdida de datos). Ahora es imposible olvidarlo porque no hay nada que subir.
+
+**De paso (incluido en el mismo TODO):** `owner.html:1161` — el auth guard hacía
+`window.location.replace('/login.html')` sin cortar la ejecución; la línea siguiente leía
+`session.name` con `session` en `null` y tiraba un `TypeError` de consola en toda visita sin
+sesión. El apunte de `backlog.md` decía "se arregla con un `return`", pero al mirar el código
+resultó que ese `<script>` es top-level, no una función — un `return` ahí es `SyntaxError` y
+hubiera roto el bloque entero para todo el mundo. Se resolvió con `throw` de un error
+controlado después de disparar el redirect: corta el resto del script igual que un `return` lo
+haría dentro de una función, sin el riesgo de sintaxis inválida.
+
+**Verificación:**
+- 758/758 jest.
+- `scripts/test-version-assets.js` — 25/25 contra un servidor real, con el hash real
+  (`1fc212d9`, 8 hex) en vez de un número. Confirma que `utils.js` y `cocina.js` siempre piden
+  la misma versión.
+- Determinismo verificado aparte: dos cálculos consecutivos sobre el mismo código dan el mismo
+  hash.
+
+**Documentación actualizada:** `deploy.md` §6.1 (ya no hay número que subir, ni en la laptop ni
+en el servidor), `features.md` (ARCH de ISS-044/T11), `status.md` y `issues/ISS-044-...md`
+(los avisos de "subir BUILD a mano" quedaron marcados como superados, sin borrar el registro
+histórico de por qué existían).
+
+**Estado:** resuelto, **pendiente de deploy**.
+
+---
+
 ## 🎯 Sesión 2026-08-17 — ISS-045: link del menú roto al abrirlo desde otra app
 
 **Prompt del usuario:** compartió `issues/screenshots/dontget.jpeg` — "solo pasa en la app,
@@ -113,14 +156,17 @@ se pudo medir de forma confiable en local. **La ganancia real de T11 no está en
 milisegundos sino en el precache**, que es lo que ataca el síntoma reportado ("la primera
 apertura no entra, la segunda sí") y eso sí está verificado en navegador.
 
-> ⚠️ **Cambia el procedimiento de deploy.** A partir de acá, todo cambio en `public/` exige
-> subir `BUILD` en `utils/buildVersion.js`. Documentado con su verificación al inicio de la
-> sección 6 de `deploy.md`.
+> ⚠️ **Cambiaba el procedimiento de deploy** — ✅ **superado por T0 (2026-08-17)**: `BUILD`
+> pasó de número escrito a mano a hash automático, ya no hay nada que subir. Ver sección T0
+> más abajo. Se deja este párrafo como registro de por qué existía el paso manual en su
+> momento.
 
-**Encontrado de paso (menor, sin tocar):** `owner.html:1145` hace `window.location.replace()`
-en el auth guard, que **no corta la ejecución**; la línea siguiente lee `session.name` con
-`session` en `null` y tira un error de consola en toda visita sin sesión. No impide el
-redirect. Se arregla con un `return`; anotado en `backlog.md`.
+**Encontrado de paso (menor):** `owner.html:1145` hacía `window.location.replace()` en el
+auth guard sin cortar la ejecución; la línea siguiente leía `session.name` con `session` en
+`null` y tiraba un error de consola en toda visita sin sesión. No impedía el redirect.
+✅ **Arreglado 2026-08-17 junto con T0** — no con `return` como se había anotado acá (el
+`<script>` es top-level, no una función; `return` ahí es `SyntaxError`), sino con `throw` de
+un error controlado después de disparar el redirect, que sí corta el resto del script.
 
 **Pendiente: deploy.**
 

@@ -1158,7 +1158,17 @@
 // credenciales (ISS-027). Si no hay sesión local, login.html se encarga de
 // revalidar la cookie contra /api/auth/me antes de mostrar el formulario.
 const session = leerSesion();
-if (!session || (!['owner','admin','cocinero'].includes(session.role) && !Array.isArray(session.permisos))) window.location.replace('/login.html');
+if (!session || (!['owner','admin','cocinero'].includes(session.role) && !Array.isArray(session.permisos))) {
+  // Este <script> es top-level (no una función): un `return` acá sería un
+  // SyntaxError y rompería el bloque entero para todo el mundo, no solo para
+  // quien no tiene sesión. El redirect es async, así que sin cortar la
+  // ejecución el resto del script sigue corriendo con `session` en null y
+  // tira "Cannot read properties of null (reading 'name')" en consola.
+  // `throw` sí detiene el resto del script (igual que un return lo haría
+  // dentro de una función) y deja un mensaje claro en vez del TypeError.
+  window.location.replace('/login.html');
+  throw new Error('Sin sesión válida — redirigiendo a /login.html');
+}
 
 document.getElementById('owner-name').textContent    = session.name || '—';
 document.getElementById('owner-initials').textContent = (session.name || 'O').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
