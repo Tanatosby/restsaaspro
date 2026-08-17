@@ -1,25 +1,56 @@
 # Guía de Deploy — Menú Pro
 
-> Documento de referencia para desplegar el sistema en producción desde cero.
-> Última actualización: 2026-05-29
+> Última actualización: 2026-08-16
+>
+> **El sistema YA ESTÁ EN PRODUCCIÓN.** Todo lo de "comprar" e "instalar por primera vez" está
+> hecho desde el 2026-05-29 — se conserva más abajo solo como referencia por si algún día hay
+> que levantar el servidor de nuevo desde cero.
+>
+> **Si venís a desplegar un cambio, andá directo a [§6 Deploy paso a paso](#6-deploy-paso-a-paso).**
+> Son 4 comandos.
 
 ---
 
-## 1. Estado actual del proyecto
+## 1. Estado actual — lo que ya está montado
 
-El sistema está listo para pruebas en producción con los primeros 8 restaurantes.
+| Qué | Valor real |
+|---|---|
+| **Dominio** | `menupro.tech` — comprado en **Porkbun** |
+| **Servidor** | **Droplet de DigitalOcean**, Ubuntu — hostname `menupro-prod` |
+| **Ruta del proyecto** | `/var/www/menupro` |
+| **Proceso** | PM2, con el nombre **`menupro`** |
+| **Rama que se despliega** | **`main`** (no `master`) |
+| **Base de datos** | `/var/www/menupro/database.sqlite` — **no está en git** (`.gitignore`) |
+| **SSL** | Let's Encrypt vía Certbot, renovación automática |
+| **Nginx** | `proxy_pass` de todo a `localhost:3000` — no sirve estáticos por su cuenta |
+| **Piloto activo** | Restaurante real usando el sistema a diario (ver `pilotos.md`) |
 
 **Stack:**
 - Backend: Node.js + Express
 - Base de datos: SQLite (better-sqlite3) — suficiente para los primeros 8–20 restaurantes
-- Frontend: HTML/CSS/JS vanilla (sin build step)
+- Frontend: HTML/CSS/JS vanilla (**sin build step** — no hay `npm run build` que correr)
 - Auth: JWT en cookie httpOnly
 - Push notifications: Web Push API (VAPID)
 - PWA: manifest.json + service worker
 
+> ⚠️ **Hay un piloto real usando esto todos los días.** Un deploy roto no es un inconveniente
+> técnico: es un restaurante que no puede tomar pedidos en pleno servicio.
+
 ---
 
-## 2. Qué comprar antes de desplegar
+## 2. ~~Qué comprar antes de desplegar~~ ✅ Ya comprado
+
+> **Nada de esta sección hay que hacerlo.** Se resolvió así:
+> - **VPS:** Droplet de DigitalOcean ✅
+> - **Dominio:** `menupro.tech`, comprado en **Porkbun**, con los registros A ya apuntando al
+>   Droplet ✅
+> - **SSL:** Let's Encrypt, instalado y renovándose solo ✅
+>
+> Lo que sigue queda como referencia de comparación de proveedores, por si algún día hay que
+> migrar o levantar un segundo servidor.
+
+<details>
+<summary>Comparativa original de proveedores y dominios (histórico, mayo 2026)</summary>
 
 ### 2.1 Servidor (VPS)
 
@@ -60,9 +91,18 @@ Comprar en **Namecheap** o **Porkbun** (más baratos que GoDaddy).
 
 **Gratuito con Let's Encrypt + Certbot.** No comprar SSL — se hace en el servidor.
 
+</details>
+
 ---
 
-## 3. Requisitos del servidor
+## 3. ~~Requisitos del servidor~~ ✅ Ya instalado
+
+> **Nada de esta sección hay que hacerlo.** Node 20, PM2, Nginx, Certbot y Git ya están
+> instalados en el Droplet desde el montaje inicial. Queda como referencia para reconstruir el
+> servidor desde cero.
+
+<details>
+<summary>Software instalado en el VPS (histórico)</summary>
 
 ### Software a instalar en el VPS
 
@@ -86,6 +126,8 @@ sudo apt install -y certbot python3-certbot-nginx
 # Git
 sudo apt install -y git
 ```
+
+</details>
 
 ---
 
@@ -139,28 +181,95 @@ node -e "const wp=require('web-push'); const k=wp.generateVAPIDKeys(); console.l
 
 ## 6. Deploy paso a paso
 
-> ### ⚠️ Antes de desplegar cambios de frontend: subir `BUILD`
->
-> Si el commit toca **cualquier** archivo de `public/` (HTML, CSS o JS), hay que subir en 1
-> el número de `utils/buildVersion.js`. Es **el único lugar** que se toca: de ahí sale la
-> versión que viaja en la URL de cada asset (`/js/modules/utils.js?v=12`) y en el nombre del
-> caché del service worker.
->
-> **Por qué importa:** si no se sube, los navegadores que ya tenían la app siguen sirviendo
-> los archivos viejos desde su caché. El 2026-08-16 eso hizo que el panel apareciera **vacío**
-> después de un deploy — sin menús ni platos, como si se hubieran borrado los datos (no se
-> borró nada, ver `issues/ISS-044-panel-vacio-tras-deploy.md`). Al subir `BUILD`, **todas** las
-> URLs cambian a la vez y el navegador está obligado a bajar el juego completo, así que no
-> puede quedarse con una mezcla de versiones.
->
-> Verificar después del deploy:
-> ```bash
-> curl -s https://menupro.tech/owner.html | grep -o 'utils.js?v=[0-9]*' | head -1
-> ```
-> Tiene que devolver el número nuevo. Si devuelve `__BUILD__` sin reemplazar, el middleware de
-> `app.js` no se aplicó — revisar los logs de `pm2`.
+**Esto es lo único que hacés para desplegar un cambio.** Todo lo demás de este documento es
+referencia.
 
-### 6.1 Primera vez
+```bash
+cd /var/www/menupro
+git pull origin main
+npm install --omit=dev
+pm2 restart menupro
+```
+
+Y para confirmar que quedó arriba:
+
+```bash
+pm2 status                          # debe decir "online"
+curl http://localhost:3000/health   # {"status":"ok", ...}
+```
+
+> **Ojo con `main`.** Este documento decía `git pull origin master` hasta el 2026-08-16, pero
+> la rama del repo es **`main`**. El comando de arriba es el correcto.
+
+### 6.1 ¿Y lo del `BUILD`? — no es un paso tuyo en el servidor
+
+Desde ISS-044, cada archivo de `public/` se sirve con un número de versión en la URL
+(`/js/modules/utils.js?v=11`). Ese número sale de **`utils/buildVersion.js`**, que es un
+archivo del repositorio.
+
+**Quién lo sube:** quien programa, en la laptop, **antes de commitear**. Viaja como una línea
+más del commit, así que llega al servidor con el `git pull` — igual que cualquier otro cambio
+de código.
+
+**Qué tenés que hacer vos en el servidor: nada.** Por eso no aparece en los 4 comandos de
+arriba. No hay build step, no hay variable de entorno que tocar, no hay archivo que editar en
+el Droplet.
+
+Lo único útil de tu lado es **verificar** que llegó bien, después del `pm2 restart`:
+
+```bash
+curl -s https://menupro.tech/owner.html | grep -o 'utils\.js?v=[0-9]*' | head -1
+```
+
+- Devuelve `utils.js?v=12` (o el número que sea) → ✅ todo bien.
+- Devuelve `utils.js?v=__BUILD__` → ❌ el middleware de `app.js` no se aplicó. Revisar
+  `pm2 logs menupro` buscando líneas que empiecen con `[build]`.
+- No devuelve nada → el `grep` no encontró el patrón; revisá que la app esté sirviendo.
+
+**Por qué existe todo esto:** sin el número, los navegadores que ya tenían la app seguían
+usando archivos viejos desde su caché. El 2026-08-16 eso hizo que el panel apareciera **vacío**
+—sin menús ni platos, como si se hubieran borrado los datos— cuando en realidad estaba todo
+intacto (ver `issues/ISS-044-panel-vacio-tras-deploy.md`). Al cambiar el número, **todas** las
+URLs cambian a la vez y el navegador está obligado a bajar el juego completo, así que no puede
+quedarse con una mezcla de versiones.
+
+### 6.2 Cuando el deploy incluye una migración de base de datos
+
+Las migraciones corren **solas** al arrancar la app (`config/database.js`, con el patrón
+`try { ALTER TABLE ... } catch {}`, que es idempotente). No hay comando que ejecutar.
+
+Pero antes de un deploy con migración, **hacé una copia de la base**:
+
+```bash
+cd /var/www/menupro && cp database.sqlite ~/database-$(date +%F-%H%M).sqlite
+```
+
+Es un segundo y es la única red de seguridad que hay hoy (ver §7: los backups automáticos
+siguen pendientes).
+
+### 6.3 Si algo sale mal — volver atrás
+
+```bash
+cd /var/www/menupro
+git log --oneline -5          # ver a qué commit volver
+git revert --no-edit <hash>   # revierte ese commit
+pm2 restart menupro
+```
+
+`git revert` es preferible a `git reset --hard` porque no reescribe la historia y queda
+registrado qué se revirtió y cuándo.
+
+---
+
+## 6-bis. Montaje inicial del servidor (histórico — ya ejecutado)
+
+> ✅ **Todo lo que sigue ya se hizo** el 2026-05-29. Se conserva por si hay que levantar el
+> servidor de nuevo desde cero o montar un segundo entorno.
+
+<details>
+<summary>Primera vez: clonar, .env, PM2, Nginx y SSL</summary>
+
+### 6-bis.1 Primera vez
 
 ```bash
 # En el servidor (conectado por SSH)
@@ -181,14 +290,14 @@ pm2 save
 pm2 startup   # sigue las instrucciones que imprime
 ```
 
-### 6.2 Configurar Nginx
+### 6-bis.2 Configurar Nginx
 
 Crear `/etc/nginx/sites-available/menupro`:
 
 ```nginx
 server {
     listen 80;
-    server_name tudominio.com www.tudominio.com;
+    server_name menupro.tech www.menupro.tech;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -214,28 +323,34 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### 6.3 Certificado SSL con Let's Encrypt
+### 6-bis.3 Certificado SSL con Let's Encrypt
 
 ```bash
-sudo certbot --nginx -d tudominio.com -d www.tudominio.com
+sudo certbot --nginx -d menupro.tech -d www.menupro.tech
 # Sigue las instrucciones — certbot modifica el nginx config automáticamente
 # El certificado se renueva solo cada 90 días
 ```
 
-Después de esto la app corre en `https://tudominio.com` ✅
+Después de esto la app corre en `https://menupro.tech` ✅
 
-### 6.4 Deploys futuros (actualizaciones)
-
-```bash
-cd /var/www/menupro
-git pull origin master
-npm install --omit=dev
-pm2 restart menupro
-```
+</details>
 
 ---
 
 ## 7. Backups de la base de datos
+
+> 🔴 **PENDIENTE — nada de esta sección está implementado todavía.** Es la tarea **T6** del
+> backlog y hoy es la deuda de más riesgo del proyecto: ya se desplegaron **dos migraciones de
+> esquema** sobre una base con datos reales del piloto, sin ningún backup al que volver.
+>
+> El 2026-08-16 el owner creyó haber perdido todos sus menús y platos (era caché, no se perdió
+> nada — ISS-044). En ese momento la respuesta honesta a "¿restauramos el backup?" fue **no
+> hay backup**. Mientras siga así, cualquier error real es irreversible.
+>
+> **Mientras tanto, lo mínimo antes de cada deploy con migración:**
+> ```bash
+> cd /var/www/menupro && cp database.sqlite ~/database-$(date +%F-%H%M).sqlite
+> ```
 
 SQLite es un solo archivo. Un backup diario es crítico.
 
@@ -294,7 +409,7 @@ crontab -e
 > - **Desarrollo** (`NODE_ENV` ≠ production): `null` → directiva desactivada, los POST por LAN/celular funcionan sin TLS.
 > - **Producción** (`NODE_ENV=production`): `[]` → directiva activa, defensa contra mixed-content con HTTPS real.
 >
-> **No hay que tocar `app.js` en el deploy** — basta con tener `NODE_ENV=production` en el `.env`. Verifica el header tras desplegar con `curl -I https://tudominio.com/ | grep -i csp` (debe incluir `upgrade-insecure-requests`).
+> **No hay que tocar `app.js` en el deploy** — basta con tener `NODE_ENV=production` en el `.env`. Verifica el header tras desplegar con `curl -I https://menupro.tech/ | grep -i csp` (debe incluir `upgrade-insecure-requests`).
 
 ### 8.3 Rate limiting y protección contra fuerza bruta
 
@@ -360,23 +475,23 @@ pm2 reload menupro   # zero-downtime reload
 
 ## 10. Primer restaurante — pasos operativos
 
-1. Desplegaste la app y funciona en `https://tudominio.com`
-2. Entrar a `https://tudominio.com/admin/login` con las credenciales del admin
+1. Desplegaste la app y funciona en `https://menupro.tech`
+2. Entrar a `https://menupro.tech/admin/login` con las credenciales del admin
 3. Crear el restaurante desde el panel admin
 4. Crear el usuario `owner` del restaurante
-5. El owner entra a `https://tudominio.com/login` y configura:
+5. El owner entra a `https://menupro.tech/login` y configura:
    - Nombre y foto del restaurante
    - Mesas (número y capacidad)
    - Métodos de pago (Yape / Plin / Efectivo)
    - Menú del día y carta
    - Modalidades (para llevar, delivery si aplica)
 6. El owner activa las notificaciones push desde el panel Configuración (en su celular)
-7. Generar QR: `https://tudominio.com/menu?restaurante=ID&mesa=N`
+7. Generar QR: `https://menupro.tech/menu?restaurante=ID&mesa=N`
 8. Imprimir QRs y pegarlos en mesas
 
 ### 10.1. Restaurante "demo" para el botón "Ver demo en vivo" de la landing
 
-La landing pública (`/`) tiene un CTA **"Ver demo en vivo"** que abre `https://tudominio.com/menu?restaurante=1&mesa=1`.
+La landing pública (`/`) tiene un CTA **"Ver demo en vivo"** que abre `https://menupro.tech/menu?restaurante=1&mesa=1`.
 Para que el visitante vea un menú real (no un restaurante vacío), hay que dejar **un restaurante demo sembrado** apuntado por ese link.
 
 Pasos operativos (una sola vez, post-deploy):
@@ -385,7 +500,7 @@ Pasos operativos (una sola vez, post-deploy):
    - Menú del día con 1-2 opciones y precio.
    - 3-4 categorías de carta con platos (idealmente con foto).
    - Al menos la **mesa 1** activa (el link usa `mesa=1`).
-3. Verificar abriendo `https://tudominio.com/menu?restaurante=1&mesa=1` en incógnito: debe cargar menú + carta.
+3. Verificar abriendo `https://menupro.tech/menu?restaurante=1&mesa=1` en incógnito: debe cargar menú + carta.
 4. **Opcional pero recomendado:** marcar este restaurante como "solo demo" para no mezclarlo con clientes reales en reportes del admin.
 
 > En desarrollo el botón ya funciona porque `scripts/seed-demo-data.js` siembra el restaurante `id=1` (Crisolito) con menú, carta y 6 mesas. En producción hay que replicar ese sembrado manualmente o correr el seeder contra la BD de prod con cuidado.
