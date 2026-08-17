@@ -6,7 +6,9 @@ const helmet       = require('helmet');
 const rateLimit    = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const path         = require('path');
+const fs           = require('fs');
 const logger       = require('./middleware/logger');
+const { BUILD }    = require('./utils/buildVersion');
 
 const webpush            = require('web-push');
 const authRoutes         = require('./routes/auth');
@@ -84,6 +86,51 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
   maxAge: '1y',
   immutable: true,
 }));
+
+// ── Inyección de la versión de build — ISS-044 ──────────────────────────────
+// Los 3 archivos de abajo llevan `__BUILD__` donde va el número de versión:
+// los HTML en la URL de cada <script>/<link>, y el sw.js en el nombre del
+// caché y en su lista de assets. Se reemplaza acá, al servirlos, para que
+// `utils/buildVersion.js` sea el ÚNICO lugar que hay que tocar por deploy —
+// si hubiera que editar 18 URLs a mano, tarde o temprano una queda vieja y
+// vuelve el panel en blanco que motivó el issue.
+// Va ANTES de express.static: si no, static los sirve tal cual con el
+// placeholder sin reemplazar.
+const PLANTILLAS = {
+  '/owner.html': 'text/html; charset=utf-8',
+  '/menu.html':  'text/html; charset=utf-8',
+  '/sw.js':      'application/javascript; charset=utf-8',
+};
+const _plantillaCache = new Map();
+
+function servirConVersion(archivo, res) {
+  let cuerpo = _plantillaCache.get(archivo);
+  if (cuerpo === undefined) {
+    cuerpo = fs.readFileSync(path.join(__dirname, 'public', archivo), 'utf8')
+               .split('__BUILD__').join(BUILD);
+    _plantillaCache.set(archivo, cuerpo);
+  }
+  res.type(PLANTILLAS[archivo]);
+  // Los HTML y el sw.js se revalidan siempre: son el punto de entrada que
+  // avisa al navegador que hay una versión nueva. Los assets que referencian
+  // sí pueden cachearse fuerte, porque su URL cambia con cada build.
+  res.set('Cache-Control', 'no-cache');
+  res.send(cuerpo);
+}
+
+app.use((req, res, next) => {
+  const archivo = req.path === '/' ? null : req.path;
+  if (req.method === 'GET' && archivo && PLANTILLAS[archivo]) {
+    try { return servirConVersion(archivo, res); }
+    catch (e) {
+      // Nunca dejar la app inaccesible por esto: si falla la lectura o el
+      // reemplazo, que express.static sirva el archivo tal cual.
+      console.error(`[build] no se pudo inyectar la versión en ${archivo}:`, e.message);
+    }
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 // Screenshots del bot para los manuales (fuera de public/)
 app.use('/bot-screenshots', express.static(path.join(__dirname, 'landing', 'bot', 'output', 'screenshots')));

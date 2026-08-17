@@ -25,19 +25,24 @@ desplegaron el 2026-08-16:
 
 ### 🚨 Empezar acá la próxima sesión
 
-1. **[ISS-044](issues/ISS-044-panel-vacio-tras-deploy.md) — el panel aparece vacío tras un
-   deploy.** Pasó en producción el 2026-08-16, minutos después de desplegar: el owner vio
-   "no hay ningún plato" y creyó que se habían borrado los datos. **No se perdió nada** (la
-   BD intacta, 223 KB; se arregló cerrando sesión), pero estuvo a punto de restaurar un
-   backup encima de una base sana. Se repetirá en cada deploy que toque un módulo compartido.
-2. **T6, el backup de la BD.** El susto de arriba lo dejó clarísimo: no hay a dónde volver si
-   algún día el problema es real. Ya se desplegó una migración de esquema sin backup.
+1. **T6, el backup de la BD.** Es lo único verdaderamente urgente que queda. El susto del
+   2026-08-16 (ISS-044) lo dejó clarísimo: si algún día el problema es real, **no hay a dónde
+   volver**. Ya se desplegaron dos migraciones de esquema sin backup.
+2. **Desplegar ISS-044 + T11** — hechos el 2026-08-16, sin desplegar. Ojo: a partir de este
+   deploy hay que **subir `BUILD` en `utils/buildVersion.js`** en cada cambio de frontend
+   (ver el aviso al inicio de la sección 6 de `deploy.md`).
 3. **Verificar en el servicio real** un pedido con 2 menús: que el ticket de cocina los
    separe, y que la persona de cocina vea la etiqueta "para llevar".
 4. **ISS-043 — el menú sin secciones obligatorias cobra de menos** (ver sección siguiente).
    Es de cobro, no de vista.
 
-Después de eso, las tareas con más valor de la lista de abajo son **T4, T5, T11 y T12**.
+**Menor, encontrado de paso el 2026-08-16:** `owner.html:1145` hace
+`window.location.replace('/login.html')` en el auth guard, pero eso **no corta la ejecución**
+del script; la línea siguiente lee `session.name` con `session` en `null` y tira un error en
+consola en toda visita sin sesión. No impide el redirect. Se arregla con un `return` — no se
+tocó para no mezclarlo con el trabajo de caché.
+
+Después de eso, las tareas con más valor de la lista de abajo son **T4, T5 y T12**.
 
 ---
 
@@ -69,8 +74,8 @@ problema de conteo de tappers: **también afecta el precio del menú**, porque
   distintos y se reparte el precio por grupo, sin heurística. Solo aplica a pedidos nuevos —
   los viejos no tienen el dato.
 
-Próximo número de issue libre: **ISS-043** (ojo: **ISS-036 y ISS-037 están reservados**, no
-usados todavía — ver T10 y T11 más abajo).
+Próximo número de issue libre: **ISS-045**. Sin usar quedaron también **ISS-036** (T11 se
+resolvió sin abrirlo) e **ISS-037** (reservado para T10, las fechas en Configuración).
 
 ---
 
@@ -99,7 +104,7 @@ arriba.
 | ~~**T2**~~ | ~~Reset de scroll al cambiar de panel~~ | ✅ **Hecho 2026-08-12** — `ISS-035`. Ojo: **no** era `window.scrollTo()`; el scroll vive en `.content`. SW bumpeado a v8 → deploy **ámbar** | — |
 | ~~**T3**~~ | ~~Reservas y horario: `min`/`max` en `res-fecha`/`res-hora` + quitar el gate de "abierto ahora" del botón reservar.~~ | ✅ **Hecho y desplegado 2026-08-13**, alcance reducido — ver detalle en `status.md` | ~~D1~~ |
 | **T4** | Filtro de fecha + fin del N+1 en `GET /api/orders/activas`, migrándolo a `utils/colaDia.js`. | 🟢 **Totalmente desbloqueada** — T1/ISS-034 desplegado y verificado en celular real 2026-08-13, ya no hace falta `/activas` sin filtro como salida de emergencia | — |
-| **T11** | **Arranque lento de la app** (1ª apertura no entra, 2ª rápida). 4 hosts externos bloqueantes en el `<head>`, 17 scripts sin `defer`, y el SW **no cachea los módulos JS** (no hay un solo `cache.put`). Ver diagnóstico en `status.md`. | 🔴 Diagnosticado, sin implementar. Abrir **ISS-036** | — |
+| ~~**T11**~~ | ~~**Arranque lento de la app**~~ | ✅ **Hecho 2026-08-16** junto con ISS-044, que compartía causa raíz. El SW pasó de precachear 7 archivos a 22 (antes **ningún** JS); los CDN pesados y las fuentes dejaron de bloquear el render. **Pendiente de deploy.** Quedó fuera el `defer` de los 15 scripts locales: el inline de `owner.html:1138` llama a `leerSesion()` en top-level y define las globales de los `onclick`, así que `defer` rompería el arranque — requiere mover ~1200 líneas de inline a un archivo, refactor propio. Nunca se abrió ISS-036: **ese número sigue libre** | — |
 | **T5** | Contador **"menús vendidos hoy"** — número grande y visible, unificando órdenes y reservas. | 🟢 Listo para hacer | — |
 | **T6** | **Backup manual verificado** de la BD de producción (dump + restore de prueba). Lo ejecuta el usuario por SSH. | 🟡 Pendiente | — |
 | **T7** | Editar el nombre del restaurante. | ⏸️ Bloqueada | **D3** |

@@ -6,9 +6,15 @@
   <title>Menú</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c8692a">
+  <!-- Fuentes sin bloquear el render — ver nota en owner.html (T11). Acá pesa
+       más todavía: menu.html lo abre el comensal desde su datos móviles, con
+       el QR recién escaneado y hambre. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/menu.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/css/menu.css?v=__BUILD__">
 
   <!-- ── Dark mode auto (sin flash) ── -->
   <script>
@@ -1471,6 +1477,6 @@ async function renderReservarContent() {
     navigator.serviceWorker.register('/sw.js');
   }
 </script>
-<script src="/js/widgets/menu-modal.js"></script>
+<script src="/js/widgets/menu-modal.js?v=__BUILD__"></script>
 </body>
 </html>

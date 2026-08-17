@@ -10,21 +10,58 @@
 // v10: agrupamiento de menús por instancia (ISS-041) — toca menu.html (numera
 // los grupos al confirmar) y owner.css (.menu-grupo-head). Sin el bump, un
 // celular con la PWA instalada seguiría mandando pedidos sin `grupo`.
-const CACHE = 'menupro-v10';
+//
+// v11 en adelante: el número ya NO se escribe acá. Sale de
+// `utils/buildVersion.js` y lo inyecta `app.js` reemplazando `__BUILD__` al
+// servir este archivo (ISS-044). Bumpear ahí, que es el único lugar.
+const BUILD = '__BUILD__';
+const CACHE = `menupro-v${BUILD}`;
+
+// Los módulos JS ahora también se precachean — T11. Antes solo estaban el HTML
+// y el CSS, así que en cada arranque había que ir a la red por 15 archivos
+// (de ahí que la primera apertura no entrara y la segunda sí), y peor: podían
+// venir de versiones distintas y romper el panel (ISS-044).
+// Van con `?v=` para que la URL cambie en cada build; así el navegador nunca
+// puede servir una copia vieja desde su propio caché HTTP.
+const v = ruta => `${ruta}?v=${BUILD}`;
 
 const ASSETS = [
   '/owner.html',
   '/menu.html',
-  '/css/owner.css',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/badge-96.png',
+  v('/css/owner.css'),
+  v('/css/menu.css'),
+  v('/js/session.js'),
+  v('/js/modules/charts-theme.js'),
+  v('/js/modules/utils.js'),
+  v('/js/modules/config.js'),
+  v('/js/modules/usuarios.js'),
+  v('/js/modules/mesas.js'),
+  v('/js/modules/cocina.js'),
+  v('/js/modules/ordenes.js'),
+  v('/js/modules/reservas.js'),
+  v('/js/modules/reportes.js'),
+  v('/js/modules/pedidos.js'),
+  v('/js/widgets/photo-editor.js'),
+  v('/js/widgets/form-modal.js'),
+  v('/js/widgets/plato-picker.js'),
+  v('/js/widgets/pwa-install.js'),
+  v('/js/widgets/menu-wizard.js'),
+  v('/js/widgets/menu-modal.js'),
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
+    caches.open(CACHE).then(c =>
+      // `cache: 'reload'` salta el caché HTTP del navegador al precachear. Sin
+      // esto, `addAll` puede guardar en el caché del SW una copia vieja que el
+      // navegador tenía dando vueltas — exactamente el bug de ISS-044, pero
+      // fosilizado dentro del service worker.
+      c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))
+    )
   );
   self.skipWaiting();
 });
@@ -50,7 +87,31 @@ self.addEventListener('fetch', e => {
   // Llamadas a la API siempre van a la red
   if (url.pathname.startsWith('/api/')) return;
 
-  // Assets estáticos: cache primero, red como fallback
+  // El propio sw.js nunca se cachea: es lo que avisa que hay versión nueva.
+  if (url.pathname === '/sw.js') return;
+
+  // Los HTML son el punto de entrada y NO llevan `?v=` en la URL, así que son
+  // los únicos que pueden quedar viejos en el caché. Se sirven del caché para
+  // que la app abra rápido (T11) y se revalidan en segundo plano, de modo que
+  // la apertura siguiente ya tenga la versión nueva sin esperar a nada.
+  const esHTML = e.request.mode === 'navigate' || url.pathname.endsWith('.html');
+  if (esHTML) {
+    e.respondWith(
+      caches.open(CACHE).then(async cache => {
+        const cached = await cache.match(e.request);
+        const red = fetch(e.request).then(res => {
+          if (res && res.ok) cache.put(e.request, res.clone());
+          return res;
+        }).catch(() => null);
+        // Sin copia en caché (primera visita) hay que esperar a la red igual.
+        return cached || red || fetch(e.request);
+      })
+    );
+    return;
+  }
+
+  // El resto (JS, CSS, íconos) va del caché sin más: su URL lleva `?v=` y
+  // cambia en cada build, así que una copia cacheada nunca puede estar vieja.
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );

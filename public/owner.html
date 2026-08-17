@@ -4,27 +4,43 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel del Restaurante</title>
+  <!-- Las fuentes ya no bloquean el primer pintado (T11): el `media="print"`
+       hace que el navegador las baje sin frenar el render y el `onload` las
+       aplica al llegar. `display=swap` ya evitaba el texto invisible; esto
+       evita además la espera a un host externo para pintar cualquier cosa.
+       El preconnect a gstatic (donde viven los .woff2, no solo el CSS) ahorra
+       el handshake completo del segundo host. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="/js/modules/charts-theme.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <link rel="stylesheet" href="/css/owner.css">
-  <script src="/js/session.js"></script>
-  <script src="/js/modules/utils.js"></script>
-  <script src="/js/modules/config.js"></script>
-  <script src="/js/modules/usuarios.js"></script>
-  <script src="/js/modules/mesas.js"></script>
-  <script src="/js/modules/cocina.js"></script>
-  <script src="/js/modules/ordenes.js"></script>
-  <script src="/js/modules/reservas.js"></script>
-  <script src="/js/modules/reportes.js"></script>
-  <script src="/js/modules/pedidos.js"></script>
-  <script src="/js/widgets/photo-editor.js"></script>
-  <script src="/js/widgets/form-modal.js"></script>
-  <script src="/js/widgets/plato-picker.js"></script>
-  <script src="/js/widgets/pwa-install.js"></script>
-  <script src="/js/widgets/menu-wizard.js"></script>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"></noscript>
+  <!-- Chart.js y qrcodejs van `defer`: son ~200 KB de CDN externo que antes
+       bloqueaban el primer pintado, y ninguno se usa al abrir la app —
+       Chart.js recién en el panel Reportes y QRCode al generar los QR de mesas
+       (T11: "la primera apertura no entra, la segunda sí").
+       charts-theme.js también lleva `defer` para que siga ejecutándose DESPUÉS
+       de Chart.js: sin eso ve `Chart` undefined, sale sin hacer nada y los
+       gráficos pierden el tema. Entre scripts `defer` el orden se respeta. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script defer src="/js/modules/charts-theme.js?v=__BUILD__"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="/css/owner.css?v=__BUILD__">
+  <script src="/js/session.js?v=__BUILD__"></script>
+  <script src="/js/modules/utils.js?v=__BUILD__"></script>
+  <script src="/js/modules/config.js?v=__BUILD__"></script>
+  <script src="/js/modules/usuarios.js?v=__BUILD__"></script>
+  <script src="/js/modules/mesas.js?v=__BUILD__"></script>
+  <script src="/js/modules/cocina.js?v=__BUILD__"></script>
+  <script src="/js/modules/ordenes.js?v=__BUILD__"></script>
+  <script src="/js/modules/reservas.js?v=__BUILD__"></script>
+  <script src="/js/modules/reportes.js?v=__BUILD__"></script>
+  <script src="/js/modules/pedidos.js?v=__BUILD__"></script>
+  <script src="/js/widgets/photo-editor.js?v=__BUILD__"></script>
+  <script src="/js/widgets/form-modal.js?v=__BUILD__"></script>
+  <script src="/js/widgets/plato-picker.js?v=__BUILD__"></script>
+  <script src="/js/widgets/pwa-install.js?v=__BUILD__"></script>
+  <script src="/js/widgets/menu-wizard.js?v=__BUILD__"></script>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c8692a">
 

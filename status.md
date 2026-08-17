@@ -2,6 +2,77 @@
 
 ---
 
+## 🎯 Sesión 2026-08-16 (parte 3) — ISS-044 + T11: que un deploy no pueda dejar el panel vacío
+
+**Prompt del usuario:** "hagamos ISS-044 y T11 juntos", después del susto del panel vacío.
+Comparten causa raíz: **los assets no tenían ninguna estrategia de versión ni de precache**.
+
+### El fix: una sola perilla
+
+`utils/buildVersion.js` exporta `BUILD`, y **es el único número que se toca por deploy**. Los
+HTML y el `sw.js` guardan el placeholder `__BUILD__` en disco; `app.js` lo reemplaza al
+servirlos, con un middleware que va antes de `express.static` y que ante cualquier fallo cae
+a servir el archivo tal cual — la app nunca queda inaccesible por esto.
+
+Con eso, los 17 assets locales de `owner.html` y los 2 de `menu.html` se piden como
+`/js/modules/utils.js?v=11`. **Al subir `BUILD` cambian todas las URLs a la vez**, así que es
+imposible que el navegador sirva un `utils.js` viejo junto a un `cocina.js` nuevo, que fue
+exactamente lo que vació el panel.
+
+Detalles que importan:
+- **`ASSETS` del SW pasó de 7 a 22 entradas** (T11): antes no había **ni un solo** módulo JS
+  precacheado, así que cada arranque los pedía a la red uno por uno.
+- **`cache: 'reload'` al precachear.** Sin esto `addAll` puede guardar dentro del SW una copia
+  vieja que el navegador tenía dando vueltas: el mismo bug, pero fosilizado.
+- **Los HTML van *stale-while-revalidate*.** Son los únicos sin `?v=`, así que los únicos que
+  podrían quedar viejos: se sirven del caché (rápido) y se revalidan de fondo.
+- **Chart.js y qrcodejs pasaron a `defer`** — ~200 KB de CDN que bloqueaban el primer pintado
+  sin usarse al abrir. `charts-theme.js` también, para que siga ejecutándose *después* de
+  Chart.js (si no, ve `Chart` undefined y los gráficos pierden el tema).
+- **Las fuentes dejaron de bloquear el render** (`media="print"` + `onload`), con `<noscript>`
+  de respaldo y `preconnect` a `fonts.gstatic.com`, que faltaba.
+
+### Lo que quedó fuera, y por qué
+
+El tercer punto de T11 era **`defer` en los 15 `<script>` locales**. No se hizo: el bloque
+inline de `owner.html:1138` llama a `leerSesion()` en el nivel superior y define las funciones
+globales que usan los `onclick` del HTML. Los `defer` se ejecutan **después** de los inline, así
+que el guard reventaría con `leerSesion is not defined` y la app no arrancaría. Sacarlo exige
+mover ~1200 líneas de inline a un archivo: refactor propio, no algo para mezclar con un cambio
+de caché teniendo un piloto activo.
+
+### Verificación
+
+- `scripts/test-version-assets.js` — **25/25** contra el servidor: ningún `__BUILD__` sin
+  reemplazar, ningún asset local sin versionar, `sw.js` con la misma versión que el servidor,
+  los 16 scripts de `owner.html` en `ASSETS`, las 19 URLs versionadas responden 200, y el
+  chequeo que define el bug: **`utils.js` y `cocina.js` piden la misma versión**.
+- `scripts/test-sw-precache.js` — **11/11** en Chromium real: el SW instala, queda **un solo
+  caché** (`menupro-v11`), precachea **17 módulos JS** (antes 0), y en la segunda visita los
+  assets se sirven sin tocar la red. Verifica además que cargar las páginas **no tire ningún
+  error de JS**, que era el síntoma exacto.
+- `npx jest` → **412/412**.
+
+**Medición del arranque, sin adornos:** con red limitada (~1,6 Mbps, 150 ms de latencia) y 4
+corridas alternadas, `menu.html` mejoró de **569 → 538 ms** al primer pintado y bajó de **13 a
+6 recursos** en el camino crítico. Es una mejora modesta, no espectacular, y en `owner.html` no
+se pudo medir de forma confiable en local. **La ganancia real de T11 no está en esos
+milisegundos sino en el precache**, que es lo que ataca el síntoma reportado ("la primera
+apertura no entra, la segunda sí") y eso sí está verificado en navegador.
+
+> ⚠️ **Cambia el procedimiento de deploy.** A partir de acá, todo cambio en `public/` exige
+> subir `BUILD` en `utils/buildVersion.js`. Documentado con su verificación al inicio de la
+> sección 6 de `deploy.md`.
+
+**Encontrado de paso (menor, sin tocar):** `owner.html:1145` hace `window.location.replace()`
+en el auth guard, que **no corta la ejecución**; la línea siguiente lee `session.name` con
+`session` en `null` y tira un error de consola en toda visita sin sesión. No impide el
+redirect. Se arregla con un `return`; anotado en `backlog.md`.
+
+**Pendiente: deploy.**
+
+---
+
 ## 🎯 Sesión 2026-08-16 (parte 2) — ISS-041: los 3 críticos del piloto quedaron cerrados
 
 **Prompt del usuario:** seguir con ISS-041. Antes de decidir la forma del agrupamiento pidió

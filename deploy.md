@@ -139,6 +139,27 @@ node -e "const wp=require('web-push'); const k=wp.generateVAPIDKeys(); console.l
 
 ## 6. Deploy paso a paso
 
+> ### ⚠️ Antes de desplegar cambios de frontend: subir `BUILD`
+>
+> Si el commit toca **cualquier** archivo de `public/` (HTML, CSS o JS), hay que subir en 1
+> el número de `utils/buildVersion.js`. Es **el único lugar** que se toca: de ahí sale la
+> versión que viaja en la URL de cada asset (`/js/modules/utils.js?v=12`) y en el nombre del
+> caché del service worker.
+>
+> **Por qué importa:** si no se sube, los navegadores que ya tenían la app siguen sirviendo
+> los archivos viejos desde su caché. El 2026-08-16 eso hizo que el panel apareciera **vacío**
+> después de un deploy — sin menús ni platos, como si se hubieran borrado los datos (no se
+> borró nada, ver `issues/ISS-044-panel-vacio-tras-deploy.md`). Al subir `BUILD`, **todas** las
+> URLs cambian a la vez y el navegador está obligado a bajar el juego completo, así que no
+> puede quedarse con una mezcla de versiones.
+>
+> Verificar después del deploy:
+> ```bash
+> curl -s https://menupro.tech/owner.html | grep -o 'utils.js?v=[0-9]*' | head -1
+> ```
+> Tiene que devolver el número nuevo. Si devuelve `__BUILD__` sin reemplazar, el middleware de
+> `app.js` no se aplicó — revisar los logs de `pm2`.
+
 ### 6.1 Primera vez
 
 ```bash

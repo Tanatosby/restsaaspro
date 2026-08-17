@@ -1,5 +1,29 @@
 # Features — Menú Pro
 
+## ~~Un deploy ya no puede dejar el panel vacío~~ ✅ Completado 2026-08-16
+*Ver [ISS-044](issues/ISS-044-panel-vacio-tras-deploy.md) y **T11** del backlog, que compartían causa.*
+
+Los assets no tenían **ninguna** estrategia de versión: `owner.html` pedía siempre
+`/js/modules/utils.js`, sin nada que distinguiera una versión de otra. Un deploy podía dejar un
+`utils.js` viejo junto a un `cocina.js` nuevo, el módulo nuevo llamaba a una función que el viejo no
+tenía, y **el panel aparecía vacío con los datos intactos** — que el owner lee como "se borraron mis
+platos". Pasó en producción el 2026-08-16.
+
+**ARCH:** `utils/buildVersion.js` exporta `BUILD`, **el único número que se toca por deploy**. Los HTML
+y el `sw.js` guardan `__BUILD__` en disco y `app.js` lo reemplaza al servirlos (middleware antes de
+`express.static`, con fallback a servir el archivo tal cual si algo falla). Cada asset se pide como
+`?v=BUILD`, así que **todas las URLs cambian juntas** y la mezcla de versiones deja de ser posible.
+
+De paso, el arranque (**T11**): `ASSETS` del service worker pasó de 7 a 22 entradas — antes no
+precacheaba **ni un solo** módulo JS, así que cada apertura los pedía a la red uno por uno. El precache
+usa `cache:'reload'` para no fosilizar copias viejas, los HTML se sirven *stale-while-revalidate*, y los
+CDN pesados (Chart.js, qrcodejs) y las fuentes dejaron de bloquear el primer pintado.
+
+Quedó fuera el `defer` de los 15 scripts locales de `owner.html`: su bloque inline llama a
+`leerSesion()` en top-level y define las globales de los `onclick`, así que `defer` rompería el
+arranque. Requiere mover ~1200 líneas de inline a un archivo — refactor aparte. Verificación:
+`scripts/test-version-assets.js` 25/25 y `scripts/test-sw-precache.js` 11/11 en navegador real.
+
 ## ~~Dos menús en un pedido: el cocinero ve qué entrada va con qué segundo~~ ✅ Completado 2026-08-16
 *Ver [ISS-041](issues/ISS-041-menus-multiples-sin-anidar.md). Salió del uso real del piloto #1.*
 

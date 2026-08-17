@@ -1,6 +1,7 @@
 # ISS-044 — Tras un deploy el panel puede aparecer vacío hasta cerrar sesión
 
-**Estado:** 🔎 Diagnosticado — **ocurrió en producción el 2026-08-16**, fix pendiente
+**Estado:** ✅ **Resuelto 2026-08-16** — pendiente de deploy. Resuelto junto con **T11**
+(arranque lento), que compartía la causa raíz.
 **Módulo:** `public/owner.html` (carga de los `<script>`), `public/sw.js`
 **Prioridad:** 🔴 Crítica — le puede pasar a la dueña del piloto en pleno servicio, y el
 síntoma que ve es "se borraron todos mis platos"
@@ -74,23 +75,77 @@ consistencia entre versiones.
 
 ---
 
-## Solución propuesta (sin implementar)
+## Solución implementada (2026-08-16)
 
-**Versionar los `<script src>` con la misma versión que el service worker**, para que un
-deploy no pueda dejar mezcla de versiones:
+Se hizo la alternativa completa: **una sola versión de build que viaja en la URL de cada
+asset y en el nombre del caché del SW**, más el precache de los módulos JS que pedía T11.
 
-1. Una sola constante de versión de build compartida por `sw.js` y `owner.html`/`menu.html`.
-2. Los `<script>` la llevan en la URL: `/js/modules/utils.js?v=10`. Al cambiar la versión, la
-   URL cambia y el navegador **está obligado** a bajar el archivo nuevo; nunca puede mezclar.
-3. Como `owner.html` sí está precacheado y se renueva con el bump del SW, el HTML nuevo pide
-   automáticamente los JS nuevos. Queda una sola perilla que mover por deploy.
+**1 · Una sola perilla** — `utils/buildVersion.js` exporta `BUILD`. Es el único número que se
+toca por deploy. Los HTML y el `sw.js` guardan el placeholder `__BUILD__` en disco, y `app.js`
+lo reemplaza al servirlos (middleware antes de `express.static`, con fallback: si el reemplazo
+falla, se sirve el archivo tal cual y la app nunca queda inaccesible).
 
-Alternativa más completa (se solapa con **T11**): meter los módulos JS en `ASSETS` del SW,
-que además arregla el arranque lento. Conviene resolver las dos juntas y no dos veces.
+**2 · Todas las URLs cambian juntas** — los 17 assets locales de `owner.html` y los 2 de
+`menu.html` se piden como `/js/modules/utils.js?v=11`. Al subir `BUILD`, **cambian todas a la
+vez**: el navegador no puede servir un `utils.js` viejo junto a un `cocina.js` nuevo, que era
+exactamente el bug.
+
+**3 · El SW precachea el juego completo (T11)** — `ASSETS` pasó de 7 entradas a 22: ahora
+incluye los 15 módulos JS y los widgets. Antes no había **ni un solo** JS precacheado, así que
+cada arranque los pedía a la red uno por uno.
+
+**4 · `cache: 'reload'` al precachear** — sin esto, `addAll` puede guardar dentro del SW una
+copia vieja que el navegador tenía en su caché HTTP: el mismo bug, pero fosilizado.
+
+**5 · Los HTML se sirven *stale-while-revalidate*** — son los únicos sin `?v=` en la URL, así
+que son los únicos que podrían quedar viejos. Se sirven del caché (rápido) y se revalidan en
+segundo plano, de modo que la apertura siguiente ya tiene la versión nueva. Los HTML y el
+`sw.js` van con `Cache-Control: no-cache`.
+
+### Lo que NO se hizo, y por qué
+
+**`defer` en los 15 `<script>` locales de `owner.html`** — era el tercer punto de T11 y quedó
+fuera. El bloque inline de `owner.html:1138` llama a `leerSesion()` en el nivel superior y
+define las funciones globales que usan los `onclick` del HTML. Los scripts `defer` se ejecutan
+**después** de los inline, así que el guard reventaría con `leerSesion is not defined` y la app
+no arrancaría. Sacarlo requiere mover ~1200 líneas de inline a un archivo aparte: es una
+refactorización propia, no algo para meter en el mismo cambio que toca el caché con un piloto
+activo. Sí se les puso `defer` a los CDN externos (Chart.js, qrcodejs), que era lo pesado.
 
 ---
 
-## Mitigación mientras tanto
+## Verificación
+
+- **`scripts/test-version-assets.js`** — **25/25** contra el servidor real: los HTML salen sin
+  `__BUILD__` sin reemplazar, ningún asset local queda sin versionar, el `sw.js` usa la misma
+  versión que el servidor, los 16 scripts de `owner.html` están en `ASSETS`, las 19 URLs
+  versionadas responden 200, y el `?v=` no altera el contenido servido. Incluye el chequeo que
+  define el bug: **`utils.js` y `cocina.js` piden la misma versión**.
+- **`scripts/test-sw-precache.js`** — **11/11** en Chromium real: el SW instala, queda **un
+  solo caché** (`menupro-v11`, sin restos viejos), precachea **17 módulos JS** (antes 0) todos
+  con su `?v=`, y en la segunda visita los assets se sirven sin tocar la red. También verifica
+  que cargar `menu.html` y `owner.html` **no tire ningún error de JavaScript** — que era el
+  síntoma exacto del bug.
+- `npx jest` → **412/412**.
+
+### Medición del arranque (T11), sin adornos
+
+Con red limitada (~1,6 Mbps, 150 ms de latencia) y 4 corridas alternadas:
+
+| | Antes | Después |
+|---|---|---|
+| `menu.html` — primer pintado | 569 ms | **538 ms** |
+| `menu.html` — recursos en el camino crítico | 13 | **6** |
+
+La mejora por quitar bloqueantes es **modesta (≈30 ms)**, no espectacular. En `owner.html` no
+se pudo medir de forma confiable en local. **La ganancia real de T11 no está en esos
+milisegundos sino en el precache**: los 17 módulos ya no se piden a la red en cada arranque,
+que es justo el síntoma que se reportó ("la primera apertura no entra, la segunda sí"). Esa
+parte sí está verificada en navegador.
+
+---
+
+## Mitigación (ya no hace falta, queda como referencia)
 
 Si el panel aparece vacío después de un deploy: **cerrar sesión y volver a entrar.** No es
 pérdida de datos. Verificado en producción el 2026-08-16.
@@ -99,5 +154,6 @@ pérdida de datos. Verificado en producción el 2026-08-16.
 
 ## Pendiente
 
-- Implementar el versionado (decidir si junto con T11/ISS-036).
-- Avisar a la dueña del piloto #1 de la mitigación mientras no esté el fix.
+- **Deploy.**
+- Al desplegar cambios de frontend, subir `BUILD` en `utils/buildVersion.js` — ver el aviso al
+  inicio de la sección 6 de `deploy.md`.
