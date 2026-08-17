@@ -185,11 +185,15 @@ app.use('/api', (req, res) => {
 
 // Rutas por slug: /:slug y /:slug/:mesa
 // Se resuelven aquí, después de todas las rutas fijas, para no interferir.
+// ISS-045: comparación case-insensitive (COLLATE NOCASE) porque el slug siempre
+// se guarda en minúsculas (routes/menu.js), pero el link puede llegar con la
+// primera letra en mayúscula por autocapitalización del teclado/app externa
+// (WhatsApp, notas, etc.) — sin esto, "/Karinamenu" daba "Cannot GET".
 app.get('/:slug/:mesa', (req, res, next) => {
   const { slug, mesa } = req.params;
   if (!/^\d+$/.test(mesa)) return next();
   const db = require('./config/database');
-  const rest = db.prepare(`SELECT id FROM restaurantes WHERE slug = ? AND activo = 1`).get(slug);
+  const rest = db.prepare(`SELECT id FROM restaurantes WHERE slug = ? COLLATE NOCASE AND activo = 1`).get(slug);
   if (!rest) return next();
   res.redirect(`/menu?restaurante=${rest.id}&mesa=${mesa}`);
 });
@@ -197,7 +201,7 @@ app.get('/:slug/:mesa', (req, res, next) => {
 app.get('/:slug', (req, res, next) => {
   const { slug } = req.params;
   const db = require('./config/database');
-  const rest = db.prepare(`SELECT id FROM restaurantes WHERE slug = ? AND activo = 1`).get(slug);
+  const rest = db.prepare(`SELECT id FROM restaurantes WHERE slug = ? COLLATE NOCASE AND activo = 1`).get(slug);
   if (!rest) return next();
   res.redirect(`/menu?restaurante=${rest.id}`);
 });

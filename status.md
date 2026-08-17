@@ -2,6 +2,28 @@
 
 ---
 
+## 🎯 Sesión 2026-08-17 — ISS-045: link del menú roto al abrirlo desde otra app
+
+**Prompt del usuario:** compartió `issues/screenshots/dontget.jpeg` — "solo pasa en la app,
+cuando hago clic en el link de karinamenu, me da ese error, pero en web, entrando manualmente
+a la url sí me aparece el menú". Antes de esto, pull seguro (fast-forward, sin conflictos) que
+trajo los 8 commits del cierre de la sesión del 16 (ver sección de abajo).
+
+**Diagnóstico:** la captura mostraba `Cannot GET /Karinamenu` (K mayúscula). El slug se guarda
+siempre en minúsculas (`routes/menu.js`), pero la búsqueda en `app.js` (`slug = ?`) era
+case-sensitive en SQLite. Cuando el link se abre desde otra app (WhatsApp, notas), la
+autocorrección del teclado suele capitalizar la primera letra antes del tap — el navegador
+tipeado a mano no tiene ese problema porque el usuario lo escribe en minúsculas.
+
+**Fix:** `COLLATE NOCASE` en las dos consultas de resolución de slug (`/:slug` y
+`/:slug/:mesa`) en `app.js`. Verificado con 3 variantes de mayúsculas contra el mismo
+restaurante (302 los tres) + slug inexistente sigue en 404 + 758/758 jest. Detalle completo en
+[ISS-045](issues/ISS-045-slug-case-sensitive.md).
+
+**Estado:** resuelto, **pendiente de deploy**.
+
+---
+
 ## 📍 DÓNDE ESTAMOS — cierre de la sesión del 2026-08-16
 
 **Lo que está en producción** (deploy `291c15b`, hecho por el usuario ese día): los 3 issues
