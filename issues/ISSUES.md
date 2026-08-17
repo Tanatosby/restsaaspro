@@ -16,7 +16,9 @@ _(vacío)_
 
 ## Fix pendiente (diagnosticado, sin implementar)
 
-_(vacío)_
+| ID | Título | Módulo | Prioridad |
+|----|--------|--------|-----------|
+| [ISS-044](ISS-044-panel-vacio-tras-deploy.md) | Tras un deploy el panel puede aparecer vacío hasta cerrar sesión — parece pérdida de datos y no lo es | `public/owner.html`, `public/sw.js` | 🔴 Crítica |
 
 ## Resueltos
 

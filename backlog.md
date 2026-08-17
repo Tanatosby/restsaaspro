@@ -25,12 +25,17 @@ desplegaron el 2026-08-16:
 
 ### 🚨 Empezar acá la próxima sesión
 
-1. **Verificar en el servicio real** un pedido con 2 menús: que el ticket de cocina los
+1. **[ISS-044](issues/ISS-044-panel-vacio-tras-deploy.md) — el panel aparece vacío tras un
+   deploy.** Pasó en producción el 2026-08-16, minutos después de desplegar: el owner vio
+   "no hay ningún plato" y creyó que se habían borrado los datos. **No se perdió nada** (la
+   BD intacta, 223 KB; se arregló cerrando sesión), pero estuvo a punto de restaurar un
+   backup encima de una base sana. Se repetirá en cada deploy que toque un módulo compartido.
+2. **T6, el backup de la BD.** El susto de arriba lo dejó clarísimo: no hay a dónde volver si
+   algún día el problema es real. Ya se desplegó una migración de esquema sin backup.
+3. **Verificar en el servicio real** un pedido con 2 menús: que el ticket de cocina los
    separe, y que la persona de cocina vea la etiqueta "para llevar".
-2. **ISS-043 — el menú sin secciones obligatorias cobra de menos** (ver sección siguiente).
+4. **ISS-043 — el menú sin secciones obligatorias cobra de menos** (ver sección siguiente).
    Es de cobro, no de vista.
-3. **T6, el backup de la BD.** Sigue pendiente y ya se desplegó una migración de esquema sin
-   él. Es lo que más riesgo acumula del backlog.
 
 Después de eso, las tareas con más valor de la lista de abajo son **T4, T5, T11 y T12**.
 

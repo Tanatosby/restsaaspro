@@ -71,6 +71,33 @@ SW bumpeado a **`menupro-v10`**: cambian `menu.html` (numera los grupos al confi
 `owner.css` (`.menu-grupo-head`), los dos precacheados — sin el bump, un celular con la PWA
 instalada seguiría mandando pedidos sin `grupo`.
 
+### ⚠️ Incidente post-deploy — falsa alarma de pérdida de datos (ISS-044)
+
+Minutos después del deploy, el usuario reportó que **no aparecía ningún menú ni ningún plato**
+en el panel, y preguntó cómo restaurar el backup. **No se perdió nada:** la BD quedó intacta
+(223 KB) y todo reapareció **cerrando sesión y volviendo a entrar**.
+
+**Qué se descartó, en este orden:**
+1. Que el `git pull` hubiera pisado la BD → `database.sqlite` está en `.gitignore` y **nunca
+   estuvo trackeada** en ningún commit.
+2. Que la migración borrara datos → `ALTER TABLE ADD COLUMN` es aditivo.
+3. Que el no-backfill lo causara → solo deja `grupo = NULL` en `orden_menu_items`; no toca
+   menús ni platos.
+
+**Causa real:** el navegador quedó con archivos de dos versiones mezclados. `owner.html` está
+en `ASSETS` del SW y se renovó con el bump a `v10`; los módulos JS **no están en `ASSETS` ni
+llevan versión en la URL**, así que el navegador pudo servir un `utils.js` viejo junto a un
+`cocina.js` nuevo. Como en este deploy `badgeModalidad()` se mudó a `utils.js` y se agregó
+`renderMenuAgrupado()`, la mezcla revienta con `ReferenceError` y **el render se corta: las
+listas quedan vacías con los datos intactos**.
+
+**Lo importante no es el susto, es lo que casi pasa:** el síntoma ("no hay ningún plato") se
+lee como pérdida de datos, y la reacción natural es restaurar un backup **encima de una base
+sana**. Con T6 pendiente, ni siquiera había backup reciente al que volver. Abierto como
+**ISS-044** 🔴 y subido al tope del backlog, junto con T6.
+
+---
+
 ### ✅ DESPLEGADO 2026-08-16 — `291c15b`
 
 Lo hizo el usuario por SSH: `git pull` + `pm2 restart menupro`. La app quedó `online` y
