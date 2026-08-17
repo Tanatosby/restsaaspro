@@ -80,6 +80,18 @@ Al finalizar cada tarea o sesión de trabajo, siempre actualizar todos los `*.md
 
 **Por qué importa:** el 2026-08-10 una sesión calculó **16 commits pendientes de deploy cuando en realidad eran 2** — un deploy hecho por la consola web entre el 16 de julio y el 10 de agosto nunca se anotó. Con el dato equivocado casi se implementa una feature (auto-actualización del service worker) para resolver un problema que ya no existía. **Un log de deploys inexacto hace que se tomen decisiones de producto sobre datos falsos.**
 
+## Git — commitear siempre directo a `main`
+
+**No crear ramas de feature. Commitear y pushear siempre directo a `main`.**
+
+Es un repo de un solo desarrollador, sin PRs ni revisión de terceros, sin CI que gatee sobre
+ramas. `deploy.md` confirma que el deploy hace `git pull origin main` directamente — una rama
+sin mergear no tiene ningún efecto sobre producción y solo agrega un paso extra. El historial
+completo del repo (76+ commits verificados) es todo directo a `main`; nunca se usó una rama.
+
+La regla genérica de "ramear antes de commitear en la rama por defecto" no aplica a este flujo
+trunk-based — no sugerir ni crear una rama antes de commitear en este repo.
+
 ## Gestión de Issues
 
 El proyecto tiene una carpeta `issues/` en la raíz para tracking de bugs y problemas encontrados en producción/testing.
