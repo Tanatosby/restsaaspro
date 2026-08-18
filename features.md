@@ -1,5 +1,49 @@
 # Features — Menú Pro
 
+## ~~Descargar el menú del día como foto~~ ✅ Completado 2026-08-17
+
+Pedido de la dueña el día 4 del piloto #1 (2026-08-17). Ese día **4 comensales no pudieron usar la
+app**: 2 se rehusaron, 1 no tenía internet y 1 no tenía celular. El link del menú no les sirve a
+ellos; una foto sí — se ve sin abrir nada, se reenvía sola por WhatsApp y no gasta datos. Es
+**complementaria** al link y al QR, no los reemplaza.
+
+**Dónde:** Configuración de menús → card de cada menú → **«⬇ Descargar menú»**, entre «Copiar a otro
+día» y «Eliminar».
+
+**ARCH:** `public/js/widgets/menu-export.js` — widget autocontenido que compone un canvas en el
+propio celular y lo baja como JPEG (`menu-<fecha>.jpg`). **Sin backend, sin endpoints nuevos, sin
+migraciones y sin dependencias:** los datos del menú y las URLs de las fotos ya están en memoria
+porque la galería los está dibujando. Solo pide `GET /api/menu/restaurante/config` (cacheado) para
+el nombre, el color y el slug.
+
+**El diseño** (variante B+C, elegida sobre mockup renderizado con el CSS real):
+
+- Banda superior con el nombre del restaurante y la fecha, en el color del restaurante.
+- Portada del menú a lo ancho con scrim, y encima el nombre y el precio. La portada es la que el
+  owner ya eligió con «📷 Portada»; reusa la lógica de `portadaUrl()` de `menu-wizard.js`.
+- Una sección por bloque, con la foto de cada plato. **La grilla se adapta a cuántos platos hay:**
+  1-3 ocupan la fila entera (1 plato va centrado, con tope de 600px), 4 se parten 2+2, de 5 en
+  adelante van de a 3. Una grilla fija de 3 dejaba un hueco muerto que solo se vio al mirar la
+  imagen generada — los tests de medidas no lo detectaban.
+- Las secciones opcionales llevan «OPCIONAL» al costado; los platos agotados van en gris, tachados
+  y con chip «Agotado».
+- Pie con «Pide desde tu mesa» + el link del menú, para que quien reciba la foto pueda entrar.
+
+**Degradación:** si ningún plato tiene foto de portada, el hero se apaga y queda el nombre y el
+precio sobre el fondo — o sea, la variante «solo texto», sin código aparte. Un plato suelto sin foto
+cae en el watermark 🍽️, igual que hace hoy la card del panel. El ancho es siempre 1080px; **el alto
+es dinámico** según cuántos platos hay.
+
+**Detalles mobile:** `roundRect()` de canvas no existe en WebViews viejos de Android, así que los
+redondeados van a mano; `ctx.letterSpacing` se ignora solo si no está. Mientras compone, el botón
+dice «Generando…» y queda deshabilitado para que nadie lo toque dos veces.
+
+**Verificación:** `scripts/test-menu-export.js` (25/25) — medidas del lienzo, color de la banda
+tomado por píxel, alto dinámico contra la fórmula del diseño para secciones de 1 a 7 platos, la
+descarga real con su nombre de archivo, el aviso cuando el menú no tiene platos, y 0 errores de
+consola. Además se revisó **la imagen generada a ojo**, que es lo que destapó el bug de la grilla.
+423/423 jest y 51/51 de `test-menu-wizard.js` sin regresiones.
+
 ## ~~Un deploy ya no puede dejar el panel vacío~~ ✅ Completado 2026-08-16
 *Ver [ISS-044](issues/ISS-044-panel-vacio-tras-deploy.md) y **T11** del backlog, que compartían causa.*
 

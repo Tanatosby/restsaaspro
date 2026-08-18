@@ -20,7 +20,50 @@ un `cp` manual puntual antes de este deploy (ver sesión de abajo), pero falta e
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
   bloqueado por el clasificador de permisos, lo borra el usuario.
 - Prioridades P1/P2 del día 4 del piloto (cajita "Menús de hoy", botón "Agregar manual" en
-  cola, imagen de menú para WhatsApp, fiados) — ver `backlog.md`.
+  cola, fiados) — ver `backlog.md`. La **imagen de menú para WhatsApp** ya está hecha
+  (sesión parte 5, abajo), **pendiente de deploy**.
+
+---
+
+## 🎯 Sesión 2026-08-17 (parte 5) — «Descargar menú» como foto para WhatsApp
+
+**Prompt del usuario:** pull de lo trabajado en la otra laptop y, tras revisar el backlog,
+retomar el pedido de la dueña del día 4: *"para que la señora saque su foto del menú que
+genera"*. Precisión suya sobre el alcance: es el **menú del día**, vive en **Configuración de
+menús** justo debajo de «Configurar» y «Copiar a otro día», la etiqueta es **«Descargar
+menú»**, se exporta como foto, y **hacerlo barato está bien**. Pidió mockup antes de codear.
+
+**Cómo se decidió:** se renderizaron 3 variantes (A solo texto, B con portada, C con foto por
+plato) con el CSS y las fotos reales del proyecto. La recomendación inicial fue **B**, con el
+argumento de que la C se llenaría de placeholders porque casi ningún plato tiene foto.
+**El usuario corrigió el dato:** esa carencia es de la BD local, no de producción — la dueña
+**ya tiene todas sus fotos cargadas**. Con eso la objeción a la C caía, y eligió **B+C**. Se
+rediseñó y se implementó esa. *(Lección: no inferir el estado de producción desde la BD de
+desarrollo.)*
+
+**El cambio:** `public/js/widgets/menu-export.js` (nuevo, autocontenido) + botón `data-export`
+en `menuCard()` de `menu-wizard.js` + `<script>` en `owner.html` + entrada en el precache de
+`sw.js`. **0 endpoints, 0 migraciones, 0 dependencias** — los datos y las URLs de las fotos ya
+estaban en memoria. El `BUILD` automático (T0) tomó el archivo nuevo solo, porque `RUTAS`
+incluye el directorio `js` completo.
+
+**Lo que destapó mirar la imagen generada.** Los 18 checks numéricos pasaban y el lienzo estaba
+mal: con una grilla fija de 3 columnas, una sección de 1 o 2 platos dejaba **dos tercios de
+fila vacíos**. Se cambió a grilla adaptativa (1-3 platos ocupan la fila entera, 4 se parte 2+2,
+5+ van de a 3; con 1 plato va centrado y con tope de 600px) y la miniatura escala con el ancho
+para conservar la proporción. **Ninguna medida automática podía detectarlo** — hizo falta
+exportar el JPEG y verlo.
+
+**Verificación:** `scripts/test-menu-export.js` nuevo, **25/25** (medidas, color de la banda
+leído por píxel, alto dinámico contra la fórmula del diseño para secciones de 1 a 7 platos,
+descarga real con su nombre, aviso si el menú no tiene platos, 0 errores de consola).
+**423/423 jest** y **51/51** de `test-menu-wizard.js` sin regresiones. Imagen final revisada a
+ojo tras el fix.
+
+**Detalles del diseño ya cerrados, no volver sobre ellos:** el pie dice «Pide desde tu mesa» +
+el link del menú; los agotados van en gris, tachados y con chip «Agotado»; los menús ocultos se
+pueden descargar igual (sirve para preparar la imagen del día siguiente). El ancho siempre es
+1080px y el alto es dinámico.
 
 ---
 

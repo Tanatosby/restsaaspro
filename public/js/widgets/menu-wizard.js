@@ -506,6 +506,7 @@
           </div>
         </div>
         <button class="mw-btn" data-copy-open="${m.id}">📋 Copiar a otro día</button>
+        <button class="mw-btn" data-export="${m.id}">⬇ Descargar menú</button>
         <button class="mw-btn" data-del="${m.id}" style="color:var(--danger,#c0392b)">Eliminar</button>
       </div>
     </div>`;
@@ -518,6 +519,25 @@
       if (cfg) { if (opts.onConfigure) opts.onConfigure(Number(cfg.dataset.cfg)); return; }
       const del = e.target.closest('[data-del]');
       if (del) { window.eliminarMenuDia?.(Number(del.dataset.del)); return; }
+      // Exportar el menú como imagen para compartir por WhatsApp
+      const exp = e.target.closest('[data-export]');
+      if (exp) {
+        const menu = state.menus.find(m => m.id === Number(exp.dataset.export));
+        if (!menu) return;
+        // Componer el lienzo tarda un momento en gama media: avisar y evitar el doble tap
+        const original = exp.textContent;
+        exp.disabled = true;
+        exp.textContent = 'Generando…';
+        try {
+          await window.MenuExport?.download(menu);
+        } catch (err) {
+          toast(err.message || 'No se pudo generar la imagen', 'err');
+        } finally {
+          exp.disabled = false;
+          exp.textContent = original;
+        }
+        return;
+      }
       const tg = e.target.closest('[data-toggle]');
       if (tg) {
         const id = Number(tg.dataset.id), cur = Number(tg.dataset.cur);
