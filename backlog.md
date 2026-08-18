@@ -25,15 +25,19 @@ desplegaron el 2026-08-16:
 
 ### 🚨 Empezar acá la próxima sesión
 
-**T0 ✅ hecho el 2026-08-17** (ver detalle abajo y `status.md`) — **pendiente de deploy**, no
-lo que sigue.
+**T0 ✅ hecho y desplegado el 2026-08-17** (confirmado por el usuario junto con ISS-045 e
+ISS-046, commit `a47d132` — ver `status.md`).
 
 | # | Qué | Por qué ahora |
 |---|---|---|
-| **T6** | **Backup de la BD** — 🟡 mínimo hecho el 2026-08-17 23:54 (`cp` manual antes del deploy de ISS-046, ver `status.md`); **falta el T6 completo** (script + cron + restore de prueba verificado, `deploy.md` §7) | Lo más riesgoso del proyecto. Ya se desplegaron **dos migraciones** sobre datos reales sin backup verificado; el 2026-08-16 la respuesta a "¿restauramos?" fue *no hay* |
-| — | **Desplegar** `e12d13b` + `02a5bc2` (ISS-044 + T11 + docs) | Hechos el 2026-08-16, **sin desplegar todavía**. `BUILD` ya está en `11`, no hay que tocarlo para este deploy |
+| — | **Bug de conteo en `reportes.js`** — "Menús pedidos"/"Menús reservados" divide por el total de secciones en vez de por las obligatorias, subcuenta. Reusar `contarUnidadesMenu()` (`utils/menuPricing.js`) en vez del cálculo propio. | 🔴 Encontrado el día 4 del piloto (2026-08-17), no tocado todavía. Bloquea que "Menús de hoy" (abajo) dé bien |
+| **T6** | **Backup de la BD** — 🟡 mínimo hecho el 2026-08-17 23:54 (`cp` manual antes del deploy de ISS-046, ver `status.md`); **falta el T6 completo** (script + cron + restore de prueba verificado, `deploy.md` §7) | Lo más riesgoso del proyecto. Ya se desplegaron **tres migraciones** sobre datos reales sin backup automático/verificado; el 2026-08-16 la respuesta a "¿restauramos?" fue *no hay* |
+| — | **"Menús de hoy"**: cajita nueva en Análisis, adicional a las 2 actuales, va primera, suma menús de órdenes + reservas cobrados + entregados, filtrado a hoy | 🟡 Pedido central del día 4 del piloto — depende del bug de conteo de arriba |
+| — | **Botón "Agregar manual" en cola**: mesa + selección de menús → directo a cocina, status "validar pago" (igual que efectivo) | 🟡 Día 4: 4 clientes no pudieron usar la app (2 se rehusaron, 1 sin internet, 1 sin celular) |
 | — | **Verificar en el servicio real** un pedido con 2 menús y la etiqueta "para llevar" | Los 3 críticos están en producción pero nadie los vio funcionar en un servicio de verdad |
 | **ISS-043** | El menú sin secciones obligatorias **cobra de menos** (ver sección propia) | Es de cobro, no de vista. Falta correr la consulta en producción para saber si aplica |
+| — | Imagen descargable del menú para compartir por WhatsApp (complementaria al link) | 🟢 P2, pedido de la dueña el día 4 |
+| — | Fiados / pago diferido (cliente sin dinero que promete pagar después) | 🟢 P2/backlog explícito — el usuario lo bajó de prioridad a propósito |
 
 **Decisión del usuario pendiente, sin bloquear nada:** el ícono de calendario con la fecha real
 (reemplazo del emoji 📅, que dibuja "17 de julio" fijo). Están las 3 variantes renderizadas y
@@ -44,15 +48,16 @@ van pegados al nombre del cliente (`cocina.js:133`, `pedidos.js:249` y `:515`) *
 
 ---
 
-### T0 · `BUILD` automático — ✅ Hecho 2026-08-17, pendiente de deploy
+### T0 · `BUILD` automático — ✅ Hecho y desplegado 2026-08-17
 
 **El problema (resuelto):** `utils/buildVersion.js` tenía un número escrito a mano que había
 que subir en cada cambio de `public/`. Si alguien se olvidaba, los navegadores seguían
 sirviendo archivos viejos y **volvía exactamente ISS-044**: el panel vacío que parece pérdida
 de datos.
 
-**Implementado tal cual el diseño de abajo**, sin cambios de fondo. Verificado con 758/758
-jest + `scripts/test-version-assets.js` 25/25 contra servidor real + determinismo confirmado
+**Implementado tal cual el diseño de abajo**, sin cambios de fondo. Verificado con 412/412
+jest (número corregido 2026-08-17, ver ISS-046) + `scripts/test-version-assets.js` 25/25 contra
+servidor real + determinismo confirmado
 aparte (mismo código → mismo hash en corridas consecutivas). Detalle completo en `status.md`,
 sesión 2026-08-17 parte 2.
 

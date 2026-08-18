@@ -1,6 +1,7 @@
 # ISS-044 — Tras un deploy el panel puede aparecer vacío hasta cerrar sesión
 
-**Estado:** ✅ **Resuelto 2026-08-16** — pendiente de deploy. Resuelto junto con **T11**
+**Estado:** ✅ **Resuelto 2026-08-16** — **desplegado 2026-08-17** (confirmado por el usuario,
+junto con T0/ISS-045/ISS-046, commit `a47d132`). Resuelto junto con **T11**
 (arranque lento), que compartía la causa raíz.
 **Módulo:** `public/owner.html` (carga de los `<script>`), `public/sw.js`
 **Prioridad:** 🔴 Crítica — le puede pasar a la dueña del piloto en pleno servicio, y el

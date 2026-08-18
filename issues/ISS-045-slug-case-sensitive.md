@@ -1,6 +1,7 @@
 # ISS-045 — Link del menú da "Cannot GET" si llega con mayúscula (case-sensitive)
 
-**Estado:** ✅ **Resuelto 2026-08-17** — pendiente de deploy.
+**Estado:** ✅ **Resuelto 2026-08-17** — **desplegado 2026-08-17** (confirmado por el usuario,
+commit `a47d132`).
 **Módulo:** `app.js` (rutas `/:slug` y `/:slug/:mesa`)
 **Prioridad:** 🟠 Alta — rompe el acceso al menú desde fuera del navegador (WhatsApp, notas,
 apps de mensajería) para cualquier restaurante con URL personalizada configurada.

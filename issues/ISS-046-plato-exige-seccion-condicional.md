@@ -1,6 +1,7 @@
 # ISS-046 — Un plato "no autocontenido" puede pedirse sin su sección obligatoria condicional
 
-**Estado:** ✅ **Resuelto 2026-08-17** — pendiente de deploy (backup mínimo ya hecho, ver `status.md`).
+**Estado:** ✅ **Resuelto 2026-08-17** — **desplegado 2026-08-17** (confirmado por el usuario,
+commit `a47d132`; backup mínimo hecho antes del deploy, ver `status.md`).
 **Módulo:** `config/database.js`, `routes/menu.js`, `routes/public.js`, `routes/orders.js`,
 `routes/reservations.js`, `utils/validarSeccionesMenu.js` (nuevo), `public/owner.html`,
 `public/menu.html`.

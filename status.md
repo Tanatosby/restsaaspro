@@ -2,6 +2,28 @@
 
 ---
 
+## 📍 DÓNDE ESTAMOS — cierre de la sesión del 2026-08-17
+
+**Lo que está en producción** (deploy confirmado por el usuario el 2026-08-17, commit
+`a47d132`, todo junto en un solo deploy): **T0** (`BUILD` automático por hash), **ISS-045**
+(link del menú con mayúscula), **ISS-046** (plato exige sección condicional — arroz sin
+proteína) y, de paso, todo lo que venía pendiente de antes: **ISS-044 + T11** (versionado de
+assets / precache del SW).
+
+**Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
+un `cp` manual puntual antes de este deploy (ver sesión de abajo), pero falta el T6 completo
+(script + cron + restore de prueba verificado, `deploy.md` §7).
+
+**Pendiente, no bloqueante:**
+- Bug de conteo en `reportes.js` ("Menús pedidos"/"Menús reservados" — divide por total de
+  secciones en vez de por obligatorias) — **P0** para la próxima sesión, no tocado todavía.
+- Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
+  bloqueado por el clasificador de permisos, lo borra el usuario.
+- Prioridades P1/P2 del día 4 del piloto (cajita "Menús de hoy", botón "Agregar manual" en
+  cola, imagen de menú para WhatsApp, fiados) — ver `backlog.md`.
+
+---
+
 ## 🎯 Sesión 2026-08-17 (parte 4) — ISS-046: plato exige sección condicional + día 4 del piloto
 
 **Prompt del usuario:** recopilación del día 4 del piloto (cocinera adaptándose bien, dueña
@@ -51,8 +73,9 @@ prioridad):
 - Suite completa: **32/32 suites, 423/423 tests**.
 - Migración de schema verificada localmente (columna se crea sola, no rompe datos existentes).
 
-**Estado:** resuelto, **pendiente de deploy**. Backup mínimo ya hecho antes del deploy (ver
-sesión de abajo) — falta el T6 completo (script + cron + restore verificado).
+**Estado:** resuelto, **desplegado 2026-08-17** (confirmado por el usuario, commit `a47d132`).
+Backup mínimo ya hecho antes del deploy (ver sesión de abajo) — falta el T6 completo
+(script + cron + restore verificado).
 
 **Documentación actualizada:** `issues/ISS-046-plato-exige-seccion-condicional.md` (nuevo),
 `issues/ISSUES.md`, `backlog.md` (T6 + prioridades del día 4), `status.md` (esta entrada).
@@ -121,7 +144,8 @@ en el servidor), `features.md` (ARCH de ISS-044/T11), `status.md` y `issues/ISS-
 (los avisos de "subir BUILD a mano" quedaron marcados como superados, sin borrar el registro
 histórico de por qué existían).
 
-**Estado:** resuelto, **pendiente de deploy**.
+**Estado:** resuelto, **desplegado 2026-08-17** (confirmado por el usuario, junto con ISS-045 e
+ISS-046 en el mismo deploy — commit `a47d132`).
 
 ---
 
@@ -140,14 +164,19 @@ tipeado a mano no tiene ese problema porque el usuario lo escribe en minúsculas
 
 **Fix:** `COLLATE NOCASE` en las dos consultas de resolución de slug (`/:slug` y
 `/:slug/:mesa`) en `app.js`. Verificado con 3 variantes de mayúsculas contra el mismo
-restaurante (302 los tres) + slug inexistente sigue en 404 + 758/758 jest. Detalle completo en
+restaurante (302 los tres) + slug inexistente sigue en 404 + 412/412 jest (número corregido
+2026-08-17, ver ISS-046). Detalle completo en
 [ISS-045](issues/ISS-045-slug-case-sensitive.md).
 
-**Estado:** resuelto, **pendiente de deploy**.
+**Estado:** resuelto, **desplegado 2026-08-17** (confirmado por el usuario, commit `a47d132`).
 
 ---
 
 ## 📍 DÓNDE ESTAMOS — cierre de la sesión del 2026-08-16
+
+> ⚠️ **Superado por el deploy del 2026-08-17** (commit `a47d132`, confirmado por el usuario) —
+> ver el bloque "DÓNDE ESTAMOS" nuevo al principio de este archivo. Se deja este bloque viejo
+> como registro histórico, sin corregirlo línea por línea.
 
 **Lo que está en producción** (deploy `291c15b`, hecho por el usuario ese día): los 3 issues
 críticos del piloto — **ISS-040** (monto visible al pagar), **ISS-041** (dos menús separados en
