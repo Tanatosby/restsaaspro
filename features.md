@@ -27,7 +27,7 @@ el nombre, el color y el slug.
   imagen generada — los tests de medidas no lo detectaban.
 - Las secciones opcionales llevan «OPCIONAL» al costado; los platos agotados van en gris, tachados
   y con chip «Agotado».
-- Pie con «Pide desde tu mesa» + el link del menú, para que quien reciba la foto pueda entrar.
+- Pie con «Reserva ahora» + el link del menú, para que quien reciba la foto pueda entrar.
 
 **Degradación:** si ningún plato tiene foto de portada, el hero se apaga y queda el nombre y el
 precio sobre el fondo — o sea, la variante «solo texto», sin código aparte. Un plato suelto sin foto

@@ -426,7 +426,7 @@
     ctx.textBaseline = 'top';
     ctx.fillStyle = COL_TEXT;
     ctx.font = `700 ${L.FOOT_CTA}px ${SANS}`;
-    ctx.fillText('Pide desde tu mesa', L.PAD, footY + 2 + L.FOOT_TOP);
+    ctx.fillText('Reserva ahora', L.PAD, footY + 2 + L.FOOT_TOP);
 
     ctx.textAlign = 'right';
     ctx.fillStyle = primary;

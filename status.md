@@ -60,7 +60,7 @@ descarga real con su nombre, aviso si el menú no tiene platos, 0 errores de con
 **423/423 jest** y **51/51** de `test-menu-wizard.js` sin regresiones. Imagen final revisada a
 ojo tras el fix.
 
-**Detalles del diseño ya cerrados, no volver sobre ellos:** el pie dice «Pide desde tu mesa» +
+**Detalles del diseño ya cerrados, no volver sobre ellos:** el pie dice «Reserva ahora» +
 el link del menú; los agotados van en gris, tachados y con chip «Agotado»; los menús ocultos se
 pueden descargar igual (sirve para preparar la imagen del día siguiente). El ancho siempre es
 1080px y el alto es dinámico.
