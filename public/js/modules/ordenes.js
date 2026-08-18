@@ -14,6 +14,15 @@ function badgePago(o) {
   return '';
 }
 
+// Pedido tomado a mano por la dueña/mozo (botón "Agregar manual" en la cola —
+// clientes que no pueden usar la app). No reemplaza a badgePago(): el cobro se
+// hace en un solo paso ("💰 Cobrar"), igual que efectivo, pero el aviso deja
+// claro que ese paso de cobro/confirmación todavía está pendiente.
+function badgeManual(x) {
+  if (!x.es_manual) return '';
+  return `<span style="font-size:0.785714rem;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:20px;font-weight:600">🧾 Pedido manual · Confirmar pago al cobrar</span>`;
+}
+
 async function loadOrdenesActivas() {
   const el = document.getElementById('list-ordenes-activas');
   el.innerHTML = '<div class="loading-text">Cargando órdenes activas…</div>';
@@ -118,7 +127,7 @@ function renderOrdenCard(o, withActions) {
         <span>📅 ${fDT(o.created_at)}</span>
         ${o.total ? `<span style="color:var(--accent);font-weight:700">S/ ${Number(o.total).toFixed(2)}</span>` : ''}
       </div>
-      ${o.metodo_pago ? `<div style="margin-top:4px">${badgePago(o)}${comprobanteHtml}</div>` : ''}
+      ${(o.metodo_pago || o.es_manual) ? `<div style="margin-top:4px">${badgeManual(o)}${badgePago(o)}${comprobanteHtml}</div>` : ''}
       <div class="order-items">${cartaLines}${menuLines}</div>
       ${actions}
     </div>`;

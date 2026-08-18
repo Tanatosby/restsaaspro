@@ -50,6 +50,7 @@ function crearDB() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       mesa TEXT, nombre_cliente TEXT, fecha TEXT, created_at TEXT,
       metodo_pago TEXT, estado_pago TEXT, comprobante_url TEXT, modalidad TEXT,
+      es_manual INTEGER DEFAULT 0,
       id_restaurante INTEGER, id_estatus INTEGER, total REAL
     );
     CREATE TABLE reservas (

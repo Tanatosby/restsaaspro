@@ -1,5 +1,37 @@
 # Features — Menú Pro
 
+## ~~Botón "Agregar manual" en la Cola del día~~ ✅ Completado 2026-08-18
+
+Pedido pendiente del día 4 del piloto #1 (2026-08-17, ver `backlog.md`): ese día **4 comensales
+no pudieron usar la app** (2 se rehusaron, 1 sin internet, 1 sin celular) y la dueña no tenía
+forma de anotar su pedido en el sistema — se quedaba fuera de cocina y de las métricas.
+
+**Dónde:** Cola del día → botón **"+ Agregar manual"** junto a "↻ Actualizar".
+
+**ARCH:** Modal en `owner.html` + lógica en `public/js/modules/pedidos.js`. Reutiliza
+`GET /api/mesas/estado` (mesa) y `GET /api/menu/menus-dia` (misma fuente que `menu-wizard.js`)
+para el selector de menú(s) del día por sección, con stepper de cantidad. Reutiliza
+`POST /api/orders/` (`routes/orders.js`) — ya existía autenticado, ya hacía
+`validarSeccionesMenu()` (ISS-046) y `descontarStock()`, y ningún frontend lo llamaba todavía; se
+le agregó un solo parámetro (`manual: true`).
+
+**Diseño de pago — decisión del usuario:** el pedido entra **directo a "En cocina"** (sin el tap
+extra de "→ Preparando"). `metodo_pago = 'efectivo'` solo si el restaurante tiene
+`efectivo_activo=1` en Configuración; si no, queda `NULL` — el cobro se comporta igual en ambos
+casos (ni efectivo ni `NULL` piden confirmación previa, a diferencia de yape/plin), pero nunca se
+etiqueta el pedido con un método que el restaurante dice no aceptar. `estado_pago` queda `NULL`
+siempre, para no mostrar el badge "Pendiente confirmación" (pensado para comprobantes de
+yape/plin) — sería falso para un cobro en mano. En su lugar, columna nueva `es_manual` en
+`ordenes` pinta un badge propio y siempre visible: **"🧾 Pedido manual · Confirmar pago al
+cobrar"** (`badgeManual()` en `ordenes.js`, usado también en `pedidos.js`) — deja claro que ese
+paso sigue pendiente sin bloquear el flujo de cobro normal.
+
+**Verificación:** `scripts/test-agregar-manual.js` nuevo, 19/19 — cubre ambas ramas de
+`efectivo_activo` (con y sin), que el pedido entra directo a cocina, que nunca aparece un badge
+"💵 Efectivo" contradictorio, y que la sección obligatoria del menú sigue bloqueando el envío si
+falta elegirla. 423/423 jest sin regresiones (`tests/cola-dia.test.js` sumó `es_manual` a su
+schema in-memory).
+
 ## ~~Descargar el menú del día como foto~~ ✅ Completado 2026-08-17
 
 Pedido de la dueña el día 4 del piloto #1 (2026-08-17). Ese día **4 comensales no pudieron usar la

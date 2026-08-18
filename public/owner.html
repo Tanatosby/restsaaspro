@@ -705,7 +705,10 @@
             <div class="sec-title">📋 Cola del día</div>
             <div class="sec-sub">Órdenes y reservas activas por etapa — se actualiza cada 30 s</div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="loadColaDia()">↻ Actualizar</button>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="abrirModalAgregarManual()">+ Agregar manual</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadColaDia()">↻ Actualizar</button>
+          </div>
         </div>
 
         <!-- ── Cierre de caja: pedidos de días anteriores sin cerrar ──
@@ -1114,6 +1117,39 @@
       Quedaron abiertos de días anteriores. Hasta cerrarlos no aparecen en tus Ganancias.
     </div>
     <div id="cierre-caja-lista" style="padding:1rem 1.5rem;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0.75rem"></div>
+  </div>
+</div>
+
+<!-- ── Modal: Agregar manual (mesa/sin internet/sin celular) ──
+     Va directo a "En cocina" — sin el tap extra de "→ Preparando" que sí
+     tienen los pedidos que llegan por la app. Ver backlog.md. -->
+<div id="modal-agregar-manual" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow)">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:1.142857rem;font-weight:700;color:var(--text)">+ Agregar pedido manual</span>
+      <button onclick="cerrarModalAgregarManual()" style="background:none;border:none;font-size:1.428571rem;color:var(--muted);cursor:pointer;line-height:1;padding:2px 6px" aria-label="Cerrar">✕</button>
+    </div>
+    <div style="padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);font-size:0.928571rem;color:var(--text-2)">
+      Para el cliente que toma el pedido de palabra (mesa, sin internet o sin celular). Entra directo a cocina.
+    </div>
+    <div style="padding:1rem 1.5rem;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0.9rem">
+      <label style="display:flex;flex-direction:column;gap:0.3rem">
+        <span style="font-size:0.857143rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">Mesa</span>
+        <select id="manual-mesa" style="font-size:1.142857rem;font-family:inherit;padding:10px 12px;min-height:44px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--text)">
+          <option value="">Sin mesa</option>
+        </select>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:0.3rem">
+        <span style="font-size:0.857143rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">Nombre del cliente</span>
+        <input id="manual-nombre" type="text" autocomplete="off" style="font-size:1.142857rem;font-family:inherit;padding:10px 12px;min-height:44px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--text)">
+      </label>
+      <div id="manual-menus-lista"></div>
+      <div id="manual-error" style="color:var(--danger);font-size:0.928571rem"></div>
+    </div>
+    <div style="padding:0.9rem 1.5rem 1.1rem;border-top:1px solid var(--border);display:flex;gap:0.6rem;justify-content:flex-end;flex-wrap:wrap">
+      <button onclick="cerrarModalAgregarManual()" style="min-height:44px;padding:0 18px;border-radius:7px;font-size:1rem;font-family:inherit;background:transparent;color:var(--text);border:1px solid var(--border-2);cursor:pointer">Cancelar</button>
+      <button id="manual-btn-enviar" onclick="enviarPedidoManual()" style="min-height:44px;padding:0 18px;border-radius:7px;font-size:1rem;font-weight:600;font-family:inherit;background:var(--accent);color:#fff;border:none;cursor:pointer">🍳 Enviar a cocina</button>
+    </div>
   </div>
 </div>
 

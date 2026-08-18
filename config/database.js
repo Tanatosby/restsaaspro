@@ -407,6 +407,12 @@ try { db.exec(`ALTER TABLE ordenes ADD COLUMN metodo_pago     TEXT DEFAULT NULL`
 try { db.exec(`ALTER TABLE ordenes ADD COLUMN estado_pago     TEXT DEFAULT NULL`); } catch (_) {}
 try { db.exec(`ALTER TABLE ordenes ADD COLUMN comprobante_url TEXT DEFAULT NULL`); } catch (_) {}
 
+// Migración idempotente: origen manual del pedido (botón "Agregar manual" en
+// la cola, para clientes que no pueden usar la app — mesa/sin internet/sin
+// celular). Independiente de metodo_pago/efectivo_activo: identifica el
+// origen del pedido, no cómo se cobra.
+try { db.exec(`ALTER TABLE ordenes ADD COLUMN es_manual INTEGER DEFAULT 0`); } catch (_) {}
+
 // Migración idempotente: estado de pago en reservas
 try { db.exec(`ALTER TABLE reservas ADD COLUMN metodo_pago     TEXT DEFAULT NULL`); } catch (_) {}
 try { db.exec(`ALTER TABLE reservas ADD COLUMN estado_pago     TEXT DEFAULT NULL`); } catch (_) {}

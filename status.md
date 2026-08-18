@@ -2,13 +2,16 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — cierre de la sesión del 2026-08-17
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-18
 
-**Lo que está en producción** (deploy confirmado por el usuario el 2026-08-17, commit
-`a47d132`, todo junto en un solo deploy): **T0** (`BUILD` automático por hash), **ISS-045**
-(link del menú con mayúscula), **ISS-046** (plato exige sección condicional — arroz sin
-proteína) y, de paso, todo lo que venía pendiente de antes: **ISS-044 + T11** (versionado de
-assets / precache del SW).
+**Lo que está en producción** (deploy confirmado por el usuario el 2026-08-18, commit
+`32c8fb0`): la feature **«Descargar menú»** como foto para WhatsApp (`9c9de62` + fix de pie de
+foto `32c8fb0`, incluye el ajuste de grilla adaptativa y el texto «Reserva ahora»).
+
+**Deploy anterior** (confirmado el 2026-08-17, commit `a47d132`, todo junto en un solo
+deploy): **T0** (`BUILD` automático por hash), **ISS-045** (link del menú con mayúscula),
+**ISS-046** (plato exige sección condicional — arroz sin proteína) y, de paso, todo lo que
+venía pendiente de antes: **ISS-044 + T11** (versionado de assets / precache del SW).
 
 **Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
 un `cp` manual puntual antes de este deploy (ver sesión de abajo), pero falta el T6 completo
@@ -19,9 +22,51 @@ un `cp` manual puntual antes de este deploy (ver sesión de abajo), pero falta e
   secciones en vez de por obligatorias) — **P0** para la próxima sesión, no tocado todavía.
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
   bloqueado por el clasificador de permisos, lo borra el usuario.
-- Prioridades P1/P2 del día 4 del piloto (cajita "Menús de hoy", botón "Agregar manual" en
-  cola, fiados) — ver `backlog.md`. La **imagen de menú para WhatsApp** ya está hecha
-  (sesión parte 5, abajo), **pendiente de deploy**.
+- Cajita "Menús de hoy" en Análisis y fiados — ver `backlog.md`. El botón **"Agregar manual" ya
+  está hecho** (sesión de abajo), **pendiente de deploy**.
+
+---
+
+## 🎯 Sesión 2026-08-18 — Botón «Agregar manual» en la Cola del día
+
+**Prompt del usuario:** implementar el pedido pendiente del día 4 del piloto — 4 clientes no
+pudieron usar la app (2 se rehusaron, 1 sin internet, 1 sin celular). La dueña necesita anotar
+mesa + nombre + menú(s) de palabra, y que el pedido vaya directo a cocina, con el pago por
+defecto en "efectivo" para no trabar el cobro. El usuario marcó un caso a resolver: si el
+restaurante no tiene "efectivo" activo en su configuración de pagos, marcarlo igual sería
+confuso. Tras una pregunta de confirmación (aviso visual claro vs. gate real de confirmación,
+como Yape/Plin), el usuario eligió **aviso visual, sin gate** — el cobro sigue siendo un solo
+paso.
+
+**Diseño implementado:**
+- Columna nueva `es_manual` en `ordenes` — identifica el *origen* del pedido, independiente de
+  `metodo_pago`. Antes esa señal no existía; un pedido tomado a mano y uno de la app con
+  `metodo_pago=NULL` eran indistinguibles.
+- `metodo_pago = 'efectivo'` solo si el restaurante tiene `efectivo_activo=1`; si no, queda
+  `NULL`. El comportamiento de cobro es idéntico en ambos casos (ni efectivo ni NULL piden
+  confirmación previa, a diferencia de yape/plin) — el cambio es solo que nunca se etiqueta un
+  pedido con un método que el restaurante dice no aceptar.
+- `estado_pago` queda `NULL` siempre — evita que se pinte el badge "Pendiente confirmación"
+  (pensado para comprobantes de yape/plin), que sería falso para un cobro en mano.
+- Badge propio **"🧾 Pedido manual · Confirmar pago al cobrar"** (`badgeManual()` en
+  `ordenes.js`), visible en Órdenes y en la Cola del día, sin depender de `metodo_pago`.
+- La orden entra con estatus **"En cocina" directo** (no "pendiente") — sin el tap extra de
+  "→ Preparando" que sí tienen los pedidos de la app.
+- Reutiliza `POST /api/orders/` (`routes/orders.js`), que ya existía autenticado y sin ningún
+  frontend llamándolo — ya hacía `validarSeccionesMenu` (ISS-046) y `descontarStock`; solo se le
+  agregó el parámetro `manual`.
+- Modal nuevo en `owner.html` (botón "+ Agregar manual" en el header de la Cola del día): mesa
+  (select de `/api/mesas/estado`), nombre del cliente, y selector de menú(s) del día con
+  stepper de cantidad + un `<select>` por sección (obligatoria marcada con `*`) — reutiliza
+  `GET /api/menu/menus-dia` (misma fuente que usa `menu-wizard.js`). Lógica en `pedidos.js`.
+
+**Verificación:** `scripts/test-agregar-manual.js` nuevo, **19/19** — cubre ambas ramas de
+`efectivo_activo` (con y sin), que el pedido entra directo a "En cocina", que nunca aparece un
+badge "💵 Efectivo" contradictorio, que la sección obligatoria del menú sigue bloqueando el
+envío si falta elegirla (ISS-046), y 0 errores de consola. `tests/cola-dia.test.js` necesitó
+agregar `es_manual` a su schema in-memory. **423/423 jest** sin regresiones.
+
+**Estado:** hecho, **pendiente de deploy**.
 
 ---
 

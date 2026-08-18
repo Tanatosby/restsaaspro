@@ -210,7 +210,7 @@ function renderKanbanOrden(o, zona) {
   // Cancelar: siempre disponible en cualquier etapa (mismo criterio que el panel de Órdenes).
   const btnCancelar = `<button class="btn btn-danger btn-sm" onclick="accionRapidaOrden(${o.id},'es_cancelado')">✗ Cancelar</button>`;
   const modBadge   = badgeModalidad(o.modalidad);
-  const pagoHtml   = o.metodo_pago ? `<div style="margin-top:4px">${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
+  const pagoHtml   = (o.metodo_pago || o.es_manual) ? `<div style="margin-top:4px">${badgeManual(o)}${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
 
   return `
     <div class="cola-card cola-orden">
@@ -444,6 +444,166 @@ async function loadSinCerrar() {
   if (conteo) conteo.textContent = total === 1 ? '1 pedido' : `${total} pedidos`;
 }
 
+// ── Agregar manual (mesa/sin internet/sin celular, ver backlog.md) ──────
+// El pedido lo toma la dueña/mozo de palabra y entra directo a "En cocina"
+// (routes/orders.js, manual:true) — sin el tap extra de "→ Preparando" que
+// sí tienen los pedidos de la app. El método de pago y el aviso de "Confirmar
+// pago" los pinta badgeManual()/badgePago() en la propia tarjeta de la cola.
+
+let _manualMenus      = [];  // menús del día activos hoy, con secciones y platos
+let _manualInstancias = {};  // { [id_menu_dia]: [ {id_seccion: id_componente}, ... ] } — 1 entrada por instancia
+
+function todayLimaPedidos() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date());
+}
+
+async function abrirModalAgregarManual() {
+  document.getElementById('manual-nombre').value = '';
+  document.getElementById('manual-error').textContent = '';
+  _manualInstancias = {};
+
+  document.getElementById('modal-agregar-manual').style.display = 'flex';
+
+  const selMesa = document.getElementById('manual-mesa');
+  const lista   = document.getElementById('manual-menus-lista');
+  selMesa.innerHTML = '<option value="">Sin mesa</option>';
+  lista.innerHTML    = '<div class="loading-text">Cargando menú del día…</div>';
+
+  try {
+    const [mesas, menus] = await Promise.all([
+      api('GET', '/api/mesas/estado'),
+      api('GET', `/api/menu/menus-dia?dia=${todayLimaPedidos()}`),
+    ]);
+
+    if (mesas.length) {
+      selMesa.innerHTML += mesas.map(m => `<option value="${m.numero}">Mesa ${m.numero} · ${esc(m.estado)}</option>`).join('');
+    }
+
+    // Igual criterio que el cliente en menu.html (routes/public.js): solo
+    // menús activos hoy — el mozo no debería poder tomar un pedido de un
+    // menú que la dueña ya deshabilitó.
+    _manualMenus = menus.filter(m => m.activo);
+    lista.innerHTML = _manualMenus.length
+      ? _manualMenus.map(renderManualMenuCard).join('')
+      : emptyState('🍽️', 'No hay menú configurado para hoy');
+  } catch (e) {
+    lista.innerHTML = emptyState('⚠️', e.message);
+  }
+}
+
+function cerrarModalAgregarManual() {
+  document.getElementById('modal-agregar-manual').style.display = 'none';
+}
+
+function renderManualMenuCard(menu) {
+  const cantidad = (_manualInstancias[menu.id] || []).length;
+  return `
+    <div class="manual-menu-card" data-menu="${menu.id}" style="border:1px solid var(--border);border-radius:10px;padding:0.75rem;display:flex;flex-direction:column;gap:0.6rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem">
+        <strong style="font-size:1rem">${esc(menu.nombre)}</strong>
+        <span style="color:var(--muted);font-size:0.928571rem">S/ ${Number(menu.precio).toFixed(2)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <button type="button" onclick="cambiarCantidadManual(${menu.id},-1)" style="min-width:44px;min-height:44px;border-radius:8px;border:1px solid var(--border-2);background:var(--white);font-size:1.142857rem;cursor:pointer">−</button>
+        <span class="manual-qty-num" style="min-width:1.5rem;text-align:center;font-weight:700">${cantidad}</span>
+        <button type="button" onclick="cambiarCantidadManual(${menu.id},1)" style="min-width:44px;min-height:44px;border-radius:8px;border:1px solid var(--border-2);background:var(--white);font-size:1.142857rem;cursor:pointer">+</button>
+        <span style="font-size:0.857143rem;color:var(--muted)">${cantidad ? 'menú(s)' : 'agregar'}</span>
+      </div>
+      <div id="manual-secciones-${menu.id}">${renderManualInstancias(menu)}</div>
+    </div>`;
+}
+
+function renderManualInstancias(menu) {
+  const instancias = _manualInstancias[menu.id] || [];
+  if (!instancias.length) return '';
+  return instancias.map((seleccion, idx) => `
+    <div style="border-top:1px dashed var(--border);padding-top:0.6rem;display:flex;flex-direction:column;gap:0.5rem">
+      ${instancias.length > 1 ? `<div style="font-size:0.785714rem;font-weight:700;color:var(--muted)">Menú ${idx + 1} de ${instancias.length}</div>` : ''}
+      ${menu.secciones.map(s => renderManualSeccion(menu.id, idx, s, seleccion)).join('')}
+    </div>`).join('');
+}
+
+function renderManualSeccion(menuId, idx, seccion, seleccion) {
+  const disponibles = seccion.platos.filter(p => !p.agotado);
+  const actual = seleccion[seccion.id_seccion] ?? '';
+  const opciones = disponibles.map(p =>
+    `<option value="${p.id_componente}" ${String(actual) === String(p.id_componente) ? 'selected' : ''}>${esc(p.nombre)}</option>`
+  ).join('');
+  return `
+    <label style="display:flex;flex-direction:column;gap:0.25rem">
+      <span style="font-size:0.785714rem;color:var(--muted)">${esc(seccion.nombre_seccion)}${seccion.requerido ? ' <span style="color:var(--danger)">*</span>' : ''}</span>
+      <select onchange="elegirPlatoManual(${menuId},${idx},${seccion.id_seccion},this.value)" style="font-size:1.142857rem;font-family:inherit;padding:8px 10px;min-height:44px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--text)">
+        <option value="">— elegir —</option>
+        ${opciones}
+      </select>
+    </label>`;
+}
+
+function cambiarCantidadManual(menuId, delta) {
+  const menu = _manualMenus.find(m => m.id === menuId);
+  if (!menu) return;
+  if (!_manualInstancias[menuId]) _manualInstancias[menuId] = [];
+  const arr = _manualInstancias[menuId];
+
+  if (delta > 0) arr.push({});
+  else if (arr.length) arr.pop();
+
+  const card = document.querySelector(`.manual-menu-card[data-menu="${menuId}"]`);
+  if (!card) return;
+  card.querySelector('.manual-qty-num').textContent = arr.length;
+  document.getElementById(`manual-secciones-${menuId}`).innerHTML = renderManualInstancias(menu);
+}
+
+function elegirPlatoManual(menuId, idx, idSeccion, idComponente) {
+  const seleccion = (_manualInstancias[menuId] || [])[idx];
+  if (!seleccion) return;
+  if (idComponente) seleccion[idSeccion] = Number(idComponente);
+  else delete seleccion[idSeccion];
+}
+
+async function enviarPedidoManual() {
+  const nombre = document.getElementById('manual-nombre').value.trim();
+  const mesa   = document.getElementById('manual-mesa').value || null;
+  const errEl  = document.getElementById('manual-error');
+  errEl.textContent = '';
+
+  if (!nombre) { errEl.textContent = 'El nombre del cliente es obligatorio'; return; }
+
+  // Mismo criterio de secciones obligatorias que ISS-046 (utils/validarSeccionesMenu.js) —
+  // el backend vuelve a validarlo, esto solo evita el ida-y-vuelta con el error 400.
+  let grupo = 0;
+  const menu_items = [];
+  for (const menu of _manualMenus) {
+    for (const seleccion of (_manualInstancias[menu.id] || [])) {
+      grupo++;
+      const faltante = menu.secciones.find(s => s.requerido && !seleccion[s.id_seccion]);
+      if (faltante) { errEl.textContent = `"${menu.nombre}": falta elegir "${faltante.nombre_seccion}"`; return; }
+      for (const s of menu.secciones) {
+        const idComponente = seleccion[s.id_seccion];
+        if (idComponente) menu_items.push({ id_componente: idComponente, id_menu_dia: menu.id, cantidad: 1, grupo });
+      }
+    }
+  }
+
+  if (!menu_items.length) { errEl.textContent = 'Agrega al menos un menú'; return; }
+
+  const btn = document.getElementById('manual-btn-enviar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+  try {
+    await api('POST', '/api/orders', { mesa, nombre_cliente: nombre, menu_items, manual: true });
+    toast('Pedido manual enviado a cocina');
+    cerrarModalAgregarManual();
+    reiniciarPoll();
+    loadColaDia();
+  } catch (e) {
+    errEl.textContent = e.message || 'No se pudo crear el pedido';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🍳 Enviar a cocina';
+  }
+}
+
 function abrirCierreCaja() {
   renderCierreCaja();
   const modal = document.getElementById('modal-cierre-caja');
@@ -484,7 +644,7 @@ function cierreItemOrden(o) {
   const items = renderItemLines(o.carta_items, o.menu_items);
   const mesa  = o.mesa ? ` · Mesa ${o.mesa}` : '';
   const monto = o.total ? ` · S/ ${o.total.toFixed(2)}` : '';
-  const pagoHtml = o.metodo_pago ? `<div style="margin-top:4px">${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
+  const pagoHtml = (o.metodo_pago || o.es_manual) ? `<div style="margin-top:4px">${badgeManual(o)}${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
   const btnCobro = requiereConfirmarPago(o)
     ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoCierre('orden',${o.id})">✓ Confirmar pago</button>`
     : `<button class="btn btn-success btn-sm" onclick="cerrarPedidoViejo('orden',${o.id},'cobrado')">💰 Se cobró</button>`;

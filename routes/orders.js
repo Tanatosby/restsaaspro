@@ -41,6 +41,7 @@ router.get('/activas', authorizePermiso(), (req, res) => {
       o.estado_pago,
       o.comprobante_url,
       o.modalidad,
+      o.es_manual,
       eo.nombre      AS estatus,
       eo.es_inicial,
       eo.es_en_cocina,
@@ -297,7 +298,8 @@ router.post('/', authorizePermiso(), (req, res) => {
     mesa,
     nombre_cliente,
     carta_items,   // [{ id_plato_carta, cantidad }]
-    menu_items     // [{ id_componente, id_menu_dia, cantidad }]
+    menu_items,    // [{ id_componente, id_menu_dia, cantidad }]
+    manual         // true → botón "Agregar manual" en la cola (mozo toma el pedido de palabra)
   } = req.body;
 
   const id_restaurante = req.user.restaurant_id;
@@ -309,7 +311,7 @@ router.post('/', authorizePermiso(), (req, res) => {
 
   // Verificar que el restaurante existe y está activo
   const restaurante = db.prepare(`
-    SELECT id FROM restaurantes WHERE id = ? AND activo = 1
+    SELECT id, efectivo_activo FROM restaurantes WHERE id = ? AND activo = 1
   `).get(id_restaurante);
 
   if (!restaurante)
@@ -341,14 +343,21 @@ router.post('/', authorizePermiso(), (req, res) => {
   if (errorSecciones)
     return res.status(400).json({ error: errorSecciones });
 
+  // Pedido manual (mesa/sin internet/sin celular): entra directo a "preparando",
+  // sin el tap extra de "→ Preparando". metodo_pago se marca 'efectivo' solo si
+  // el restaurante lo tiene activo — si no, queda NULL para no contradecir su
+  // configuración (el cobro se hace igual en un solo paso, ver flujo-pago.md §4).
+  const flagEstatus  = manual ? 'es_en_cocina' : 'es_inicial';
+  const metodoManual = manual ? (restaurante.efectivo_activo ? 'efectivo' : null) : null;
+
   // Insertar en transacción (si el stock no alcanza, revierte todo)
   let ordenId;
   try {
     ordenId = db.transaction(() => {
       const { lastInsertRowid } = db.prepare(`
-        INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus)
-        VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_inicial = 1))
-      `).run(mesa || null, nombre_cliente || null, fecha, id_restaurante);
+        INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, metodo_pago, es_manual)
+        VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE ${flagEstatus} = 1), ?, ?)
+      `).run(mesa || null, nombre_cliente || null, fecha, id_restaurante, metodoManual, manual ? 1 : 0);
 
       const stmtCarta = db.prepare(`
         INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)

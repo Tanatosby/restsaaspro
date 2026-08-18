@@ -128,6 +128,7 @@ function ordenesActivas(db, id_restaurante, hoy, anteriores = false) {
       o.estado_pago,
       o.comprobante_url,
       o.modalidad,
+      o.es_manual,
       eo.nombre      AS estatus,
       eo.es_inicial,
       eo.es_en_cocina,
