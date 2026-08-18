@@ -66,7 +66,10 @@ badge "💵 Efectivo" contradictorio, que la sección obligatoria del menú sigu
 envío si falta elegirla (ISS-046), y 0 errores de consola. `tests/cola-dia.test.js` necesitó
 agregar `es_manual` a su schema in-memory. **423/423 jest** sin regresiones.
 
-**Estado:** hecho, **pendiente de deploy**.
+**Estado:** hecho, commit `bc593a4` pusheado a `main`. **Pendiente de deploy** — el usuario avisó
+que lo hace en la tarde de este mismo día (2026-08-18), por la consola web o SSH como siempre.
+Cierre de sesión: recordar preguntar en la próxima si ya quedó desplegado, y anotar la respuesta
+acá con commit + fecha (regla de `deploy.md`/`.claude/CLAUDE.md`).
 
 ---
 
