@@ -15,10 +15,14 @@ por el usuario:
 | 2026-08-19 | `7803818` | **ISS-047** — modalidad por menú (para llevar / comer acá por línea, no por pedido entero). |
 | 2026-08-19 | `7803818..60c9e6f` (incluye `ca262b1`, `ba710d0`) | **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html` — el flujo completo, sin riesgo de 404) y **ISS-048** (volver de "¿Cómo vas a pagar?" a la carta). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
-**Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
-un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 completo
-(script + cron + restore de prueba verificado, `deploy.md` §7). Con Pensionistas ya en
-producción (mueve saldo de dinero real), este backup pasa a ser más urgente que antes.
+**T6, el backup de la BD — corregido hoy, sigue quedando el restore de prueba.** El script y el
+cron existían desde el **29 de mayo**, pero al script le faltaba `mkdir -p`, así que **cada
+corrida nocturna fallaba en silencio durante casi 3 meses** (el `echo` final de "Backup creado"
+imprimía igual, sin importar si el `cp` había funcionado). Esto explica con precisión el
+incidente del 2026-08-16: la respuesta a "¿restauramos?" fue "no hay backup" pese a que el cron
+llevaba meses corriendo. Corregido y verificado 2026-08-19 — primer backup real, 241 KB. Detalle
+completo en `deploy.md` §7. **Falta todavía:** probar un restore real al menos una vez, y copiar
+los backups a un lugar externo al servidor.
 
 **Pendiente, no bloqueante:**
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
@@ -32,6 +36,37 @@ producción (mueve saldo de dinero real), este backup pasa a ser más urgente qu
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-19 (parte 5) — T6: el backup llevaba 3 meses fallando en silencio
+
+**Prompt del usuario:** confirmó el deploy de Pensionistas Fase 1+2 e ISS-048, preguntó de qué
+trataba T6, y pidió revisar primero si ya existía un backup antes de armar uno nuevo — sospecha
+correcta, del primer deploy (29 de mayo).
+
+**Diagnóstico, guiando al usuario por SSH** (Claude no tiene acceso al servidor): el script y el
+cron existían, pero `/var/www/menupro/backups/` nunca se había creado. `cat` del script mostró la
+causa exacta: faltaba la línea `mkdir -p /var/www/menupro/backups` que sí tiene la versión
+documentada en `deploy.md` §7. Sin ella, `cp` no podía crear el archivo — y como el `echo "Backup
+creado: ..."` final no depende de si el `cp` funcionó, el log (`/var/log/backup-menupro.log`)
+mostraba "Backup creado" seguido del error de `cp`, todas las noches desde el 29 de mayo, sin que
+nadie lo notara.
+
+**Esto resuelve una duda que quedaba abierta desde antes:** el incidente del 2026-08-16 (el owner
+creyó haber perdido menús y platos — era caché, ISS-044) tuvo como respuesta real "no hay
+backup". Ahora se sabe por qué: el cron llevaba meses "corriendo" sin producir nada.
+
+**Fix:** una línea. El usuario reescribió el script con el `mkdir -p` agregado y lo corrió a
+mano — primer backup real creado, 241 KB (tamaño correcto de `database.sqlite`). El cron no
+necesitó ningún cambio, ya estaba bien puesto (3am diario).
+
+**Lo que queda de T6:** probar un restore real al menos una vez (tener el archivo no alcanza si
+nunca se confirmó que se puede volver a levantar la app con él) y copiar los backups a un lugar
+externo al servidor. Ninguno de los dos se hizo todavía.
+
+**Documentación actualizada:** `deploy.md` §7 (historia completa del bug + script corregido),
+`status.md` (esta entrada), `backlog.md` (T6).
 
 ---
 

@@ -341,24 +341,34 @@ Después de esto la app corre en `https://menupro.tech` ✅
 
 ## 7. Backups de la base de datos
 
-> 🔴 **PENDIENTE — nada de esta sección está implementado todavía.** Es la tarea **T6** del
-> backlog y hoy es la deuda de más riesgo del proyecto: ya se desplegaron **dos migraciones de
-> esquema** sobre una base con datos reales del piloto, sin ningún backup al que volver.
+> 🟡 **T6 — script + cron funcionando desde 2026-08-19. Falta el restore de prueba.**
 >
-> El 2026-08-16 el owner creyó haber perdido todos sus menús y platos (era caché, no se perdió
-> nada — ISS-044). En ese momento la respuesta honesta a "¿restauramos el backup?" fue **no
-> hay backup**. Mientras siga así, cualquier error real es irreversible.
+> **Historia real, para que no se repita:** el script y el cron existían desde el **29 de mayo**
+> — pero al script le faltaba la línea `mkdir -p /var/www/menupro/backups`, así que **cada corrida
+> nocturna fallaba en silencio durante casi 3 meses** (`cp: cannot create regular file... No such
+> file or directory`). El script igual imprimía `"Backup creado: ..."` al final porque el `echo`
+> no depende de si el `cp` funcionó — quien mirara solo la última línea del log creería que
+> estaba todo bien. El error quedaba en `/var/log/backup-menupro.log`, que nadie revisó hasta el
+> 2026-08-19. Esto explica con precisión el incidente del 2026-08-16 (el owner creyó haber
+> perdido todos sus menús y platos — era caché, ISS-044, no se perdió nada — pero la respuesta
+> honesta a "¿restauramos?" en ese momento fue **no hay backup**, pese a que el cron llevaba
+> meses "corriendo").
 >
-> **Mientras tanto, lo mínimo antes de cada deploy con migración:**
-> ```bash
-> cd /var/www/menupro && cp database.sqlite ~/database-$(date +%F-%H%M).sqlite
-> ```
+> **Corregido 2026-08-19:** se agregó la línea faltante (ver script abajo) y se verificó
+> manualmente — primer backup real creado, 241 KB, tamaño correcto de `database.sqlite`. El cron
+> ya estaba bien configurado (3am diario), no hacía falta tocarlo.
+>
+> **Lo que sigue faltando de T6:** probar un **restore real** al menos una vez (no alcanza con
+> que el archivo exista, hay que confirmar que se puede volver a levantar la app con un backup).
+> Y copiar los backups a un lugar externo al mismo servidor (recomendación de abajo, sin hacer
+> todavía).
 
 SQLite es un solo archivo. Un backup diario es crítico.
 
 ### Script de backup automático
 
-Crear `/var/www/menupro/scripts/backup.sh`:
+`/var/www/menupro/scripts/backup.sh` — ya existe y corre por cron, contenido verificado
+2026-08-19:
 
 ```bash
 #!/bin/bash
@@ -375,10 +385,8 @@ echo "Backup creado: $DESTINO"
 ```bash
 chmod +x /var/www/menupro/scripts/backup.sh
 
-# Cron: backup diario a las 3:00 AM
-crontab -e
-# Agregar:
-0 3 * * * /var/www/menupro/scripts/backup.sh >> /var/log/backup-restaurante.log 2>&1
+# Cron: backup diario a las 3:00 AM — ya configurado, confirmado con `crontab -l` el 2026-08-19
+0 3 * * * /var/www/menupro/scripts/backup.sh >> /var/log/backup-menupro.log 2>&1
 ```
 
 > **Recomendación adicional:** copiar los backups a un servicio externo una vez a la semana (DigitalOcean Spaces, Google Drive vía rclone, o simplemente descargarlos manualmente al principio).
