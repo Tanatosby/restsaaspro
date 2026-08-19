@@ -40,6 +40,8 @@ router.get('/activas', authorizePermiso(), (req, res) => {
       o.metodo_pago,
       o.estado_pago,
       o.comprobante_url,
+      o.comprobante_repetido_de,
+      o.comprobante_repetido_tipo,
       o.modalidad,
       o.es_manual,
       eo.nombre      AS estatus,

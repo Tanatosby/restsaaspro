@@ -1034,7 +1034,7 @@ async function renderReservarContent() {
     try {
       const data = await crearOrden(payload);
       closeDrawer();
-      showConfirm('pedir', data.id_orden);
+      showConfirm('pedir', data.id_orden, null, data.numero_dia);
     } catch(e) {
       showMsg(e.message, true);
     } finally {
@@ -1391,16 +1391,17 @@ async function renderReservarContent() {
 
     try {
       const { tipo, payload, metodo, foto } = pagoPendiente;
-      let id, codigo;
+      let id, codigo, numeroDia;
 
       if (pagoPendiente.creado) {
-        ({ id, codigo } = pagoPendiente.creado);
+        ({ id, codigo, numeroDia } = pagoPendiente.creado);
       } else {
         btn.textContent = tipo === 'reserva' ? 'Enviando reserva…' : 'Enviando pedido…';
         const data = tipo === 'reserva' ? await crearReserva(payload) : await crearOrden(payload);
-        id     = tipo === 'reserva' ? data.id_reserva : data.id_orden;
-        codigo = tipo === 'reserva' ? data.codigo : null;
-        pagoPendiente.creado = { id, codigo };
+        id        = tipo === 'reserva' ? data.id_reserva : data.id_orden;
+        codigo    = tipo === 'reserva' ? data.codigo : null;
+        numeroDia = tipo === 'reserva' ? null : data.numero_dia;
+        pagoPendiente.creado = { id, codigo, numeroDia };
         // ISS-049: si el pedido/reserva ya se creó en el backend y la
         // pestaña se recarga antes del PATCH del pago, el reintento no debe
         // volver a crearlo — restaurarPagoPendienteLocal() trae `creado` de
@@ -1422,7 +1423,7 @@ async function renderReservarContent() {
       if (!res.ok) throw new Error(pagoData.error || 'Error al registrar el pago');
 
       document.getElementById('repaso-screen').classList.remove('show');
-      showConfirm(tipo === 'reserva' ? 'reservar' : 'pedir', id, codigo);
+      showConfirm(tipo === 'reserva' ? 'reservar' : 'pedir', id, codigo, numeroDia);
       pagoPendiente = null;
       limpiarPagoPendienteLocal();
     } catch(e) {
@@ -1433,7 +1434,11 @@ async function renderReservarContent() {
   }
 
   // ── Confirmation ─────────────────────────────────
-  function showConfirm(mode, id, codigo = null) {
+  // `numeroDia`: el mismo número que ve la dueña en Cola del día/Órdenes/
+  // Cocina (1, 2, 3… por día) — evita mostrarle al comensal el id crudo de
+  // la tabla, que sigue de corrido y puede ser #96 aunque hoy solo haya 22
+  // pedidos. Si no viene (versión vieja del backend en caché), cae al id.
+  function showConfirm(mode, id, codigo = null, numeroDia = null) {
     const isReserva = mode === 'reservar';
     document.getElementById('confirm-icon').textContent  = isReserva ? '📅' : '🎉';
     document.getElementById('confirm-title').textContent = isReserva ? '¡Reserva enviada!' : '¡Pedido enviado!';
@@ -1459,7 +1464,7 @@ async function renderReservarContent() {
     } else {
       document.getElementById('confirm-sub').innerHTML = isReserva
         ? `Tu reserva fue recibida. El restaurante la confirmará pronto.<br><br><span style="font-weight:600;color:var(--text)">Número de reserva:</span><br><span class="confirm-num" style="color:var(--green)">#${id}</span>`
-        : `Tu pedido fue recibido. En breve comenzarán a prepararlo.<br><br><span style="font-weight:600;color:var(--text)">Número de orden:</span><br><span class="confirm-num" style="color:var(--accent)">#${id}</span>`;
+        : `Tu pedido fue recibido. En breve comenzarán a prepararlo.<br><br><span style="font-weight:600;color:var(--text)">Número de orden:</span><br><span class="confirm-num" style="color:var(--accent)">#${numeroDia ?? id}</span>`;
       btnVerEstado.style.display = 'none';
     }
 

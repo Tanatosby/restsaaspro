@@ -49,7 +49,9 @@ function crearDB() {
     CREATE TABLE ordenes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       mesa TEXT, nombre_cliente TEXT, fecha TEXT, created_at TEXT,
-      metodo_pago TEXT, estado_pago TEXT, comprobante_url TEXT, modalidad TEXT,
+      metodo_pago TEXT, estado_pago TEXT, comprobante_url TEXT,
+      comprobante_hash TEXT, comprobante_repetido_de INTEGER, comprobante_repetido_tipo TEXT,
+      modalidad TEXT,
       es_manual INTEGER DEFAULT 0,
       id_restaurante INTEGER, id_estatus INTEGER, total REAL
     );
@@ -57,7 +59,9 @@ function crearDB() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       codigo TEXT, nombre_cliente TEXT, telefono_cliente TEXT,
       fecha TEXT, hora_llegada TEXT, mesa TEXT, created_at TEXT,
-      metodo_pago TEXT, estado_pago TEXT, comprobante_url TEXT, modalidad TEXT,
+      metodo_pago TEXT, estado_pago TEXT, comprobante_url TEXT,
+      comprobante_hash TEXT, comprobante_repetido_de INTEGER, comprobante_repetido_tipo TEXT,
+      modalidad TEXT,
       id_restaurante INTEGER, id_estatus INTEGER, total REAL
     );
 

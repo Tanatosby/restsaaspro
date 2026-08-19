@@ -432,6 +432,25 @@ try { db.exec(`ALTER TABLE reservas ADD COLUMN metodo_pago     TEXT DEFAULT NULL
 try { db.exec(`ALTER TABLE reservas ADD COLUMN estado_pago     TEXT DEFAULT NULL`); } catch (_) {}
 try { db.exec(`ALTER TABLE reservas ADD COLUMN comprobante_url TEXT DEFAULT NULL`); } catch (_) {}
 
+// Migración idempotente: detección de comprobante Yape/Plin reutilizado —
+// pregunta real de la dueña ("¿qué pasa si un chico comparte su pago con
+// otro y ambos envían la misma captura?"). `comprobante_hash` es el hash
+// del archivo subido; `comprobante_repetido_de` guarda el id de la
+// orden/reserva del MISMO restaurante que ya había usado ese mismo hash
+// antes — se calcula una sola vez al subir, no en cada lectura. Solo avisa
+// al owner (que ya revisa cada comprobante antes de confirmar el pago), no
+// bloquea al comensal. Sin backfill: los comprobantes viejos no tienen hash.
+// `comprobante_repetido_tipo` distingue si la que ya usó ese hash es una
+// orden o una reserva — son dos secuencias de id independientes.
+try { db.exec(`ALTER TABLE ordenes  ADD COLUMN comprobante_hash          TEXT    DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE ordenes  ADD COLUMN comprobante_repetido_de   INTEGER DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE ordenes  ADD COLUMN comprobante_repetido_tipo TEXT    DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE reservas ADD COLUMN comprobante_hash          TEXT    DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE reservas ADD COLUMN comprobante_repetido_de   INTEGER DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE reservas ADD COLUMN comprobante_repetido_tipo TEXT    DEFAULT NULL`); } catch (_) {}
+db.exec(`CREATE INDEX IF NOT EXISTS idx_ordenes_comprobante_hash  ON ordenes(comprobante_hash)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_reservas_comprobante_hash ON reservas(comprobante_hash)`);
+
 // Backfill: calcular y guardar total de órdenes completadas sin total guardado
 const { calcularTotalOrden, calcularTotalReserva } = require('../utils/totales');
 

@@ -99,8 +99,8 @@ no reemplaza la de julio — es la evolución.
 | Día 3 | 2026-08-14 (viernes) | Check-in sin incidente puntual — balance general de adaptación (ver abajo) + 3 detalles de uso real que se documentaron como issues nuevos. |
 | — | 2026-08-15 (sábado) | **Restaurante cerrado / sin uso** — el único día de pausa desde que retomó el 12 de agosto. |
 | Día 4 | 2026-08-17 (lunes) | Recopilación en persona: cocinera adaptándose bien, dueña todavía no; 4 clientes no pudieron pedir por la app; incidente de un plato sin su proteína (→ ISS-046); pedido de un contador "Menús de hoy"; pregunta sobre comprobantes Yape duplicados; pedido de poder descargar la foto del menú. Detalle abajo. |
-| Día 5 | 2026-08-18 (martes) | Se despliegan las respuestas al Día 4 (descarga de foto, "Agregar manual", conteo de menús). Dos incidentes nuevos: un pedido de 2 menús —uno para llevar, otro para comer ahí— que el sistema no podía separar (→ ISS-047); y un pedido perdido al salir a pagar por Yape, la pestaña "se reiniciaba" (→ ISS-049, contado el Día 6). La dueña dice que le gustaría probar Pensionistas (saldo en cuenta en vez de foto o efectivo). Detalle abajo. |
-| Día 6 | 2026-08-19 (miércoles) | **Hoy.** ISS-047, Pensionistas Fase 1+2 (`pensionista.html`), ISS-048 e ISS-049 implementados y **desplegados**. Sin visita/reporte nuevo del piloto registrado todavía — día en curso. |
+| Día 5 | 2026-08-18 (martes) | Se despliegan las respuestas al Día 4 (descarga de foto, "Agregar manual", conteo de menús). Tres incidentes nuevos, todos contados el Día 6: un pedido de 2 menús —uno para llevar, otro para comer ahí— que el sistema no podía separar (→ ISS-047); un pedido perdido al salir a pagar por Yape, la pestaña "se reiniciaba" (→ ISS-049); y un número de pedido que no coincidía entre el comensal y la dueña (→ ISS-050). La dueña dice que le gustaría probar Pensionistas (saldo en cuenta en vez de foto o efectivo). Detalle abajo. |
+| Día 6 | 2026-08-19 (miércoles) | **Hoy.** ISS-047, Pensionistas Fase 1+2 (`pensionista.html`), ISS-048, ISS-049, ISS-050 e ISS-051 implementados y **desplegados**. Sin visita/reporte nuevo del piloto registrado todavía — día en curso. |
 
 > **El domingo 16 de agosto no lleva número de "Día" en esta tabla:** no hay reporte de uso ni de
 > pausa para esa fecha — a diferencia del sábado 15, que el usuario confirmó explícitamente como
@@ -243,14 +243,15 @@ mismo día (`a47d132`).
   De paso se encontró un bug de conteo real en `reportes.js` (dividía por el total de secciones
   en vez de por las obligatorias, subcontando) — los dos se resolvieron juntos el Día 5.
 - **Pregunta de la dueña sobre comprobantes de Yape duplicados:** *"¿qué pasa si un chico
-  comparte su pago de Yape con otro y ambos envían la misma captura?"* — problema real, sin
-  alcance definido todavía. Diagnóstico técnico hecho el 2026-08-19: `routes/public.js` guarda
-  el comprobante pero no compara nada; lo barato es hashear el archivo al subirlo, con la
-  salvedad de que solo atrapa el archivo idéntico, no una recaptura. **Sin implementar.**
+  comparte su pago de Yape con otro y ambos envían la misma captura?"* — problema real.
+  Diagnosticado el 2026-08-19 e implementado el mismo día: hashear el archivo al subirlo y
+  avisar al owner si ya se usó antes, sin bloquear al comensal. Queda como
+  [`ISS-051`](issues/ISS-051-comprobante-duplicado.md), desplegado el Día 6. Solo atrapa el
+  archivo idéntico, no una recaptura.
 - **Pedido de poder descargar la foto del menú** para compartirlo por WhatsApp — construido el
   mismo día, desplegado el Día 5 (`9c9de62` + `32c8fb0`).
 
-### Día 5 (2026-08-18, martes) — pedido mixto, pedido perdido al pagar, pensionistas
+### Día 5 (2026-08-18, martes) — pedido mixto, pedido perdido al pagar, número de pedido, pensionistas
 
 Se desplegaron las tres respuestas al Día 4 que ya estaban listas: descarga de foto del menú,
 botón "Agregar manual" y fix del conteo de menús + tarjeta "Menús de hoy" (`9c9de62`+`32c8fb0`
@@ -272,6 +273,12 @@ recargándola de cero al volver. Quedó como
 [`ISS-049`](issues/ISS-049-pedido-se-pierde-al-salir-a-pagar.md), implementado y desplegado
 2026-08-19 (Día 6).
 
+**Incidente 3 — contado el 2026-08-19:** una clienta dijo *"mi orden de pedido me sale 96"*,
+pero la dueña solo veía órdenes del 1 al 22 ese día. Causa: el comensal veía el id crudo de la
+tabla (sigue de corrido, nunca se reinicia); la dueña ya veía `numero_dia` (1, 2, 3… por día) en
+sus propias vistas — dos numeraciones distintas para el mismo pedido. Quedó como
+[`ISS-050`](issues/ISS-050-numero-de-pedido-no-coincide.md), implementado y desplegado el Día 6.
+
 **La dueña dijo que le gustaría probar Pensionistas** — que sus comensales recurrentes tengan
 saldo en cuenta en vez de mandar foto de Yape o pagar en efectivo cada vez. El backend de este
 módulo ya estaba armado desde el 11 de agosto; faltaba toda la parte visible.
@@ -285,6 +292,10 @@ módulo ya estaba armado desde el 11 de agosto; faltaba toda la parte visible.
   **desplegadas** el mismo día.
 - **ISS-049 implementado y desplegado** — el pedido perdido al salir a pagar (Día 5, la frase
   de la dueña sobre "aburrirse de usar la app"). Prioridad alta a pedido explícito del usuario.
+- **ISS-050 implementado y desplegado** — el número de pedido no coincidía entre lo que veía
+  el comensal y lo que veía la dueña (Día 5, "mi orden me sale 96").
+- **ISS-051 implementado y desplegado** — detección de comprobante Yape/Plin reutilizado
+  (pregunta de la dueña, Día 4). Avisa al owner, no bloquea al comensal.
 - ISS-048 (bug propio, ver nota abajo) también desplegado hoy.
 - Día en curso — sin visita/reporte nuevo del piloto más allá de lo de arriba. Pensionistas
   todavía no tiene un pensionista real dado de alta ni probado en el celular de la dueña.

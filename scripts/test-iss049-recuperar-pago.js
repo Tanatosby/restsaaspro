@@ -22,6 +22,10 @@ function check(cond, msg) {
   else { console.log(`  ❌ ${msg}`); fail++; }
 }
 
+// Nombre único por corrida — si no, dos corridas seguidas ven la orden que
+// dejó la anterior y "se creó UNA sola orden" da falso positivo.
+const NOMBRE_CLIENTE = `Cliente ISS-049 ${Date.now()}`;
+
 (async () => {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 360, height: 740 } });
@@ -87,7 +91,7 @@ function check(cond, msg) {
     }, setup.menuId);
     await page.waitForTimeout(300);
 
-    await page.fill('#nombre-cliente', 'Cliente ISS-049');
+    await page.fill('#nombre-cliente', NOMBRE_CLIENTE);
     await page.click('#btn-confirmar');
     await page.waitForTimeout(500);
     check(await page.locator('#pago-screen').evaluate(el => el.classList.contains('show')), 'Llega a "¿Cómo vas a pagar?"');
@@ -121,10 +125,10 @@ function check(cond, msg) {
     check(await page.locator('#confirm-screen').evaluate(el => el.classList.contains('show')), 'El pedido se confirma normalmente tras recuperarse');
     check(!(await page.evaluate(() => !!localStorage.getItem('mp-pago-pendiente'))), 'Se limpió el guardado local al confirmar con éxito');
 
-    const ordenesCreadas = await page.evaluate(async () => {
+    const ordenesCreadas = await page.evaluate(async (nombre) => {
       const r = await fetch('/api/orders', { credentials: 'same-origin' }).then(r => r.json());
-      return r.filter(o => o.nombre_cliente === 'Cliente ISS-049').length;
-    });
+      return r.filter(o => o.nombre_cliente === nombre).length;
+    }, NOMBRE_CLIENTE);
     check(ordenesCreadas === 1, `Se creó UNA sola orden, no duplicada (${ordenesCreadas})`);
 
     // ════════════════════════════════════════════════

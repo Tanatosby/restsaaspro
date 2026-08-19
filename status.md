@@ -18,7 +18,10 @@ por el usuario:
 **Pendiente de deploy:**
 - **ISS-049** (el pedido se pierde si la pestaña se recarga sola al salir a pagar) — 🔴
   implementado hoy, prioridad alta a pedido explícito del usuario ("se aburren de usar la app").
-  Ver `issues/ISS-049-pedido-se-pierde-al-salir-a-pagar.md`.
+  El usuario dijo que lo desplegaba ahora mismo, pero no llegó la confirmación explícita —
+  **no marcar como desplegado hasta que la confirme**. Ver `issues/ISS-049-...md`.
+- **ISS-050** (el número de pedido no coincidía entre comensal y dueña — "mi orden me sale 96").
+- **ISS-051** (detección de comprobante Yape/Plin reutilizado — avisa al owner, no bloquea).
 
 **T6, el backup de la BD — corregido hoy, sigue quedando el restore de prueba.** El script y el
 cron existían desde el **29 de mayo**, pero al script le faltaba `mkdir -p`, así que **cada
@@ -41,6 +44,41 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-19 (parte 7) — ISS-050 (número de pedido) + ISS-051 (comprobante duplicado)
+
+**Prompt del usuario:** dijo que desplegaba ISS-049 ahora mismo (sin confirmación explícita
+todavía — sigue en la lista de pendientes de deploy hasta que la mande). Aprobó el diseño
+propuesto para la detección de comprobante duplicado ("avisar, no bloquear") y, de inmediato,
+contó otro incidente del Día 5: una clienta dijo *"mi orden de pedido me sale 96"* pero la dueña
+solo veía órdenes del 1 al 22 — con la hipótesis correcta ya adelantada por el usuario (la
+pantalla del comensal no se reinicia por día, la de la dueña sí).
+
+**ISS-050 — diagnóstico:** confirmado exactamente lo que sospechaba el usuario. El owner ya veía
+`numero_dia` (1, 2, 3… por restaurante y por día, `ROW_NUMBER() OVER (PARTITION BY o.fecha ORDER
+BY o.id ASC)` en `routes/orders.js`) en Cola del día/Órdenes/Cocina. `POST /api/public/orders`
+nunca lo calculaba ni lo devolvía, así que `menu.html` no tenía otra opción que mostrarle al
+comensal el id crudo de la tabla — un autoincrement que nunca se reinicia. Fix: el endpoint
+calcula `numero_dia` con el mismo criterio y lo devuelve; `menu.html` lo usa en la confirmación
+en los dos caminos que crean una orden (con pago y sin pago). Las reservas no tienen este
+problema — usan código aleatorio, no número secuencial, por diseño.
+
+**ISS-051 — comprobante duplicado:** implementado según lo aprobado. `utils/comprobanteDuplicado.js`
+nuevo (hash SHA-256 + búsqueda de coincidencias en `ordenes`/`reservas` del mismo restaurante,
+excluyendo el propio registro). Columnas `comprobante_hash`/`comprobante_repetido_de`/
+`comprobante_repetido_tipo` nuevas. `comprobanteThumb()` (compartida por Órdenes, Reservas y
+Cola del día) pinta el aviso — el comensal no ve nada distinto en ningún caso.
+
+**Verificación:** `scripts/test-numero-dia-pedido.js` (10/10) y `tests/comprobante-duplicado.test.js`
+(8/8) + `scripts/test-comprobante-duplicado.js` (7/7) nuevos. 457/457 jest + `test-iss049` 12/12,
+`test-iss048` 15/15 y `test-modalidad-mixta` 19/19 sin regresiones. Un test jest existente
+(`cola-dia.test.js`) tenía su propio esquema de tabla en memoria, sin las columnas nuevas —
+corregido.
+
+**Documentación actualizada:** `issues/ISS-050-...md` e `issues/ISS-051-...md` (nuevos),
+`issues/ISSUES.md`, `pilotos.md` (Día 4 e Incidente 3 del Día 5), `status.md` (esta entrada).
 
 ---
 

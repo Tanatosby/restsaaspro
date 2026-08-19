@@ -159,10 +159,18 @@ function badgeModalidadMenu(lineas) {
 // ── Comprobante de pago (foto) — compartido por ordenes.js/reservas.js/pedidos.js ──
 // No usar <a target="_blank">: dentro de la PWA instalada (standalone) rompe la
 // app en iOS/Android al intentar abrir una pestaña nueva. Se abre en modal in-app.
+// El aviso de "repetido" no bloquea nada — la dueña ya revisa cada
+// comprobante antes de confirmar el pago; esto solo le ahorra notarlo ella
+// misma. `comprobante_repetido_de`/`_tipo` los calcula el backend una sola
+// vez al subir la foto (routes/public.js, utils/comprobanteDuplicado.js).
 function comprobanteThumb(x) {
   if (!x.comprobante_url) return '';
+  const repetido = x.comprobante_repetido_de
+    ? `<div style="margin-top:4px;font-size:0.785714rem;background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:20px;font-weight:600;display:inline-block">⚠️ Ya usado en ${x.comprobante_repetido_tipo === 'reserva' ? 'la reserva' : 'el pedido'} #${x.comprobante_repetido_de}</div>`
+    : '';
   return `<div style="margin-top:6px" onclick="verComprobante('${esc(x.comprobante_url)}')">
     <img src="${esc(x.comprobante_url)}" alt="Comprobante" title="Ver comprobante" style="height:56px;width:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer">
+    ${repetido}
   </div>`;
 }
 function verComprobante(url) {

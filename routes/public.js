@@ -16,6 +16,7 @@ const { enviarPushRestaurante } = require('../utils/pushNotificaciones');
 const { contarUnidadesMenu } = require('../utils/menuPricing');
 const { validarSeccionesMenu } = require('../utils/validarSeccionesMenu');
 const { normalizarModalidades, resumirModalidad } = require('../utils/modalidadPedido');
+const { buscarComprobanteRepetido } = require('../utils/comprobanteDuplicado');
 const db      = require('../config/database');
 
 // Multer para comprobantes de pago (subidos por el cliente)
@@ -387,9 +388,20 @@ router.post('/orders', (req, res) => {
     badge: '/icons/badge-96.png',
   }, webpush);
 
+  // El comensal veía `id_orden` (el id crudo de la tabla, corrido desde
+  // siempre — puede ser #96 aunque hoy solo haya 22 pedidos), mientras el
+  // owner ve `numero_dia` (1, 2, 3… por restaurante y por día, el mismo que
+  // pinta Cola del día/Órdenes/Cocina — ver `routes/orders.js`). Dos
+  // numeraciones distintas para el mismo pedido generaban confusión real:
+  // "mi orden dice 96" y la dueña solo tiene pedidos del 1 al 22 hoy.
+  const { numero_dia } = db.prepare(`
+    SELECT COUNT(*) AS numero_dia FROM ordenes WHERE id_restaurante = ? AND fecha = ? AND id <= ?
+  `).get(id_restaurante, fecha, ordenId);
+
   res.status(201).json({
     message: '¡Pedido enviado correctamente!',
-    id_orden: ordenId
+    id_orden: ordenId,
+    numero_dia
   });
 });
 
@@ -564,14 +576,32 @@ function handlePago(tabla, idField) {
       if (['yape', 'plin'].includes(metodo_pago) && !req.file)
         return res.status(400).json({ error: 'Debes adjuntar la foto del comprobante' });
 
-      const row = db.prepare(`SELECT id, estado_pago FROM ${tabla} WHERE id = ?`).get(req.params.id);
+      const row = db.prepare(`SELECT id, estado_pago, id_restaurante FROM ${tabla} WHERE id = ?`).get(req.params.id);
       if (!row) return res.status(404).json({ error: 'Registro no encontrado' });
       if (row.estado_pago === 'confirmado')
         return res.status(400).json({ error: 'El pago ya fue confirmado' });
 
       const comprobante_url = req.file ? `/uploads/comprobantes/${req.file.filename}` : null;
-      db.prepare(`UPDATE ${tabla} SET metodo_pago = ?, estado_pago = 'enviado', comprobante_url = ? WHERE id = ?`)
-        .run(metodo_pago, comprobante_url, req.params.id);
+
+      // Detección de comprobante reutilizado — pregunta real de la dueña
+      // ("¿qué pasa si un chico comparte su pago con otro y ambos envían la
+      // misma captura?"). Se avisa al owner, que ya revisa cada comprobante
+      // antes de confirmar el pago — no se bloquea al comensal. Solo atrapa
+      // el archivo idéntico (mismos bytes), no una recaptura de pantalla.
+      const { hash: comprobante_hash, repetido } = req.file
+        ? buscarComprobanteRepetido(db, row.id_restaurante, req.file.path, tabla, row.id)
+        : { hash: null, repetido: null };
+
+      db.prepare(`
+        UPDATE ${tabla}
+        SET metodo_pago = ?, estado_pago = 'enviado', comprobante_url = ?,
+            comprobante_hash = ?, comprobante_repetido_de = ?, comprobante_repetido_tipo = ?
+        WHERE id = ?
+      `).run(
+        metodo_pago, comprobante_url, comprobante_hash,
+        repetido?.id ?? null, repetido?.tipo ?? null,
+        req.params.id
+      );
 
       res.json({ message: 'Pago registrado correctamente', comprobante_url });
     });
