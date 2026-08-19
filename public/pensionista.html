@@ -37,7 +37,10 @@
   <div class="header">
     <div class="pen-brand-row">
       <div class="pen-brand" id="pen-brand">Cargando…</div>
-      <button class="pen-logout" onclick="logout()">Salir ⏻</button>
+      <div class="pen-actions">
+        <button class="pen-pwd-btn" onclick="abrirModalPassword()">🔑 Contraseña</button>
+        <button class="pen-logout" onclick="logout()">Salir ⏻</button>
+      </div>
     </div>
     <div class="pen-saldo-bar" id="pen-saldo-bar">
       <div class="pen-saldo-who"><span class="hi">Pensionista</span><span class="name" id="pen-nombre">—</span></div>
@@ -123,6 +126,37 @@
       <img class="photo-modal-img" id="photo-modal-img" src="" alt="">
       <div class="photo-modal-name" id="photo-modal-name"></div>
       <div class="photo-modal-desc" id="photo-modal-desc"></div>
+    </div>
+  </div>
+
+  <!-- ── Modal: cambiar contraseña — mismo endpoint que usa el owner
+       (PATCH /api/auth/me/password, cualquier usuario autenticado),
+       reportado como faltante para pensionistas 2026-08-19 ── -->
+  <div id="modal-pwd" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:1rem">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:380px;box-shadow:var(--shadow-lg)">
+      <div style="padding:1.1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--text)">Cambiar contraseña</span>
+        <button onclick="cerrarModalPassword()" aria-label="Cerrar" style="background:none;border:none;font-size:1.3rem;color:var(--muted);cursor:pointer;line-height:1;padding:6px;min-width:44px;min-height:44px">✕</button>
+      </div>
+      <div style="padding:1.25rem;display:flex;flex-direction:column;gap:0.9rem">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label for="pwd-actual" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Contraseña actual</label>
+          <input id="pwd-actual" type="password" placeholder="Tu contraseña actual" style="border:1.5px solid var(--border);background:var(--bg-2);border-radius:8px;padding:12px 14px;font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%;min-height:46px">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label for="pwd-nueva" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Contraseña nueva</label>
+          <input id="pwd-nueva" type="password" placeholder="Mínimo 8 caracteres" style="border:1.5px solid var(--border);background:var(--bg-2);border-radius:8px;padding:12px 14px;font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%;min-height:46px">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label for="pwd-confirmar" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Confirmar contraseña nueva</label>
+          <input id="pwd-confirmar" type="password" placeholder="Repite la contraseña nueva" style="border:1.5px solid var(--border);background:var(--bg-2);border-radius:8px;padding:12px 14px;font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%;min-height:46px">
+        </div>
+        <div id="pwd-error" class="pen-error-box" style="display:none"></div>
+      </div>
+      <div style="padding:1rem 1.25rem;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="cerrarModalPassword()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:11px 18px;font-size:13.5px;font-family:inherit;color:var(--text-2);cursor:pointer;min-height:44px">Cancelar</button>
+        <button onclick="guardarNuevaPassword()" style="background:var(--accent);border:none;border-radius:8px;padding:11px 18px;font-size:13.5px;font-weight:700;font-family:inherit;color:#fff;cursor:pointer;min-height:44px">Guardar</button>
+      </div>
     </div>
   </div>
 
@@ -623,6 +657,48 @@
   async function logout() {
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); }
     finally { limpiarSesion(); window.location.replace('/login.html'); }
+  }
+
+  // ── Cambiar contraseña — mismo endpoint que ya usa el owner
+  // (PATCH /api/auth/me/password, cualquier usuario autenticado por
+  // sesión — no distingue rol, así que no hacía falta tocar el backend).
+  function abrirModalPassword() {
+    document.getElementById('pwd-actual').value     = '';
+    document.getElementById('pwd-nueva').value      = '';
+    document.getElementById('pwd-confirmar').value  = '';
+    const err = document.getElementById('pwd-error');
+    err.style.display = 'none'; err.textContent = '';
+    document.getElementById('modal-pwd').style.display = 'flex';
+  }
+  function cerrarModalPassword() {
+    document.getElementById('modal-pwd').style.display = 'none';
+  }
+  document.getElementById('modal-pwd').addEventListener('click', e => {
+    if (e.target.id === 'modal-pwd') cerrarModalPassword();
+  });
+
+  async function guardarNuevaPassword() {
+    const passwordActual  = document.getElementById('pwd-actual').value;
+    const passwordNueva   = document.getElementById('pwd-nueva').value;
+    const passwordConfirm = document.getElementById('pwd-confirmar').value;
+    const err = document.getElementById('pwd-error');
+    const mostrarError = msg => { err.textContent = msg; err.style.display = 'block'; };
+    err.style.display = 'none';
+
+    if (!passwordActual || !passwordNueva || !passwordConfirm)
+      return mostrarError('Todos los campos son requeridos');
+    if (passwordNueva.length < 8)
+      return mostrarError('La contraseña nueva debe tener al menos 8 caracteres');
+    if (passwordNueva !== passwordConfirm)
+      return mostrarError('Las contraseñas nuevas no coinciden');
+
+    try {
+      const data = await api('PATCH', '/api/auth/me/password', { passwordActual, passwordNueva });
+      cerrarModalPassword();
+      showMsg(data.message || 'Contraseña actualizada correctamente');
+    } catch (e) {
+      mostrarError(e.message);
+    }
   }
 
   // ── Start ────────────────────────────────────────────

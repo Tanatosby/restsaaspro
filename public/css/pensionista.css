@@ -7,17 +7,19 @@
    historial de "Mis pedidos". Ver pensionistas.md §9.
    ────────────────────────────────────────────────────────────── */
 
-/* ── Topbar propia: marca + salir, arriba del header de menu.css ── */
+/* ── Topbar propia: marca + acciones, arriba del header de menu.css ── */
 .pen-brand-row {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 0.75rem;
 }
 .pen-brand { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--text); }
-.pen-logout {
+.pen-actions { display: flex; align-items: center; gap: 4px; }
+.pen-logout, .pen-pwd-btn {
   background: none; border: none; font-family: var(--font); font-size: 12.5px; font-weight: 700;
   color: var(--muted); cursor: pointer; padding: 8px 4px; min-height: 44px; display: flex; align-items: center; gap: 4px;
 }
 .pen-logout:hover { color: var(--danger); }
+.pen-pwd-btn:hover { color: var(--accent); }
 
 /* ── Barra de saldo — el dato que el pensionista viene a mirar ── */
 .pen-saldo-bar {

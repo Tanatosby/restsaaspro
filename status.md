@@ -16,7 +16,9 @@ por el usuario:
 | 2026-08-19 | `7803818..60c9e6f` (incluye `ca262b1`, `ba710d0`) | **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html` — el flujo completo, sin riesgo de 404) y **ISS-048** (volver de "¿Cómo vas a pagar?" a la carta). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-19 | `60c9e6f..e7fc697` | **ISS-049** (recuperar el pedido si la pestaña se recarga al pagar), **ISS-050** (número de pedido igual para comensal y dueña) e **ISS-051** (aviso de comprobante Yape/Plin reutilizado). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
-**Sin pendientes de deploy** — todo lo implementado hoy ya está en producción.
+**Pendiente de deploy:**
+- **ISS-052** (el pensionista no podía cambiar su propia contraseña) — 🟡 implementado hoy, sin
+  confirmación de deploy todavía. Ver `issues/ISS-052-pensionista-sin-cambiar-password.md`.
 
 **T6, el backup de la BD — corregido hoy, sigue quedando el restore de prueba.** El script y el
 cron existían desde el **29 de mayo**, pero al script le faltaba `mkdir -p`, así que **cada
@@ -39,6 +41,27 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-19 (parte 8) — ISS-052: el pensionista no podía cambiar su contraseña
+
+**Prompt del usuario:** el pensionista no tiene forma de cambiar su propia contraseña.
+
+**Diagnóstico:** `owner.html` ya tenía "🔑 Cambiar contraseña" (modal → `PATCH
+/api/auth/me/password`). El backend de ese endpoint solo exige `authenticate`, no filtra por
+rol, y opera sobre `req.user.id` contra `usuarios` — donde el pensionista ya vive. Cero cambios
+de backend necesarios: era puramente un hueco de UI en `pensionista.html`, que no tenía nada
+equivalente.
+
+**El cambio:** botón "🔑 Contraseña" junto a "Salir" + modal, mismo patrón que `owner.html`
+(contraseña actual + nueva + confirmar, mismas validaciones), llamando al mismo endpoint
+compartido. Detalle completo en `issues/ISS-052-pensionista-sin-cambiar-password.md`.
+
+**Verificación:** `scripts/test-pensionista-password.js` nuevo, **12/12** — valida los 4 casos de
+error, y confirma el cambio de verdad (la contraseña vieja deja de servir para loguear, la nueva
+sí funciona — no solo que el modal cierra sin error). 457/457 jest + `test-pensionista-cliente`
+29/29 sin regresiones.
 
 ---
 
