@@ -36,7 +36,7 @@ ISS-046, commit `a47d132` — ver `status.md`).
 | ~~—~~ | ~~Botón "Agregar manual" en cola: mesa + selección de menús → directo a cocina~~ | ✅ **Hecho y desplegado 2026-08-18** — `es_manual` en `ordenes`, badge "🧾 Pedido manual · Confirmar pago al cobrar" propio (no depende de `efectivo_activo`). Ver `status.md` |
 | — | **Verificar en el servicio real** un pedido con 2 menús y la etiqueta "para llevar" | Los 3 críticos están en producción pero nadie los vio funcionar en un servicio de verdad |
 | **ISS-043** | El menú sin secciones obligatorias **cobra de menos** (ver sección propia) | Es de cobro, no de vista. Falta correr la consulta en producción para saber si aplica |
-| ~~—~~ | ~~Imagen descargable del menú para compartir por WhatsApp (complementaria al link)~~ | ✅ **Hecho 2026-08-17** — botón «⬇ Descargar menú» en la card de Configuración de menús, `public/js/widgets/menu-export.js`. Sin backend. Ver `features.md`. **Pendiente de deploy** |
+| ~~—~~ | ~~Imagen descargable del menú para compartir por WhatsApp (complementaria al link)~~ | ✅ **Hecho y desplegado 2026-08-17** (`9c9de62` + `32c8fb0`) — botón «⬇ Descargar menú» en la card de Configuración de menús, `public/js/widgets/menu-export.js`. Sin backend. Ver `features.md`. Falta verlo usado en un servicio real |
 | — | Fiados / pago diferido (cliente sin dinero que promete pagar después) | 🟢 P2/backlog explícito — el usuario lo bajó de prioridad a propósito |
 
 **Decisión del usuario pendiente, sin bloquear nada:** el ícono de calendario con la fecha real

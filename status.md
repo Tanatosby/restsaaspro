@@ -4,13 +4,16 @@
 
 ## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-18
 
-**Lo que está en producción** (deploy confirmado por el usuario el 2026-08-18, commit
-`14ce74f` — el usuario juntó los commits `bc593a4` y `14ce74f` al desplegar): botón **"Agregar
-manual"** en la Cola del día + **fix del conteo de menús** ("Menús pedidos"/"Menús reservados") +
-tarjeta nueva **"Menús de hoy"**. Ver las 2 sesiones de hoy más abajo.
+**Lo que está en producción** — tres deploys entre el 17 y el 18 de agosto, todos confirmados
+por el usuario:
 
-**Deploy anterior** (confirmado el 2026-08-18, commit `32c8fb0`): la feature **«Descargar
-menú»** como foto para WhatsApp (`9c9de62` + fix de pie de foto `32c8fb0`).
+| Deploy | Commits | Qué salió |
+|---|---|---|
+| 2026-08-17 | `a47d132` | **T0** (`BUILD` automático por hash), **ISS-045** (link del menú con mayúscula), **ISS-046** (plato exige sección condicional — arroz sin proteína) y, de paso, lo que venía pendiente de antes: **ISS-044 + T11** (versionado de assets / precache del SW) |
+| 2026-08-18 | `9c9de62` + `32c8fb0` | **«Descargar menú» como foto** para compartir por WhatsApp (+ el copy del pie: «Reserva ahora») |
+| 2026-08-18 | `bc593a4` + `14ce74f` | Botón **"Agregar manual"** en la Cola del día + **fix del conteo de menús** ("Menús pedidos"/"Menús reservados") + tarjeta nueva **"Menús de hoy"**. Ver las 2 sesiones de hoy más abajo |
+
+**No queda nada pendiente de deploy.**
 
 **Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
 un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 completo
@@ -20,6 +23,9 @@ un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 compl
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
   bloqueado por el clasificador de permisos, lo borra el usuario.
 - Fiados — ver `backlog.md`.
+- **Sin verificar en uso real:** nadie usó todavía «Descargar menú» en un servicio. Falta
+  que la dueña baje una foto y la comparta, y confirmar que el pie muestra
+  `menupro.tech/<slug>` con el slug real.
 
 ---
 
@@ -147,6 +153,9 @@ leído por píxel, alto dinámico contra la fórmula del diseño para secciones 
 descarga real con su nombre, aviso si el menú no tiene platos, 0 errores de consola).
 **423/423 jest** y **51/51** de `test-menu-wizard.js` sin regresiones. Imagen final revisada a
 ojo tras el fix.
+
+**Desplegado el 2026-08-17** (confirmado por el usuario), commits `9c9de62` (la feature) y
+`32c8fb0` (el copy del pie).
 
 **Detalles del diseño ya cerrados, no volver sobre ellos:** el pie dice «Reserva ahora» +
 el link del menú; los agotados van en gris, tachados y con chip «Agotado»; los menús ocultos se
