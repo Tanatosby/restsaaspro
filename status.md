@@ -13,8 +13,12 @@ por el usuario:
 | 2026-08-18 | `9c9de62` + `32c8fb0` | **«Descargar menú» como foto** para compartir por WhatsApp (+ el copy del pie: «Reserva ahora») |
 | 2026-08-18 | `bc593a4` + `14ce74f` | Botón **"Agregar manual"** en la Cola del día + **fix del conteo de menús** ("Menús pedidos"/"Menús reservados") + tarjeta nueva **"Menús de hoy"**. Ver las 2 sesiones de hoy más abajo |
 
-**Pendiente de deploy:** **ISS-047** (modalidad por menú — sesión del 2026-08-19, abajo).
-🔴 **Rojo**: toca Cola del día y Cocina, y trae migración. Fuera de la ventana 12:00–18:00.
+**Pendiente de deploy:**
+- **ISS-047** (modalidad por menú). 🔴 **Rojo**: toca Cola del día y Cocina, y trae migración.
+  Fuera de la ventana 12:00–18:00.
+- **Pensionistas Fase 1** (panel del owner). 🟢 Verde en sí mismo, pero **`pensionista.html` aún
+  no existe**: si se despliega solo, un pensionista que inicie sesión cae en un 404. Ver el aviso
+  en la sesión 2026-08-19 parte 2.
 
 **Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
 un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 completo
@@ -27,6 +31,52 @@ un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 compl
 - **Sin verificar en uso real:** nadie usó todavía «Descargar menú» en un servicio. Falta
   que la dueña baje una foto y la comparta, y confirmar que el pie muestra
   `menupro.tech/<slug>` con el slug real.
+
+---
+
+## 🎯 Sesión 2026-08-19 (parte 2) — Pensionistas, Fase 1: el panel del owner
+
+**Prompt del usuario:** "avancemos con pensionistas entonces" — el segundo de sus tres frentes.
+Se propuso partirlo en dos entregas y aprobó: **Fase 1** el panel del owner (sirve sola: la
+dueña ya puede poner gente en cuenta y recargarle), **Fase 2** `pensionista.html`.
+
+**El punto de partida:** el backend estaba **entero y montado desde el 2026-08-11** — 12
+endpoints con 3 archivos de tests — y **sin una sola pantalla**. No había que decidir nada de
+negocio (`pensionistas.md` §6 lo especifica campo por campo); era construir sobre una API que ya
+funcionaba. Por eso no se hizo mockup: el panel es un calco de `usuarios.js`.
+
+**Lo hecho:** `public/js/modules/pensionistas.js` + panel en `owner.html` + CSS. Alta con saldo
+inicial, recarga con nota, historial desplegable, editar, contraseña, baja lógica reversible.
+Cards en vez de tabla — el saldo es lo que la dueña mira de reojo y en 360px una tabla lo
+esconde. Detalle en `features.md`.
+
+**Dos cosas que faltaban y bloqueaban de verdad:**
+- `login.html:420` no tenía `pensionista` en `ROLE_REDIRECT`: **un pensionista que entraba iba a
+  `undefined`**. Ya estaba anotado el 2026-08-19 parte 1 y acá se corrigió.
+- `GET /api/menu/restaurante/config` no devolvía `pensionista_saldo_aviso`, así que el panel no
+  podía saber a partir de qué saldo avisar. Se agregó (2 líneas).
+
+**Bug encontrado por el test, no por revisión:** `.pen-movs` tenía `display:flex`, que pisa el
+`display:none` que el navegador da a `[hidden]` — el botón de Movimientos abría pero no cerraba.
+Regla `[hidden]` explícita.
+
+**Verificación:** `scripts/test-panel-pensionistas.js` nuevo, **30/30** (ciclo completo, validaciones
+de alta, redirect del login, sin overflow a 360px, touch targets ≥44px) + **449/449 jest** +
+`test-menu-wizard` 51/51 y `test-modalidad-mixta` 19/19 sin regresiones. Panel revisado por captura.
+
+### ⚠️ Ojo antes de desplegar esta fase sola
+
+`pensionista.html` **todavía no existe** (es la Fase 2). El redirect del login ya apunta ahí, así
+que **un pensionista que inicie sesión hoy cae en un 404**. El panel del owner funciona perfecto
+y la dueña puede dejar todo armado, pero **no conviene repartirles credenciales hasta la Fase 2**.
+La alternativa es desplegar las dos fases juntas.
+
+### Fase 2 — lo que falta
+
+`pensionista.html` según `pensionistas.md` §9: saldo siempre visible, menú del día + carta,
+carrito → confirmar **sin pantalla de pago**, mensaje claro si el saldo no alcanza, y "Mis
+pedidos" con estado en vivo. **Empezar por el mockup** — es pantalla nueva con decisiones
+reales, a diferencia de esta fase.
 
 ---
 

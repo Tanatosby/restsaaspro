@@ -1,5 +1,44 @@
 # Features — Menú Pro
 
+## Pensionistas — Fase 1: panel del owner ✅ Completado 2026-08-19
+*Ver `pensionistas.md` §6. **Fase 2 (`pensionista.html`) pendiente.***
+
+El backend del módulo estaba **entero y montado desde el 2026-08-11** (12 endpoints con 3
+archivos de tests), pero no tenía **ni una sola pantalla**: `owner.html` no mencionaba la
+palabra "pensionista", no existía `pensionista.html` y no había módulo JS. Esta fase construye
+el lado del owner sobre esa API, sin tocarla.
+
+**Dónde:** Ajustes → **Pensionistas** (tarjeta nueva en el hub, junto a Usuarios).
+
+**Qué hace:** alta con saldo inicial · recarga con nota · historial de movimientos desplegable
+dentro de la card · editar datos · cambiar contraseña · baja lógica reversible.
+
+**ARCH:** `public/js/modules/pensionistas.js` + panel en `owner.html` + CSS en `owner.css`.
+Reusa `FormModal` para recargar/editar/contraseña. Se listan como **cards y no como tabla**
+(a diferencia de `usuarios.js`): el saldo es el dato que la dueña mira de reojo y en 360px una
+tabla lo esconde detrás de scroll horizontal. Arriba de la lista aparece un aviso ámbar
+—«N pensionistas están por quedarse sin saldo»— y los que están por debajo del umbral llevan el
+saldo en naranja.
+
+**Permisos:** el panel es **solo del owner**. Los usuarios delegados no lo ven (mismo criterio
+que Usuarios) porque mueve dinero: altas y recargas de saldo. Si hace falta delegarlo, el camino
+es un permiso granular nuevo, no abrirlo.
+
+**Dos cosas que faltaban para que esto funcionara:**
+- `login.html:420` no tenía `pensionista` en `ROLE_REDIRECT`: un pensionista que iniciaba sesión
+  **iba a `undefined`**. Ahora va a `/pensionista.html`.
+- `GET /api/menu/restaurante/config` no devolvía `pensionista_saldo_aviso`, así que el panel no
+  podía saber a partir de qué saldo avisar. Se agregó al response.
+
+**Verificación:** `scripts/test-panel-pensionistas.js` — **30/30**, el ciclo completo que va a
+usar la dueña (crear, recargar, ver movimientos, editar, dar de baja, reactivar) más las
+validaciones de alta, el redirect del login, ausencia de overflow a 360px y touch targets ≥44px.
+449/449 jest y los E2E de `owner.html` sin regresiones. Panel revisado por captura.
+
+**Un bug que encontró el test:** `.pen-movs` definía `display:flex`, que **pisa** el
+`display:none` que el navegador aplica a `[hidden]` — cerrar el historial no lo ocultaba. Se
+resolvió con una regla `[hidden]` explícita.
+
 ## ~~Un menú para llevar y otro para comer acá~~ ✅ Completado 2026-08-19
 *Ver [ISS-047](issues/ISS-047-modalidad-por-menu.md).*
 

@@ -418,9 +418,13 @@
 
 <script>
   const ROLE_REDIRECT = {
-    owner:    '/owner.html',
-    cocinero: '/owner.html',
-    mozo:     '/owner.html'
+    owner:       '/owner.html',
+    cocinero:    '/owner.html',
+    mozo:        '/owner.html',
+    // El pensionista tiene su propia página: pide con saldo y sin pantalla de
+    // pago, así que no entra al panel del restaurante. Sin esta línea el login
+    // lo mandaba a `undefined`.
+    pensionista: '/pensionista.html'
   };
 
   function destinoDe(user) {

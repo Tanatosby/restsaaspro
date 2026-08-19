@@ -899,7 +899,8 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
            minutos_preparacion, para_llevar_activo, delivery_activo,
            costo_tapper, tarifa_delivery, auto_merge_activo, slug,
            minutos_cancelacion_reserva,
-           horario_activo, hora_apertura, hora_cierre, dias_atencion
+           horario_activo, hora_apertura, hora_cierre, dias_atencion,
+           pensionista_saldo_aviso
     FROM restaurantes WHERE id = ?
   `).get(req.user.restaurant_id);
   if (!row) return res.status(404).json({ error: 'Restaurante no encontrado' });
@@ -925,6 +926,9 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
     hora_apertura:               row.hora_apertura                || '00:00',
     hora_cierre:                 row.hora_cierre                  || '23:59',
     dias_atencion:               row.dias_atencion                || '0,1,2,3,4,5,6',
+    // Umbral de saldo bajo del pensionista — el panel lo usa para resaltar a
+    // quien está por quedarse sin saldo (pensionistas.md §0 punto 4).
+    pensionista_saldo_aviso:     row.pensionista_saldo_aviso      ?? 20,
   });
 });
 

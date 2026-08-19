@@ -39,6 +39,7 @@ const ASSETS = [
   v('/js/modules/utils.js'),
   v('/js/modules/config.js'),
   v('/js/modules/usuarios.js'),
+  v('/js/modules/pensionistas.js'),
   v('/js/modules/mesas.js'),
   v('/js/modules/cocina.js'),
   v('/js/modules/ordenes.js'),
