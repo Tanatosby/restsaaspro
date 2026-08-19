@@ -5,23 +5,21 @@
 ## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-18
 
 **Lo que está en producción** (deploy confirmado por el usuario el 2026-08-18, commit
-`32c8fb0`): la feature **«Descargar menú»** como foto para WhatsApp (`9c9de62` + fix de pie de
-foto `32c8fb0`, incluye el ajuste de grilla adaptativa y el texto «Reserva ahora»).
+`14ce74f` — el usuario juntó los commits `bc593a4` y `14ce74f` al desplegar): botón **"Agregar
+manual"** en la Cola del día + **fix del conteo de menús** ("Menús pedidos"/"Menús reservados") +
+tarjeta nueva **"Menús de hoy"**. Ver las 2 sesiones de hoy más abajo.
 
-**Deploy anterior** (confirmado el 2026-08-17, commit `a47d132`, todo junto en un solo
-deploy): **T0** (`BUILD` automático por hash), **ISS-045** (link del menú con mayúscula),
-**ISS-046** (plato exige sección condicional — arroz sin proteína) y, de paso, todo lo que
-venía pendiente de antes: **ISS-044 + T11** (versionado de assets / precache del SW).
+**Deploy anterior** (confirmado el 2026-08-18, commit `32c8fb0`): la feature **«Descargar
+menú»** como foto para WhatsApp (`9c9de62` + fix de pie de foto `32c8fb0`).
 
 **Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
-un `cp` manual puntual antes de este deploy (ver sesión de abajo), pero falta el T6 completo
+un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 completo
 (script + cron + restore de prueba verificado, `deploy.md` §7).
 
 **Pendiente, no bloqueante:**
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
   bloqueado por el clasificador de permisos, lo borra el usuario.
-- Fiados — ver `backlog.md`. El bug de conteo, la cajita "Menús de hoy" y el botón **"Agregar
-  manual" ya están hechos** (sesiones de abajo), **pendientes de deploy**.
+- Fiados — ver `backlog.md`.
 
 ---
 
@@ -66,7 +64,8 @@ pedidos"/"Menús reservados".
 - `scripts/test-agregar-manual.js` (sesión anterior) sigue en 19/19, sin regresiones.
 - **430/430 jest** (423 + 7 nuevos de `contarUnidadesMenu`).
 
-**Estado:** hecho, **pendiente de deploy** (junto con "Agregar manual" de la sesión anterior).
+**Estado:** hecho y **desplegado** — el usuario juntó este commit (`14ce74f`) con `bc593a4`
+("Agregar manual") en un solo deploy el 2026-08-18.
 
 ---
 
@@ -109,10 +108,8 @@ badge "💵 Efectivo" contradictorio, que la sección obligatoria del menú sigu
 envío si falta elegirla (ISS-046), y 0 errores de consola. `tests/cola-dia.test.js` necesitó
 agregar `es_manual` a su schema in-memory. **423/423 jest** sin regresiones.
 
-**Estado:** hecho, commit `bc593a4` pusheado a `main`. **Pendiente de deploy** — el usuario avisó
-que lo hace en la tarde de este mismo día (2026-08-18), por la consola web o SSH como siempre.
-Cierre de sesión: recordar preguntar en la próxima si ya quedó desplegado, y anotar la respuesta
-acá con commit + fecha (regla de `deploy.md`/`.claude/CLAUDE.md`).
+**Estado:** hecho y **desplegado** — el usuario confirmó el deploy el 2026-08-18 en la tarde,
+junto con `14ce74f` (fix del conteo de menús, sesión de arriba) en un solo commit desplegado.
 
 ---
 
