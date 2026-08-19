@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-18
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-19
 
 **Lo que está en producción** — tres deploys entre el 17 y el 18 de agosto, todos confirmados
 por el usuario:
@@ -12,13 +12,15 @@ por el usuario:
 | 2026-08-17 | `a47d132` | **T0** (`BUILD` automático por hash), **ISS-045** (link del menú con mayúscula), **ISS-046** (plato exige sección condicional — arroz sin proteína) y, de paso, lo que venía pendiente de antes: **ISS-044 + T11** (versionado de assets / precache del SW) |
 | 2026-08-18 | `9c9de62` + `32c8fb0` | **«Descargar menú» como foto** para compartir por WhatsApp (+ el copy del pie: «Reserva ahora») |
 | 2026-08-18 | `bc593a4` + `14ce74f` | Botón **"Agregar manual"** en la Cola del día + **fix del conteo de menús** ("Menús pedidos"/"Menús reservados") + tarjeta nueva **"Menús de hoy"**. Ver las 2 sesiones de hoy más abajo |
+| 2026-08-19 | `7803818` | **ISS-047** — modalidad por menú (para llevar / comer acá por línea, no por pedido entero). Confirmado desplegado por el usuario. |
 
 **Pendiente de deploy:**
-- **ISS-047** (modalidad por menú). 🔴 **Rojo**: toca Cola del día y Cocina, y trae migración.
-  Fuera de la ventana 12:00–18:00.
-- **Pensionistas Fase 1** (panel del owner). 🟢 Verde en sí mismo, pero **`pensionista.html` aún
-  no existe**: si se despliega solo, un pensionista que inicie sesión cae en un 404. Ver el aviso
-  en la sesión 2026-08-19 parte 2.
+- **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html`). 🟢 El riesgo que había
+  anotado ayer —desplegar la Fase 1 sola dejaba a un pensionista cayendo en 404— **ya no aplica**:
+  `pensionista.html` se construyó hoy (parte 3), así que las dos fases están completas y se
+  despliegan juntas. Sin commitear todavía.
+- **ISS-048** (sin volver desde "¿Cómo vas a pagar?" en `menu.html`) — diagnosticado, sin
+  implementar. Ver `issues/ISS-048-sin-volver-desde-pago.md`.
 
 **Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
 un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 completo
@@ -31,6 +33,46 @@ un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 compl
 - **Sin verificar en uso real:** nadie usó todavía «Descargar menú» en un servicio. Falta
   que la dueña baje una foto y la comparta, y confirmar que el pie muestra
   `menupro.tech/<slug>` con el slug real.
+- Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
+  `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-19 (parte 3) — Pensionistas, Fase 2: `pensionista.html`
+
+**Prompt del usuario:** pull seguro al empezar (traía ISS-047 y Pensionistas Fase 1 de la otra
+laptop, confirmó ISS-047 ya desplegado), una pregunta de negocio sobre si tiene sentido separar
+modalidad por línea también en reservas (se anotó la respuesta, sin tocar código), otra sobre si
+la dueña ya ve el saldo de cada pensionista (sí, desde la Fase 1; se le explicó que el ledger de
+movimientos ya soporta cualquier reporte futuro sin rediseñar nada), un bug reportado de
+`menu.html` (sin forma de volver desde "¿Cómo vas a pagar?" — anotado como **ISS-048**, sin
+implementar) y, por último, "terminemos la parte B de los pensionistas".
+
+**Mockup primero** (como en ISS-047): 6 pantallas armadas con el CSS real de `menu.html`, dos
+decisiones marcadas para aprobar — <https://claude.ai/code/artifact/10d9848f-0a00-4ff6-a5f6-44aa50452038>.
+El usuario aprobó sin objetar los defaults propuestos (modalidad a nivel de pedido completo, no
+por ítem; cancelar sin ventana de tiempo) y dio luz verde a implementar.
+
+**Lo hecho:** `public/pensionista.html` nuevo — saldo siempre visible, menú del día + carta
+(mismo `MenuModal` que `menu.html`, sin duplicar la lógica de secciones/validación condicional),
+confirmar sin pantalla de pago, "Mis pedidos" con estado en vivo y cancelar. `public/css/pensionista.css`
+nuevo, capa sobre los tokens de `menu.css`. Detalle de decisiones y arquitectura en `features.md`.
+
+**Lo que no era obvio hasta mirar el código:** `pensionista.html` no estaba en la lista de
+archivos a los que `app.js` les inyecta `__BUILD__` (`PLANTILLAS`), ni en el hash que lo calcula
+(`utils/buildVersion.js` `RUTAS`) — de no corregirlo, el archivo hubiera quedado sirviendo el
+placeholder `__BUILD__` literal en sus URLs de CSS/JS y expuesto exactamente al bug de fondo de
+ISS-044 (versiones mezcladas por caché). Se sumó a ambos + al precache del SW.
+
+**Verificación:** `scripts/test-pensionista-cliente.js` nuevo — **29/29** (flujo feliz, saldo
+insuficiente, baja lógica, sin sesión, sin overflow a 360px, touch targets ≥44px) + 449/449 jest
++ `test-panel-pensionistas` 30/30 y `test-modalidad-mixta` 19/19 sin regresiones. Un bug propio
+del test (no del producto): las dos pensionistas de prueba se logueaban reusando el mismo
+contexto de Playwright que el owner, pisándole la cookie de sesión a mitad de la corrida —
+corregido usando un contexto de browser propio por login.
+
+**Pendiente:** commitear y avisar al usuario para que confirme cuándo lo despliega (junto con la
+Fase 1, que sigue sin deployar).
 
 ---
 

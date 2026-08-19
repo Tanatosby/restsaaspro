@@ -6,15 +6,21 @@
 
 ---
 
-## 0-bis. ESTADO DE IMPLEMENTACIÓN (actualizado 2026-08-11 noche)
+## 0-bis. ESTADO DE IMPLEMENTACIÓN (actualizado 2026-08-19)
 
-Backend del MVP (fase 1, sección 10) **implementado y probado** (723/723 jest):
+Backend del MVP (fase 1, sección 10) **implementado y probado** (723/723 jest en su momento,
+449/449 hoy):
 tablas + rol (§3), CRUD del owner (§6, `routes/pensionistas.js`), pedido con descuento de saldo y
 bloqueo por saldo insuficiente (§4/§7, `routes/pensionista.js`), cancelación con devolución de
 saldo+stock (§7, `utils/pensionistaPedido.js`). Detalle en `status.md` sesión 2026-08-11 parte 7.
 
-**Falta del MVP:** integración en Cola del día/Cocina (§5), `login.html` `ROLE_REDIRECT` (§2),
-`pensionista.html` (§9), panel del owner en `owner.html` (§6), reportería separada (§8).
+**✅ Completado 2026-08-19:** `login.html` `ROLE_REDIRECT` (§2) · panel del owner en `owner.html`
+(§6, Fase 1) · `pensionista.html` (§9, Fase 2) — pedir con saldo, sin pantalla de pago, "Mis
+pedidos" con estado en vivo y cancelación. Ver `features.md` y `status.md` sesión 2026-08-19.
+
+**Falta del MVP:** integración en Cola del día/Cocina (§5) — los pedidos de pensionista no
+aparecen todavía en la cola unificada del cocinero, solo en "Mis pedidos" y en el panel del
+owner — y reportería separada (§8).
 
 **Requisito previo cerrado (2026-08-12):** `ISS-033`. El rol `pensionista` dejaba al
 descubierto 7 rutas de `orders.js`/`reservations.js` que pedían login pero no permisos —

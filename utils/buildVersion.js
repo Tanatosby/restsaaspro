@@ -29,7 +29,7 @@ const PUBLIC = path.join(__dirname, '..', 'public');
 // Los mismos archivos que el SW precachea + los HTML que los referencian.
 // sw.js queda afuera a propósito: en disco guarda el placeholder __BUILD__,
 // así que su contenido no puede depender de su propio hash (recursión).
-const RUTAS = ['owner.html', 'menu.html', 'css/owner.css', 'css/menu.css', 'js'];
+const RUTAS = ['owner.html', 'menu.html', 'pensionista.html', 'css/owner.css', 'css/menu.css', 'css/pensionista.css', 'js'];
 
 function calcular() {
   const h = crypto.createHash('sha1');

@@ -1,7 +1,48 @@
 # Features — Menú Pro
 
+## Pensionistas — Fase 2: `pensionista.html` ✅ Completado 2026-08-19
+*Ver `pensionistas.md` §9. Backend y panel del owner (Fase 1) ya existían — esta fase construye
+la pantalla que le faltaba al propio pensionista.*
+
+Pantalla mobile-first propia (no un modo dentro de `menu.html` — decisión cerrada en
+`pensionistas.md` §0) donde el pensionista pide con su saldo, sin pasar por Yape/Plin/Efectivo.
+
+**Qué hace:** saldo siempre visible arriba (con aviso ámbar automático bajo el umbral del
+restaurante) · menú del día + carta, mismo componente que `menu.html` (`MenuModal`, secciones
+obligatorias, validación condicional ISS-046) · confirmar descuenta del saldo en el mismo paso,
+**sin pantalla de pago** · bloqueo con mensaje claro si el saldo no alcanza · pestaña "Mis
+pedidos" con estado en vivo (pendiente → en cocina → listo → entregado) y cancelar mientras no
+esté listo (devuelve saldo y stock) · pantalla de bloqueo si el owner dio de baja la cuenta.
+
+**Decisiones cerradas sobre el mockup** (<https://claude.ai/code/artifact/10d9848f-0a00-4ff6-a5f6-44aa50452038>):
+- El toggle "Aquí / Para llevar" es **a nivel de todo el pedido**, no por ítem como en ISS-047 —
+  `pedidos_pensionista.modalidad` es una sola columna, no hay tabla de líneas que la lleve
+  separada. A diferencia de `menu.html`, el pedido de pensionista **no cobra tapper** (el backend
+  de `POST /api/pensionista/pedido` nunca calculó ese cargo).
+- Sin campo "Tu nombre" en el carrito: el pensionista ya está logueado.
+- "Cancelar" no tiene ventana de tiempo (a diferencia de las reservas, 30 min antes de la hora de
+  llegada) — el pedido de pensionista no depende de una hora que la justifique. Se puede cancelar
+  mientras no esté listo/entregado/cancelado.
+
+**ARCH:** `public/pensionista.html` (página propia, mismo patrón que `menu.html`: script inline,
+sin depender de `public/js/modules/`) + `public/css/pensionista.css` (nuevo, capa sobre los
+tokens y componentes de `menu.css` — header, `card-carousel`, `drawer`, `confirm-screen`,
+`mod-seg` se reusan tal cual). Reusa `GET /api/public/menu` y `GET /api/public/carta` (los mismos
+que `menu.html`) en vez de endpoints nuevos, pasando el `id_restaurante` que ya viene en
+`GET /api/pensionista/me`. Sumado a `PLANTILLAS`/`RUTAS` (`app.js`, `utils/buildVersion.js`) y al
+precache del SW — sin esto, el archivo no habría recibido el `?v=<BUILD>` de cache-busting y
+habría quedado expuesto al mismo bug de fondo que motivó ISS-044.
+
+**Verificación:** `scripts/test-pensionista-cliente.js` nuevo — **29/29** (flujo feliz completo:
+pedir, confirmar sin pago, ver en "Mis pedidos", cancelar y que el saldo se devuelva; saldo
+insuficiente bloquea con mensaje claro; cuenta dada de baja muestra la pantalla de bloqueo; sin
+sesión redirige a login; sin overflow a 360px; touch targets ≥44px) + 449/449 jest +
+`test-panel-pensionistas` 30/30 y `test-modalidad-mixta` 19/19 sin regresiones.
+
+---
+
 ## Pensionistas — Fase 1: panel del owner ✅ Completado 2026-08-19
-*Ver `pensionistas.md` §6. **Fase 2 (`pensionista.html`) pendiente.***
+*Ver `pensionistas.md` §6.*
 
 El backend del módulo estaba **entero y montado desde el 2026-08-11** (12 endpoints con 3
 archivos de tests), pero no tenía **ni una sola pantalla**: `owner.html` no mencionaba la
@@ -359,20 +400,24 @@ definir: dónde vive el checkbox (registro vs. primer login), si aplica también
 requiere re-aceptación ante cambios de los términos, y el texto legal completo — ver detalle en
 `vision_negocio.md`.
 
-### Módulo Pensionistas (saldo prepagado + login propio)
-*Anotado 2026-07-15. **Lógica de negocio cerrada el 2026-08-10 — sin preguntas abiertas, listo para implementar.** Ver `pensionistas.md` §0 (manda sobre el resto de ese documento), `backlog.md` y Gap 20 en `vision_negocio.md`.*
+### Módulo Pensionistas — lo que falta tras las Fases 1 y 2
+*Anotado 2026-07-15, decisiones cerradas el 2026-08-10. **El núcleo ya está implementado** — ver
+las entradas "Pensionistas — Fase 1" y "Pensionistas — Fase 2" arriba (backend, panel del owner,
+`pensionista.html`, login). Ver `pensionistas.md` §0, `backlog.md` y Gap 20 en `vision_negocio.md`.*
 
-**Decisiones cerradas:** el pensionista es un usuario más creado desde el panel Usuarios (rol nuevo `pensionista`); el owner le carga el dinero y recarga cuando se acaba, sin límite; el pensionista entra por el login normal y pide desde `pensionista.html`, descontándose del saldo sin pantalla de pago; aviso de saldo bajo a S/20 (configurable); **saldo insuficiente bloquea el pedido**; y todos los usuarios del sistema pasan a requerir email `@menupro.tech` (hoy `routes/usuarios.js:50` acepta cualquier dominio). **Descartado:** el "v1 recortado" sin login, `id_usuario` nullable, y reutilizar `menu.html` con un modo pensionista. Mandar al pensionista a su propia página es una línea en el mapa `ROLE_REDIRECT` de `login.html:420`.
+Lo que queda de la spec original, sin construir todavía:
 
-Comensales recurrentes con saldo prepagado en dinero, administrado por el owner. El pensionista
-tiene login propio (nuevo rol `pensionista`, reutiliza el JWT/auth existente) y pide desde una
-pantalla mobile-first dedicada (`pensionista.html`) sin pasar por pago — el sistema descuenta el
-total de su saldo en el momento. Sus pedidos viven en tablas separadas de `ordenes`/`reservas`
-(`pensionistas`, `pensionista_movimientos`, `pedidos_pensionista`) pero aparecen unificados en
-Cola del día y Cocina con tag "🪪 Pensionista". Reportería separada (recargas vs. consumo) para no
-duplicar el ingreso ya contado al momento de la recarga. Quedan 3 decisiones de negocio por validar
-con el usuario antes de implementar (saldo insuficiente, alcance del menú, quién recarga) — ver
-`pensionistas.md` sección 11.
+- **Integración en Cola del día y Cocina** (`pensionistas.md` §5): los pedidos de
+  `pedidos_pensionista` hoy solo se ven desde "Mis pedidos" del propio pensionista y desde el
+  panel del owner. No aparecen unificados con órdenes/reservas en `pedidos.js`/`cocina.js` con el
+  tag "🪪 Pensionista" que la spec original preveía — el cocinero no los ve en la cola del día.
+- **Reportería separada** (`pensionistas.md` §8): recargas del período, consumo del período y
+  saldo total pendiente en el sistema (que es un pasivo: plata ya cobrada que "debe" en comida).
+  Sin esto, "Ganancias" en `reportes.js` sigue sin contar nada de pensionistas — ninguna
+  contabilidad rota, pero tampoco hay visibilidad de ese dinero.
+
+Ninguno de los dos bloquea el uso real: la dueña ya puede dar de alta pensionistas, recargarles,
+y ellos ya pueden pedir con su saldo. Quedan para cuando aparezca un caso real que los pida.
 
 ### ~~Nombre obligatorio en órdenes (paridad con reservas)~~ ✅ Completado 2026-07-13
 

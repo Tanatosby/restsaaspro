@@ -34,9 +34,10 @@ ISS-046, commit `a47d132` — ver `status.md`).
 | **T6** | **Backup de la BD** — 🟡 mínimo hecho el 2026-08-17 23:54 (`cp` manual antes del deploy de ISS-046, ver `status.md`); **falta el T6 completo** (script + cron + restore de prueba verificado, `deploy.md` §7) | Lo más riesgoso del proyecto. Ya se desplegaron **tres migraciones** sobre datos reales sin backup automático/verificado; el 2026-08-16 la respuesta a "¿restauramos?" fue *no hay* |
 | ~~—~~ | ~~"Menús de hoy": cajita nueva en Análisis, adicional a las 2 actuales, va primera, suma menús de órdenes + reservas cobrados + entregados, filtrado a hoy~~ | ✅ **Hecho y desplegado 2026-08-18** — primera tarjeta en `#stats-reportes`. Ver `status.md` |
 | ~~—~~ | ~~Botón "Agregar manual" en cola: mesa + selección de menús → directo a cocina~~ | ✅ **Hecho y desplegado 2026-08-18** — `es_manual` en `ordenes`, badge "🧾 Pedido manual · Confirmar pago al cobrar" propio (no depende de `efectivo_activo`). Ver `status.md` |
-| ~~ISS-047~~ | ~~Un menú para llevar y otro para comer acá — no se podían separar~~ | ✅ **Hecho 2026-08-19**, **pendiente de deploy** (🔴 rojo: toca Cola del día/Cocina + migración). Salió del día 5. De paso arregla un cobro de más: el envase se cobraba por el pedido entero. Ver `ISS-047` |
+| ~~ISS-047~~ | ~~Un menú para llevar y otro para comer acá — no se podían separar~~ | ✅ **Hecho y desplegado 2026-08-19** (`7803818`, confirmado por el usuario). Salió del día 5. De paso arregla un cobro de más: el envase se cobraba por el pedido entero. Ver `ISS-047` |
 | **PAGOS** | **Comprobante de Yape reutilizable** — hoy no hay ninguna detección de duplicados; dos personas pueden subir la misma captura. Pregunta de la señora el día 4 | 🟠 Prioridad del usuario. Diagnóstico hecho (ver `status.md` 2026-08-19): hashear el archivo al subirlo. **Ojo:** solo atrapa el archivo idéntico, no una recaptura |
-| **PENSIONISTAS** | **Fase 2 — `pensionista.html`**: saldo siempre visible, menú + carta, carrito → confirmar **sin pantalla de pago**, aviso si el saldo no alcanza, "Mis pedidos" en vivo (`pensionistas.md` §9). **Empezar por el mockup.** ~~Fase 1 (panel del owner) + `ROLE_REDIRECT`~~ ✅ **hecha 2026-08-19**, pendiente de deploy | 🟠 Prioridad del usuario. **Ojo:** hasta que exista esta página, un pensionista que inicie sesión cae en 404 — conviene desplegar las 2 fases juntas |
+| ~~PENSIONISTAS~~ | ~~Fase 2 — `pensionista.html`: saldo siempre visible, menú + carta, carrito → confirmar sin pantalla de pago, aviso si el saldo no alcanza, "Mis pedidos" en vivo~~ | ✅ **Hecha 2026-08-19**, **pendiente de deploy junto con la Fase 1** (panel del owner + `ROLE_REDIRECT`, también sin deployar). Las dos fases juntas ya cubren el flujo completo — sin el riesgo de 404 que había mientras faltaba esta página |
+| **ISS-048** | Sin forma de volver desde "¿Cómo vas a pagar?" en `menu.html` a la carta | 🟠 Reportado por el usuario 2026-08-19. Diagnosticado, sin implementar — ver `ISS-048` |
 | — | **Verificar en el servicio real** un pedido con 2 menús y la etiqueta "para llevar" | Los 3 críticos están en producción pero nadie los vio funcionar en un servicio de verdad |
 | **ISS-043** | El menú sin secciones obligatorias **cobra de menos** (ver sección propia) | Es de cobro, no de vista. Falta correr la consulta en producción para saber si aplica |
 | ~~—~~ | ~~Imagen descargable del menú para compartir por WhatsApp (complementaria al link)~~ | ✅ **Hecho y desplegado 2026-08-17** (`9c9de62` + `32c8fb0`) — botón «⬇ Descargar menú» en la card de Configuración de menús, `public/js/widgets/menu-export.js`. Sin backend. Ver `features.md`. Falta verlo usado en un servicio real |
@@ -412,14 +413,15 @@ grave es **T1**: la deja trabada **sin salida** al cerrar pedidos viejos de Yape
 
 ---
 
-## 🎯 Módulo Pensionistas — EN IMPLEMENTACIÓN (backend MVP: pasos 1-5 hechos, 2026-08-11 noche)
+## 🎯 Módulo Pensionistas — núcleo completo, quedan 2 piezas (actualizado 2026-08-19)
 
 > **Decisión del usuario, 2026-08-11 noche:** avanzar el mismo día pese al riesgo señalado más
 > arriba (víspera de la atención masiva). Confirmado explícitamente. El backend del MVP (tablas,
 > rol, CRUD del owner, pedido con descuento de saldo, cancelación con devolución) ya está hecho y
-> probado (723/723 jest). **Falta:** integración en Cola del día/Cocina, `login.html`
-> `ROLE_REDIRECT`, `pensionista.html`, panel del owner en `owner.html`, reportería separada. Ver
-> detalle en `status.md`, sesión 2026-08-11 parte 7.
+> probado. **Completado 2026-08-19:** `login.html` `ROLE_REDIRECT`, panel del owner en
+> `owner.html` (Fase 1), `pensionista.html` (Fase 2) — pendientes de deploy. **Falta:**
+> integración en Cola del día/Cocina, reportería separada — ninguna bloquea el uso real. Ver
+> detalle en `status.md`, sesiones 2026-08-11 parte 7 y 2026-08-19 partes 2 y 3.
 
 **Casi todo el target tiene pensionistas almorzando en su menú, y lo piden.** No es especulativo: es
 funcionalidad de segmento y probablemente un diferenciador, porque los sistemas de restaurante

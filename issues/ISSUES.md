@@ -16,7 +16,9 @@ _(vacío)_
 
 ## Fix pendiente (diagnosticado, sin implementar)
 
-_(vacío)_
+| ID | Título | Módulo | Prioridad |
+|----|--------|--------|-----------|
+| [ISS-048](ISS-048-sin-volver-desde-pago.md) | Sin forma de volver atrás desde "¿Cómo vas a pagar?" | `public/menu.html` | 🟠 Alta |
 
 ## Resueltos
 

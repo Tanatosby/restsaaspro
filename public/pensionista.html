@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Mi cuenta</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c8692a">
+  <!-- Fuentes sin bloquear el render — mismo patrón que menu.html (T11). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+  <!-- pensionista.css va DESPUÉS de menu.css: reusa sus tokens y componentes
+       (header, card-carousel, drawer, confirm-screen, mod-seg…) y solo agrega
+       lo propio de esta pantalla (barra de saldo, pestañas, historial). -->
+  <link rel="stylesheet" href="/css/menu.css?v=__BUILD__">
+  <link rel="stylesheet" href="/css/pensionista.css?v=__BUILD__">
+  <script src="/js/session.js?v=__BUILD__"></script>
+
+  <!-- ── Dark mode auto (sin flash) — igual que menu.html ── -->
+  <script>
+  (function () {
+    try {
+      document.documentElement.setAttribute('data-theme', 'auto');
+      var dark = matchMedia('(prefers-color-scheme: dark)').matches;
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta && dark) meta.setAttribute('content', '#1a1410');
+    } catch (_) {}
+  })();
+  </script>
+</head>
+<body>
+
+  <!-- ── Header: marca + saldo + aviso + pestañas ── -->
+  <div class="header">
+    <div class="pen-brand-row">
+      <div class="pen-brand" id="pen-brand">Cargando…</div>
+      <button class="pen-logout" onclick="logout()">Salir ⏻</button>
+    </div>
+    <div class="pen-saldo-bar" id="pen-saldo-bar">
+      <div class="pen-saldo-who"><span class="hi">Pensionista</span><span class="name" id="pen-nombre">—</span></div>
+      <div class="pen-saldo-amt"><span class="lbl">Tu saldo</span><br><span class="num" id="pen-saldo-num">S/ 0.00</span></div>
+    </div>
+    <div class="pen-aviso-banner" id="pen-aviso" style="display:none">⚠️ Tu saldo está por acabarse. Avísale al restaurante para recargar.</div>
+    <!-- Banner de horario cerrado (Gap 18) — mismo id/estilo que menu.html -->
+    <div id="horario-cerrado-banner" style="display:none;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;margin-bottom:0.65rem"></div>
+    <div class="pen-tabs">
+      <div class="pen-tab active" id="tab-pedir" onclick="switchTab('pedir')">🍽️ Pedir</div>
+      <div class="pen-tab" id="tab-mispedidos" onclick="switchTab('mispedidos')">📋 Mis pedidos</div>
+    </div>
+  </div>
+
+  <!-- ── Pedir: menú del día + carta ── -->
+  <div class="content" id="main-content">
+    <div class="skeleton-stack">
+      <div class="skel-card"><div class="skel skel-thumb"></div><div class="skel-lines"><div class="skel skel-line w-80"></div><div class="skel skel-line w-60"></div><div class="skel skel-line w-40"></div></div></div>
+      <div class="skel-card"><div class="skel skel-thumb"></div><div class="skel-lines"><div class="skel skel-line w-60"></div><div class="skel skel-line w-80"></div><div class="skel skel-line w-40"></div></div></div>
+    </div>
+  </div>
+
+  <!-- ── Mis pedidos: historial propio ── -->
+  <div class="content hidden" id="mispedidos-content"></div>
+
+  <!-- ── Sticky cart bar ── -->
+  <div class="cart-bar" id="cart-bar">
+    <button class="cart-btn" onclick="openDrawer()">
+      <div class="cart-btn-left">
+        <span class="cart-count" id="cart-count">0</span>
+        <span>Ver mi pedido</span>
+      </div>
+      <span id="cart-total-bar">S/ 0.00</span>
+    </button>
+  </div>
+
+  <!-- ── Cart drawer — sin pantalla de pago: confirma y descuenta del saldo ── -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+  <div class="drawer" id="cart-drawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-header">
+      <div class="drawer-title">Tu pedido</div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <!-- Modalidad a nivel de todo el pedido (no por ítem como en ISS-047):
+           `pedidos_pensionista.modalidad` es una sola columna — no hay tabla
+           de líneas que la lleve separada. Solo se muestra si el restaurante
+           ofrece para llevar. -->
+      <div id="pen-modalidad-wrap" style="display:none;margin-bottom:0.85rem">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem">¿Cómo lo vas a comer?</div>
+        <div class="mod-seg">
+          <button type="button" id="mod-btn-local" class="on" onclick="setModalidad('en_local')">🪑 Aquí</button>
+          <button type="button" id="mod-btn-llevar" onclick="setModalidad('para_llevar')">🥡 Para llevar</button>
+        </div>
+      </div>
+      <div id="drawer-items"></div>
+      <div class="pen-saldo-descuento">
+        <span class="lbl">Se descuenta de tu saldo<br><small id="pen-descuento-saldo-actual">Saldo actual: S/ 0.00</small></span>
+        <span class="monto" id="pen-descuento-monto">S/ 0.00</span>
+      </div>
+      <div class="pen-error-box" id="pen-error-saldo" style="display:none"></div>
+      <button class="btn-confirmar" id="btn-confirmar-pedido" onclick="confirmarPedido()" disabled>✓ Confirmar pedido</button>
+    </div>
+  </div>
+
+  <!-- ── Confirmación — SIN pantalla de pago: ya está pagado con el saldo ── -->
+  <div class="confirm-screen" id="confirm-screen">
+    <div class="confirm-icon">✅</div>
+    <div class="confirm-title">¡Pedido enviado!</div>
+    <div class="confirm-sub">Tu pedido ya está en camino a cocina. Descontamos el total de tu saldo, sin pasos extra.</div>
+    <div class="pen-saldo-restante-box"><div class="lbl">Tu nuevo saldo</div><div class="num" id="confirm-saldo-num">S/ 0.00</div></div>
+    <div id="confirm-actions" style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:0.75rem;margin-top:0.5rem">
+      <button class="btn-confirmar" onclick="irAMisPedidos()">📋 Ver mis pedidos</button>
+      <button class="btn-nuevo" onclick="cerrarConfirm()">Pedir algo más</button>
+    </div>
+  </div>
+
+  <!-- ── Modal de foto del plato — mismo markup que menu.html ── -->
+  <div class="photo-modal" id="photo-modal" role="dialog" aria-modal="true" aria-labelledby="photo-modal-name" onclick="closePhotoModal(event)">
+    <button class="photo-modal-close" onclick="closePhotoModal()" aria-label="Cerrar">✕</button>
+    <div class="photo-modal-inner" onclick="event.stopPropagation()">
+      <img class="photo-modal-img" id="photo-modal-img" src="" alt="">
+      <div class="photo-modal-name" id="photo-modal-name"></div>
+      <div class="photo-modal-desc" id="photo-modal-desc"></div>
+    </div>
+  </div>
+
+  <script src="/js/widgets/menu-modal.js?v=__BUILD__"></script>
+  <script>
+  // ── Auth guard ──────────────────────────────────────────
+  // leerSesion() vive en /js/session.js. Mismo patrón que el guard de
+  // owner.html: `throw` corta el resto del script en vez de dejar un
+  // TypeError críptico si algo intenta leer `pensionista` en null.
+  const _session = leerSesion();
+  if (!_session || _session.role !== 'pensionista') {
+    window.location.replace('/login.html');
+    throw new Error('Sin sesión de pensionista — redirigiendo a /login.html');
+  }
+
+  // ── Estado ────────────────────────────────────────────
+  let pensionista       = null;  // { nombre, apellido, saldo, activo, saldo_bajo, id_restaurante, restaurante }
+  let horarioInfo        = null;
+  let ofreceParaLlevar   = false;
+  let menusDia           = [];
+  let cartaCats          = [];
+  let menuSelections     = {};
+  let cartaQty           = {};
+  let cart               = [];
+  let pedidoModalidad    = 'en_local';
+  let currentTab         = 'pedir';
+
+  // ── API helper — igual criterio que utils.js, pero sin depender de él
+  // (esta página, como menu.html, no carga el módulo del panel del owner) ──
+  async function api(method, path, body) {
+    const opts = { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(path, opts);
+    if (res.status === 401) {
+      limpiarSesion();
+      window.location.replace('/login.html');
+      return;
+    }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error desconocido');
+    return data;
+  }
+
+  const esc   = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const toUTC = d => d.endsWith('Z') || d.includes('+') ? d : d.replace(' ', 'T') + 'Z';
+  const fDT   = d => d ? new Date(toUTC(d)).toLocaleString('es-PE', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZone:'America/Lima' }) : '—';
+
+  // ── Init ──────────────────────────────────────────────
+  async function init() {
+    try {
+      pensionista = await fetch('/api/pensionista/me', { credentials: 'same-origin' }).then(r => r.json());
+      if (pensionista.error) throw new Error(pensionista.error);
+
+      document.getElementById('pen-brand').textContent  = pensionista.restaurante || 'Mi restaurante';
+      document.title = pensionista.restaurante || 'Mi cuenta';
+      document.getElementById('pen-nombre').textContent = `${pensionista.nombre} ${pensionista.apellido || ''}`.trim();
+      pintarSaldoBar();
+
+      // Baja lógica: el owner desactivó la cuenta — el backend ya bloquea el
+      // POST /pedido, acá solo evitamos que llegue a intentarlo.
+      if (!pensionista.activo) { mostrarBloqueado(); return; }
+
+      const hoyLima = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date());
+      const [restData, menuData, cartaData] = await Promise.all([
+        fetch(`/api/public/restaurante/${pensionista.id_restaurante}`).then(r => r.json()),
+        fetch(`/api/public/menu?restaurante=${pensionista.id_restaurante}&dia=${hoyLima}`).then(r => r.json()),
+        fetch(`/api/public/carta?restaurante=${pensionista.id_restaurante}`).then(r => r.json()),
+      ]);
+
+      horarioInfo      = restData.horario || null;
+      ofreceParaLlevar = !!(restData.modalidades && restData.modalidades.para_llevar);
+      document.getElementById('pen-modalidad-wrap').style.display = ofreceParaLlevar ? 'block' : 'none';
+      actualizarHorarioBanner();
+
+      // Colores del restaurante — mismo criterio que menu.html
+      if (restData.color_primario) {
+        document.documentElement.style.setProperty('--accent', restData.color_primario);
+        document.documentElement.style.setProperty('--accent-dark', restData.color_primario);
+      }
+      if (restData.color_secundario) {
+        document.documentElement.style.setProperty('--green', restData.color_secundario);
+      }
+
+      menusDia  = Array.isArray(menuData)  ? menuData  : [];
+      cartaCats = Array.isArray(cartaData) ? cartaData : [];
+      renderPedirContent();
+    } catch (e) {
+      document.getElementById('main-content').innerHTML =
+        `<div class="loading-screen"><div class="empty-msg"><div class="icon">⚠️</div>${esc(e.message)}</div></div>`;
+    }
+  }
+
+  function mostrarBloqueado() {
+    document.querySelector('.pen-tabs').style.display = 'none';
+    document.getElementById('main-content').innerHTML = `
+      <div class="pen-blocked">
+        <div class="icon">🔒</div>
+        <h2>Tu cuenta está de baja</h2>
+        <p>El restaurante desactivó tu cuenta de pensionista. Si crees que es un error, habla con ellos directamente.</p>
+      </div>`;
+  }
+
+  function pintarSaldoBar() {
+    document.getElementById('pen-saldo-num').textContent = `S/ ${Number(pensionista.saldo).toFixed(2)}`;
+    document.getElementById('pen-saldo-bar').classList.toggle('low', !!pensionista.saldo_bajo);
+    document.getElementById('pen-aviso').style.display = pensionista.saldo_bajo ? 'flex' : 'none';
+  }
+
+  // Refresca saldo + saldo_bajo desde el servidor — más confiable que
+  // calcularlo en el cliente después de un pedido/cancelación, porque el
+  // umbral de aviso (`pensionista_saldo_aviso`) vive en el backend.
+  async function refreshMe() {
+    const data = await fetch('/api/pensionista/me', { credentials: 'same-origin' }).then(r => r.json());
+    pensionista = data;
+    pintarSaldoBar();
+  }
+
+  function actualizarHorarioBanner() {
+    const cerrado = !!(horarioInfo && horarioInfo.activo && !horarioInfo.abierto_ahora);
+    const banner  = document.getElementById('horario-cerrado-banner');
+    banner.style.display = cerrado ? 'block' : 'none';
+    banner.textContent   = cerrado ? `🕐 ${horarioInfo.mensaje}` : '';
+  }
+
+  // ── Pestañas ──────────────────────────────────────────
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tab-pedir').classList.toggle('active', tab === 'pedir');
+    document.getElementById('tab-mispedidos').classList.toggle('active', tab === 'mispedidos');
+    document.getElementById('main-content').classList.toggle('hidden', tab !== 'pedir');
+    document.getElementById('mispedidos-content').classList.toggle('hidden', tab !== 'mispedidos');
+    document.getElementById('cart-bar').style.display = (tab === 'pedir' && cart.length > 0) ? 'block' : 'none';
+    if (tab === 'mispedidos') loadMisPedidos();
+  }
+
+  // ════════════════════════════════════════════════
+  // PEDIR — mismo patrón visual que menu.html (card-carousel,
+  // menu-dia-card, plato-carta-card, MenuModal), sin el modo "reservar".
+  // ════════════════════════════════════════════════
+  function renderPedirContent() {
+    const content  = document.getElementById('main-content');
+    const hasMenus = menusDia.length > 0;
+    const hasCarta = cartaCats.some(c => c.platos?.length > 0);
+
+    if (!hasMenus && !hasCarta) {
+      content.innerHTML = `<div class="empty-msg"><div class="icon">🍽️</div>El menú de hoy aún no está disponible.</div>`;
+      return;
+    }
+
+    let html = '';
+    if (hasMenus) {
+      html += `<div class="section-block"><div class="section-title">Menú de hoy</div><div class="card-carousel">`;
+      menusDia.forEach(m => { html += renderMenuDiaCard(m); });
+      html += `</div></div>`;
+    }
+    cartaCats.forEach(cat => {
+      if (!cat.platos?.length) return;
+      html += `<div class="section-block"><div class="section-title">${esc(cat.nombre)}</div><div class="card-carousel">`;
+      cat.platos.forEach(p => { html += renderPlatoCarta(p); });
+      html += `</div></div>`;
+    });
+    content.innerHTML = html;
+    cartaCats.forEach(cat => cat.platos?.forEach(p => updateQtyDisplay(p.id)));
+  }
+
+  function renderMenuDiaCard(m) {
+    const fotoUrl = m.url_foto_portada
+      || m.secciones.flatMap(s => s.platos).find(p => p.url_foto)?.url_foto;
+    const secPills = m.secciones.map(s => `<span class="menu-dia-pill">${esc(s.nombre_seccion)}</span>`).join('');
+    const foto = fotoUrl ? `<img src="${fotoUrl}" alt="${esc(m.nombre)}">` : `<div class="menu-dia-photo-ph">🍽️</div>`;
+
+    return `<div class="menu-dia-card" onclick="abrirMenuModal(${m.id})">
+      <div class="menu-dia-photo">
+        ${foto}
+        <span class="menu-dia-price-badge">S/ ${Number(m.precio).toFixed(2)}</span>
+      </div>
+      <div class="menu-dia-body">
+        <div class="menu-dia-name">${esc(m.nombre)}</div>
+        <div class="menu-tipo">${m.elegible ? 'Elige tus platos' : 'Menú fijo'}</div>
+        <div class="menu-dia-pills">${secPills}</div>
+        <button class="btn-add-menu" onclick="event.stopPropagation();abrirMenuModal(${m.id})">Ver opciones →</button>
+      </div>
+    </div>`;
+  }
+
+  function renderPlatoCarta(p) {
+    const foto = p.url_foto ? `<img src="${p.url_foto}" alt="${esc(p.nombre)}">` : `<div class="plato-carta-photo-ph">🍽️</div>`;
+    const onclickFoto = p.url_foto
+      ? ` onclick="openPhotoModal('${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')"`
+      : '';
+    return `<div class="plato-carta-card">
+      <div class="plato-carta-photo"${onclickFoto}>${foto}</div>
+      <div class="plato-carta-body">
+        <div class="plato-carta-name">${esc(p.nombre)}</div>
+        ${p.descripcion ? `<div class="plato-carta-desc">${esc(p.descripcion)}</div>` : ''}
+        <div class="plato-carta-price">S/ ${Number(p.precio).toFixed(2)}</div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty(${p.id},${p.precio},'${esc(p.nombre)}',-1)">−</button>
+          <span class="qty-num" id="qty-${p.id}">0</span>
+          <button class="qty-btn add" onclick="changeQty(${p.id},${p.precio},'${esc(p.nombre)}',1)">+</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // MenuModal (widgets/menu-modal.js) llama a estas dos con la firma
+  // `(mode, ...)` — acá `mode` se ignora, hay un solo carrito. Se abre
+  // siempre con mode:'pedir' (ver abrirMenuModal) para que el widget arme
+  // los `name` de los radios con el prefijo 'p', igual que menu.html.
+  function selectMenuPlato(mode, menuId, seccionId, componenteId, nombrePlato, nombreSeccion, precio, idMenuDia) {
+    if (!menuSelections[menuId]) menuSelections[menuId] = {};
+    menuSelections[menuId][seccionId] = { id_componente: componenteId, id_menu_dia: idMenuDia, nombre: nombrePlato, seccion: nombreSeccion };
+  }
+
+  function agregarMenu(mode, menuId, elegible, precio, nombreMenu) {
+    const menu = menusDia.find(m => m.id === menuId);
+    if (!menu) return;
+
+    if (elegible) {
+      const requeridas = menu.secciones.filter(s => s.requerido);
+      for (const s of requeridas) {
+        if (!menuSelections[menuId]?.[s.id_seccion]) { showMsg(`Selecciona: ${s.nombre_seccion}`, true); return; }
+      }
+      // Validación condicional por plato (ISS-046) — mismo criterio que menu.html.
+      for (const seccionId of Object.keys(menuSelections[menuId] || {})) {
+        const seccionOrigen = menu.secciones.find(s => s.id_seccion === Number(seccionId));
+        const plato = seccionOrigen?.platos.find(p => p.id_componente === menuSelections[menuId][seccionId].id_componente);
+        if (plato?.requiere_seccion_id && !menuSelections[menuId]?.[plato.requiere_seccion_id]) {
+          const seccionExigida = menu.secciones.find(s => s.id_seccion === plato.requiere_seccion_id);
+          showMsg(`"${plato.nombre}" también necesita que elijas: ${seccionExigida?.nombre_seccion || 'otra sección'}`, true);
+          return;
+        }
+      }
+    }
+
+    const selections = menuSelections[menuId] || {};
+    const subs      = Object.values(selections).map(v => v.nombre).join(', ');
+    const menuItems = Object.values(selections).map(v => ({ id_componente: v.id_componente, id_menu_dia: v.id_menu_dia, cantidad: 1 }));
+    const allItems  = menu.secciones.flatMap(s => s.platos.map(p => ({ id_componente: p.id_componente, id_menu_dia: menuId, cantidad: 1 })));
+
+    cart.push({
+      type: 'menu', label: nombreMenu, subLabel: subs || 'Menú fijo',
+      precio: parseFloat(precio),
+      payload: { menuItems: elegible ? menuItems : allItems }
+    });
+
+    menuSelections[menuId] = {};
+    document.querySelectorAll(`input[name^="p-sec-${menuId}-"]`).forEach(r => r.checked = false);
+    updateCart();
+    showMsg('¡Menú agregado!');
+    return true;
+  }
+
+  function abrirMenuModal(menuId) {
+    const menu = menusDia.find(m => m.id === menuId);
+    if (!menu) return;
+    menuSelections[menuId] = {};
+    MenuModal.open({ menu, mode: 'pedir' });
+  }
+
+  // ── Carta qty ─────────────────────────────────────────
+  function changeQty(platoId, precio, nombre, delta) {
+    const next = Math.max(0, (cartaQty[platoId] || 0) + delta);
+    cartaQty[platoId] = next;
+    updateQtyDisplay(platoId);
+
+    const idx = cart.findIndex(i => i.type === 'carta' && i.platoId === platoId);
+    if (idx > -1) cart.splice(idx, 1);
+    if (next > 0) cart.push({
+      type: 'carta', platoId, label: nombre, subLabel: `x${next}`,
+      precio: precio * next, cantidad: next,
+      payload: { id_plato_carta: platoId, cantidad: next }
+    });
+    updateCart();
+  }
+
+  function updateQtyDisplay(platoId) {
+    const el = document.getElementById(`qty-${platoId}`);
+    if (el) el.textContent = cartaQty[platoId] || 0;
+  }
+
+  // ── Modalidad del pedido (a nivel de todo el pedido) ───
+  function setModalidad(m) {
+    pedidoModalidad = m;
+    document.getElementById('mod-btn-local').classList.toggle('on', m === 'en_local');
+    document.getElementById('mod-btn-llevar').classList.toggle('on', m === 'para_llevar');
+  }
+
+  // ── Carrito / drawer ────────────────────────────────
+  function openDrawer() {
+    document.getElementById('cart-drawer').classList.add('open');
+    document.getElementById('drawer-backdrop').classList.add('open');
+    updateCart();
+  }
+  function closeDrawer() {
+    document.getElementById('cart-drawer').classList.remove('open');
+    document.getElementById('drawer-backdrop').classList.remove('open');
+  }
+
+  function removeCartItem(idx) {
+    const item = cart[idx];
+    if (item.type === 'carta') { cartaQty[item.platoId] = 0; updateQtyDisplay(item.platoId); }
+    cart.splice(idx, 1);
+    updateCart();
+  }
+
+  function updateCart() {
+    const total = cart.reduce((s, i) => s + i.precio, 0);
+    const count = cart.length;
+
+    document.getElementById('cart-count').textContent     = count;
+    document.getElementById('cart-total-bar').textContent = `S/ ${total.toFixed(2)}`;
+    if (currentTab === 'pedir')
+      document.getElementById('cart-bar').style.display = count > 0 ? 'block' : 'none';
+
+    const itemsEl = document.getElementById('drawer-items');
+    itemsEl.innerHTML = count
+      ? cart.map((item, idx) => `
+        <div class="cart-item">
+          <div class="cart-item-info">
+            <div class="cart-item-name">${esc(item.label)}</div>
+            <div class="cart-item-sub">${esc(item.subLabel)}</div>
+          </div>
+          <span class="cart-item-price">S/ ${item.precio.toFixed(2)}</span>
+          <button class="cart-remove" onclick="removeCartItem(${idx})">×</button>
+        </div>`).join('')
+      : `<div class="empty-msg"><div class="icon">🛒</div>Tu pedido está vacío</div>`;
+
+    document.getElementById('pen-descuento-monto').textContent        = `S/ ${total.toFixed(2)}`;
+    document.getElementById('pen-descuento-saldo-actual').textContent = `Saldo actual: S/ ${Number(pensionista.saldo).toFixed(2)}`;
+
+    const alcanza = total <= pensionista.saldo;
+    const errBox  = document.getElementById('pen-error-saldo');
+    if (count > 0 && !alcanza) {
+      errBox.style.display = 'block';
+      errBox.textContent   = `⚠️ Saldo insuficiente. Tu saldo es S/ ${Number(pensionista.saldo).toFixed(2)} y este pedido cuesta S/ ${total.toFixed(2)}. Habla con ${esc(pensionista.restaurante || 'el restaurante')} para recargar.`;
+    } else {
+      errBox.style.display = 'none';
+    }
+
+    document.getElementById('btn-confirmar-pedido').disabled = !count || !alcanza;
+  }
+
+  async function confirmarPedido() {
+    if (!cart.length) return;
+    if (horarioInfo && horarioInfo.activo && !horarioInfo.abierto_ahora)
+      return showMsg(horarioInfo.mensaje, true);
+
+    const cartaItems = cart.filter(i => i.type === 'carta').map(i => ({ id_plato_carta: i.platoId, cantidad: i.cantidad }));
+    const menuItems  = cart.filter(i => i.type === 'menu').flatMap(i => i.payload.menuItems);
+
+    const btn = document.getElementById('btn-confirmar-pedido');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const data = await api('POST', '/api/pensionista/pedido', {
+        modalidad: pedidoModalidad, carta_items: cartaItems, menu_items: menuItems
+      });
+      cart = []; cartaQty = {}; menuSelections = {}; pedidoModalidad = 'en_local';
+      setModalidad('en_local');
+      closeDrawer();
+      document.getElementById('confirm-saldo-num').textContent = `S/ ${Number(data.saldo_restante).toFixed(2)}`;
+      document.getElementById('confirm-screen').classList.add('show');
+      await refreshMe();
+      updateCart();
+    } catch (e) {
+      showMsg(e.message, true);
+    } finally {
+      btn.textContent = '✓ Confirmar pedido';
+    }
+  }
+
+  function cerrarConfirm() {
+    document.getElementById('confirm-screen').classList.remove('show');
+  }
+  function irAMisPedidos() {
+    cerrarConfirm();
+    switchTab('mispedidos');
+  }
+
+  // ════════════════════════════════════════════════
+  // MIS PEDIDOS — historial propio con estado en vivo
+  // ════════════════════════════════════════════════
+  async function loadMisPedidos() {
+    const el = document.getElementById('mispedidos-content');
+    el.innerHTML = `<div class="loading-screen"><div class="spinner"></div></div>`;
+    try {
+      const pedidos = await api('GET', '/api/pensionista/mis-pedidos');
+      renderMisPedidos(pedidos);
+    } catch (e) {
+      el.innerHTML = `<div class="empty-msg"><div class="icon">⚠️</div>${esc(e.message)}</div>`;
+    }
+  }
+
+  function chipEstado(p) {
+    if (p.es_cancelado) return { cls: 'cancel', label: '✗ Cancelado' };
+    if (p.es_entregado) return { cls: 'done',   label: '✔️ Entregado' };
+    if (p.es_listo)     return { cls: 'ready',  label: '🔔 Listo' };
+    if (p.es_en_cocina) return { cls: 'cook',   label: '👨‍🍳 En cocina' };
+    return { cls: 'wait', label: '🕐 Pendiente' };
+  }
+
+  function renderMisPedidos(pedidos) {
+    const el = document.getElementById('mispedidos-content');
+    if (!pedidos.length) {
+      el.innerHTML = `<div class="empty-msg"><div class="icon">📋</div>Todavía no hiciste ningún pedido.</div>`;
+      return;
+    }
+    el.innerHTML = `<div class="pen-historial-list">${pedidos.map(p => {
+      const chip  = chipEstado(p);
+      const items = [
+        ...p.menu_items.map(m => m.plato),
+        ...p.carta_items.map(c => c.cantidad > 1 ? `${c.nombre} x${c.cantidad}` : c.nombre)
+      ].join(', ');
+      // Se puede cancelar mientras no esté listo/entregado/cancelado — sin
+      // ventana de tiempo (a diferencia de las reservas): el pedido de
+      // pensionista no depende de una hora de llegada que lo justifique.
+      const puedeCancelar = !p.es_cancelado && !p.es_listo && !p.es_entregado;
+      return `<div class="pen-ped-card">
+        <div class="pen-ped-top">
+          <span class="pen-ped-fecha">${fDT(p.created_at)}</span>
+          <span class="pen-chip ${chip.cls}">${chip.label}</span>
+        </div>
+        <div class="pen-ped-items">${esc(items || 'Sin ítems')}</div>
+        <div class="pen-ped-bottom">
+          <span class="pen-ped-total">S/ ${Number(p.total).toFixed(2)}</span>
+          ${puedeCancelar ? `<button class="pen-ped-cancel" onclick="cancelarPedido(${p.id})">Cancelar</button>` : ''}
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  async function cancelarPedido(id) {
+    try {
+      await api('PATCH', `/api/pensionista/pedido/${id}/cancelar`);
+      await refreshMe();
+      showMsg('Pedido cancelado, saldo devuelto');
+      loadMisPedidos();
+    } catch (e) {
+      showMsg(e.message, true);
+    }
+  }
+
+  // ── Modal de foto del plato ─────────────────────────
+  function openPhotoModal(url, nombre, descripcion) {
+    const modal = document.getElementById('photo-modal');
+    document.getElementById('photo-modal-img').src  = url;
+    document.getElementById('photo-modal-img').alt  = nombre || '';
+    document.getElementById('photo-modal-name').textContent = nombre || '';
+    document.getElementById('photo-modal-desc').textContent = descripcion || '';
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePhotoModal(event) {
+    if (event && event.currentTarget && event.target !== event.currentTarget && !event.target.classList.contains('photo-modal-close')) return;
+    document.getElementById('photo-modal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      const m = document.getElementById('photo-modal');
+      if (m && m.classList.contains('open')) closePhotoModal();
+    }
+  });
+
+  // ── Header shrink al hacer scroll — mismo detalle que menu.html ──
+  (function setupHeaderShrink() {
+    let ticking = false;
+    const update = () => {
+      const header = document.querySelector('.header');
+      if (header) header.classList.toggle('shrunk', window.scrollY > 60);
+      ticking = false;
+    };
+    window.addEventListener('scroll', () => {
+      if (!ticking) { requestAnimationFrame(update); ticking = true; }
+    }, { passive: true });
+  })();
+
+  // ── Toast ────────────────────────────────────────────
+  let msgTimer;
+  function showMsg(text, isErr = false) {
+    let el = document.getElementById('msg-toast');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'msg-toast';
+      el.style.cssText = `position:fixed;bottom:110px;left:50%;transform:translateX(-50%);
+        padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;
+        z-index:200;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.15);
+        transition:opacity 0.3s;pointer-events:none`;
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.style.background = isErr ? '#c0392b' : '#1c1712';
+    el.style.color = 'white'; el.style.opacity = '1';
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(() => el.style.opacity = '0', 2500);
+  }
+
+  // ── Logout ───────────────────────────────────────────
+  async function logout() {
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); }
+    finally { limpiarSesion(); window.location.replace('/login.html'); }
+  }
+
+  // ── Start ────────────────────────────────────────────
+  init();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+  </script>
+</body>
+</html>
