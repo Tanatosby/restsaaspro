@@ -76,7 +76,8 @@ function crearDB() {
     CREATE TABLE orden_menu_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       id_orden INTEGER, id_menu_dia INTEGER, id_componente INTEGER, cantidad INTEGER,
-      grupo INTEGER DEFAULT NULL
+      grupo INTEGER DEFAULT NULL,
+      modalidad TEXT DEFAULT 'en_local'
     );
     CREATE TABLE reserva_carta_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +86,8 @@ function crearDB() {
     CREATE TABLE reserva_menu_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       id_reserva INTEGER, id_menu_dia INTEGER, id_componente INTEGER, cantidad INTEGER,
-      grupo INTEGER DEFAULT NULL
+      grupo INTEGER DEFAULT NULL,
+      modalidad TEXT DEFAULT 'en_local'
     );
 
     INSERT INTO platos_carta (nombre, precio) VALUES ('Ceviche', 25.0);

@@ -17,7 +17,11 @@ const lineaPlatoCocina = i =>
     <span style="font-size:0.785714rem;color:var(--muted)">[${esc(i.seccion)}]</span>
   </div>`;
 
-const encabezadoMenuCocina = texto => `<div class="menu-grupo-head">${texto}</div>`;
+// El badge por menú solo se pinta cuando el pedido es mixto (ISS-047): si todo
+// va igual, el badge grande de arriba ya lo dijo y repetirlo en cada menú es ruido.
+let _cocinaMixto = false;
+const encabezadoMenuCocina = (texto, lineas) =>
+  `<div class="menu-grupo-head">${texto}${_cocinaMixto ? badgeModalidadMenu(lineas) : ''}</div>`;
 
 async function loadColaCocina() {
   const el = document.getElementById('cocina-cola');
@@ -78,6 +82,10 @@ async function loadColaCocina() {
 }
 
 function renderCocinaTicket(o) {
+  // ISS-047: un pedido puede tener un menú para llevar y otro no.
+  const conteoMod = contarMenusParaLlevar(o.menu_items);
+  _cocinaMixto = o.modalidad === 'mixto';
+
   const cartaLines = o.carta_items.map(i =>
     `<div class="order-item-line">🍽️ <strong>${esc(i.nombre)}</strong> ×${i.cantidad}</div>`
   ).join('');
@@ -91,7 +99,7 @@ function renderCocinaTicket(o) {
 
   // Para llevar / delivery cambia cómo se emplata y envasa — ISS-042.
   // En línea propia, no dentro del header: en 360px compite con el estatus.
-  const modBadge = badgeModalidad(o.modalidad, true);
+  const modBadge = badgeModalidad(o.modalidad, true, conteoMod);
 
   return `
     <div class="order-card" id="cocina-ord-${o.id}" style="border-left:4px solid ${o.es_inicial ? '#fbbf24' : '#3b82f6'}">
@@ -110,6 +118,10 @@ function renderCocinaTicket(o) {
 }
 
 function renderCocinaReserva(r) {
+  // ISS-047: una reserva también puede traer un menú para llevar y otro no.
+  const conteoMod = contarMenusParaLlevar(r.menu_items);
+  _cocinaMixto = r.modalidad === 'mixto';
+
   const menuLines = renderMenuAgrupado(r.menu_items, lineaPlatoCocina, encabezadoMenuCocina);
   const cartaLines = (r.carta_items || []).map(i =>
     `<div class="order-item-line">🍽️ <strong>${esc(i.nombre)}</strong> ×${i.cantidad}</div>`
@@ -124,7 +136,7 @@ function renderCocinaReserva(r) {
 
   // Igual que en las órdenes (ISS-042). En reservas además explica la falta de
   // mesa: para llevar y delivery nunca la tienen.
-  const modBadge = badgeModalidad(r.modalidad, true);
+  const modBadge = badgeModalidad(r.modalidad, true, conteoMod);
 
   return `
     <div class="order-card" id="cocina-res-${r.id}" style="border-left:4px solid #818cf8">

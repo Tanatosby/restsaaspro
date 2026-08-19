@@ -13,7 +13,8 @@ por el usuario:
 | 2026-08-18 | `9c9de62` + `32c8fb0` | **«Descargar menú» como foto** para compartir por WhatsApp (+ el copy del pie: «Reserva ahora») |
 | 2026-08-18 | `bc593a4` + `14ce74f` | Botón **"Agregar manual"** en la Cola del día + **fix del conteo de menús** ("Menús pedidos"/"Menús reservados") + tarjeta nueva **"Menús de hoy"**. Ver las 2 sesiones de hoy más abajo |
 
-**No queda nada pendiente de deploy.**
+**Pendiente de deploy:** **ISS-047** (modalidad por menú — sesión del 2026-08-19, abajo).
+🔴 **Rojo**: toca Cola del día y Cocina, y trae migración. Fuera de la ventana 12:00–18:00.
 
 **Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
 un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 completo
@@ -26,6 +27,63 @@ un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 compl
 - **Sin verificar en uso real:** nadie usó todavía «Descargar menú» en un servicio. Falta
   que la dueña baje una foto y la comparta, y confirmar que el pie muestra
   `menupro.tech/<slug>` con el slug real.
+
+---
+
+## 🎯 Sesión 2026-08-19 — ISS-047: un menú para llevar y otro para comer acá
+
+**Prompt del usuario:** tras el deploy del día anterior, planteó **tres frentes**: (1) cerrar la
+seguridad de pagos —la pregunta de la señora el día 4: *"¿qué pasa si un chico comparte su pago
+de Yape con otro y ambos envían la misma captura?"*—, (2) avanzar pensionistas para que tengan
+saldo en cuenta en vez de mandar foto o pagar en efectivo, y (3) un **error nuevo del día 5**:
+una persona pidió 2 menús, uno para llevar y otro para comer ahí, y el sistema no deja
+separarlos. Eligió arrancar por el (3).
+
+**Lo que se verificó de los otros dos, para retomarlos con datos** (ninguno tocado todavía):
+- **Pagos:** cero detección de duplicados. `routes/public.js` guarda el comprobante como
+  `comp-<id>-<timestamp>.jpg` y no compara nada. El agujero es real. Lo barato es hashear el
+  archivo al subirlo y avisar si ese hash ya se usó — **con la salvedad** de que un hash de
+  bytes solo atrapa el archivo idéntico (reenviar la misma imagen por WhatsApp, que es el caso
+  que ella describió); si el segundo le saca captura a la captura, el hash no lo agarra.
+- **Pensionistas:** el **backend ya está entero y montado** — `routes/pensionistas.js` (alta,
+  recarga, movimientos) y `routes/pensionista.js` (saldo, pedidos, pedir, cancelar), con 3
+  archivos de tests. Falta **todo el frontend**: `owner.html` no menciona la palabra ni una vez,
+  no existe `pensionista.html`, no hay módulo JS. Y `login.html:420` **no tiene `pensionista` en
+  `ROLE_REDIRECT`**, así que hoy un pensionista que entra va a `undefined`.
+
+**El diseño se cerró sobre mockups** de las **dos** vistas (pedido suyo: decidir también el lado
+del restaurante antes de tocar la app), renderizados con el CSS real:
+<https://claude.ai/code/artifact/80079977-29bb-4d6a-be75-7c0c5f8c192e>. Eligió **A2** (comensal)
+y **B2** (cocina). Una pregunta suya sobre A2 destapó un error en el mockup: mostraba «Todo
+aquí» marcado con un menú en «Para llevar», un estado imposible; se corrigió y se agregaron los
+3 estados del selector.
+
+**El cambio:** `modalidad` baja a las líneas (`utils/modalidadPedido.js` nuevo, compartido). La
+columna del pedido se conserva como resumen derivado con un valor nuevo, `mixto`, así que las 4
+vistas que hoy leen `o.modalidad` no se tocan. Detalle completo en `ISS-047` y `features.md`.
+
+**Dos cosas que aparecieron al implementar, ninguna pedida:**
+- **Un cobro de más que ya existía:** el envase se cobraba por el pedido entero. El caso del día
+  5 —1 para llevar + 1 para comer ahí— cobraba **2 tappers en vez de 1**.
+- **Las órdenes nunca validaron `para_llevar_activo`.** Con la modalidad por línea el hueco se
+  agrandaba, así que se cerró en órdenes y reservas sobre las líneas ya normalizadas.
+
+**Una regresión propia, detectada y corregida antes de terminar:** al pasar el cargo a "solo lo
+que se lleva", el **delivery** dejaba de cobrar envase — y en delivery viaja todo, así que todo
+va envasado. Se separó ese caso.
+
+**Verificación:** 19/19 unitarios nuevos + 19/19 E2E punta a punta + **449/449 jest**;
+`test-grupo-punta-a-punta` 13/13 y `test-menu-wizard` 51/51 sin regresiones. Las dos vistas se
+revisaron **por captura**, no solo por asserts.
+
+**Ojo con `scripts/test-gate-pago.js`:** falla en este entorno, pero **falla igual sin estos
+cambios** (comprobado con `git stash`). Es un fallo previo por datos locales del restaurante #1,
+no una regresión. También hardcodea el puerto **3311**, no respeta `PORT` — igual que
+`test-grupo-punta-a-punta.js`.
+
+**Fuera de alcance, a propósito:** el selector por menú se hizo en el **pedido** (el caso del
+día 5 es una orden de mesa). La **reserva** conserva su selector de pedido completo; el backend
+la normaliza igual y todas sus líneas heredan esa modalidad, así que no se rompe nada.
 
 ---
 

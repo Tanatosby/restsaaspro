@@ -81,8 +81,44 @@ function renderMenuAgrupado(menuItems, pintarLinea, pintarEncabezado) {
     const nombre = conNombre && delGrupo[0].menu_nombre
       ? ` · ${esc(delGrupo[0].menu_nombre)}`
       : '';
-    return pintarEncabezado(`🍽️ Menú ${n}${nombre}`) + delGrupo.map(pintarLinea).join('');
+    // El segundo argumento son las líneas del grupo: quien pinta el encabezado
+    // decide si agrega algo derivado de ellas (hoy, el badge de modalidad del
+    // menú — ISS-047). Los que no lo usan lo ignoran sin romperse.
+    return pintarEncabezado(`🍽️ Menú ${n}${nombre}`, delGrupo) + delGrupo.map(pintarLinea).join('');
   }).join('');
+}
+
+// ── Modalidad de un pedido mixto — ISS-047 ──
+// Un pedido puede tener un menú para llevar y otro para comer en el local. El
+// resumen que guarda `ordenes.modalidad` puede ser 'mixto'; estas dos ayudan a
+// pintarlo sin repetir la lógica en cocina.js y pedidos.js.
+
+// Modalidad de una instancia de menú (todas sus líneas comparten valor; si
+// alguna dijera 'para_llevar' gana esa, para no dejar de envasar algo).
+function modalidadDeGrupo(lineas) {
+  return (lineas || []).some(l => l.modalidad === 'para_llevar') ? 'para_llevar' : 'en_local';
+}
+
+// Cuenta cuántas instancias de menú van para llevar sobre el total, para el
+// badge de resumen ("🥡 1 de 2 para llevar").
+function contarMenusParaLlevar(menuItems) {
+  const porGrupo = new Map();
+  let sueltas = 0, sueltasLlevar = 0;
+  for (const i of menuItems || []) {
+    if (i.grupo == null) {
+      sueltas++;
+      if (i.modalidad === 'para_llevar') sueltasLlevar++;
+      continue;
+    }
+    if (i.modalidad === 'para_llevar' || !porGrupo.has(i.grupo)) {
+      porGrupo.set(i.grupo, i.modalidad === 'para_llevar' ? 'para_llevar' : (porGrupo.get(i.grupo) || 'en_local'));
+    }
+  }
+  const grupos = [...porGrupo.values()];
+  return {
+    total:  grupos.length + sueltas,
+    llevar: grupos.filter(m => m === 'para_llevar').length + sueltasLlevar,
+  };
 }
 
 // ── Badge de modalidad — compartido por ordenes.js/reservas.js/pedidos.js/cocina.js ──
@@ -90,7 +126,7 @@ function renderMenuAgrupado(menuItems, pintarLinea, pintarEncabezado) {
 // de los <script> de owner.html (cocina.js se carga antes que ordenes.js).
 // `grande` agranda el badge para el ticket de cocina (ISS-042): el cocinero
 // decide con este dato si emplata o envasa, y lo lee de reojo mientras cocina.
-function badgeModalidad(modalidad, grande = false) {
+function badgeModalidad(modalidad, grande = false, conteo = null) {
   if (!modalidad || modalidad === 'en_local') return '';
   const base = grande
     ? 'font-size:0.9375rem;padding:5px 12px;'
@@ -100,7 +136,24 @@ function badgeModalidad(modalidad, grande = false) {
     return `<span style="${estilo('background:#e0f2fe;color:#0369a1')}">🥡 Para llevar</span>`;
   if (modalidad === 'delivery')
     return `<span style="${estilo('background:#fef9c3;color:#854d0e')}">🛵 Delivery</span>`;
+  // ISS-047: pedido con parte para llevar y parte para comer acá. El texto dice
+  // CUÁNTOS; cuál es cuál lo responde el badge de cada menú, abajo en el ticket.
+  if (modalidad === 'mixto') {
+    const t = conteo && conteo.total ? ` ${conteo.llevar} de ${conteo.total}` : '';
+    return `<span style="${estilo('background:#fef3c7;color:#92400e')}">🥡${t} para llevar</span>`;
+  }
   return '';
+}
+
+// Badge chico que va dentro del encabezado de cada menú (ISS-047) para decir
+// cuál de los menús del pedido se lleva. Solo aparece si el pedido es mixto:
+// repetir "aquí/llevar" en todos los menús cuando todos son iguales es ruido.
+function badgeModalidadMenu(lineas) {
+  const esLlevar = modalidadDeGrupo(lineas) === 'para_llevar';
+  const base = 'font-size:0.75rem;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:none;letter-spacing:0.02em;margin-left:2px;';
+  return esLlevar
+    ? `<span style="${base}background:#e0f2fe;color:#0369a1">🥡 Llevar</span>`
+    : `<span style="${base}background:#f0ece5;color:#6b6259">🪑 Aquí</span>`;
 }
 
 // ── Comprobante de pago (foto) — compartido por ordenes.js/reservas.js/pedidos.js ──

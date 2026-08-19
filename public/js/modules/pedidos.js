@@ -205,11 +205,11 @@ function renderKanbanCard(item, zona) {
 function renderKanbanOrden(o, zona) {
   const minutos    = Math.floor((Date.now() - new Date(toUTC(o.created_at)).getTime()) / 60000);
   const mesaTag    = o.mesa ? `· Mesa ${o.mesa} ` : '';
-  const items      = renderItemLines(o.carta_items, o.menu_items);
+  const items      = renderItemLines(o.carta_items, o.menu_items, o.modalidad);
   const btnAccion  = btnOrden(o, zona);
   // Cancelar: siempre disponible en cualquier etapa (mismo criterio que el panel de Órdenes).
   const btnCancelar = `<button class="btn btn-danger btn-sm" onclick="accionRapidaOrden(${o.id},'es_cancelado')">✗ Cancelar</button>`;
-  const modBadge   = badgeModalidad(o.modalidad);
+  const modBadge   = badgeModalidad(o.modalidad, false, contarMenusParaLlevar(o.menu_items));
   const pagoHtml   = (o.metodo_pago || o.es_manual) ? `<div style="margin-top:4px">${badgeManual(o)}${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
 
   return `
@@ -232,14 +232,14 @@ function renderKanbanReserva(r, zona) {
   const horaTag    = r.hora_llegada ? `🕐 ${r.hora_llegada} ` : '';
   const mesaTag    = r.mesa ? `Mesa ${r.mesa} ` : '';
   const codigo     = r.codigo ? `<span class="cola-codigo">🔑 ${r.codigo}</span>` : '';
-  const items      = renderItemLines(r.carta_items, r.menu_items);
+  const items      = renderItemLines(r.carta_items, r.menu_items, r.modalidad);
   const btnAccion  = btnReserva(r, zona);
   // Cancelar: se oculta una vez que el cliente ya llegó o la reserva ya se completó
   // (mismo criterio que el panel de Reservas — no tiene sentido cancelar en ese punto).
   const btnCancelar = (!r.es_cliente_llego && !r.es_full)
     ? `<button class="btn btn-danger btn-sm" onclick="accionRapidaReserva(${r.id},'es_cancelado')">✗ Cancelar</button>`
     : '';
-  const modBadge   = badgeModalidad(r.modalidad);
+  const modBadge   = badgeModalidad(r.modalidad, false, contarMenusParaLlevar(r.menu_items));
   const pagoHtml   = r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteThumb(r)}</div>` : '';
 
   return `
@@ -641,7 +641,7 @@ const soloFecha = f => String(f || '').slice(0, 10);
 // solo existían en la Cola del día, y estos pedidos son de días anteriores, así
 // que ya no aparecen ahí. La dueña del piloto se quedó trabada justo acá.
 function cierreItemOrden(o) {
-  const items = renderItemLines(o.carta_items, o.menu_items);
+  const items = renderItemLines(o.carta_items, o.menu_items, o.modalidad);
   const mesa  = o.mesa ? ` · Mesa ${o.mesa}` : '';
   const monto = o.total ? ` · S/ ${o.total.toFixed(2)}` : '';
   const pagoHtml = (o.metodo_pago || o.es_manual) ? `<div style="margin-top:4px">${badgeManual(o)}${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
@@ -663,7 +663,7 @@ function cierreItemOrden(o) {
 }
 
 function cierreItemReserva(r) {
-  const items = renderItemLines(r.carta_items, r.menu_items);
+  const items = renderItemLines(r.carta_items, r.menu_items, r.modalidad);
   const codigo = r.codigo ? ` · 🔑 ${esc(r.codigo)}` : '';
   const pagoHtml = r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteThumb(r)}</div>` : '';
   const btnCobro = requiereConfirmarPago(r)
@@ -760,15 +760,17 @@ async function cerrarPedidoViejo(tipo, id, resultado) {
 
 // ── Helpers ───────────────────────────────────────────────
 
-function renderItemLines(cartaItems = [], menuItems = []) {
+function renderItemLines(cartaItems = [], menuItems = [], modalidad = null) {
   const carta = cartaItems
     .map(i => `<span class="cola-item-line">🍽 ${esc(i.nombre)} ×${i.cantidad}</span>`)
     .join('');
-  // Agrupado por instancia de menú cuando el pedido trae 2 o más — ISS-041
+  // Agrupado por instancia de menú cuando el pedido trae 2 o más — ISS-041.
+  // Si el pedido es mixto, cada menú además dice si se lleva — ISS-047.
+  const mixto = modalidad === 'mixto';
   const menu = renderMenuAgrupado(
     menuItems,
     i => `<span class="cola-item-line">📋 ${esc(i.plato)} ×${i.cantidad} <em>${esc(i.seccion)}</em></span>`,
-    texto => `<span class="menu-grupo-head">${texto}</span>`
+    (texto, lineas) => `<span class="menu-grupo-head">${texto}${mixto ? badgeModalidadMenu(lineas) : ''}</span>`
   );
   return carta + menu;
 }

@@ -305,6 +305,20 @@ try { db.exec(`ALTER TABLE reservas ADD COLUMN total REAL DEFAULT NULL`); } catc
 try { db.exec(`ALTER TABLE orden_menu_items   ADD COLUMN grupo INTEGER DEFAULT NULL`); } catch (_) {}
 try { db.exec(`ALTER TABLE reserva_menu_items ADD COLUMN grupo INTEGER DEFAULT NULL`); } catch (_) {}
 
+// Migración idempotente: `modalidad` por línea — ISS-047.
+// Antes vivía solo en `ordenes`/`reservas`, una por pedido, así que era imposible
+// pedir un menú para llevar y otro para comer en el local (caso real del día 5 del
+// piloto). Ahora cada instancia de menú (todas las líneas de un mismo `grupo`) y
+// cada plato de carta llevan la suya.
+// La columna del pedido NO se borra: pasa a ser el resumen derivado
+// (en_local | para_llevar | mixto | delivery), que es lo que leen las vistas hoy.
+// Default 'en_local' y sin relleno hacia atrás: los pedidos viejos conservan su
+// modalidad real en la columna del pedido, que se sigue respetando.
+try { db.exec(`ALTER TABLE orden_menu_items    ADD COLUMN modalidad TEXT DEFAULT 'en_local'`); } catch (_) {}
+try { db.exec(`ALTER TABLE orden_carta_items   ADD COLUMN modalidad TEXT DEFAULT 'en_local'`); } catch (_) {}
+try { db.exec(`ALTER TABLE reserva_menu_items  ADD COLUMN modalidad TEXT DEFAULT 'en_local'`); } catch (_) {}
+try { db.exec(`ALTER TABLE reserva_carta_items ADD COLUMN modalidad TEXT DEFAULT 'en_local'`); } catch (_) {}
+
 // Migración idempotente: flags semánticos en estatus_orden
 try { db.exec(`ALTER TABLE estatus_orden ADD COLUMN es_inicial    INTEGER DEFAULT 0`); } catch (_) {}
 try { db.exec(`ALTER TABLE estatus_orden ADD COLUMN es_pagado     INTEGER DEFAULT 0`); } catch (_) {}

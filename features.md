@@ -1,5 +1,44 @@
 # Features — Menú Pro
 
+## ~~Un menú para llevar y otro para comer acá~~ ✅ Completado 2026-08-19
+*Ver [ISS-047](issues/ISS-047-modalidad-por-menu.md).*
+
+Día 5 del piloto: alguien pidió 2 menús, uno para llevar y otro para comer en el local. **No se
+podía separar** — `modalidad` era una columna del pedido, una sola.
+
+**ARCH:** la modalidad baja a las líneas. Cada instancia de menú comparte la de su `grupo`
+(la columna que dejó ISS-041) y cada plato de carta lleva la suya; `ordenes.modalidad` se
+conserva como **resumen derivado** (`en_local` | `para_llevar` | `mixto` | `delivery`), así que
+todo lo que hoy lo lee —cocina, `colaDia.js`, `pedidos.js`— sigue andando sin tocarse. Lógica
+compartida en `utils/modalidadPedido.js`. **Se mezcla comer aquí / para llevar**; el delivery
+queda del pedido entero porque es un solo viaje.
+
+**Comensal** (variante A2, elegida sobre mockup): arriba del carrito, «🪑 Todo aquí / 🥡 Todo
+para llevar» — un tap marca todos los menús, que es el caso común. Cada ítem lleva además un
+chip para el caso mixto. El toggle también **refleja** el estado: si están mezclados no queda
+ninguno marcado y aparece «Mezclado — 1 de 2 para llevar». Nunca hay nada sin marcar: el
+default de cada línea es «comer aquí».
+
+**Cocina y Cola del día** (variante B2): el badge grande de ISS-042 ahora dice *cuántos*
+(«🥡 1 de 2 para llevar») y cada menú lleva un badge chico que dice *cuál*. Se descartó partir
+el ticket en bloques por modalidad: se ve mejor, pero reordenar el ticket dos semanas después
+de que ISS-041 enseñó a leer «Menú 1 / Menú 2» tiene un costo real en una cocina que está
+aprendiendo el sistema en pleno servicio.
+
+**Arregla un cobro de más que existía hoy:** el envase se cobraba por el pedido entero, así que
+1 menú para llevar + 1 para comer ahí cobraba **2 tappers en vez de 1**. Ahora se cobra por
+unidad realmente llevada.
+
+**Dos huecos de seguridad cerrados de paso:** con la modalidad en las líneas, el whitelist del
+resumen dejó de alcanzar — un cliente manipulado podía mandar líneas `para_llevar` a un
+restaurante que no lo ofrece. Se valida sobre las líneas normalizadas; **las órdenes nunca
+habían validado `para_llevar_activo`**.
+
+**Verificación:** `tests/modalidad-por-menu.test.js` 19/19 + `scripts/test-modalidad-mixta.js`
+19/19 punta a punta (carrito, los 3 estados del toggle, lo guardado en BD incluido el cargo, y
+el ticket de cocina) + **449/449 jest**, con `test-grupo-punta-a-punta` 13/13 y
+`test-menu-wizard` 51/51 sin regresiones.
+
 ## ~~Fix conteo de menús + tarjeta "Menús de hoy"~~ ✅ Completado 2026-08-18
 
 Segundo pendiente del día 4 del piloto #1 (2026-08-17, ver `backlog.md`): "Menús pedidos"/"Menús

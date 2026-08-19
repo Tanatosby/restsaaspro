@@ -51,7 +51,7 @@ function itemsDeOrdenes(db, ids) {
   // `grupo` + `menu_nombre` alimentan el agrupamiento por instancia de menú en
   // la vista de Cocina y en Cola del día — ISS-041.
   const menu = db.prepare(`
-    SELECT omi.id_orden, omi.id, omi.cantidad, omi.grupo, omi.id_menu_dia,
+    SELECT omi.id_orden, omi.id, omi.cantidad, omi.grupo, omi.modalidad, omi.id_menu_dia,
            pm.nombre AS plato, sm.nombre AS seccion, md.nombre AS menu_nombre
     FROM orden_menu_items omi
     JOIN componentes_menu_dia cmd ON omi.id_componente  = cmd.id
@@ -79,7 +79,7 @@ function itemsDeReservas(db, ids) {
   `).all(...ids);
 
   const menu = db.prepare(`
-    SELECT rmi.id_reserva, rmi.id, rmi.cantidad, rmi.grupo, rmi.id_menu_dia,
+    SELECT rmi.id_reserva, rmi.id, rmi.cantidad, rmi.grupo, rmi.modalidad, rmi.id_menu_dia,
            pm.nombre AS plato, sm.nombre AS seccion, md.nombre AS menu_nombre
     FROM reserva_menu_items rmi
     JOIN componentes_menu_dia cmd ON rmi.id_componente  = cmd.id

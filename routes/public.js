@@ -15,6 +15,7 @@ const { estadoHorario, mensajeHorario, validarHorarioAhora, validarHorarioReserv
 const { enviarPushRestaurante } = require('../utils/pushNotificaciones');
 const { contarUnidadesMenu } = require('../utils/menuPricing');
 const { validarSeccionesMenu } = require('../utils/validarSeccionesMenu');
+const { normalizarModalidades, resumirModalidad } = require('../utils/modalidadPedido');
 const db      = require('../config/database');
 
 // Multer para comprobantes de pago (subidos por el cliente)
@@ -89,14 +90,30 @@ function enriquecerMenuItems(idRestaurante, menuItems) {
 // ítem a la carta (cada plato para llevar necesita su propio envase).
 // La tarifa de delivery es fija por pedido (un solo viaje).
 // ─────────────────────────────────────────────────────
+// ISS-047: el tapper se cobra **solo por lo que se lleva**, no por el pedido
+// entero. Antes, marcar el pedido como "para llevar" cobraba envase de todas las
+// unidades — en un pedido de 1 menú para llevar + 1 para comer ahí se cobraban
+// 2 tappers en vez de 1. Recibe los ítems con `modalidad` ya normalizada.
 function calcularCargoModalidad(modalidad, rest, idRestaurante, cartaItems, menuItems) {
   if (modalidad === 'en_local') return 0;
 
-  const unidadesMenu  = contarUnidadesMenu(enriquecerMenuItems(idRestaurante, menuItems));
-  const unidadesCarta = cartaItems.reduce((s, i) => s + (i.cantidad || 1), 0);
-  const totalTappers  = unidadesMenu + unidadesCarta;
+  // En delivery viaja el pedido entero, así que todo va envasado — el envase se
+  // cobra por cada unidad, como antes de ISS-047. En para_llevar/mixto se cobra
+  // solo lo que el comensal marcó para llevar.
+  const esDelivery  = modalidad === 'delivery';
+  const menuLlevar  = esDelivery ? (menuItems  || []) : (menuItems  || []).filter(i => i.modalidad === 'para_llevar');
+  const cartaLlevar = esDelivery ? (cartaItems || []) : (cartaItems || []).filter(i => i.modalidad === 'para_llevar');
 
-  let cargo = totalTappers * (rest.costo_tapper ?? 0);
+  // Con `grupo` (ISS-041) las unidades se cuentan directo; sin él —cliente viejo—
+  // se deduce como siempre, contando filas de secciones obligatorias.
+  const conGrupo = menuLlevar.length > 0 && menuLlevar.every(i => i.grupo != null);
+  const unidadesMenu = conGrupo
+    ? new Set(menuLlevar.map(i => i.grupo)).size
+    : contarUnidadesMenu(enriquecerMenuItems(idRestaurante, menuLlevar));
+
+  const unidadesCarta = cartaLlevar.reduce((s, i) => s + (i.cantidad || 1), 0);
+
+  let cargo = (unidadesMenu + unidadesCarta) * (rest.costo_tapper ?? 0);
   if (modalidad === 'delivery') cargo += (rest.tarifa_delivery ?? 0);
   return cargo;
 }
@@ -268,7 +285,9 @@ router.post('/orders', (req, res) => {
   if (!carta_items.length && !menu_items.length)
     return res.status(400).json({ error: 'La orden debe tener al menos un ítem' });
 
-  const MODALIDADES_ORDEN = ['en_local', 'para_llevar'];
+  // 'mixto' se acepta como resumen entrante (ISS-047) — el backend igual lo
+  // vuelve a derivar de las líneas, así que el valor del cliente no manda.
+  const MODALIDADES_ORDEN = ['en_local', 'para_llevar', 'mixto'];
   if (!MODALIDADES_ORDEN.includes(modalidad))
     return res.status(400).json({ error: 'modalidad inválida para una orden' });
 
@@ -310,7 +329,17 @@ router.post('/orders', (req, res) => {
   if (errorSecciones)
     return res.status(400).json({ error: errorSecciones });
 
-  const cargo_modalidad = calcularCargoModalidad(modalidad, rest, id_restaurante, carta_items, menu_items);
+  // ISS-047: cada línea lleva su propia modalidad; la del pedido pasa a ser el
+  // resumen derivado (en_local | para_llevar | mixto | delivery).
+  const { menu: menuNorm, carta: cartaNorm } = normalizarModalidades(menu_items, carta_items, modalidad);
+  const modalidadResumen = resumirModalidad(menuNorm, cartaNorm, modalidad);
+
+  // Con la modalidad por línea, el whitelist del resumen ya no alcanza: un
+  // cliente manipulado podría mandar líneas 'para_llevar' a un restaurante que
+  // no lo ofrece. Las órdenes además nunca habían validado esto.
+  if (!rest.para_llevar_activo && [...menuNorm, ...cartaNorm].some(i => i.modalidad === 'para_llevar'))
+    return res.status(400).json({ error: 'Este restaurante no ofrece para llevar' });
+  const cargo_modalidad  = calcularCargoModalidad(modalidadResumen, rest, id_restaurante, cartaNorm, menuNorm);
 
   // Todo válido — insertar en transacción (si el stock no alcanza, revierte todo)
   let ordenId;
@@ -319,26 +348,26 @@ router.post('/orders', (req, res) => {
       const { lastInsertRowid } = db.prepare(`
         INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, modalidad, cargo_modalidad)
         VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_inicial = 1), ?, ?)
-      `).run(mesa || null, nombre_cliente?.trim() || null, fecha, id_restaurante, modalidad, cargo_modalidad);
+      `).run(mesa || null, nombre_cliente?.trim() || null, fecha, id_restaurante, modalidadResumen, cargo_modalidad);
 
       // Ítems de carta
       const stmtCarta = db.prepare(`
-        INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)
-        SELECT ?, id, ?, precio FROM platos_carta WHERE id = ?
+        INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario, modalidad)
+        SELECT ?, id, ?, precio, ? FROM platos_carta WHERE id = ?
       `);
-      for (const item of carta_items) {
-        stmtCarta.run(lastInsertRowid, item.cantidad || 1, item.id_plato_carta);
+      for (const item of cartaNorm) {
+        stmtCarta.run(lastInsertRowid, item.cantidad || 1, item.modalidad, item.id_plato_carta);
       }
 
       // Ítems de menú. `grupo` distingue instancias del mismo menú dentro del
       // pedido (ISS-041); si el cliente es de una versión vieja de menu.html y
       // no lo manda, queda NULL y la vista los pinta planos como antes.
       const stmtMenu = db.prepare(`
-        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo, modalidad)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
-      for (const item of menu_items) {
-        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1, item.grupo ?? null);
+      for (const item of menuNorm) {
+        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1, item.grupo ?? null, item.modalidad);
       }
 
       // Descuenta stock de los platos con control; lanza 409 si no alcanza
@@ -409,7 +438,7 @@ router.post('/reservations', (req, res) => {
   if (!horario.permitido)
     return res.status(400).json({ error: horario.error });
 
-  const MODALIDADES_RESERVA = ['en_local', 'para_llevar', 'delivery'];
+  const MODALIDADES_RESERVA = ['en_local', 'para_llevar', 'delivery', 'mixto'];
   if (!MODALIDADES_RESERVA.includes(modalidad))
     return res.status(400).json({ error: 'modalidad inválida' });
   if (modalidad === 'delivery' && !rest.delivery_activo)
@@ -445,7 +474,14 @@ router.post('/reservations', (req, res) => {
   if (errorSecciones)
     return res.status(400).json({ error: errorSecciones });
 
-  const cargo_modalidad_res = calcularCargoModalidad(modalidad, rest, id_restaurante, carta_items, menu_items);
+  // ISS-047: misma normalización que en las órdenes
+  const { menu: menuNormRes, carta: cartaNormRes } = normalizarModalidades(menu_items, carta_items, modalidad);
+  const modalidadResumenRes = resumirModalidad(menuNormRes, cartaNormRes, modalidad);
+
+  // Mismo cierre que en las órdenes: 'mixto' esquivaba el chequeo de arriba
+  if (!rest.para_llevar_activo && [...menuNormRes, ...cartaNormRes].some(i => i.modalidad === 'para_llevar'))
+    return res.status(400).json({ error: 'Este restaurante no ofrece para llevar' });
+  const cargo_modalidad_res = calcularCargoModalidad(modalidadResumenRes, rest, id_restaurante, cartaNormRes, menuNormRes);
 
   // Insertar en transacción (si el stock no alcanza, revierte todo)
   let reservaId, codigo;

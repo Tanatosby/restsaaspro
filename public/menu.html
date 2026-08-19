@@ -175,22 +175,24 @@
       <button class="drawer-close" onclick="closeDrawer()">✕</button>
     </div>
     <div class="drawer-body">
+      <!-- Modalidad de orden (solo si para_llevar está activo).
+           ISS-047: atajo que marca TODO de una. Cada ítem del carrito además
+           tiene su chip para el caso mixto (un menú se lleva, otro no). Si están
+           mezclados, ninguno de los dos botones queda marcado.
+           Va ARRIBA de los ítems: es el camino rápido del caso común, y quien
+           solo quiere "todo para llevar" no debería tener que bajar hasta el pie. -->
+      <div id="orden-modalidad-wrap" style="display:none;margin-bottom:0.85rem;padding:0.7rem 0.8rem;background:var(--bg-2);border:1px solid var(--border);border-radius:10px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem">¿Cómo lo van a comer?</div>
+        <div class="mod-seg">
+          <button type="button" id="mod-all-local"  onclick="setModalidadTodo('en_local')">🪑 Todo aquí</button>
+          <button type="button" id="mod-all-llevar" onclick="setModalidadTodo('para_llevar')">🥡 Todo para llevar</button>
+        </div>
+        <div id="mod-mixto-hint" style="display:none;font-size:12px;color:var(--muted);margin-top:0.4rem;font-weight:600"></div>
+      </div>
       <div id="drawer-items"></div>
       <div class="nombre-field">
         <label for="nombre-cliente">Tu nombre</label>
         <input id="nombre-cliente" type="text" placeholder="Ej: Juan" maxlength="50" />
-      </div>
-      <!-- Modalidad de orden (solo si para_llevar está activo) -->
-      <div id="orden-modalidad-wrap" style="display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem">¿Cómo lo quieres?</div>
-        <div style="display:flex;gap:0.5rem">
-          <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
-            <input type="radio" name="orden-modalidad" value="en_local" checked style="accent-color:var(--accent)"> 🪑 En local
-          </label>
-          <label id="orden-mod-llevar-lbl" style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
-            <input type="radio" name="orden-modalidad" value="para_llevar" style="accent-color:var(--accent)"> 🥡 Para llevar
-          </label>
-        </div>
       </div>
       <div id="cargo-orden-line" style="display:none;justify-content:space-between;font-size:13px;color:var(--muted);padding:0.25rem 0">
         <span>🥡 Tapper</span>
@@ -665,13 +667,16 @@ async function renderReservarContent() {
   // El número sale de la posición en el carrito (1..N), no de un id guardado en
   // el ítem: si el comensal borra un menú del carrito, la numeración se vuelve a
   // calcular sin huecos.
+  // `modalidad` viaja igual que `grupo` (ISS-047): todas las líneas de un mismo
+  // menú comparten la del ítem del carrito, porque un menú se lleva entero.
   function numerarGrupos(carrito) {
     let grupo = 0;
     return carrito.filter(i => i.type === 'menu').flatMap(i => {
       grupo++;
-      return i.payload.menuItems.map(mi => ({ ...mi, grupo }));
+      return i.payload.menuItems.map(mi => ({ ...mi, grupo, modalidad: i.modalidad || 'en_local' }));
     });
   }
+
 
   function agregarMenu(mode, menuId, elegible, precio, nombreMenu) {
     const source = mode === 'pedir' ? menusDia : resMenusDia;
@@ -718,6 +723,8 @@ async function renderReservarContent() {
       type: 'menu', label: nombreMenu,
       subLabel: subs || 'Menú fijo',
       precio: parseFloat(precio),
+      // ISS-047: cada menú arranca en "comer aquí"; nunca queda sin modalidad
+      modalidad: 'en_local',
       payload: { menuItems: elegible ? menuItems : allItems }
     });
 
@@ -747,13 +754,16 @@ async function renderReservarContent() {
     qtyMap[platoId] = next;
     updateQtyDisplay(platoId, mode);
 
-    // Sync cart array
+    // Sync cart array. Conserva la modalidad ya elegida para este plato: cambiar
+    // la cantidad recrea la línea y sin esto se perdería el 🥡 — ISS-047.
     const idx = cartArr.findIndex(i => i.type === 'carta' && i.platoId === platoId);
+    const modalidadPrevia = idx > -1 ? cartArr[idx].modalidad : 'en_local';
     if (idx > -1) cartArr.splice(idx, 1);
     if (next > 0) cartArr.push({
       type: 'carta', platoId, label: nombre,
       subLabel: `x${next}`, precio: precio * next,
       unitPrice: precio, cantidad: next,
+      modalidad: modalidadPrevia || 'en_local',
       payload: { id_plato_carta: platoId, cantidad: next }
     });
 
@@ -774,10 +784,59 @@ async function renderReservarContent() {
     return cartArr.reduce((s, i) => s + (i.type === 'carta' ? (i.cantidad || 1) : 1), 0);
   }
 
+  // ── Modalidad por ítem — ISS-047 ─────────────────
+  // Antes la modalidad era una sola para todo el pedido, así que era imposible
+  // llevarse un menú y comer el otro en el local (caso real del día 5 del
+  // piloto). Ahora cada ítem del carrito lleva la suya; el toggle de arriba es
+  // un atajo que las marca todas y a la vez refleja el estado.
+
+  // Solo cuenta lo que de verdad se lleva — antes se cobraba envase de todo.
+  function contarTappersLlevar(cartArr) {
+    return cartArr
+      .filter(i => i.modalidad === 'para_llevar')
+      .reduce((s, i) => s + (i.type === 'carta' ? (i.cantidad || 1) : 1), 0);
+  }
+
+  function setModalidadTodo(modalidad) {
+    cart.forEach(i => { i.modalidad = modalidad; });
+    updateCart();
+  }
+
+  function toggleModalidadItem(idx) {
+    const item = cart[idx];
+    if (!item) return;
+    item.modalidad = item.modalidad === 'para_llevar' ? 'en_local' : 'para_llevar';
+    updateCart();
+  }
+
+  // Estado del toggle de arriba: marcado si TODO el carrito coincide; si está
+  // mezclado no se marca ninguno y el hint dice cuántos se llevan.
+  function pintarModalidadMaster() {
+    const btnLocal  = document.getElementById('mod-all-local');
+    const btnLlevar = document.getElementById('mod-all-llevar');
+    const hint      = document.getElementById('mod-mixto-hint');
+    if (!btnLocal || !btnLlevar) return;
+
+    const total  = cart.length;
+    const llevar = cart.filter(i => i.modalidad === 'para_llevar').length;
+    const todosLocal  = total > 0 && llevar === 0;
+    const todosLlevar = total > 0 && llevar === total;
+
+    btnLocal.classList.toggle('on', todosLocal || total === 0);
+    btnLlevar.classList.toggle('on', todosLlevar);
+
+    if (hint) {
+      const mixto = total > 0 && !todosLocal && !todosLlevar;
+      hint.style.display = mixto ? 'block' : 'none';
+      hint.textContent   = mixto ? `Mezclado — ${llevar} de ${total} para llevar` : '';
+    }
+  }
+
   // ── Pedir cart ───────────────────────────────────
   function updateCart() {
     const itemsTotal = cart.reduce((s, i) => s + i.precio, 0);
-    const cargo      = getModalidadOrden() === 'para_llevar' ? contarTappers(cart) * (modalidades.costo_tapper || 0) : 0;
+    // ISS-047: el envase se cobra solo por lo que se lleva, no por el pedido entero
+    const cargo      = contarTappersLlevar(cart) * (modalidades.costo_tapper || 0);
     const total      = itemsTotal + cargo;
     const count = cart.length;
     document.getElementById('cart-count').textContent        = count;
@@ -796,15 +855,29 @@ async function renderReservarContent() {
         `<div class="empty-msg"><div class="icon">🛒</div>Tu pedido está vacío</div>`;
       return;
     }
-    document.getElementById('drawer-items').innerHTML = cart.map((item, idx) => `
-      <div class="cart-item">
+    // El chip de modalidad solo aparece si el restaurante tiene para_llevar
+    // activo y el pedido es de mesa — igual condición que el toggle de arriba.
+    const conModalidad = !!(mesa && modalidades.para_llevar);
+
+    document.getElementById('drawer-items').innerHTML = cart.map((item, idx) => {
+      const llevar = item.modalidad === 'para_llevar';
+      const chip = conModalidad ? `
+        <button type="button" class="mod-chip ${llevar ? 'llevar' : ''}" onclick="toggleModalidadItem(${idx})">
+          ${llevar ? '🥡 Para llevar' : '🪑 Comer aquí'} <span class="cambiar">· cambiar</span>
+        </button>` : '';
+      return `
+      <div class="cart-item" style="flex-wrap:wrap">
         <div class="cart-item-info">
           <div class="cart-item-name">${esc(item.label)}</div>
           <div class="cart-item-sub">${esc(item.subLabel)}</div>
         </div>
         <span class="cart-item-price">S/ ${item.precio.toFixed(2)}</span>
         <button class="cart-remove" onclick="removeCartItem(${idx})">×</button>
-      </div>`).join('');
+        ${chip ? `<div style="flex:1 0 100%">${chip}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    pintarModalidadMaster();
   }
 
   function removeCartItem(idx) {
@@ -838,10 +911,8 @@ async function renderReservarContent() {
     if (resLlevar   && modalidades.para_llevar) resLlevar.style.display   = 'flex';
     if (resDelivery && modalidades.delivery)    resDelivery.style.display = 'flex';
 
-    // Actualizar totales al cambiar modalidad
-    document.querySelectorAll('input[name="orden-modalidad"]').forEach(r =>
-      r.addEventListener('change', updateCart)
-    );
+    // El pedido ya no usa radios: su modalidad sale del carrito (ISS-047) y se
+    // repinta dentro de updateCart(). La reserva sigue con modalidad de pedido.
     document.querySelectorAll('input[name="reserva-modalidad"]').forEach(r =>
       r.addEventListener('change', updateResCartSummary)
     );
@@ -866,9 +937,13 @@ async function renderReservarContent() {
     if (btnConfirmar) btnConfirmar.disabled = cerrado;
   }
 
+  // ISS-047: ya no sale de un radio del pedido, sino del carrito. El backend
+  // vuelve a derivarlo de las líneas —esto es solo el resumen que se manda—,
+  // así que 'mixto' se calcula igual del otro lado.
   function getModalidadOrden() {
-    const sel = document.querySelector('input[name="orden-modalidad"]:checked');
-    return sel ? sel.value : 'en_local';
+    const llevar = cart.filter(i => i.modalidad === 'para_llevar').length;
+    if (!cart.length || llevar === 0) return 'en_local';
+    return llevar === cart.length ? 'para_llevar' : 'mixto';
   }
 
   function getModalidadReserva() {
@@ -914,7 +989,9 @@ async function renderReservarContent() {
     const nombre = document.getElementById('nombre-cliente').value.trim();
     if (!nombre) return showMsg('Tu nombre es requerido', true);
 
-    const cartaItems = cart.filter(i => i.type === 'carta').map(i => ({ id_plato_carta: i.platoId, cantidad: i.cantidad }));
+    const cartaItems = cart
+      .filter(i => i.type === 'carta')
+      .map(i => ({ id_plato_carta: i.platoId, cantidad: i.cantidad, modalidad: i.modalidad || 'en_local' }));
     const menuItems  = numerarGrupos(cart);
     const payload = {
       id_restaurante: parseInt(restauranteId),
