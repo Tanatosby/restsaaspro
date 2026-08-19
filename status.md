@@ -4,7 +4,7 @@
 
 ## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-19
 
-**Lo que está en producción** — cinco deploys entre el 17 y el 19 de agosto, todos confirmados
+**Lo que está en producción** — seis deploys entre el 17 y el 19 de agosto, todos confirmados
 por el usuario:
 
 | Deploy | Commits | Qué salió |
@@ -14,14 +14,9 @@ por el usuario:
 | 2026-08-18 | `bc593a4` + `14ce74f` | Botón **"Agregar manual"** en la Cola del día + **fix del conteo de menús** ("Menús pedidos"/"Menús reservados") + tarjeta nueva **"Menús de hoy"**. Ver las 2 sesiones de hoy más abajo |
 | 2026-08-19 | `7803818` | **ISS-047** — modalidad por menú (para llevar / comer acá por línea, no por pedido entero). |
 | 2026-08-19 | `7803818..60c9e6f` (incluye `ca262b1`, `ba710d0`) | **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html` — el flujo completo, sin riesgo de 404) y **ISS-048** (volver de "¿Cómo vas a pagar?" a la carta). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
+| 2026-08-19 | `60c9e6f..e7fc697` | **ISS-049** (recuperar el pedido si la pestaña se recarga al pagar), **ISS-050** (número de pedido igual para comensal y dueña) e **ISS-051** (aviso de comprobante Yape/Plin reutilizado). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:**
-- **ISS-049** (el pedido se pierde si la pestaña se recarga sola al salir a pagar) — 🔴
-  implementado hoy, prioridad alta a pedido explícito del usuario ("se aburren de usar la app").
-  El usuario dijo que lo desplegaba ahora mismo, pero no llegó la confirmación explícita —
-  **no marcar como desplegado hasta que la confirme**. Ver `issues/ISS-049-...md`.
-- **ISS-050** (el número de pedido no coincidía entre comensal y dueña — "mi orden me sale 96").
-- **ISS-051** (detección de comprobante Yape/Plin reutilizado — avisa al owner, no bloquea).
+**Sin pendientes de deploy** — todo lo implementado hoy ya está en producción.
 
 **T6, el backup de la BD — corregido hoy, sigue quedando el restore de prueba.** El script y el
 cron existían desde el **29 de mayo**, pero al script le faltaba `mkdir -p`, así que **cada
