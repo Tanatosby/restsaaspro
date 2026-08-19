@@ -471,6 +471,11 @@
       renderPedirContent();
       await renderReservarContent();
       switchMode(activeMode);
+
+      // ISS-049 — si la pestaña se recargó sola mientras salía a pagar (caso
+      // típico: Chrome descarga la pestaña de fondo en un celular de gama
+      // media), esto la retoma justo donde la dejó en vez de arrancar vacía.
+      restaurarPagoPendienteLocal();
     } catch(e) {
       document.getElementById('main-content').innerHTML =
         `<div class="loading-screen"><div class="empty-msg"><div class="icon">⚠️</div>${e.message}</div></div>`;
@@ -1018,6 +1023,7 @@ async function renderReservarContent() {
         items: cart.slice(),
         total: cart.reduce((s, i) => s + i.precio, 0) + cargo,
       };
+      guardarPagoPendienteLocal();
       closeDrawer();
       showPagoStep();
       return;
@@ -1128,6 +1134,7 @@ async function renderReservarContent() {
         items: resCart.slice(),
         total: resCart.reduce((s, i) => s + i.precio, 0) + cargo,
       };
+      guardarPagoPendienteLocal();
       showPagoStep();
       return;
     }
@@ -1142,6 +1149,57 @@ async function renderReservarContent() {
     } finally {
       btn.disabled = false; btn.textContent = '✓ Confirmar reserva';
     }
+  }
+
+  // ── Persistencia del pago en curso — ISS-049 ──────
+  // El comensal sale de la app para pagar (Yape/Plin) y vuelve; en un celular
+  // de gama media, Chrome puede descargar la pestaña de fondo mientras tanto
+  // y recargarla de cero al volver — se pierde todo lo que vivía solo en
+  // memoria (cart, pagoPendiente), y el comensal tiene que rehacer el pedido
+  // entero. Reportado por la dueña: "si se les reinicia cada vez que pagan
+  // van a aburrirse de usar la app". Se guarda pagoPendiente en localStorage
+  // desde que entra a la pantalla de pago (el momento antes de salir a
+  // Yape/Plin) y se restaura al recargar. La foto del comprobante NO se
+  // persiste — un File no sobrevive un JSON.stringify — si ya la había
+  // elegido, tiene que volver a adjuntarla.
+  const PAGO_PENDIENTE_KEY     = 'mp-pago-pendiente';
+  const PAGO_PENDIENTE_TTL_MS  = 2 * 60 * 60 * 1000; // 2h: pasado esto, se asume abandonado de verdad
+
+  function guardarPagoPendienteLocal() {
+    if (!pagoPendiente) { limpiarPagoPendienteLocal(); return; }
+    try {
+      const { foto, ...resto } = pagoPendiente; // el File no serializa
+      localStorage.setItem(PAGO_PENDIENTE_KEY, JSON.stringify({
+        restauranteId, mesa, guardadoEn: Date.now(), pagoMetodo, ...resto
+      }));
+    } catch (_) { /* localStorage lleno o bloqueado — se pierde igual que antes del fix */ }
+  }
+
+  function limpiarPagoPendienteLocal() {
+    try { localStorage.removeItem(PAGO_PENDIENTE_KEY); } catch (_) {}
+  }
+
+  // Se llama una sola vez al arrancar (ver init()). Si hay un pago en curso
+  // del mismo restaurante/mesa y no está vencido, reconstruye pagoPendiente
+  // y vuelve a mostrar la pantalla de pago — con el método ya elegido si
+  // llegó a marcarlo, aunque sin la foto.
+  function restaurarPagoPendienteLocal() {
+    let guardado;
+    try { guardado = JSON.parse(localStorage.getItem(PAGO_PENDIENTE_KEY) || 'null'); }
+    catch (_) { guardado = null; }
+    if (!guardado) return;
+
+    if (guardado.restauranteId !== restauranteId || guardado.mesa !== mesa ||
+        Date.now() - guardado.guardadoEn > PAGO_PENDIENTE_TTL_MS) {
+      limpiarPagoPendienteLocal();
+      return;
+    }
+
+    const { pagoMetodo: metodoGuardado, guardadoEn, restauranteId: _r, mesa: _m, ...resto } = guardado;
+    pagoPendiente = resto;
+    showPagoStep();
+    if (metodoGuardado) seleccionarMetodoPago(metodoGuardado);
+    showMsg('Recuperamos tu pedido');
   }
 
   // ── Payment step ─────────────────────────────────
@@ -1183,12 +1241,18 @@ async function renderReservarContent() {
   // de mostrar esta pantalla. La reserva no cierra nada — su carrito vive
   // inline en la pestaña "Reservar", ya visible debajo.
   function volverDePago() {
+    // Si vuelve a editar la carta, el pago guardado en localStorage queda
+    // desactualizado frente a lo que hay en pantalla — se limpia acá; si
+    // vuelve a confirmar, confirmarPedido()/confirmarReserva() lo escriben
+    // de nuevo con el carrito ya editado.
+    limpiarPagoPendienteLocal();
     document.getElementById('pago-screen').classList.remove('show');
     if (pagoPendiente?.tipo === 'orden') openDrawer();
   }
 
   function seleccionarMetodoPago(metodo) {
     pagoMetodo = metodo;
+    guardarPagoPendienteLocal(); // ISS-049 — a partir de acá puede salir a pagar
     ['yape','plin','efectivo'].forEach(m => {
       const b = document.getElementById(`btn-met-${m}`);
       if (b) b.style.opacity = m === metodo ? '1' : '0.35';
@@ -1337,6 +1401,11 @@ async function renderReservarContent() {
         id     = tipo === 'reserva' ? data.id_reserva : data.id_orden;
         codigo = tipo === 'reserva' ? data.codigo : null;
         pagoPendiente.creado = { id, codigo };
+        // ISS-049: si el pedido/reserva ya se creó en el backend y la
+        // pestaña se recarga antes del PATCH del pago, el reintento no debe
+        // volver a crearlo — restaurarPagoPendienteLocal() trae `creado` de
+        // vuelta y confirmarEnvioFinal() lo detecta arriba.
+        guardarPagoPendienteLocal();
       }
 
       btn.textContent = foto ? 'Subiendo comprobante…' : 'Confirmando pago…';
@@ -1355,6 +1424,7 @@ async function renderReservarContent() {
       document.getElementById('repaso-screen').classList.remove('show');
       showConfirm(tipo === 'reserva' ? 'reservar' : 'pedir', id, codigo);
       pagoPendiente = null;
+      limpiarPagoPendienteLocal();
     } catch(e) {
       alert(e.message);
       btn.disabled = false;
@@ -1531,6 +1601,7 @@ async function renderReservarContent() {
     cart = []; cartaQty = {}; menuSelections = {};
     resCart = []; resCartaQty = {}; resMenuSelections = {};
     pagoPendiente = null; pagoMetodo = null;
+    limpiarPagoPendienteLocal();
     document.getElementById('btn-ver-estado').style.display = 'none';
     document.getElementById('estado-screen').classList.remove('show');
     clearInterval(estadoPollInterval); estadoPollInterval = null;

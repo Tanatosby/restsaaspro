@@ -15,14 +15,19 @@ por el usuario:
 | 2026-08-19 | `7803818` | **ISS-047** — modalidad por menú (para llevar / comer acá por línea, no por pedido entero). |
 | 2026-08-19 | `7803818..60c9e6f` (incluye `ca262b1`, `ba710d0`) | **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html` — el flujo completo, sin riesgo de 404) y **ISS-048** (volver de "¿Cómo vas a pagar?" a la carta). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
+**Pendiente de deploy:**
+- **ISS-049** (el pedido se pierde si la pestaña se recarga sola al salir a pagar) — 🔴
+  implementado hoy, prioridad alta a pedido explícito del usuario ("se aburren de usar la app").
+  Ver `issues/ISS-049-pedido-se-pierde-al-salir-a-pagar.md`.
+
 **T6, el backup de la BD — corregido hoy, sigue quedando el restore de prueba.** El script y el
 cron existían desde el **29 de mayo**, pero al script le faltaba `mkdir -p`, así que **cada
 corrida nocturna fallaba en silencio durante casi 3 meses** (el `echo` final de "Backup creado"
 imprimía igual, sin importar si el `cp` había funcionado). Esto explica con precisión el
 incidente del 2026-08-16: la respuesta a "¿restauramos?" fue "no hay backup" pese a que el cron
 llevaba meses corriendo. Corregido y verificado 2026-08-19 — primer backup real, 241 KB. Detalle
-completo en `deploy.md` §7. **Falta todavía:** probar un restore real al menos una vez, y copiar
-los backups a un lugar externo al servidor.
+completo en `deploy.md` §7. **El usuario decidió dejar para el fin de semana:** probar un restore
+real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 **Pendiente, no bloqueante:**
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
@@ -36,6 +41,39 @@ los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-19 (parte 6) — ISS-049: el pedido se pierde al salir a pagar
+
+**Prompt del usuario:** dejó el restore de prueba y la copia externa de backups para el fin de
+semana. Preguntó si quedaba algo pendiente de los inputs de la señora (sí: detección de Yape
+duplicado, sin implementar) y contó un incidente nuevo del Día 5: una persona salió a pagar por
+Yape y al volver la página "había expirado", con la frase textual de la dueña sobre el riesgo de
+que la gente se aburra de usar la app. Pidió implementarlo ya, por esa prioridad.
+
+**Diagnóstico:** `menu.html` no persistía nada del pedido en curso — ni `localStorage` ni manejo
+de ciclo de vida de la página. En un celular de gama media, Chrome puede descargar la pestaña de
+fondo mientras el comensal está pagando en otra app y recargarla de cero al volver — se pierde
+todo lo que vivía en memoria. No es un caso raro: es el camino normal de pago del sistema.
+
+**El cambio:** se guarda `pagoPendiente` en `localStorage` desde que el comensal elige un método
+de pago (`seleccionarMetodoPago()`) — el punto justo antes de salir a pagar —, y de nuevo si ya
+se creó la orden/reserva en el backend (evita duplicarla en un reintento). `init()` restaura ese
+estado al cargar, con un toast "Recuperamos tu pedido". La foto del comprobante no se persiste
+(un `File` no sobrevive un `JSON.stringify`) — hay que volver a adjuntarla si ya la había
+elegido. Se limpia al confirmar con éxito, al volver a la carta (ISS-048) o al reiniciar todo.
+Detalle completo en `issues/ISS-049-pedido-se-pierde-al-salir-a-pagar.md`.
+
+**Verificación:** `scripts/test-iss049-recuperar-pago.js` nuevo, **12/12** — usa `page.reload()`
+para simular el caso real (borra la memoria, conserva `localStorage`, igual que Chrome matando
+una pestaña de fondo): arma el carrito, elige método, recarga, confirma que vuelve solo a la
+pantalla de pago con el mismo total y método marcado, que se puede terminar de confirmar sin
+duplicar la orden, y que una visita nueva después no trae de vuelta nada viejo. 449/449 jest +
+`test-iss048-volver-pago` 15/15 y `test-modalidad-mixta` 19/19 sin regresiones (mismo archivo).
+
+**Documentación actualizada:** `issues/ISS-049-...md` (nuevo), `issues/ISSUES.md`, `pilotos.md`
+(Día 5, con la frase textual de la dueña), `status.md` (esta entrada).
 
 ---
 
