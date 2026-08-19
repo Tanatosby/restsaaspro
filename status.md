@@ -17,7 +17,9 @@ por el usuario:
 | 2026-08-19 | `60c9e6f..e7fc697` | **ISS-049** (recuperar el pedido si la pestaña se recarga al pagar), **ISS-050** (número de pedido igual para comensal y dueña) e **ISS-051** (aviso de comprobante Yape/Plin reutilizado). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-19 | `e7fc697..5b3af72` | **ISS-052** — el pensionista puede cambiar su propia contraseña. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
-**Sin pendientes de deploy.**
+**Pendiente de deploy:**
+- **ISS-053** ("Agregar manual" con fotos + soporte de carta) — 🟡 implementado hoy, sin
+  confirmación de deploy todavía. Ver `issues/ISS-053-agregar-manual-con-fotos.md`.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -44,6 +46,35 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-19 (parte 9) — ISS-053: "Agregar manual" con fotos + carta
+
+**Prompt del usuario:** "el tema del menú manual, está bien pero no puede ser más visual (bonito)
+como en menu.html, o sea algunas ideas de mockup?".
+
+**Diagnóstico:** el `<select>` de texto plano por sección era el único selector de plato de toda
+la app sin foto. Revisando el código apareció que **ya existía el widget que hacía falta**:
+`PlatoPicker` — grid de fotos, ya cargado en `owner.html`, ya usado en producción para armar
+secciones de menú en Configuración. Cero widget nuevo que construir.
+
+**Mockup primero** (mismo criterio que ISS-047 y Pensionistas): 2 estados reusando los tokens
+reales de `owner.css` — el chip nuevo que reemplaza al `<select>`, y `PlatoPicker` abierto
+encima. <https://claude.ai/code/artifact/0dfcfb2a-7fdc-494f-ab31-156ce87850a8>. Se aprovechó para
+marcar una pregunta aparte, no pedida: "Agregar manual" solo tenía menú del día, nada de carta.
+El usuario aprobó sumarla también.
+
+**El cambio:** chip nuevo (vacío: "+ Elegir [sección]"; con selección: foto + nombre + "cambiar")
+que abre `PlatoPicker.open()`. Foto de portada en la card del menú (misma prioridad que
+`menu.html`). Sección "Carta" nueva con el mismo patrón card+stepper — `POST /api/orders` ya
+aceptaba `carta_items`, cero cambios de backend. Detalle en
+`issues/ISS-053-agregar-manual-con-fotos.md`.
+
+**Verificación:** `scripts/test-agregar-manual.js` (ya existía) actualizado — pasó de usar
+`page.selectOption()` sobre un `<select>` a interactuar con `PlatoPicker` de verdad, más una
+rama nueva de menú+carta juntos. **28/28** + 457/457 jest + `test-modalidad-mixta` 19/19 sin
+regresiones.
 
 ---
 

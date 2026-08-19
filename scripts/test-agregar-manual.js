@@ -8,6 +8,9 @@
  *     (badgePago), solo el badge propio "🧾 Pedido manual · Confirmar pago al
  *     cobrar" (badgeManual), sin importar si efectivo está activo o no.
  *   - Las secciones obligatorias del menú se siguen exigiendo (ISS-046).
+ *   - Con fotos (2026-08-19): el plato de cada sección se elige con
+ *     PlatoPicker (grid de fotos), no un <select>. Se sumó carta, con el
+ *     mismo patrón card+stepper que ya tenía el menú del día.
  *
  * Uso: PORT=3399 node app.js &   (servidor ya debe estar corriendo)
  *      node scripts/test-agregar-manual.js
@@ -43,11 +46,19 @@ function ordenPrueba(nombre) {
   const ctx  = await browser.newContext({ viewport: { width: 390, height: 800 } });
   const page = await ctx.newPage();
   const errors = [];
-  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', m => {
+    if (m.type() !== 'error') return;
+    // Fotos de /uploads pueden faltar en dev (uploads fuera de git, mismo
+    // criterio que scripts/test-gate-pago.js) — no es un error de la app.
+    const url = (m.location() && m.location().url) || '';
+    if (/\/uploads\//.test(url) && /Failed to load resource/.test(m.text())) return;
+    errors.push(m.text());
+  });
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
 
   // IDs de lo creado en esta corrida, para poder limpiar todo al final.
   let idSeccion, idPlato, idMenu, idComponente;
+  let idCategoria, idPlatoCarta;
   let configOriginal = null;
 
   try {
@@ -76,6 +87,13 @@ function ordenPrueba(nombre) {
       { idMenu, idSeccion, idPlato });
     check(!!(idSeccion && idPlato && idMenu && idComponente), 'Fixture creado (sección + plato + menú + componente)');
 
+    // ── Fixture: un plato de carta de prueba ──
+    idCategoria  = await page.evaluate(async () => (await api('POST', '/api/menu/categorias', { nombre: 'TestManualCategoria' })).id);
+    idPlatoCarta = await page.evaluate(async (id_categoria) =>
+      (await api('POST', '/api/menu/platos-carta', { nombre: 'TestManualCarta', precio: 8, id_categoria })).id,
+      idCategoria);
+    check(!!(idCategoria && idPlatoCarta), 'Fixture de carta creado (categoría + plato)');
+
     configOriginal = await page.evaluate(() => api('GET', '/api/menu/restaurante/config'));
 
     async function setEfectivoActivo(valor) {
@@ -88,7 +106,7 @@ function ordenPrueba(nombre) {
       }, { ...configOriginal, efectivo_activo: valor });
     }
 
-    async function abrirYEnviarPedidoManual(nombreCliente, { elegirPlato = true } = {}) {
+    async function abrirYEnviarPedidoManual(nombreCliente, { elegirPlato = true, conCarta = false } = {}) {
       await page.evaluate(() => { showPanel('pedidos'); });
       await page.waitForTimeout(300);
       await page.click('button:has-text("+ Agregar manual")');
@@ -97,12 +115,48 @@ function ordenPrueba(nombre) {
 
       await page.fill('#manual-nombre', nombreCliente);
       await page.click(`.manual-menu-card[data-menu="${idMenu}"] button:has-text("+")`);
-      await page.waitForSelector(`#manual-secciones-${idMenu} select`, { timeout: 5000 });
-      if (elegirPlato) await page.selectOption(`#manual-secciones-${idMenu} select`, String(idComponente));
+      await page.waitForSelector(`#manual-secciones-${idMenu} button`, { timeout: 5000 });
+      if (elegirPlato) {
+        // El chip "+ Elegir [sección]" abre PlatoPicker (grid de fotos) — ya no es un <select>.
+        await page.click(`#manual-secciones-${idMenu} button`);
+        await page.waitForSelector('.pp-overlay.open', { timeout: 5000 });
+        await page.click(`.pp-card[data-id="${idComponente}"]`);
+        await page.waitForTimeout(200);
+      }
+      if (conCarta) {
+        await page.click(`.manual-carta-item[data-plato="${idPlatoCarta}"] button:has-text("+")`);
+      }
 
       await page.click('#manual-btn-enviar');
       await page.waitForTimeout(400);
     }
+
+    // ── El chip con foto reemplaza al <select>, y la carta aparece en el modal ──
+    console.log('\n── El modal muestra el chip visual y la sección "Carta" ──');
+    await page.evaluate(() => { showPanel('pedidos'); });
+    await page.waitForTimeout(300);
+    await page.click('button:has-text("+ Agregar manual")');
+    await page.waitForFunction(() => document.getElementById('modal-agregar-manual').style.display === 'flex');
+    await page.click(`.manual-menu-card[data-menu="${idMenu}"] button:has-text("+")`);
+    await page.waitForSelector(`#manual-secciones-${idMenu} button`, { timeout: 5000 });
+    check((await page.locator(`#manual-secciones-${idMenu} button`).textContent()).includes('Elegir'),
+      'El chip vacío dice "+ Elegir [sección]" (no un <select>)');
+
+    await page.click(`#manual-secciones-${idMenu} button`);
+    await page.waitForSelector('.pp-overlay.open', { timeout: 5000 });
+    // El plato de prueba no tiene foto — PlatoPicker cae al placeholder 🍽️, no a <img>.
+    check(await page.locator(`.pp-card[data-id="${idComponente}"]`).count() === 1,
+      'PlatoPicker (grid de fotos) muestra el plato de la sección');
+    await page.click(`.pp-card[data-id="${idComponente}"]`);
+    await page.waitForTimeout(200);
+    check((await page.locator(`#manual-secciones-${idMenu} button`).textContent()).includes('cambiar'),
+      'Tras elegir, el chip queda "lleno" con el nombre del plato + "cambiar"');
+
+    check(await page.locator(`.manual-carta-item[data-plato="${idPlatoCarta}"]`).count() === 1,
+      'La carta aparece en el modal, con el plato de prueba');
+
+    await page.click('#modal-agregar-manual button:has-text("Cancelar")');
+    await page.waitForTimeout(200);
 
     // ── Rama A: efectivo_activo = 0 → metodo_pago debe quedar NULL ──
     console.log('\n── Rama A: restaurante SIN efectivo activo ──');
@@ -141,6 +195,20 @@ function ordenPrueba(nombre) {
     check(cardB.includes('Pedido manual'), 'Misma tarjeta "Pedido manual" — el aviso es igual tenga o no efectivo activo');
     check(!cardB.includes('💵 Efectivo'), 'Tampoco aparece "💵 Efectivo" acá — badgePago no se dispara sin estado_pago');
 
+    // ── Rama con carta: menú del día + un plato de carta en el mismo pedido ──
+    console.log('\n── Pedido manual con menú + carta juntos ──');
+    await abrirYEnviarPedidoManual('AgregarManualTest Carta', { conCarta: true });
+
+    const ordenCarta = ordenPrueba('AgregarManualTest Carta');
+    check(!!ordenCarta, 'La orden con carta se creó en la BD');
+    const itemsCarta = db.prepare(`
+      SELECT cantidad, precio_unitario FROM orden_carta_items WHERE id_orden = ? AND id_plato_carta = ?
+    `).get(ordenCarta?.id, idPlatoCarta);
+    check(itemsCarta?.cantidad === 1, `El plato de carta quedó guardado con cantidad 1 (${itemsCarta?.cantidad})`);
+    check(itemsCarta?.precio_unitario === 8, `Con el precio correcto (S/ ${itemsCarta?.precio_unitario})`);
+    const itemsMenuDeEsaOrden = db.prepare(`SELECT COUNT(*) AS n FROM orden_menu_items WHERE id_orden = ?`).get(ordenCarta?.id).n;
+    check(itemsMenuDeEsaOrden > 0, 'El menú del día también quedó guardado en el mismo pedido');
+
     // ── Secciones obligatorias siguen exigidas (ISS-046) ──
     console.log('\n── Sección obligatoria sin elegir → bloquea el envío ──');
     await abrirYEnviarPedidoManual('AgregarManualTest C', { elegirPlato: false });
@@ -167,13 +235,16 @@ function ordenPrueba(nombre) {
       }
     } catch (_) {}
 
-    db.prepare(`DELETE FROM orden_menu_items WHERE id_orden IN (SELECT id FROM ordenes WHERE nombre_cliente LIKE 'AgregarManualTest%')`).run();
+    db.prepare(`DELETE FROM orden_menu_items  WHERE id_orden IN (SELECT id FROM ordenes WHERE nombre_cliente LIKE 'AgregarManualTest%')`).run();
+    db.prepare(`DELETE FROM orden_carta_items WHERE id_orden IN (SELECT id FROM ordenes WHERE nombre_cliente LIKE 'AgregarManualTest%')`).run();
     db.prepare(`DELETE FROM ordenes WHERE nombre_cliente LIKE 'AgregarManualTest%'`).run();
-    if (idMenu)     db.prepare(`DELETE FROM componentes_menu_dia WHERE id_menu_dia = ?`).run(idMenu);
-    if (idMenu)     db.prepare(`DELETE FROM menu_secciones WHERE id_menu_dia = ?`).run(idMenu);
-    if (idMenu)     db.prepare(`DELETE FROM menus_dia WHERE id = ?`).run(idMenu);
-    if (idPlato)    db.prepare(`DELETE FROM platos_menu WHERE id = ?`).run(idPlato);
-    if (idSeccion)  db.prepare(`DELETE FROM secciones_menu WHERE id = ?`).run(idSeccion);
+    if (idMenu)       db.prepare(`DELETE FROM componentes_menu_dia WHERE id_menu_dia = ?`).run(idMenu);
+    if (idMenu)       db.prepare(`DELETE FROM menu_secciones WHERE id_menu_dia = ?`).run(idMenu);
+    if (idMenu)       db.prepare(`DELETE FROM menus_dia WHERE id = ?`).run(idMenu);
+    if (idPlato)      db.prepare(`DELETE FROM platos_menu WHERE id = ?`).run(idPlato);
+    if (idSeccion)    db.prepare(`DELETE FROM secciones_menu WHERE id = ?`).run(idSeccion);
+    if (idPlatoCarta) db.prepare(`DELETE FROM platos_carta WHERE id = ?`).run(idPlatoCarta);
+    if (idCategoria)  db.prepare(`DELETE FROM categorias_carta WHERE id = ?`).run(idCategoria);
     console.log('\n(fixture y órdenes de prueba limpiados de la BD)');
 
     await browser.close();

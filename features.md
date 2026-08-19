@@ -180,6 +180,11 @@ paso sigue pendiente sin bloquear el flujo de cobro normal.
 falta elegirla. 423/423 jest sin regresiones (`tests/cola-dia.test.js` sumó `es_manual` a su
 schema in-memory).
 
+**Actualizado 2026-08-19 — con fotos + carta ([`ISS-053`](issues/ISS-053-agregar-manual-con-fotos.md)):**
+el `<select>` de texto plano por sección se reemplazó por un chip que abre `PlatoPicker` (grid de
+fotos ya existente, reusado de Configuración) y se sumó una sección "Carta" con el mismo patrón
+card+stepper — `POST /api/orders` ya aceptaba `carta_items`, cero cambios de backend. 28/28.
+
 ## ~~Descargar el menú del día como foto~~ ✅ Completado 2026-08-17
 
 Pedido de la dueña el día 4 del piloto #1 (2026-08-17). Ese día **4 comensales no pudieron usar la

@@ -449,9 +449,18 @@ async function loadSinCerrar() {
 // (routes/orders.js, manual:true) — sin el tap extra de "→ Preparando" que
 // sí tienen los pedidos de la app. El método de pago y el aviso de "Confirmar
 // pago" los pinta badgeManual()/badgePago() en la propia tarjeta de la cola.
+//
+// Con fotos (2026-08-19): antes cada plato se elegía con un <select> de
+// texto plano. Ahora reusa PlatoPicker — el mismo selector visual (grid de
+// fotos) que ya se usaba para armar las secciones del menú del día en
+// Configuración — sin construir ningún widget nuevo. De paso se sumó la
+// carta (antes "Agregar manual" solo tenía menú del día): mismo patrón de
+// card con foto + stepper de cantidad que ya usaba el menú.
 
 let _manualMenus      = [];  // menús del día activos hoy, con secciones y platos
 let _manualInstancias = {};  // { [id_menu_dia]: [ {id_seccion: id_componente}, ... ] } — 1 entrada por instancia
+let _manualCarta      = [];  // platos de carta activos
+let _manualCartaQty   = {};  // { [id_plato_carta]: cantidad }
 
 function todayLimaPedidos() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date());
@@ -461,18 +470,22 @@ async function abrirModalAgregarManual() {
   document.getElementById('manual-nombre').value = '';
   document.getElementById('manual-error').textContent = '';
   _manualInstancias = {};
+  _manualCartaQty   = {};
 
   document.getElementById('modal-agregar-manual').style.display = 'flex';
 
-  const selMesa = document.getElementById('manual-mesa');
-  const lista   = document.getElementById('manual-menus-lista');
+  const selMesa    = document.getElementById('manual-mesa');
+  const listaMenus = document.getElementById('manual-menus-lista');
+  const listaCarta = document.getElementById('manual-carta-lista');
   selMesa.innerHTML = '<option value="">Sin mesa</option>';
-  lista.innerHTML    = '<div class="loading-text">Cargando menú del día…</div>';
+  listaMenus.innerHTML = '<div class="loading-text">Cargando menú del día…</div>';
+  listaCarta.innerHTML = '';
 
   try {
-    const [mesas, menus] = await Promise.all([
+    const [mesas, menus, carta] = await Promise.all([
       api('GET', '/api/mesas/estado'),
       api('GET', `/api/menu/menus-dia?dia=${todayLimaPedidos()}`),
+      api('GET', '/api/menu/platos-carta'),
     ]);
 
     if (mesas.length) {
@@ -483,11 +496,16 @@ async function abrirModalAgregarManual() {
     // menús activos hoy — el mozo no debería poder tomar un pedido de un
     // menú que la dueña ya deshabilitó.
     _manualMenus = menus.filter(m => m.activo);
-    lista.innerHTML = _manualMenus.length
+    listaMenus.innerHTML = _manualMenus.length
       ? _manualMenus.map(renderManualMenuCard).join('')
       : emptyState('🍽️', 'No hay menú configurado para hoy');
+
+    _manualCarta = carta.filter(p => p.activo);
+    listaCarta.innerHTML = _manualCarta.length
+      ? `<div style="font-size:0.857143rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:0.3rem">Carta</div>${_manualCarta.map(renderManualCartaItem).join('')}`
+      : '';
   } catch (e) {
-    lista.innerHTML = emptyState('⚠️', e.message);
+    listaMenus.innerHTML = emptyState('⚠️', e.message);
   }
 }
 
@@ -495,21 +513,36 @@ function cerrarModalAgregarManual() {
   document.getElementById('modal-agregar-manual').style.display = 'none';
 }
 
+// Misma prioridad que usa menu.html para la portada: el plato que el owner
+// eligió explícitamente (id_plato_portada) y, si no hay, el primero con foto.
+function fotoPortadaManual(menu) {
+  const todos = menu.secciones.flatMap(s => s.platos);
+  const portada = todos.find(p => p.id_plato === menu.id_plato_portada);
+  return (portada && portada.url_foto) || todos.find(p => p.url_foto)?.url_foto || null;
+}
+
 function renderManualMenuCard(menu) {
   const cantidad = (_manualInstancias[menu.id] || []).length;
+  const foto = fotoPortadaManual(menu);
+  const fotoHtml = foto
+    ? `<img src="${esc(foto)}" alt="${esc(menu.nombre)}" style="width:100%;height:84px;object-fit:cover;display:block">`
+    : `<div style="width:100%;height:84px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));display:flex;align-items:center;justify-content:center;font-size:1.714286rem">🍽️</div>`;
   return `
-    <div class="manual-menu-card" data-menu="${menu.id}" style="border:1px solid var(--border);border-radius:10px;padding:0.75rem;display:flex;flex-direction:column;gap:0.6rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem">
-        <strong style="font-size:1rem">${esc(menu.nombre)}</strong>
-        <span style="color:var(--muted);font-size:0.928571rem">S/ ${Number(menu.precio).toFixed(2)}</span>
+    <div class="manual-menu-card" data-menu="${menu.id}" style="border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column">
+      ${fotoHtml}
+      <div style="padding:0.75rem;display:flex;flex-direction:column;gap:0.6rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem">
+          <strong style="font-size:1rem">${esc(menu.nombre)}</strong>
+          <span style="color:var(--muted);font-size:0.928571rem">S/ ${Number(menu.precio).toFixed(2)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <button type="button" onclick="cambiarCantidadManual(${menu.id},-1)" style="min-width:44px;min-height:44px;border-radius:8px;border:1px solid var(--border-2);background:var(--white);font-size:1.142857rem;cursor:pointer">−</button>
+          <span class="manual-qty-num" style="min-width:1.5rem;text-align:center;font-weight:700">${cantidad}</span>
+          <button type="button" onclick="cambiarCantidadManual(${menu.id},1)" style="min-width:44px;min-height:44px;border-radius:8px;border:1px solid var(--border-2);background:var(--white);font-size:1.142857rem;cursor:pointer">+</button>
+          <span style="font-size:0.857143rem;color:var(--muted)">${cantidad ? 'menú(s)' : 'agregar'}</span>
+        </div>
+        <div id="manual-secciones-${menu.id}">${renderManualInstancias(menu)}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:0.75rem">
-        <button type="button" onclick="cambiarCantidadManual(${menu.id},-1)" style="min-width:44px;min-height:44px;border-radius:8px;border:1px solid var(--border-2);background:var(--white);font-size:1.142857rem;cursor:pointer">−</button>
-        <span class="manual-qty-num" style="min-width:1.5rem;text-align:center;font-weight:700">${cantidad}</span>
-        <button type="button" onclick="cambiarCantidadManual(${menu.id},1)" style="min-width:44px;min-height:44px;border-radius:8px;border:1px solid var(--border-2);background:var(--white);font-size:1.142857rem;cursor:pointer">+</button>
-        <span style="font-size:0.857143rem;color:var(--muted)">${cantidad ? 'menú(s)' : 'agregar'}</span>
-      </div>
-      <div id="manual-secciones-${menu.id}">${renderManualInstancias(menu)}</div>
     </div>`;
 }
 
@@ -523,20 +556,57 @@ function renderManualInstancias(menu) {
     </div>`).join('');
 }
 
+// El "chip" reemplaza al <select> de texto plano — vacío: borde punteado
+// "+ Elegir [sección]"; elegido: foto real + nombre + "cambiar". Tocar
+// cualquiera de los dos abre PlatoPicker (grid de fotos), el mismo widget
+// que ya se usa para armar las secciones del menú del día.
 function renderManualSeccion(menuId, idx, seccion, seleccion) {
   const disponibles = seccion.platos.filter(p => !p.agotado);
-  const actual = seleccion[seccion.id_seccion] ?? '';
-  const opciones = disponibles.map(p =>
-    `<option value="${p.id_componente}" ${String(actual) === String(p.id_componente) ? 'selected' : ''}>${esc(p.nombre)}</option>`
-  ).join('');
+  const actualId = seleccion[seccion.id_seccion] ?? null;
+  const actual = actualId ? disponibles.find(p => p.id_componente === Number(actualId)) : null;
+
+  const thumbVacio = `<span style="width:32px;height:32px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.928571rem;background:var(--surface-2);border:1px solid var(--border);color:var(--muted)">🍽️</span>`;
+  const thumbLleno = actual?.url_foto
+    ? `<img src="${esc(actual.url_foto)}" alt="" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0">`
+    : `<span style="width:32px;height:32px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.928571rem;background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:#fff">🍽️</span>`;
+
+  const chip = actual
+    ? `<button type="button" onclick="abrirPickerManual(${menuId},${idx},${seccion.id_seccion})"
+         style="display:flex;align-items:center;gap:0.55rem;padding:6px 8px;border-radius:9px;border:1.5px solid var(--accent-dim);background:var(--accent-light);min-height:44px;width:100%;text-align:left;cursor:pointer;font-family:inherit">
+        ${thumbLleno}
+        <span style="flex:1;font-size:0.857143rem;font-weight:600;color:var(--text)">${esc(actual.nombre)}</span>
+        <span style="font-size:0.714286rem;font-weight:700;color:var(--accent)">cambiar</span>
+       </button>`
+    : `<button type="button" onclick="abrirPickerManual(${menuId},${idx},${seccion.id_seccion})"
+         style="display:flex;align-items:center;gap:0.55rem;padding:6px 8px;border-radius:9px;border:1.5px dashed var(--border-2);background:var(--surface-2);min-height:44px;width:100%;text-align:left;cursor:pointer;font-family:inherit">
+        ${thumbVacio}
+        <span style="flex:1;font-size:0.857143rem;font-weight:600;color:var(--muted)">+ Elegir ${esc(seccion.nombre_seccion)}</span>
+       </button>`;
+
   return `
-    <label style="display:flex;flex-direction:column;gap:0.25rem">
+    <label style="display:flex;flex-direction:column;gap:0.3rem">
       <span style="font-size:0.785714rem;color:var(--muted)">${esc(seccion.nombre_seccion)}${seccion.requerido ? ' <span style="color:var(--danger)">*</span>' : ''}</span>
-      <select onchange="elegirPlatoManual(${menuId},${idx},${seccion.id_seccion},this.value)" style="font-size:1.142857rem;font-family:inherit;padding:8px 10px;min-height:44px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--text)">
-        <option value="">— elegir —</option>
-        ${opciones}
-      </select>
+      ${chip}
     </label>`;
+}
+
+function abrirPickerManual(menuId, idx, idSeccion) {
+  const menu = _manualMenus.find(m => m.id === menuId);
+  if (!menu) return;
+  const seccion = menu.secciones.find(s => s.id_seccion === idSeccion);
+  if (!seccion) return;
+  const disponibles = seccion.platos.filter(p => !p.agotado)
+    .map(p => ({ id: p.id_componente, nombre: p.nombre, url_foto: p.url_foto }));
+
+  PlatoPicker.open({
+    platos: disponibles,
+    title:  `Elegir — ${seccion.nombre_seccion}`,
+    onSelect: (plato) => {
+      elegirPlatoManual(menuId, idx, idSeccion, plato.id);
+      const cont = document.getElementById(`manual-secciones-${menuId}`);
+      if (cont) cont.innerHTML = renderManualInstancias(menu);
+    },
+  });
 }
 
 function cambiarCantidadManual(menuId, delta) {
@@ -559,6 +629,33 @@ function elegirPlatoManual(menuId, idx, idSeccion, idComponente) {
   if (!seleccion) return;
   if (idComponente) seleccion[idSeccion] = Number(idComponente);
   else delete seleccion[idSeccion];
+}
+
+// ── Carta — mismo patrón de card+stepper que el menú del día, sin picker
+// (acá no hay secciones que elegir, solo cantidad) ──
+function renderManualCartaItem(plato) {
+  const cantidad = _manualCartaQty[plato.id] || 0;
+  const foto = plato.url_foto
+    ? `<img src="${esc(plato.url_foto)}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0">`
+    : `<span style="width:44px;height:44px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.142857rem;background:var(--surface-2);border:1px solid var(--border);color:var(--muted)">🍽️</span>`;
+  return `
+    <div class="manual-carta-item" data-plato="${plato.id}" style="display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0;border-bottom:1px solid var(--border)">
+      ${foto}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.857143rem;font-weight:600;color:var(--text)">${esc(plato.nombre)}</div>
+        <div style="font-size:0.785714rem;color:var(--muted)">S/ ${Number(plato.precio).toFixed(2)}</div>
+      </div>
+      <button type="button" onclick="cambiarCantidadCartaManual(${plato.id},-1)" style="min-width:38px;min-height:38px;border-radius:8px;border:1px solid var(--border-2);background:var(--white);font-size:1.071429rem;cursor:pointer">−</button>
+      <span class="manual-carta-qty-num" style="min-width:1.3rem;text-align:center;font-weight:700;font-size:0.857143rem">${cantidad}</span>
+      <button type="button" onclick="cambiarCantidadCartaManual(${plato.id},1)" style="min-width:38px;min-height:38px;border-radius:8px;border:1px solid var(--border-2);background:var(--white);font-size:1.071429rem;cursor:pointer">+</button>
+    </div>`;
+}
+
+function cambiarCantidadCartaManual(platoId, delta) {
+  const next = Math.max(0, (_manualCartaQty[platoId] || 0) + delta);
+  _manualCartaQty[platoId] = next;
+  const row = document.querySelector(`.manual-carta-item[data-plato="${platoId}"] .manual-carta-qty-num`);
+  if (row) row.textContent = next;
 }
 
 async function enviarPedidoManual() {
@@ -585,13 +682,17 @@ async function enviarPedidoManual() {
     }
   }
 
-  if (!menu_items.length) { errEl.textContent = 'Agrega al menos un menú'; return; }
+  const carta_items = Object.entries(_manualCartaQty)
+    .filter(([, cantidad]) => cantidad > 0)
+    .map(([id_plato_carta, cantidad]) => ({ id_plato_carta: Number(id_plato_carta), cantidad }));
+
+  if (!menu_items.length && !carta_items.length) { errEl.textContent = 'Agrega al menos un ítem'; return; }
 
   const btn = document.getElementById('manual-btn-enviar');
   btn.disabled = true;
   btn.textContent = 'Enviando…';
   try {
-    await api('POST', '/api/orders', { mesa, nombre_cliente: nombre, menu_items, manual: true });
+    await api('POST', '/api/orders', { mesa, nombre_cliente: nombre, menu_items, carta_items, manual: true });
     toast('Pedido manual enviado a cocina');
     cerrarModalAgregarManual();
     reiniciarPoll();
