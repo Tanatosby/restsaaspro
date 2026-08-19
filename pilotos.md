@@ -11,7 +11,7 @@
 
 ---
 
-## Piloto #1 — Restaurante (sin nombre registrado aún)
+## Piloto #1 — Karina Menú (menupro.tech/karinamenu)
 
 ### Timeline
 
@@ -94,9 +94,26 @@ no reemplaza la de julio — es la evolución.
 
 | Día de retoma | Fecha | Evento |
 |---|-------|--------|
-| Día 1 | 2026-08-12 (martes) | Visita en persona del usuario. 4 hallazgos — detalle completo en `vision_negocio.md` §16 (percepción mejoró; sigue el cuaderno en paralelo "hasta que los chicos se acostumbren" / "hasta que tenga forma de identificar las mesas"; problema real de numeración de mesas al juntarse, con solución propia de la dueña; fricción confirmada por clientas en el pago Yape/Plin). |
-| Día 2 | 2026-08-13 (miércoles) | Día 2 de la semana de carga real del negocio. La dueña llegó tarde y dejó a un encargado a cargo del local. Entraron **más de una reserva real por el QR** y no las revisó — el cuaderno siguió siendo la única fuente que miró. |
-| Día 3 | 2026-08-14 (jueves) | Check-in sin incidente puntual — balance general de adaptación (ver abajo) + 3 detalles de uso real que se documentaron como issues nuevos. |
+| Día 1 | 2026-08-12 (miércoles) | Visita en persona del usuario. 4 hallazgos — detalle completo en `vision_negocio.md` §16 (percepción mejoró; sigue el cuaderno en paralelo "hasta que los chicos se acostumbren" / "hasta que tenga forma de identificar las mesas"; problema real de numeración de mesas al juntarse, con solución propia de la dueña; fricción confirmada por clientas en el pago Yape/Plin). |
+| Día 2 | 2026-08-13 (jueves) | Día 2 de la semana de carga real del negocio. La dueña llegó tarde y dejó a un encargado a cargo del local. Entraron **más de una reserva real por el QR** y no las revisó — el cuaderno siguió siendo la única fuente que miró. |
+| Día 3 | 2026-08-14 (viernes) | Check-in sin incidente puntual — balance general de adaptación (ver abajo) + 3 detalles de uso real que se documentaron como issues nuevos. |
+| — | 2026-08-15 (sábado) | **Restaurante cerrado / sin uso** — el único día de pausa desde que retomó el 12 de agosto. |
+| Día 4 | 2026-08-17 (lunes) | Recopilación en persona: cocinera adaptándose bien, dueña todavía no; 4 clientes no pudieron pedir por la app; incidente de un plato sin su proteína (→ ISS-046); pedido de un contador "Menús de hoy"; pregunta sobre comprobantes Yape duplicados; pedido de poder descargar la foto del menú. Detalle abajo. |
+| Día 5 | 2026-08-18 (martes) | Se despliegan las respuestas al Día 4 (descarga de foto, "Agregar manual", conteo de menús). Incidente nuevo: un pedido de 2 menús —uno para llevar, otro para comer ahí— que el sistema no podía separar (→ ISS-047). La dueña dice que le gustaría probar Pensionistas (saldo en cuenta en vez de foto o efectivo). Detalle abajo. |
+| Día 6 | 2026-08-19 (miércoles) | **Hoy.** ISS-047 implementado y desplegado. Pensionistas Fase 1 (panel del owner) y Fase 2 (`pensionista.html`) completadas, pendientes de deploy. Sin visita/reporte nuevo del piloto registrado todavía — día en curso. |
+
+> **El domingo 16 de agosto no lleva número de "Día" en esta tabla:** no hay reporte de uso ni de
+> pausa para esa fecha — a diferencia del sábado 15, que el usuario confirmó explícitamente como
+> el día de pausa. Los "Día 4/5/6" de acá en más se cuentan sobre días con reporte real, no sobre
+> el calendario estricto — ajuste de la convención original del 2026-08-14 a como se usó en la
+> práctica (confirmado por las fechas de `status.md`: la sesión que recopiló "día 4 del piloto"
+> es del 2026-08-17, lunes).
+
+> **Corrección 2026-08-19:** los días de la semana de esta tabla estaban corridos un día (decía
+> "martes/miércoles/jueves", debía decir "miércoles/jueves/viernes" — 2026-08-12 es miércoles).
+> Las fechas en sí (12/13/14) siempre estuvieron bien; solo el nombre del día estaba mal. Detectado
+> al cruzar contra el calendario real cuando el usuario confirmó "se regresó a trabajar el
+> miércoles 12 de agosto".
 
 ### Día 2 (2026-08-13) — llegó tarde, encargado sin entrenar no revisó reservas
 
@@ -201,6 +218,66 @@ implementar todavía, a pedido del usuario — quedan con prioridad 🔴 Crític
 **Lectura:** el patrón se sostiene. Cuantas más horas reales acumula la dueña, más aparecen
 estos detalles finos (no fallas graves, sino fricciones puntuales en momentos específicos del
 flujo) — es la señal de que el uso está avanzando, no de que el producto esté fallando.
+
+### Sábado 2026-08-15 — pausa
+
+Restaurante cerrado / sin uso. Único día de pausa desde que retomó el 12 de agosto.
+
+### Día 4 (2026-08-17, lunes) — cocinera adaptándose bien, dueña todavía no, 4 clientes sin poder pedir
+
+Recopilación en persona del usuario tras la visita. El hallazgo central fue un incidente
+técnico real: un plato **"arroz con papas fritas" pedido sin su proteína**, porque el sistema
+no distinguía platos autocontenidos de los que sí necesitan una sección adicional — quedó
+como [`ISS-046`](issues/ISS-046-plato-exige-seccion-condicional.md), resuelto y desplegado el
+mismo día (`a47d132`).
+
+**El resto de lo reportado ese día:**
+
+- **La cocinera se está adaptando bien; la dueña todavía no.** Primera vez que se registra una
+  diferencia clara entre los dos roles — hasta acá todo el balance de adopción hablaba solo de
+  la dueña.
+- **4 clientes no pudieron pedir por la app**: 2 se rehusaron, 1 sin internet, 1 sin celular.
+  Disparó el pedido de un botón para cargar esos pedidos a mano — quedó implementado como
+  "Agregar manual" en la Cola del día (desplegado 2026-08-18, ver Día 5).
+- **Pedido de un contador "Menús de hoy"** en Análisis (menús cobrados + entregados del día).
+  De paso se encontró un bug de conteo real en `reportes.js` (dividía por el total de secciones
+  en vez de por las obligatorias, subcontando) — los dos se resolvieron juntos el Día 5.
+- **Pregunta de la dueña sobre comprobantes de Yape duplicados:** *"¿qué pasa si un chico
+  comparte su pago de Yape con otro y ambos envían la misma captura?"* — problema real, sin
+  alcance definido todavía. Diagnóstico técnico hecho el 2026-08-19: `routes/public.js` guarda
+  el comprobante pero no compara nada; lo barato es hashear el archivo al subirlo, con la
+  salvedad de que solo atrapa el archivo idéntico, no una recaptura. **Sin implementar.**
+- **Pedido de poder descargar la foto del menú** para compartirlo por WhatsApp — construido el
+  mismo día, desplegado el Día 5 (`9c9de62` + `32c8fb0`).
+
+### Día 5 (2026-08-18, martes) — se despliega lo del Día 4, aparece el pedido mixto, pensionistas
+
+Se desplegaron las tres respuestas al Día 4 que ya estaban listas: descarga de foto del menú,
+botón "Agregar manual" y fix del conteo de menús + tarjeta "Menús de hoy" (`9c9de62`+`32c8fb0`
+y `bc593a4`+`14ce74f`).
+
+**Incidente nuevo:** una persona pidió **2 menús, uno para llevar y otro para comer en el
+local**, y el sistema no permitía separarlos — o todo el pedido era para llevar, o todo era
+para comer ahí. Quedó como [`ISS-047`](issues/ISS-047-modalidad-por-menu.md); de paso se
+encontró que además **cobraba de más** (2 envases en vez de 1). Implementado y desplegado al
+día siguiente (Día 6).
+
+**La dueña dijo que le gustaría probar Pensionistas** — que sus comensales recurrentes tengan
+saldo en cuenta en vez de mandar foto de Yape o pagar en efectivo cada vez. El backend de este
+módulo ya estaba armado desde el 11 de agosto; faltaba toda la parte visible.
+
+### Día 6 (2026-08-19, miércoles) — hoy
+
+- **ISS-047 implementado y desplegado**, confirmado por el usuario.
+- **Pensionistas Fase 1** (panel del owner: alta, recarga, historial de movimientos, baja
+  lógica) y **Fase 2** (`pensionista.html`: pedir con saldo, sin pantalla de pago, "Mis
+  pedidos" en vivo) — las dos completadas hoy en respuesta directa al pedido del Día 5,
+  **pendientes de deploy**.
+- Reportado por el usuario (no confirmado todavía si viene de un uso real de la dueña o de
+  prueba propia): sin forma de volver de la pantalla "¿Cómo vas a pagar?" a la carta en
+  `menu.html` — anotado como [`ISS-048`](issues/ISS-048-sin-volver-desde-pago.md),
+  diagnosticado, sin implementar.
+- Día en curso — sin visita/reporte nuevo del piloto más allá de lo de arriba.
 
 ---
 

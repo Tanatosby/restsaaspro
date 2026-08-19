@@ -67,6 +67,11 @@ Al finalizar cada tarea o sesión de trabajo, siempre actualizar todos los `*.md
 - `features.md` — si se completa, agrega o modifica un feature o ARCH
 - `issues/ISSUES.md` — si se abre, avanza o resuelve un issue
 - `issues/REFACTOR-XXX.md` o `issues/ISS-XXX.md` — si aplica al trabajo del día
+- `pilotos.md` — registro día a día de las incidencias de uso real con los restaurantes piloto.
+  **Cada entrada lleva fecha explícita** (no solo "Día N" — el número de día sin la fecha calendario
+  al lado es lo que generó el hueco del 2026-08-19: quedaron sin registrar los días entre una
+  visita y la siguiente). Si el usuario cuenta algo de un piloto en la conversación (qué pasó, qué
+  dijo el dueño, quién lo usó), anotarlo ahí el mismo día — no esperar a que pregunte por qué falta.
 
 **El objetivo:** que cualquier sesión futura (desde cualquier laptop) arranque con documentación exacta del estado real del proyecto.
 
@@ -100,7 +105,7 @@ El proyecto tiene una carpeta `issues/` en la raíz para tracking de bugs y prob
 - Las capturas de pantalla se guardan en `issues/screenshots/`.
 - El archivo `issues/ISSUES.md` es el índice central con todos los issues y su estado.
 - Al inicio de cada sesión, si hay issues abiertos relevantes al trabajo, mencionarlos.
-- El usuario trabaja desde 2 laptops distintas, por lo tanto al inicio de sesión siempre leer CLAUDE.md, vision_negocio.md, features.md, status.md, backlog.md e ISSUES.md para tener contexto completo antes de cualquier tarea.
+- El usuario trabaja desde 2 laptops distintas, por lo tanto al inicio de sesión siempre leer CLAUDE.md, vision_negocio.md, features.md, status.md, backlog.md, ISSUES.md y pilotos.md para tener contexto completo antes de cualquier tarea.
 - `backlog.md` es el plan priorizado de la etapa (P0/P1/P2) con el porqué de cada prioridad y el contexto de los pilotos. Es la fuente para "¿qué sigue?". Actualizarlo al cerrar cada sesión. **Ojo:** los archivos `conversacion_*.md` están en `.gitignore` y no viajan entre laptops — si el usuario trae uno con decisiones nuevas, portar lo que sea permanente a `backlog.md`.
 - `vision_negocio.md` es la brújula del proyecto: define el target (restaurantes de menú pequeños, NO restaurantes elegantes), los flujos reales de reserva/orden/cocina/pago, los roles y los 15 gaps pendientes. Leerlo siempre — evita implementar cosas que no encajan con el negocio real.
 - El usuario puede enviar capturas de pantalla (rutas de archivo) para diagnóstico — leerlas con Read tool.
