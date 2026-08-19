@@ -2,19 +2,30 @@
 
 > Este documento es la brújula del proyecto. Debe leerse al inicio de cada sesión de desarrollo
 > para garantizar que cada decisión técnica va en la dirección correcta.
-> Última actualización: 2026-08-13
+> Última actualización: 2026-08-19
 
 ---
 
 ## 1. Target de Mercado
 
-**Restaurantes de menú pequeños en Perú.**
+**Restaurantes de menú del día en Perú.** "Pequeño" acá describe el **formato** (menú de precio
+fijo, gestión informal), no el tamaño físico del local — ver corrección de abajo.
 
-- Menos de 10 mesas
+> **Corrección 2026-08-19:** este documento decía "menos de 10 mesas" — dato desactualizado, no
+> reflejaba el target real. El piloto activo (Karina Menú) tiene **20 mesas**, y el usuario
+> confirmó que **es representativo**, no un caso grande aislado: la mayoría de restaurantes del
+> rubro son de ese tamaño o más grandes, y la dirección de crecimiento apunta hacia locales
+> **todavía más grandes (40-50 mesas)**, no más chicos. Lo que sigue distinguiendo a este target
+> de un "restaurante elegante" no es cuántas mesas tiene, es el **formato**: menú del día de
+> precio fijo, alta rotación, gestión hoy informal (cuaderno y lapicero). Cualquier decisión de
+> producto que asumiera "pocas mesas = poco volumen/poca complejidad" debe revisarse con esto en
+> mente.
+
 - Atienden universitarios, trabajadores y comensales cotidianos
 - Distribuidos por todo el país
 - Hoy gestionan todo con cuaderno, lapicero y WhatsApp
-- **No son restaurantes elegantes de reserva de mesa** — ese es otro mercado completamente distinto
+- **No son restaurantes elegantes de reserva de mesa** — ese es otro mercado completamente
+  distinto, sin importar cuántas mesas tenga cada uno
 
 El producto que resuelve: digitalizar el flujo completo de pedidos, cocina y pagos de estos restaurantes sin cambiar su forma de trabajar, solo optimizándola.
 

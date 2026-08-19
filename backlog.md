@@ -481,6 +481,30 @@ Mandar al pensionista a su propia página **no es complicado**: `login.html:420`
 - **Migración a PostgreSQL.** El disparador no es el número de restaurantes, es técnico: escrituras
   concurrentes, necesidades de backup/PITR, aislamiento por tenant.
 
+### Ideas para versiones futuras (anotado 2026-08-19, sin comprometer)
+
+> Preguntó el usuario: "¿kardex, envío de nota de pago, boletas, facturas?". Ninguna se construye
+> todavía — se anota para no perderla, con la escala real en mente (`vision_negocio.md` §1,
+> corregido el mismo día: el target va de 15-20 mesas hasta 40-50, no "menos de 10").
+
+- 🟢 **Enviar un recibo/comprobante (no fiscal) por WhatsApp o email.** El más barato de los
+  cuatro y el que mejor calza: reusa casi textual el patrón de "Descargar menú como foto" — un
+  PDF/imagen con el resumen del pedido y el total. Candidato real si aparece un pedido concreto.
+- 🟡 **Kardex / inventario de ingredientes** (recetas con lista de ingredientes, unidades de
+  medida, descuento automático de stock al vender, alertas de stock bajo — distinto del
+  `stock_restante` por plato que ya existe hoy). El usuario confirmó: **no hace falta ahora,
+  pero sí a futuro** — a medida que la base crezca hacia locales de 40-50 mesas, un dueño a esa
+  escala ya no puede sostener el control de ingredientes solo por experiencia. No construir
+  hasta que la escala real (o un pedido concreto) lo justifique.
+- 🔴 **Boletas y facturas electrónicas (SUNAT).** Distinto a un recibo simple: son documentos
+  **fiscales regulados** — requieren RUC, contratar un proveedor certificado (OSE/PSE, ej.
+  Nubefact), generar XML firmado bajo el estándar SUNAT, envío + constancia, con costo por
+  documento emitido. Es una integración legal/técnica seria, no una feature de fin de semana.
+  Aun con el target corregido a locales más grandes, sigue sin haber señal de que alguno lo
+  necesite — muchos restaurantes informales de este rubro no emiten boleta por venta hoy. Se
+  reconsidera solo si un restaurante real lo pide explícitamente (señal de que se está
+  formalizando), no antes. De las cuatro, la más cara y la de menor evidencia de necesidad.
+
 ---
 
 ## Comercial
