@@ -30,9 +30,9 @@ ISS-046, commit `a47d132` — ver `status.md`).
 
 | # | Qué | Por qué ahora |
 |---|---|---|
-| — | **Bug de conteo en `reportes.js`** — "Menús pedidos"/"Menús reservados" divide por el total de secciones en vez de por las obligatorias, subcuenta. Reusar `contarUnidadesMenu()` (`utils/menuPricing.js`) en vez del cálculo propio. | 🔴 Encontrado el día 4 del piloto (2026-08-17), no tocado todavía. Bloquea que "Menús de hoy" (abajo) dé bien |
+| ~~—~~ | ~~Bug de conteo en `reportes.js`~~ | ✅ **Hecho 2026-08-18** — el conteo se movió al backend (`GET /api/reportes/kpis`), que ahora reusa `contarUnidadesMenu()` (`utils/menuPricing.js`) en vez del cálculo propio del frontend. Ver `status.md`. **Pendiente de deploy** |
 | **T6** | **Backup de la BD** — 🟡 mínimo hecho el 2026-08-17 23:54 (`cp` manual antes del deploy de ISS-046, ver `status.md`); **falta el T6 completo** (script + cron + restore de prueba verificado, `deploy.md` §7) | Lo más riesgoso del proyecto. Ya se desplegaron **tres migraciones** sobre datos reales sin backup automático/verificado; el 2026-08-16 la respuesta a "¿restauramos?" fue *no hay* |
-| — | **"Menús de hoy"**: cajita nueva en Análisis, adicional a las 2 actuales, va primera, suma menús de órdenes + reservas cobrados + entregados, filtrado a hoy | 🟡 Pedido central del día 4 del piloto — depende del bug de conteo de arriba |
+| ~~—~~ | ~~"Menús de hoy": cajita nueva en Análisis, adicional a las 2 actuales, va primera, suma menús de órdenes + reservas cobrados + entregados, filtrado a hoy~~ | ✅ **Hecho 2026-08-18** — primera tarjeta en `#stats-reportes`. Ver `status.md`. **Pendiente de deploy** |
 | ~~—~~ | ~~Botón "Agregar manual" en cola: mesa + selección de menús → directo a cocina~~ | ✅ **Hecho 2026-08-18** — `es_manual` en `ordenes`, badge "🧾 Pedido manual · Confirmar pago al cobrar" propio (no depende de `efectivo_activo`). Ver `status.md`. **Pendiente de deploy** |
 | — | **Verificar en el servicio real** un pedido con 2 menús y la etiqueta "para llevar" | Los 3 críticos están en producción pero nadie los vio funcionar en un servicio de verdad |
 | **ISS-043** | El menú sin secciones obligatorias **cobra de menos** (ver sección propia) | Es de cobro, no de vista. Falta correr la consulta en producción para saber si aplica |

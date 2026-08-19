@@ -18,12 +18,55 @@ un `cp` manual puntual antes de este deploy (ver sesión de abajo), pero falta e
 (script + cron + restore de prueba verificado, `deploy.md` §7).
 
 **Pendiente, no bloqueante:**
-- Bug de conteo en `reportes.js` ("Menús pedidos"/"Menús reservados" — divide por total de
-  secciones en vez de por obligatorias) — **P0** para la próxima sesión, no tocado todavía.
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
   bloqueado por el clasificador de permisos, lo borra el usuario.
-- Cajita "Menús de hoy" en Análisis y fiados — ver `backlog.md`. El botón **"Agregar manual" ya
-  está hecho** (sesión de abajo), **pendiente de deploy**.
+- Fiados — ver `backlog.md`. El bug de conteo, la cajita "Menús de hoy" y el botón **"Agregar
+  manual" ya están hechos** (sesiones de abajo), **pendientes de deploy**.
+
+---
+
+## 🎯 Sesión 2026-08-18 (parte 2) — Fix del conteo de menús + tarjeta "Menús de hoy"
+
+**Prompt del usuario:** "menús vendidos, primero corregir el conteo de menús + añadir esa nueva
+caja de menús vendidos en el día a día" — retoma el P0 del día 4 del piloto.
+
+**El bug (resuelto):** `reportes.js` calculaba "Menús pedidos"/"Menús reservados" en el
+**frontend**, dividiendo `filas / total de secciones del menú` (`/api/menu/menus-dia` trae TODAS
+las secciones, obligatorias + opcionales). Con secciones opcionales sin pedir, subcontaba — el
+backend ya tenía la lógica correcta y probada (`contarUnidadesMenu()`, `utils/menuPricing.js`,
+usada por `calcularTotalOrden`/`calcularTotalReserva` para cobrar bien), pero nunca se usaba para
+este conteo.
+
+**El fix:** el cálculo se movió al backend. `GET /api/reportes/kpis` ahora arma las filas de
+`menu_items` (con `requerido` + `total_obligatorias`, mismo JOIN que ya usa `utils/totales.js`)
+y llama `contarUnidadesMenu()` directamente — sin reimplementar la lógica en JS del navegador.
+Como `total_obligatorias` es constante por `id_menu_dia`, sumar las filas de TODAS las
+órdenes/reservas del restaurante antes de dividir da el mismo resultado que sumar los conteos de
+cada una por separado (verificado con test dedicado) — permite un solo cálculo agregado en vez
+de iterar orden por orden. `reportes.js` (frontend) dejó de pedir `/api/menu/menus-dia` para esto
+y solo consume los 3 campos nuevos de `/kpis`.
+
+**La tarjeta "Menús de hoy":** nueva, primera en la grilla de Análisis (junto a "Menús
+pedidos"/"Menús reservados", que ya estaban). Suma órdenes + reservas de **hoy** que ya están
+**cobradas o entregadas** (`es_pagado`/`es_entregado` en órdenes, `es_full`/`es_cliente_llego` en
+reservas — mismo criterio que ya usa la zona "Por cobrar" de la Cola del día). Decisión leída del
+backlog: "adicional a las 2 actuales, va primera" — las "2 actuales" son justamente "Menús
+pedidos"/"Menús reservados".
+
+**Verificación:**
+- `tests/menu-pricing.test.js`: 8 tests nuevos para `contarUnidadesMenu()` (no tenía tests
+  directos, solo se probaba indirecto vía el cargo de tapper). Incluye el caso real del bug
+  (secciones opcionales sin pedir) y la propiedad de agregación entre varias "órdenes" pooled
+  de la que depende `reportes.js`.
+- `scripts/test-menus-vendidos.js` nuevo, **9/9** — arma un menú con 2 obligatorias + 1 opcional,
+  crea 3 pedidos que solo piden las obligatorias, confirma que el conteo da 3 (la fórmula vieja
+  habría dado `Math.round(3×2/3) = 2`, subcontando), que "Menús de hoy" solo cuenta lo
+  cobrado/entregado (2 de los 3 — el tercero se deja pendiente a propósito), y que la tarjeta
+  nueva aparece primera en la UI real.
+- `scripts/test-agregar-manual.js` (sesión anterior) sigue en 19/19, sin regresiones.
+- **430/430 jest** (423 + 7 nuevos de `contarUnidadesMenu`).
+
+**Estado:** hecho, **pendiente de deploy** (junto con "Agregar manual" de la sesión anterior).
 
 ---
 

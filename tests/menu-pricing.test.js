@@ -4,7 +4,7 @@
  * obligatorias y opcionales, incluyendo el caso borde de todas-opcionales.
  */
 
-const { calcularPrecioUnitario, calcularMenuTotal } = require('../utils/menuPricing');
+const { calcularPrecioUnitario, calcularMenuTotal, contarUnidadesMenu } = require('../utils/menuPricing');
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 function item({ precio_menu, requerido, total_obligatorias, cantidad = 1, id_menu_dia = 1 }) {
@@ -133,5 +133,91 @@ describe('calcularMenuTotal', () => {
       item({ precio_menu: 30, requerido: 1, total_obligatorias: 3, id_menu_dia: 2 }),
     ];
     expect(calcularMenuTotal(items)).toBeCloseTo(50);
+  });
+});
+
+// ── contarUnidadesMenu ────────────────────────────────────────────────────────
+// El bug real (backlog.md, día 4 del piloto): "Menús pedidos"/"Menús reservados"
+// dividían por el TOTAL de secciones del menú (incluía las opcionales) en vez
+// de por las obligatorias — subcontaba cualquier menú con secciones opcionales.
+describe('contarUnidadesMenu', () => {
+  function fila({ id_menu_dia = 1, requerido, total_obligatorias }) {
+    return { id_menu_dia, requerido, total_obligatorias };
+  }
+
+  test('menú con secciones opcionales no subcuenta (el bug real)', () => {
+    // 2 obligatorias + 1 opcional, el cliente pide las 3 → sigue siendo 1 menú,
+    // no 3/3... el bug dividía por 3 (total) en vez de por 2 (obligatorias) y
+    // en este caso puntual daba lo mismo; el bug se nota cuando la fila
+    // opcional NO se pidió (test siguiente) o hay varias unidades.
+    const filas = [
+      fila({ requerido: 1, total_obligatorias: 2 }),
+      fila({ requerido: 1, total_obligatorias: 2 }),
+      fila({ requerido: 0, total_obligatorias: 2 }),
+    ];
+    expect(contarUnidadesMenu(filas)).toBe(1);
+  });
+
+  test('menú con opcional NO pedida: dividir por el total de secciones (bug viejo) daba 2/3, no 1', () => {
+    const filas = [
+      fila({ requerido: 1, total_obligatorias: 2 }),
+      fila({ requerido: 1, total_obligatorias: 2 }),
+      // sin la fila opcional — el cliente no la pidió
+    ];
+    expect(contarUnidadesMenu(filas)).toBe(1);
+  });
+
+  test('2 unidades del mismo menú (2 obligatorias c/u) → 2', () => {
+    const filas = [
+      fila({ requerido: 1, total_obligatorias: 2 }),
+      fila({ requerido: 1, total_obligatorias: 2 }),
+      fila({ requerido: 1, total_obligatorias: 2 }),
+      fila({ requerido: 1, total_obligatorias: 2 }),
+    ];
+    expect(contarUnidadesMenu(filas)).toBe(2);
+  });
+
+  test('menú sin secciones obligatorias (caso borde) cuenta como 1', () => {
+    const filas = [
+      fila({ requerido: 0, total_obligatorias: 0 }),
+      fila({ requerido: 0, total_obligatorias: 0 }),
+    ];
+    expect(contarUnidadesMenu(filas)).toBe(1);
+  });
+
+  test('lista vacía → 0', () => {
+    expect(contarUnidadesMenu([])).toBe(0);
+  });
+
+  test('dos menús distintos se cuentan independientemente', () => {
+    const filas = [
+      fila({ id_menu_dia: 1, requerido: 1, total_obligatorias: 2 }),
+      fila({ id_menu_dia: 1, requerido: 1, total_obligatorias: 2 }),
+      fila({ id_menu_dia: 2, requerido: 1, total_obligatorias: 3 }),
+      fila({ id_menu_dia: 2, requerido: 1, total_obligatorias: 3 }),
+      fila({ id_menu_dia: 2, requerido: 1, total_obligatorias: 3 }),
+    ];
+    expect(contarUnidadesMenu(filas)).toBe(2); // 1 del menú 1 + 1 del menú 2
+  });
+
+  // Propiedad de la que depende routes/reportes.js: como total_obligatorias es
+  // constante por id_menu_dia, sumar las filas de VARIAS órdenes/reservas antes
+  // de dividir da el mismo total que sumar los conteos de cada una por
+  // separado — permite pasarle de una vez todas las filas del restaurante.
+  test('agregación entre varias "órdenes": pooled da lo mismo que sumar cada una por separado', () => {
+    const ordenA = [ // 1 unidad del menú 1 (2 obligatorias)
+      fila({ id_menu_dia: 1, requerido: 1, total_obligatorias: 2 }),
+      fila({ id_menu_dia: 1, requerido: 1, total_obligatorias: 2 }),
+    ];
+    const ordenB = [ // 2 unidades del menú 1
+      fila({ id_menu_dia: 1, requerido: 1, total_obligatorias: 2 }),
+      fila({ id_menu_dia: 1, requerido: 1, total_obligatorias: 2 }),
+      fila({ id_menu_dia: 1, requerido: 1, total_obligatorias: 2 }),
+      fila({ id_menu_dia: 1, requerido: 1, total_obligatorias: 2 }),
+    ];
+    const sumaPorSeparado = contarUnidadesMenu(ordenA) + contarUnidadesMenu(ordenB);
+    const sumaPooled      = contarUnidadesMenu([...ordenA, ...ordenB]);
+    expect(sumaPooled).toBe(sumaPorSeparado);
+    expect(sumaPooled).toBe(3);
   });
 });

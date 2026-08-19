@@ -4,6 +4,7 @@ const router   = express.Router();
 const db       = require('../config/database');
 const ExcelJS  = require('exceljs');
 const { authenticate, authorize, authorizePermiso } = require('../middleware/authenticate');
+const { contarUnidadesMenu } = require('../utils/menuPricing');
 
 router.use(authenticate);
 
@@ -566,7 +567,55 @@ function clientesTimeline(id, formato) {
 // KPIs nuevos (versión Opus) — A1 ticket promedio + A3 tasa de cancelación
 // ════════════════════════════════════════════════════════
 
-// GET /api/reportes/kpis → ticket promedio y tasa de cancelación
+// Filas de menu_items con `requerido` + `total_obligatorias` por fila, listas
+// para contarUnidadesMenu() (utils/menuPricing.js) — MISMA lógica que ya usa
+// el cobro (utils/totales.js): divide por secciones OBLIGATORIAS, no por el
+// total de secciones del menú. Antes "Menús pedidos"/"Menús reservados" se
+// calculaban en el frontend dividiendo por el total de secciones (incluía
+// las opcionales) y subcontaban. Ver backlog.md, día 4 del piloto.
+//
+// contarUnidadesMenu() agrupa por id_menu_dia, no por orden: como
+// total_obligatorias es constante por menú, sumar las filas de VARIAS
+// órdenes/reservas antes de dividir da el mismo resultado que sumar los
+// conteos de cada una por separado — permite pasarle de una sola vez todas
+// las filas del restaurante (o de un filtro) sin iterar orden por orden.
+function filasMenuOrdenes(id, extraWhere = '') {
+  const where = extraWhere ? `AND ${extraWhere}` : '';
+  return db.prepare(`
+    SELECT
+      omi.id_menu_dia,
+      ms.requerido,
+      (SELECT COUNT(*) FROM menu_secciones ms2
+       WHERE ms2.id_menu_dia = omi.id_menu_dia AND ms2.requerido = 1) AS total_obligatorias
+    FROM orden_menu_items omi
+    JOIN ordenes o                ON omi.id_orden       = o.id
+    JOIN estatus_orden eo         ON o.id_estatus        = eo.id
+    JOIN componentes_menu_dia cmd ON omi.id_componente   = cmd.id
+    JOIN menu_secciones ms        ON ms.id_menu_dia      = omi.id_menu_dia
+                                  AND ms.id_seccion_menu  = cmd.id_seccion_menu
+    WHERE o.id_restaurante = ? ${where}
+  `).all(id);
+}
+
+function filasMenuReservas(id, extraWhere = '') {
+  const where = extraWhere ? `AND ${extraWhere}` : '';
+  return db.prepare(`
+    SELECT
+      rmi.id_menu_dia,
+      ms.requerido,
+      (SELECT COUNT(*) FROM menu_secciones ms2
+       WHERE ms2.id_menu_dia = rmi.id_menu_dia AND ms2.requerido = 1) AS total_obligatorias
+    FROM reserva_menu_items rmi
+    JOIN reservas r                ON rmi.id_reserva      = r.id
+    JOIN estatus_reserva er        ON r.id_estatus         = er.id
+    JOIN componentes_menu_dia cmd  ON rmi.id_componente    = cmd.id
+    JOIN menu_secciones ms         ON ms.id_menu_dia       = rmi.id_menu_dia
+                                   AND ms.id_seccion_menu   = cmd.id_seccion_menu
+    WHERE r.id_restaurante = ? ${where}
+  `).all(id);
+}
+
+// GET /api/reportes/kpis → ticket promedio, tasa de cancelación y menús vendidos
 router.get('/kpis', authorizePermiso(), (req, res) => {
   const id = req.user.restaurant_id;
 
@@ -586,7 +635,22 @@ router.get('/kpis', authorizePermiso(), (req, res) => {
   const cancelados = ordCan + rsvCan;
   const tasa_cancelacion = total ? (cancelados / total) * 100 : 0;
 
-  res.json({ ticket_promedio, tasa_cancelacion, total_registros: total, cancelados });
+  // Menús pedidos/reservados — histórico, mismo alcance que antes (todas las
+  // órdenes/reservas del restaurante), solo se corrigió el divisor.
+  const menus_pedidos    = contarUnidadesMenu(filasMenuOrdenes(id));
+  const menus_reservados = contarUnidadesMenu(filasMenuReservas(id));
+
+  // "Menús de hoy": solo lo ya cobrado o entregado (mismo criterio que la
+  // zona "Por cobrar" de la Cola del día), filtrado a la fecha de hoy.
+  const HOY_ORD = `o.fecha = date('now', '-5 hours') AND (eo.es_pagado = 1 OR eo.es_entregado = 1)`;
+  const HOY_RES = `r.fecha = date('now', '-5 hours') AND (er.es_full = 1 OR er.es_cliente_llego = 1)`;
+  const menus_hoy = contarUnidadesMenu(filasMenuOrdenes(id, HOY_ORD))
+                   + contarUnidadesMenu(filasMenuReservas(id, HOY_RES));
+
+  res.json({
+    ticket_promedio, tasa_cancelacion, total_registros: total, cancelados,
+    menus_pedidos, menus_reservados, menus_hoy,
+  });
 });
 
 // GET /api/reportes/hora-pico → A2: demanda por hora del día (hora Lima, UTC-5)

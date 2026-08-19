@@ -141,36 +141,23 @@ async function loadReportes() {
   document.getElementById('stats-reportes').innerHTML = '<div class="loading-text" style="grid-column:1/-1">Cargando métricas…</div>';
 
   try {
-    const [ordenes, reservas, menusDia, kpis, resumen] = await Promise.all([
+    // Menús pedidos/reservados/de-hoy ahora los cuenta el backend
+    // (contarUnidadesMenu(), utils/menuPricing.js) — antes se calculaban acá
+    // dividiendo por el total de secciones del menú (incluía las opcionales)
+    // y subcontaban. Ver backlog.md, día 4 del piloto.
+    const [ordenes, kpis, resumen] = await Promise.all([
       api('GET', '/api/orders'),
-      api('GET', '/api/reservations'),
-      api('GET', '/api/menu/menus-dia'),
       api('GET', '/api/reportes/kpis'),
       api('GET', '/api/reportes/ganancias/resumen')
     ]);
-
-    const seccionesPorMenu = new Map(menusDia.map(m => [m.id, m.secciones.length]));
-
-    const totalMenusOrd = ordenes.reduce((total, orden) => {
-      const porMenu = new Map();
-      for (const item of orden.menu_items) porMenu.set(item.id_menu_dia, (porMenu.get(item.id_menu_dia) || 0) + 1);
-      for (const [id_menu, filas] of porMenu) total += filas / (seccionesPorMenu.get(id_menu) || 1);
-      return total;
-    }, 0);
-
-    const totalMenusRes = reservas.reduce((total, reserva) => {
-      const porMenu = new Map();
-      for (const item of reserva.menu_items) porMenu.set(item.id_menu_dia, (porMenu.get(item.id_menu_dia) || 0) + 1);
-      for (const [id_menu, filas] of porMenu) total += filas / (seccionesPorMenu.get(id_menu) || 1);
-      return total;
-    }, 0);
 
     const totalCartaOrd = ordenes.reduce((s, o) => s + o.carta_items.reduce((a, i) => a + i.cantidad, 0), 0);
 
     const tasaCls = (kpis.tasa_cancelacion || 0) > 15 ? '' : 'success';
     document.getElementById('stats-reportes').innerHTML = `
-      ${sc('Menús pedidos',        Math.round(totalMenusOrd), '')}
-      ${sc('Menús reservados',     Math.round(totalMenusRes), '')}
+      ${sc('Menús de hoy',         kpis.menus_hoy || 0, 'accent')}
+      ${sc('Menús pedidos',        kpis.menus_pedidos || 0, '')}
+      ${sc('Menús reservados',     kpis.menus_reservados || 0, '')}
       ${sc('Platos carta pedidos', totalCartaOrd, '')}
       ${sc('Ticket promedio',  'S/ ' + (kpis.ticket_promedio || 0).toFixed(2), 'accent')}
       ${sc('Tasa cancelación', (kpis.tasa_cancelacion || 0).toFixed(1) + '%', tasaCls)}

@@ -1,5 +1,34 @@
 # Features — Menú Pro
 
+## ~~Fix conteo de menús + tarjeta "Menús de hoy"~~ ✅ Completado 2026-08-18
+
+Segundo pendiente del día 4 del piloto #1 (2026-08-17, ver `backlog.md`): "Menús pedidos"/"Menús
+reservados" en Análisis (Reportes) subcontaban.
+
+**El bug:** el conteo vivía en `public/js/modules/reportes.js`, dividiendo `filas / total de
+secciones del menú` (`/api/menu/menus-dia` trae obligatorias **y** opcionales). Un menú con
+secciones opcionales sin pedir por el cliente subcontaba — el divisor correcto es solo las
+**obligatorias**. Esa lógica ya existía y estaba probada: `contarUnidadesMenu()`
+(`utils/menuPricing.js`), que ya usan `calcularTotalOrden`/`calcularTotalReserva` para cobrar
+bien, pero nunca se reusaba para este conteo.
+
+**El fix:** el cálculo se movió al backend. `GET /api/reportes/kpis` arma las filas de
+`menu_items` (mismo JOIN que `utils/totales.js`, con `requerido` + `total_obligatorias`) y llama
+`contarUnidadesMenu()` directamente. Como `total_obligatorias` es constante por `id_menu_dia`,
+sumar las filas de **todas** las órdenes/reservas del restaurante antes de dividir da el mismo
+resultado que sumar los conteos de cada una por separado — un solo cálculo agregado por SQL, sin
+iterar orden por orden. `reportes.js` (frontend) ya no pide `/api/menu/menus-dia` para esto.
+
+**Tarjeta nueva "Menús de hoy":** primera en la grilla de Análisis (junto a "Menús
+pedidos"/"Menús reservados"). Suma órdenes + reservas de **hoy** que ya están cobradas o
+entregadas (`es_pagado`/`es_entregado` en órdenes, `es_full`/`es_cliente_llego` en reservas —
+mismo criterio que la zona "Por cobrar" de la Cola del día).
+
+**Verificación:** `tests/menu-pricing.test.js` sumó 8 tests para `contarUnidadesMenu()` (no
+tenía tests directos); `scripts/test-menus-vendidos.js` nuevo, 9/9 — reproduce el bug real (menú
+con 2 obligatorias + 1 opcional sin pedir) y confirma que el conteo nuevo da el número correcto
+donde la fórmula vieja subcontaba. 430/430 jest sin regresiones.
+
 ## ~~Botón "Agregar manual" en la Cola del día~~ ✅ Completado 2026-08-18
 
 Pedido pendiente del día 4 del piloto #1 (2026-08-17, ver `backlog.md`): ese día **4 comensales
