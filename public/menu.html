@@ -227,6 +227,10 @@
   <!-- ── Payment screen ── -->
   <div class="confirm-screen" id="pago-screen" style="justify-content:flex-start;overflow-y:auto">
     <div style="width:100%;max-width:400px;padding:0 1rem">
+      <!-- ISS-048: antes no había forma de volver a la carta desde acá para
+           revisar u olvidar un ítem — quedaba varado hasta pagar. Mismo botón
+           que #repaso-screen. -->
+      <button onclick="volverDePago()" aria-label="Volver" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:1rem 0 0.25rem;color:var(--text)">←</button>
       <div class="confirm-title" style="font-size:1.4rem">💳 ¿Cómo vas a pagar?</div>
       <div id="pago-orden-ref" style="font-size:13px;color:var(--muted);margin-bottom:0.75rem"></div>
 
@@ -1169,6 +1173,18 @@ async function renderReservarContent() {
       wrap.innerHTML += `<button id="btn-met-efectivo" style="${btnStyle};background:#fef3c7;color:#92400e;border-color:#fcd34d" onclick="seleccionarMetodoPago('efectivo')">💵 Pagaré en efectivo</button>`;
 
     document.getElementById('pago-screen').classList.add('show');
+  }
+
+  // ISS-048: volver de "¿Cómo vas a pagar?" a la carta. Es seguro sin
+  // preguntar nada — acá todavía no se creó ni la orden ni la reserva
+  // (crearOrden()/crearReserva() recién se llaman desde
+  // confirmarEnvioFinal(), en el repaso) y el carrito no se vació. Solo hay
+  // que reabrir el drawer si es un pedido: confirmarPedido() lo cierra antes
+  // de mostrar esta pantalla. La reserva no cierra nada — su carrito vive
+  // inline en la pestaña "Reservar", ya visible debajo.
+  function volverDePago() {
+    document.getElementById('pago-screen').classList.remove('show');
+    if (pagoPendiente?.tipo === 'orden') openDrawer();
   }
 
   function seleccionarMetodoPago(metodo) {

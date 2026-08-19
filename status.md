@@ -15,12 +15,12 @@ por el usuario:
 | 2026-08-19 | `7803818` | **ISS-047** — modalidad por menú (para llevar / comer acá por línea, no por pedido entero). Confirmado desplegado por el usuario. |
 
 **Pendiente de deploy:**
-- **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html`). 🟢 El riesgo que había
-  anotado ayer —desplegar la Fase 1 sola dejaba a un pensionista cayendo en 404— **ya no aplica**:
-  `pensionista.html` se construyó hoy (parte 3), así que las dos fases están completas y se
-  despliegan juntas. Sin commitear todavía.
-- **ISS-048** (sin volver desde "¿Cómo vas a pagar?" en `menu.html`) — diagnosticado, sin
-  implementar. Ver `issues/ISS-048-sin-volver-desde-pago.md`.
+- **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html`, commit `ca262b1`). 🟢
+  El riesgo que había anotado ayer —desplegar la Fase 1 sola dejaba a un pensionista cayendo en
+  404— **ya no aplica**: `pensionista.html` se construyó hoy (parte 3), así que las dos fases
+  están completas y se despliegan juntas.
+- **ISS-048** (sin volver desde "¿Cómo vas a pagar?" en `menu.html`, commit pendiente) — ✅
+  resuelto hoy (parte 4). Ver `issues/ISS-048-sin-volver-desde-pago.md`.
 
 **Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
 un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 completo
@@ -35,6 +35,33 @@ un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 compl
   `menupro.tech/<slug>` con el slug real.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-19 (parte 4) — Documentación de pilotos + ISS-048
+
+**Prompt del usuario:** puso al día `pilotos.md` — faltaban los días 4 y 5 del piloto (el
+documento saltaba del Día 3 directo a la sesión de ISS-047), el nombre del restaurante (Karina
+Menú, menupro.tech/karinamenu) y confirmó que el 12 de agosto fue miércoles, no martes. Después
+confirmó que ISS-048 lo encontró él mismo probando, no la dueña, y pidió arreglarlo ya que
+Pensionistas quedó cerrado.
+
+**Documentación:** reconstruidos Día 4 (2026-08-17) y Día 5 (2026-08-18) cruzando lo que recordaba
+el usuario contra `status.md`, que ya tenía todo el detalle en sesiones anteriores — no hacía
+falta inventar nada, solo trasladarlo. Corregidos los días de la semana de la tabla de retoma
+(estaban corridos uno). `pensionista.html`, además de nuevo, pasa a estar en `.claude/CLAUDE.md`
+como lectura obligatoria de inicio de sesión y en la regla de documentación, con la fecha
+explícita como requisito — el hueco de días 4-5 se generó justamente por no llevarla.
+
+**ISS-048:** implementado. Botón `←` en `#pago-screen` + `volverDePago()` — oculta la pantalla y
+reabre el drawer si es un pedido (la reserva no cierra nada, alcanza con ocultar). Confirmado
+seguro sin gate adicional: en ese punto del flujo todavía no se crea ni la orden ni la reserva.
+Detalle técnico completo en `issues/ISS-048-sin-volver-desde-pago.md`.
+
+**Verificación:** `scripts/test-iss048-volver-pago.js` nuevo, **15/15** (pedido y reserva: llega a
+pago, vuelve, nada se crea de más, el carrito sigue intacto, confirmar de nuevo funciona igual,
+touch target 46px, sin overflow a 360px) + 449/449 jest + `test-modalidad-mixta` 19/19 sin
+regresiones (mismo archivo tocado, `menu.html`).
 
 ---
 

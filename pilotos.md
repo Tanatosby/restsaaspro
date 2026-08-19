@@ -273,11 +273,10 @@ módulo ya estaba armado desde el 11 de agosto; faltaba toda la parte visible.
   lógica) y **Fase 2** (`pensionista.html`: pedir con saldo, sin pantalla de pago, "Mis
   pedidos" en vivo) — las dos completadas hoy en respuesta directa al pedido del Día 5,
   **pendientes de deploy**.
-- Reportado por el usuario (no confirmado todavía si viene de un uso real de la dueña o de
-  prueba propia): sin forma de volver de la pantalla "¿Cómo vas a pagar?" a la carta en
-  `menu.html` — anotado como [`ISS-048`](issues/ISS-048-sin-volver-desde-pago.md),
-  diagnosticado, sin implementar.
 - Día en curso — sin visita/reporte nuevo del piloto más allá de lo de arriba.
+
+> **ISS-048 no va acá:** el usuario confirmó que lo encontró probando él mismo, no la dueña — no
+> es una experiencia real del piloto, así que queda solo en `issues/` y `status.md`.
 
 ---
 
