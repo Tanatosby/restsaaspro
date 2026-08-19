@@ -4,7 +4,7 @@
 
 ## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-19
 
-**Lo que está en producción** — tres deploys entre el 17 y el 18 de agosto, todos confirmados
+**Lo que está en producción** — cinco deploys entre el 17 y el 19 de agosto, todos confirmados
 por el usuario:
 
 | Deploy | Commits | Qué salió |
@@ -12,19 +12,13 @@ por el usuario:
 | 2026-08-17 | `a47d132` | **T0** (`BUILD` automático por hash), **ISS-045** (link del menú con mayúscula), **ISS-046** (plato exige sección condicional — arroz sin proteína) y, de paso, lo que venía pendiente de antes: **ISS-044 + T11** (versionado de assets / precache del SW) |
 | 2026-08-18 | `9c9de62` + `32c8fb0` | **«Descargar menú» como foto** para compartir por WhatsApp (+ el copy del pie: «Reserva ahora») |
 | 2026-08-18 | `bc593a4` + `14ce74f` | Botón **"Agregar manual"** en la Cola del día + **fix del conteo de menús** ("Menús pedidos"/"Menús reservados") + tarjeta nueva **"Menús de hoy"**. Ver las 2 sesiones de hoy más abajo |
-| 2026-08-19 | `7803818` | **ISS-047** — modalidad por menú (para llevar / comer acá por línea, no por pedido entero). Confirmado desplegado por el usuario. |
-
-**Pendiente de deploy:**
-- **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html`, commit `ca262b1`). 🟢
-  El riesgo que había anotado ayer —desplegar la Fase 1 sola dejaba a un pensionista cayendo en
-  404— **ya no aplica**: `pensionista.html` se construyó hoy (parte 3), así que las dos fases
-  están completas y se despliegan juntas.
-- **ISS-048** (sin volver desde "¿Cómo vas a pagar?" en `menu.html`, commit `ba710d0`) — ✅
-  resuelto hoy (parte 4). Ver `issues/ISS-048-sin-volver-desde-pago.md`.
+| 2026-08-19 | `7803818` | **ISS-047** — modalidad por menú (para llevar / comer acá por línea, no por pedido entero). |
+| 2026-08-19 | `7803818..60c9e6f` (incluye `ca262b1`, `ba710d0`) | **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html` — el flujo completo, sin riesgo de 404) y **ISS-048** (volver de "¿Cómo vas a pagar?" a la carta). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
 **Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
 un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 completo
-(script + cron + restore de prueba verificado, `deploy.md` §7).
+(script + cron + restore de prueba verificado, `deploy.md` §7). Con Pensionistas ya en
+producción (mueve saldo de dinero real), este backup pasa a ser más urgente que antes.
 
 **Pendiente, no bloqueante:**
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
@@ -33,6 +27,9 @@ un `cp` manual puntual antes del deploy del 17 de agosto, pero falta el T6 compl
 - **Sin verificar en uso real:** nadie usó todavía «Descargar menú» en un servicio. Falta
   que la dueña baje una foto y la comparta, y confirmar que el pie muestra
   `menupro.tech/<slug>` con el slug real.
+- **Pensionistas recién desplegado, sin usar todavía:** falta que la dueña dé de alta al
+  primer pensionista real y le pase credenciales; confirmar en uso real que `pensionista.html`
+  funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
 

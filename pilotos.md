@@ -100,7 +100,7 @@ no reemplaza la de julio — es la evolución.
 | — | 2026-08-15 (sábado) | **Restaurante cerrado / sin uso** — el único día de pausa desde que retomó el 12 de agosto. |
 | Día 4 | 2026-08-17 (lunes) | Recopilación en persona: cocinera adaptándose bien, dueña todavía no; 4 clientes no pudieron pedir por la app; incidente de un plato sin su proteína (→ ISS-046); pedido de un contador "Menús de hoy"; pregunta sobre comprobantes Yape duplicados; pedido de poder descargar la foto del menú. Detalle abajo. |
 | Día 5 | 2026-08-18 (martes) | Se despliegan las respuestas al Día 4 (descarga de foto, "Agregar manual", conteo de menús). Incidente nuevo: un pedido de 2 menús —uno para llevar, otro para comer ahí— que el sistema no podía separar (→ ISS-047). La dueña dice que le gustaría probar Pensionistas (saldo en cuenta en vez de foto o efectivo). Detalle abajo. |
-| Día 6 | 2026-08-19 (miércoles) | **Hoy.** ISS-047 implementado y desplegado. Pensionistas Fase 1 (panel del owner) y Fase 2 (`pensionista.html`) completadas, pendientes de deploy. Sin visita/reporte nuevo del piloto registrado todavía — día en curso. |
+| Día 6 | 2026-08-19 (miércoles) | **Hoy.** ISS-047, Pensionistas Fase 1+2 (`pensionista.html`) e ISS-048 implementados y **desplegados**. Sin visita/reporte nuevo del piloto registrado todavía — día en curso. |
 
 > **El domingo 16 de agosto no lleva número de "Día" en esta tabla:** no hay reporte de uso ni de
 > pausa para esa fecha — a diferencia del sábado 15, que el usuario confirmó explícitamente como
@@ -271,9 +271,11 @@ módulo ya estaba armado desde el 11 de agosto; faltaba toda la parte visible.
 - **ISS-047 implementado y desplegado**, confirmado por el usuario.
 - **Pensionistas Fase 1** (panel del owner: alta, recarga, historial de movimientos, baja
   lógica) y **Fase 2** (`pensionista.html`: pedir con saldo, sin pantalla de pago, "Mis
-  pedidos" en vivo) — las dos completadas hoy en respuesta directa al pedido del Día 5,
-  **pendientes de deploy**.
-- Día en curso — sin visita/reporte nuevo del piloto más allá de lo de arriba.
+  pedidos" en vivo) — las dos completadas hoy en respuesta directa al pedido del Día 5, y
+  **desplegadas** el mismo día.
+- ISS-048 (bug propio, ver nota abajo) también desplegado hoy.
+- Día en curso — sin visita/reporte nuevo del piloto más allá de lo de arriba. Pensionistas
+  todavía no tiene un pensionista real dado de alta ni probado en el celular de la dueña.
 
 > **ISS-048 no va acá:** el usuario confirmó que lo encontró probando él mismo, no la dueña — no
 > es una experiencia real del piloto, así que queda solo en `issues/` y `status.md`.
