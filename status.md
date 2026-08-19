@@ -4,7 +4,7 @@
 
 ## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-19
 
-**Lo que está en producción** — seis deploys entre el 17 y el 19 de agosto, todos confirmados
+**Lo que está en producción** — siete deploys entre el 17 y el 19 de agosto, todos confirmados
 por el usuario:
 
 | Deploy | Commits | Qué salió |
@@ -15,10 +15,13 @@ por el usuario:
 | 2026-08-19 | `7803818` | **ISS-047** — modalidad por menú (para llevar / comer acá por línea, no por pedido entero). |
 | 2026-08-19 | `7803818..60c9e6f` (incluye `ca262b1`, `ba710d0`) | **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html` — el flujo completo, sin riesgo de 404) y **ISS-048** (volver de "¿Cómo vas a pagar?" a la carta). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-19 | `60c9e6f..e7fc697` | **ISS-049** (recuperar el pedido si la pestaña se recarga al pagar), **ISS-050** (número de pedido igual para comensal y dueña) e **ISS-051** (aviso de comprobante Yape/Plin reutilizado). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
+| 2026-08-19 | `e7fc697..5b3af72` | **ISS-052** — el pensionista puede cambiar su propia contraseña. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:**
-- **ISS-052** (el pensionista no podía cambiar su propia contraseña) — 🟡 implementado hoy, sin
-  confirmación de deploy todavía. Ver `issues/ISS-052-pensionista-sin-cambiar-password.md`.
+**Sin pendientes de deploy.**
+
+**Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
+restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
+decisión de infraestructura del usuario, no se tocó nada.
 
 **T6, el backup de la BD — corregido hoy, sigue quedando el restore de prueba.** El script y el
 cron existían desde el **29 de mayo**, pero al script le faltaba `mkdir -p`, así que **cada
