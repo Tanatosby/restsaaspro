@@ -19,7 +19,7 @@ por el usuario:
   El riesgo que había anotado ayer —desplegar la Fase 1 sola dejaba a un pensionista cayendo en
   404— **ya no aplica**: `pensionista.html` se construyó hoy (parte 3), así que las dos fases
   están completas y se despliegan juntas.
-- **ISS-048** (sin volver desde "¿Cómo vas a pagar?" en `menu.html`, commit pendiente) — ✅
+- **ISS-048** (sin volver desde "¿Cómo vas a pagar?" en `menu.html`, commit `ba710d0`) — ✅
   resuelto hoy (parte 4). Ver `issues/ISS-048-sin-volver-desde-pago.md`.
 
 **Lo más riesgoso que sigue abierto:** **T6, el backup de la BD** — sigue **parcial**. Se hizo
