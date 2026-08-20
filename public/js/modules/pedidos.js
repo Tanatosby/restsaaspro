@@ -556,12 +556,19 @@ function renderManualInstancias(menu) {
     </div>`).join('');
 }
 
+// Mismo criterio de disponibilidad que usa el cliente en menu.html
+// (routes/public.js): ni agotado a mano NI sin porciones restantes.
+// stock_restante === null → sin control de stock, siempre disponible.
+function platoDisponibleManual(p) {
+  return !p.agotado && (p.stock_restante === null || p.stock_restante > 0);
+}
+
 // El "chip" reemplaza al <select> de texto plano — vacío: borde punteado
 // "+ Elegir [sección]"; elegido: foto real + nombre + "cambiar". Tocar
 // cualquiera de los dos abre PlatoPicker (grid de fotos), el mismo widget
 // que ya se usa para armar las secciones del menú del día.
 function renderManualSeccion(menuId, idx, seccion, seleccion) {
-  const disponibles = seccion.platos.filter(p => !p.agotado);
+  const disponibles = seccion.platos.filter(platoDisponibleManual);
   const actualId = seleccion[seccion.id_seccion] ?? null;
   const actual = actualId ? disponibles.find(p => p.id_componente === Number(actualId)) : null;
 
@@ -595,7 +602,7 @@ function abrirPickerManual(menuId, idx, idSeccion) {
   if (!menu) return;
   const seccion = menu.secciones.find(s => s.id_seccion === idSeccion);
   if (!seccion) return;
-  const disponibles = seccion.platos.filter(p => !p.agotado)
+  const disponibles = seccion.platos.filter(platoDisponibleManual)
     .map(p => ({ id: p.id_componente, nombre: p.nombre, url_foto: p.url_foto }));
 
   PlatoPicker.open({

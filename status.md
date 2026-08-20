@@ -2,9 +2,9 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-19
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-20
 
-**Lo que está en producción** — siete deploys entre el 17 y el 19 de agosto, todos confirmados
+**Lo que está en producción** — ocho deploys entre el 17 y el 20 de agosto, todos confirmados
 por el usuario:
 
 | Deploy | Commits | Qué salió |
@@ -16,10 +16,13 @@ por el usuario:
 | 2026-08-19 | `7803818..60c9e6f` (incluye `ca262b1`, `ba710d0`) | **Pensionistas Fase 1 + Fase 2** (panel del owner + `pensionista.html` — el flujo completo, sin riesgo de 404) y **ISS-048** (volver de "¿Cómo vas a pagar?" a la carta). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-19 | `60c9e6f..e7fc697` | **ISS-049** (recuperar el pedido si la pestaña se recarga al pagar), **ISS-050** (número de pedido igual para comensal y dueña) e **ISS-051** (aviso de comprobante Yape/Plin reutilizado). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-19 | `e7fc697..5b3af72` | **ISS-052** — el pensionista puede cambiar su propia contraseña. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
+| 2026-08-20 | `5b3af72..1658902` | **ISS-053** ("Agregar manual" con fotos + soporte de carta) + doc: corrección del target de mercado (20-50 mesas, no <10). `git pull` fast-forward, `pm2 restart`, confirmado por el usuario (log de consola). |
 
 **Pendiente de deploy:**
-- **ISS-053** ("Agregar manual" con fotos + soporte de carta) — 🟡 implementado hoy, sin
-  confirmación de deploy todavía. Ver `issues/ISS-053-agregar-manual-con-fotos.md`.
+- **ISS-054** (el picker de "Agregar manual" no filtraba por `stock_restante`, solo por
+  `agotado`) — 🟡 implementado y verificado hoy (30/30 E2E + 457/457 jest), **sin commitear
+  todavía** (confirmado con `git status`: el deploy que el usuario acaba de correr es
+  `5b3af72..1658902`, anterior a este fix). Ver `issues/ISS-054-stock-agregar-manual.md`.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -46,6 +49,43 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-20 — ISS-054: stock por plato no se respetaba en "Agregar manual"
+
+**Prompt del usuario:** "al momento de hacer un ingreso manual ahora mismo no leyó el kardex,
+es decir seguían apareciendo platos y a algunos comensales también les aparecía el kardex del
+día anterior. ¿Puedes revisar lo del stock de los platos?"
+
+**Diagnóstico:** se revisó todo el flujo de `stock_inicial`/`stock_restante` por plato del menú
+del día (lo que el usuario llama "kardex" — el kardex de ingredientes de verdad todavía no
+existe, ver `backlog.md`). Se confirmó un bug real: el picker de "Agregar manual" (sumado en
+ISS-053) filtraba los platos elegibles solo por `agotado`, nunca por `stock_restante` — un plato
+sin porciones seguía apareciendo elegible si nadie lo había marcado "Agotado" a mano, a
+diferencia de `menu.html` que ya filtraba ambas condiciones desde siempre. El segundo síntoma
+reportado ("a algunos comensales les aparecía el kardex del día anterior") **no se pudo
+reproducir por código** — fecha (Lima, tanto frontend como backend), filtro por `dia` y el
+Service Worker (nunca cachea `/api/*`) están todos correctos; el usuario aceptó que probablemente
+fue un error de cuentas del owner, no un bug.
+
+De paso se verificó y confirmó con el usuario que el descuento de stock ocurre exactamente al
+CONFIRMAR el pedido/reserva (no antes, no después) en los 4 puntos de entrada: orden y reserva
+del cliente (`routes/public.js`), orden del mozo/manual (`routes/orders.js`) y reserva del owner
+(`routes/reservations.js`) — todos llaman `descontarStock` dentro de la misma transacción del
+INSERT, y se devuelve al cancelar.
+
+**Fix:** nueva función compartida `platoDisponibleManual(p)` en `pedidos.js` —
+`!p.agotado && (p.stock_restante === null || p.stock_restante > 0)` — reemplaza el filtro
+`!p.agotado` en los dos lugares del picker (`renderManualSeccion`, `abrirPickerManual`).
+
+**Verificación:** `scripts/test-agregar-manual.js` sumó un fixture de plato con
+`stock_restante = 0` (sin marcar "Agotado") y confirma que no aparece en el `PlatoPicker`.
+**30/30** (antes 28) + 457/457 jest sin regresiones. Detalle completo en
+`issues/ISS-054-stock-agregar-manual.md`.
+
+**Pendiente:** commitear y pushear a `main` (todavía no se hizo — el deploy que el usuario
+corrió justo antes de este prompt fue `5b3af72..1658902`, que NO incluye este fix).
 
 ---
 

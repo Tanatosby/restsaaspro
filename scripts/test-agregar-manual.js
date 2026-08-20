@@ -11,6 +11,10 @@
  *   - Con fotos (2026-08-19): el plato de cada sección se elige con
  *     PlatoPicker (grid de fotos), no un <select>. Se sumó carta, con el
  *     mismo patrón card+stepper que ya tenía el menú del día.
+ *   - Fix stock (2026-08-20): un plato con stock_restante = 0 no debe
+ *     aparecer elegible en el picker, aunque nadie lo haya marcado
+ *     "Agotado" a mano — mismo criterio que ya usaba menu.html (ISS
+ *     reportado por el usuario: platos sin stock seguían apareciendo).
  *
  * Uso: PORT=3399 node app.js &   (servidor ya debe estar corriendo)
  *      node scripts/test-agregar-manual.js
@@ -58,6 +62,7 @@ function ordenPrueba(nombre) {
 
   // IDs de lo creado en esta corrida, para poder limpiar todo al final.
   let idSeccion, idPlato, idMenu, idComponente;
+  let idPlatoSinStock, idComponenteSinStock;
   let idCategoria, idPlatoCarta;
   let configOriginal = null;
 
@@ -86,6 +91,16 @@ function ordenPrueba(nombre) {
       (await api('POST', `/api/menu/menus-dia/${idMenu}/secciones/${idSeccion}/platos`, { id_plato_menu: idPlato })).id,
       { idMenu, idSeccion, idPlato });
     check(!!(idSeccion && idPlato && idMenu && idComponente), 'Fixture creado (sección + plato + menú + componente)');
+
+    // ── Fixture: un segundo plato en la misma sección, sin stock (stock_restante = 0) ──
+    idPlatoSinStock = await page.evaluate(async () => (await api('POST', '/api/menu/platos-menu', { nombre: 'TestManualSinStock' })).id);
+    idComponenteSinStock = await page.evaluate(async ({ idMenu, idSeccion, idPlato }) =>
+      (await api('POST', `/api/menu/menus-dia/${idMenu}/secciones/${idSeccion}/platos`, { id_plato_menu: idPlato })).id,
+      { idMenu, idSeccion, idPlato: idPlatoSinStock });
+    await page.evaluate(async ({ idMenu, idSeccion, idComponente }) => {
+      await api('PATCH', `/api/menu/menus-dia/${idMenu}/secciones/${idSeccion}/platos/${idComponente}/stock`, { stock: 0 });
+    }, { idMenu, idSeccion, idComponente: idComponenteSinStock });
+    check(!!(idPlatoSinStock && idComponenteSinStock), 'Fixture de plato sin stock creado (stock_restante = 0)');
 
     // ── Fixture: un plato de carta de prueba ──
     idCategoria  = await page.evaluate(async () => (await api('POST', '/api/menu/categorias', { nombre: 'TestManualCategoria' })).id);
@@ -147,6 +162,8 @@ function ordenPrueba(nombre) {
     // El plato de prueba no tiene foto — PlatoPicker cae al placeholder 🍽️, no a <img>.
     check(await page.locator(`.pp-card[data-id="${idComponente}"]`).count() === 1,
       'PlatoPicker (grid de fotos) muestra el plato de la sección');
+    check(await page.locator(`.pp-card[data-id="${idComponenteSinStock}"]`).count() === 0,
+      'El plato con stock_restante = 0 NO aparece en el picker, aunque no esté marcado "Agotado"');
     await page.click(`.pp-card[data-id="${idComponente}"]`);
     await page.waitForTimeout(200);
     check((await page.locator(`#manual-secciones-${idMenu} button`).textContent()).includes('cambiar'),
@@ -242,6 +259,7 @@ function ordenPrueba(nombre) {
     if (idMenu)       db.prepare(`DELETE FROM menu_secciones WHERE id_menu_dia = ?`).run(idMenu);
     if (idMenu)       db.prepare(`DELETE FROM menus_dia WHERE id = ?`).run(idMenu);
     if (idPlato)      db.prepare(`DELETE FROM platos_menu WHERE id = ?`).run(idPlato);
+    if (idPlatoSinStock) db.prepare(`DELETE FROM platos_menu WHERE id = ?`).run(idPlatoSinStock);
     if (idSeccion)    db.prepare(`DELETE FROM secciones_menu WHERE id = ?`).run(idSeccion);
     if (idPlatoCarta) db.prepare(`DELETE FROM platos_carta WHERE id = ?`).run(idPlatoCarta);
     if (idCategoria)  db.prepare(`DELETE FROM categorias_carta WHERE id = ?`).run(idCategoria);
