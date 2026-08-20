@@ -17,12 +17,9 @@ por el usuario:
 | 2026-08-19 | `60c9e6f..e7fc697` | **ISS-049** (recuperar el pedido si la pestaña se recarga al pagar), **ISS-050** (número de pedido igual para comensal y dueña) e **ISS-051** (aviso de comprobante Yape/Plin reutilizado). `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-19 | `e7fc697..5b3af72` | **ISS-052** — el pensionista puede cambiar su propia contraseña. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-20 | `5b3af72..1658902` | **ISS-053** ("Agregar manual" con fotos + soporte de carta) + doc: corrección del target de mercado (20-50 mesas, no <10). `git pull` fast-forward, `pm2 restart`, confirmado por el usuario (log de consola). |
+| 2026-08-20 | `1658902..e35eb4a` | **ISS-054** — el picker de "Agregar manual" no filtraba por `stock_restante`, solo por `agotado`. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:**
-- **ISS-054** (el picker de "Agregar manual" no filtraba por `stock_restante`, solo por
-  `agotado`) — 🟡 implementado y verificado hoy (30/30 E2E + 457/457 jest), **sin commitear
-  todavía** (confirmado con `git status`: el deploy que el usuario acaba de correr es
-  `5b3af72..1658902`, anterior a este fix). Ver `issues/ISS-054-stock-agregar-manual.md`.
+**Pendiente de deploy:** nada — todo lo implementado hasta hoy está confirmado en producción.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -84,8 +81,8 @@ INSERT, y se devuelve al cancelar.
 **30/30** (antes 28) + 457/457 jest sin regresiones. Detalle completo en
 `issues/ISS-054-stock-agregar-manual.md`.
 
-**Pendiente:** commitear y pushear a `main` (todavía no se hizo — el deploy que el usuario
-corrió justo antes de este prompt fue `5b3af72..1658902`, que NO incluye este fix).
+**Deploy:** commit `e35eb4a` pusheado a `main` y desplegado por el usuario en producción el
+2026-08-20 (`1658902..e35eb4a`, `pm2 restart`, `/health` → `{"status":"ok"}`).
 
 ---
 
