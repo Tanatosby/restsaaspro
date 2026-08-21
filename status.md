@@ -20,7 +20,8 @@ por el usuario:
 | 2026-08-20 | `1658902..e35eb4a` | **ISS-054** — el picker de "Agregar manual" no filtraba por `stock_restante`, solo por `agotado`. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-21 | `e35eb4a..9ea9a51` | **ISS-055** (regresar de Listos a Cocina), **ISS-056** (instrucción para volver de Yape/Plin), **ISS-057** (letra ajustable en la carta del cliente) e **ISS-058** (Historial de Órdenes sin foto de comprobante) — día 7 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online. |
 
-**Pendiente de deploy:** nada — todo lo implementado hasta hoy está confirmado en producción.
+**Pendiente de deploy:** el rediseño de la nota de ISS-056 (commit sin pushear todavía) — ver
+sesión de abajo.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -47,6 +48,33 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-21 (tarde) — ISS-056: rediseño de la nota de "cómo volver de Yape/Plin"
+
+**Prompt del usuario:** la nota agregada hoy más temprano (ver sesión de abajo) "tiene buena
+intención pero no se entiende" — pidió diseñar primero un artifact con opciones antes de tocar
+código.
+
+**Proceso:** 3 mockups en un artifact (escalera numerada con línea conectora, checklist con
+íconos por fila, nota conversacional), todos sobre la tarjeta de pago real a 360px con la
+paleta/tipografía de `menu.css`. El usuario eligió mezclar escalera + checklist, y pidió
+invertir el énfasis: número grande (marca el orden), emoji chiquito en la esquina (detalle).
+
+**Implementación:** `volverInstruccionHtml()` en `menu.html` ahora recibe `appNombre` ('Yape' o
+'Plin' según el método elegido en `seleccionarMetodoPago()`) y arma 3 pasos numerados con línea
+conectora:
+1. 💚 Anda a tu app **Yape/Plin** y paga el monto.
+2. 📸 Captura la foto del comprobante con tu celular.
+3. ↩️ Vuelve a esta página **(no la cierres)** y adjunta tu foto.
+
+Colores tomados de las variables de `menu.css` (`--accent`, `--surface`, `--border`, `--text`)
+en vez de colores sueltos como antes. Detalle completo en `issues/ISS-056-...md`.
+
+**Verificación:** 457/457 jest sin regresiones.
+
+**Deploy:** pendiente — el usuario hace los deploys a mano.
 
 ---
 

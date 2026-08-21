@@ -1294,12 +1294,28 @@ async function renderReservarContent() {
   // a la app ("salgo de la web y voy a mi yape, ya pagué, ¿cómo regreso a la
   // app?"). El pedido en sí ya no se pierde (ISS-049, localStorage) — esto es
   // puramente instrucción de navegación, para que sepan qué hacer con el
-  // celular antes de salir a la app de pago.
-  function volverInstruccionHtml() {
+  // celular antes de salir a la app de pago. `appNombre` es 'Yape' o 'Plin'
+  // según el método elegido en seleccionarMetodoPago() — el paso 1 lo usa.
+  function volverInstruccionHtml(appNombre) {
+    const pasos = [
+      { emoji: '💚', html: `Anda a tu app <b>${appNombre}</b> y paga el monto.` },
+      { emoji: '📸', html: 'Captura la foto del comprobante con tu celular.' },
+      { emoji: '↩️', html: 'Vuelve a esta página <b>(no la cierres)</b> y adjunta tu foto.' }
+    ];
+    const filas = pasos.map((p, i) => `
+      <div style="display:flex;gap:10px;position:relative;padding-bottom:${i < pasos.length - 1 ? '14px' : '0'}">
+        ${i < pasos.length - 1 ? '<div style="position:absolute;left:13px;top:28px;bottom:-2px;width:2px;background:var(--border)"></div>' : ''}
+        <div style="flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1">
+          ${i + 1}
+          <span style="position:absolute;bottom:-5px;right:-6px;width:15px;height:15px;border-radius:50%;background:var(--surface);font-size:9px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--border)">${p.emoji}</span>
+        </div>
+        <div style="font-size:13.5px;padding-top:3px;color:var(--text)">${p.html}</div>
+      </div>`).join('');
+
     return `
-      <div style="text-align:left;font-size:14px;color:#374151;background:#fff;border-radius:10px;padding:10px 12px;margin-top:10px">
-        <div style="font-weight:700;margin-bottom:4px">📲 Para volver aquí después de pagar:</div>
-        <div>No cierres tu app de pago con la ✕ — cambia de app (desliza desde abajo y mantén, o toca ⬜) y busca esta pantalla. Tu pedido te espera tal como lo dejaste.</div>
+      <div style="text-align:left;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px 4px;margin-top:10px">
+        <div style="font-weight:700;margin-bottom:10px">📲 No cierres esta web — anda a ${appNombre} y vuelve</div>
+        ${filas}
       </div>`;
   }
 
@@ -1323,7 +1339,7 @@ async function renderReservarContent() {
             Copiar número 📋
           </button>
           <div style="font-size:11px;color:#6b7280;margin-top:6px">Abre tu app Yape, paga a este número y luego sube la foto del comprobante.</div>
-        </div>${volverInstruccionHtml()}`;
+        </div>${volverInstruccionHtml('Yape')}`;
       document.getElementById('pago-comprobante-wrap').style.display = 'block';
       const btnYape = document.getElementById('btn-ya-pague');
       btnYape.style.display = 'block'; btnYape.disabled = false;
@@ -1339,7 +1355,7 @@ async function renderReservarContent() {
             Copiar número 📋
           </button>
           <div style="font-size:11px;color:#6b7280;margin-top:6px">Abre tu app bancaria (BBVA, Scotiabank, Interbank) y transfiere con Plin.</div>
-        </div>${volverInstruccionHtml()}`;
+        </div>${volverInstruccionHtml('Plin')}`;
       document.getElementById('pago-comprobante-wrap').style.display = 'block';
       const btnPlin = document.getElementById('btn-ya-pague');
       btnPlin.style.display = 'block'; btnPlin.disabled = false;
