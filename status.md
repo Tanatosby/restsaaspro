@@ -4,7 +4,7 @@
 
 ## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-21
 
-**Lo que está en producción** — ocho deploys entre el 17 y el 20 de agosto, todos confirmados
+**Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
 
 | Deploy | Commits | Qué salió |
@@ -18,9 +18,9 @@ por el usuario:
 | 2026-08-19 | `e7fc697..5b3af72` | **ISS-052** — el pensionista puede cambiar su propia contraseña. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-20 | `5b3af72..1658902` | **ISS-053** ("Agregar manual" con fotos + soporte de carta) + doc: corrección del target de mercado (20-50 mesas, no <10). `git pull` fast-forward, `pm2 restart`, confirmado por el usuario (log de consola). |
 | 2026-08-20 | `1658902..e35eb4a` | **ISS-054** — el picker de "Agregar manual" no filtraba por `stock_restante`, solo por `agotado`. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
+| 2026-08-21 | `e35eb4a..9ea9a51` | **ISS-055** (regresar de Listos a Cocina), **ISS-056** (instrucción para volver de Yape/Plin), **ISS-057** (letra ajustable en la carta del cliente) e **ISS-058** (Historial de Órdenes sin foto de comprobante) — día 7 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online. |
 
-**Pendiente de deploy:** ISS-055, ISS-056, ISS-057 e ISS-058 (día 7 del piloto, ver sesión
-2026-08-21 abajo) — implementados y testeados, sin desplegar todavía.
+**Pendiente de deploy:** nada — todo lo implementado hasta hoy está confirmado en producción.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -91,7 +91,8 @@ estático, y una conversión de unidades CSS) sin lógica de negocio nueva que a
 Playwright propio; pendiente verificar ISS-057 a mano en un celular real (360px) antes del
 próximo servicio.
 
-**Deploy:** pendiente — el usuario lo hace manualmente (ver `deploy.md` §16).
+**Deploy:** commit `9ea9a51` pusheado a `main` y desplegado por el usuario en producción el
+2026-08-21 (`e35eb4a..9ea9a51`, `git pull` fast-forward, `pm2 restart`, `pm2 status` → online).
 
 ---
 
