@@ -266,6 +266,18 @@ function requiereConfirmarPago(x) {
   return ['yape', 'plin'].includes(x.metodo_pago) && x.estado_pago !== 'confirmado';
 }
 
+// ISS-055: la cocinera pidió poder deshacer un toque accidental en "Listo".
+// El backend ya acepta cualquier flag hacia atrás mientras la orden/reserva no
+// esté pagada ni cancelada (ver orders.js/reservations.js) — este botón solo
+// reusa accionRapidaOrden/Reserva con 'es_en_cocina'. Solo se ofrece en la zona
+// Listos: una vez cobrado/entregado no tiene sentido mostrarlo.
+function btnRegresarACocinaOrden(o) {
+  return `<button class="btn btn-ghost btn-sm" onclick="accionRapidaOrden(${o.id},'es_en_cocina')">↩️ Regresar a cocina</button>`;
+}
+function btnRegresarACocinaReserva(r) {
+  return `<button class="btn btn-ghost btn-sm" onclick="accionRapidaReserva(${r.id},'es_en_cocina')">↩️ Regresar a cocina</button>`;
+}
+
 function btnOrden(o, zona) {
   const paraLlevar = o.modalidad === 'para_llevar';
   const btnCobrar = requiereConfirmarPago(o)
@@ -274,9 +286,9 @@ function btnOrden(o, zona) {
   if (zona === 'pendientes' && o.es_inicial)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_en_cocina')">🍳 A cocina</button>`;
   if (zona === 'listos' && o.es_listo && !paraLlevar)
-    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">🍽 Entregar</button>`;
+    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">🍽 Entregar</button>${btnRegresarACocinaOrden(o)}`;
   if (zona === 'listos' && o.es_listo && paraLlevar)
-    return btnCobrar;
+    return `${btnCobrar}${btnRegresarACocinaOrden(o)}`;
   if (zona === 'cobrar' && o.es_entregado)
     return btnCobrar;
   return '';
@@ -292,9 +304,9 @@ function btnReserva(r, zona) {
   if (zona === 'pendientes' && r.es_inicial)
     return `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_confirmada')">✓ Confirmar</button>`;
   if (zona === 'listos' && r.es_listo && !sinMesa)
-    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_cliente_llego')">🍽 Entregado</button>`;
+    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_cliente_llego')">🍽 Entregado</button>${btnRegresarACocinaReserva(r)}`;
   if (zona === 'listos' && r.es_listo && sinMesa)
-    return btnCompletar;
+    return `${btnCompletar}${btnRegresarACocinaReserva(r)}`;
   if (zona === 'cobrar' && r.es_cliente_llego)
     return btnCompletar;
   return '';

@@ -109,10 +109,13 @@
   --shadow-xl:    0 24px 60px rgba(0,0,0,0.6);
 }
 
-html { scroll-behavior: smooth; }
+/* ISS-057: tamaño de letra ajustable. --font-scale se aplica en <html> antes
+   del paint (script en menu.html) — todo lo de acá para abajo que usa rem
+   escala junto con él. 1 = tamaño actual, sin cambio para quien no toca nada. */
+html { scroll-behavior: smooth; font-size: calc(16px * var(--font-scale, 1)); }
 body {
   background: var(--bg); color: var(--text);
-  font-family: var(--font); font-size: 15px;
+  font-family: var(--font); font-size: 0.9375rem;
   min-height: 100vh; padding-bottom: 120px;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   transition: background var(--t), color var(--t);
@@ -168,7 +171,7 @@ body {
 .mesa-chip {
   display: inline-flex; align-items: center; gap: 5px;
   background: var(--accent-light); color: var(--accent);
-  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  font-size: 0.75rem; font-weight: 700; padding: 5px 12px;
   border-radius: var(--r-pill);
   border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   white-space: nowrap;
@@ -179,11 +182,22 @@ body {
   display: inline-flex; align-items: center; gap: 5px;
   background: color-mix(in srgb, var(--accent-light) 85%, transparent);
   border: 1.5px solid var(--accent); border-radius: var(--r-pill);
-  padding: 6px 14px; font-size: 12px; font-weight: 700; color: var(--accent);
+  padding: 6px 14px; font-size: 0.75rem; font-weight: 700; color: var(--accent);
   cursor: pointer; font-family: var(--font); transition: all var(--t-fast);
   min-height: 34px;
 }
 .btn-consultar:active { transform: scale(0.96); background: var(--accent); color: #fff; }
+
+/* Botón "Tamaño de letra" — ISS-057. min 44×44 táctil aunque el ícono sea chico. */
+.btn-font-scale {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; flex-shrink: 0;
+  background: color-mix(in srgb, var(--accent-light) 85%, transparent);
+  border: 1.5px solid var(--accent); border-radius: var(--r-pill);
+  color: var(--accent); font-weight: 800; font-family: var(--font);
+  cursor: pointer; transition: all var(--t-fast);
+}
+.btn-font-scale:active { transform: scale(0.92); background: var(--accent); color: #fff; }
 
 /* ──────────────────────────────────────────────────────────────
    MODE TABS + CATEGORY PILLS
@@ -191,7 +205,7 @@ body {
 .mode-tabs { display: flex; gap: 6px; margin-bottom: 0.75rem; }
 .mode-tab {
   flex: 1; padding: 10px 12px; border-radius: var(--r-sm); text-align: center;
-  font-size: 14px; font-weight: 600; cursor: pointer; min-height: 44px;
+  font-size: 0.875rem; font-weight: 600; cursor: pointer; min-height: 44px;
   border: 1.5px solid var(--border); background: var(--white);
   color: var(--text-2); transition: all var(--t-fast); font-family: var(--font);
 }
@@ -208,7 +222,7 @@ body {
 .cat-nav::-webkit-scrollbar { display: none; }
 .cat-pill {
   flex-shrink: 0; padding: 8px 16px; border-radius: var(--r-pill);
-  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-size: 0.8125rem; font-weight: 600; cursor: pointer;
   border: 1.5px solid var(--border); background: var(--white);
   color: var(--text-2); transition: all var(--t-fast); white-space: nowrap;
   min-height: 36px; font-family: var(--font);
@@ -289,12 +303,12 @@ body {
   color: var(--accent);
 }
 .menu-tipo {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  font-size: 0.625rem; font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--accent);
 }
 .menu-dia-pills { display: flex; flex-wrap: wrap; gap: 4px; }
 .menu-dia-pill {
-  font-size: 10px; font-weight: 600; padding: 3px 8px;
+  font-size: 0.625rem; font-weight: 600; padding: 3px 8px;
   border-radius: var(--r-pill); white-space: nowrap;
   background: var(--accent-light); color: var(--accent);
 }
@@ -303,12 +317,12 @@ body {
 .seccion-block { margin-bottom: 1.1rem; }
 .seccion-block:last-child { margin-bottom: 0; }
 .seccion-label {
-  font-size: 10px; font-weight: 800; letter-spacing: 0.12em;
+  font-size: 0.625rem; font-weight: 800; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--muted);
   margin-bottom: 0.55rem; display: flex; align-items: center; gap: 6px;
 }
 .seccion-req {
-  font-size: 9px; background: var(--accent-light); color: var(--accent);
+  font-size: 0.5625rem; background: var(--accent-light); color: var(--accent);
   padding: 2px 7px; border-radius: var(--r-pill); font-weight: 700;
   letter-spacing: 0.06em;
 }
@@ -330,12 +344,12 @@ body {
   accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0;
   cursor: pointer;
 }
-.plato-option-name { font-size: 14px; font-weight: 600; color: var(--text); }
-.plato-option-desc { font-size: 12px; color: var(--text-2); margin-top: 1px; line-height: 1.35; }
+.plato-option-name { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.plato-option-desc { font-size: 0.75rem; color: var(--text-2); margin-top: 1px; line-height: 1.35; }
 
 .plato-fijo {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 0; font-size: 14px;
+  padding: 10px 0; font-size: 0.875rem;
 }
 .plato-fijo-dot {
   width: 7px; height: 7px; border-radius: 50%;
@@ -356,7 +370,7 @@ body {
   width: 100%; margin-top: auto;
   background: var(--accent); color: white;
   border: none; border-radius: var(--r-sm); padding: 12px;
-  font-family: var(--font); font-size: 14px; font-weight: 700;
+  font-family: var(--font); font-size: 0.875rem; font-weight: 700;
   cursor: pointer; transition: all var(--t-fast); min-height: 44px;
   display: flex; align-items: center; justify-content: center; gap: 6px;
   box-shadow: 0 4px 12px var(--accent-glow);
@@ -393,9 +407,9 @@ body {
   display: flex; flex-direction: column; gap: 4px;
   padding: 0.8rem 0.9rem 0.9rem; flex: 1;
 }
-.plato-carta-name { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.005em; line-height: 1.25; }
+.plato-carta-name { font-size: 0.9375rem; font-weight: 700; color: var(--text); letter-spacing: -0.005em; line-height: 1.25; }
 .plato-carta-desc {
-  font-size: 12.5px; color: var(--text-2); line-height: 1.4;
+  font-size: 0.78125rem; color: var(--text-2); line-height: 1.4;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .plato-carta-price {
@@ -407,7 +421,7 @@ body {
 .qty-btn {
   width: 32px; height: 32px; border-radius: 50%;
   border: 1.5px solid var(--border); background: var(--bg-2);
-  font-size: 18px; font-weight: 600; cursor: pointer;
+  font-size: 1.125rem; font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   color: var(--text-2); transition: all var(--t-fast); line-height: 1;
   font-family: var(--font);
@@ -419,7 +433,7 @@ body {
   box-shadow: 0 2px 8px var(--accent-glow);
 }
 .qty-btn.add:hover { background: var(--accent-dark); }
-.qty-num { font-size: 16px; font-weight: 800; min-width: 22px; text-align: center; color: var(--text); }
+.qty-num { font-size: 1rem; font-weight: 800; min-width: 22px; text-align: center; color: var(--text); }
 
 /* ──────────────────────────────────────────────────────────────
    STICKY RES BAR (reservar mode)
@@ -440,7 +454,7 @@ body {
   align-items: center; justify-content: space-between;
   background: var(--green, #2a7a4a); color: white; border: none;
   border-radius: var(--r); padding: 15px 22px; font-family: var(--font);
-  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-size: 0.9375rem; font-weight: 700; cursor: pointer;
   transition: all var(--t-fast); min-height: 50px;
   box-shadow: 0 6px 20px rgba(42,122,74,0.35);
   gap: 0.75rem;
@@ -450,12 +464,12 @@ body {
 .res-bar-left  { display: flex; align-items: center; gap: 10px; }
 .res-bar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
 .res-bar-count {
-  background: white; color: var(--green, #2a7a4a); font-size: 13px; font-weight: 800;
+  background: white; color: var(--green, #2a7a4a); font-size: 0.8125rem; font-weight: 800;
   width: 26px; height: 26px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.res-bar-cta { font-size: 11px; font-weight: 600; opacity: 0.85; letter-spacing: 0.02em; }
+.res-bar-cta { font-size: 0.6875rem; font-weight: 600; opacity: 0.85; letter-spacing: 0.02em; }
 
 /* ──────────────────────────────────────────────────────────────
    STICKY CART BAR
@@ -476,7 +490,7 @@ body {
   align-items: center; justify-content: space-between;
   background: var(--accent); color: white; border: none;
   border-radius: var(--r); padding: 15px 22px; font-family: var(--font);
-  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-size: 0.9375rem; font-weight: 700; cursor: pointer;
   transition: all var(--t-fast); min-height: 50px;
   box-shadow: 0 6px 20px var(--accent-glow);
 }
@@ -484,7 +498,7 @@ body {
 .cart-btn:active { transform: scale(0.98); }
 .cart-btn-left   { display: flex; align-items: center; gap: 12px; }
 .cart-count {
-  background: white; color: var(--accent); font-size: 13px; font-weight: 800;
+  background: white; color: var(--accent); font-size: 0.8125rem; font-weight: 800;
   width: 26px; height: 26px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
 }
@@ -524,7 +538,7 @@ body {
 }
 .drawer-close {
   background: var(--bg-2); border: none; border-radius: 50%;
-  width: 36px; height: 36px; cursor: pointer; font-size: 18px;
+  width: 36px; height: 36px; cursor: pointer; font-size: 1.125rem;
   display: flex; align-items: center; justify-content: center;
   color: var(--text-2); transition: all var(--t-fast);
 }
@@ -540,7 +554,7 @@ body {
 .mod-seg { display: flex; border: 1px solid var(--border-2); border-radius: 10px; overflow: hidden; }
 .mod-seg button {
   flex: 1; min-height: 44px; padding: 0 10px; border: none; background: var(--bg-2);
-  color: var(--text-2); font-size: 13.5px; font-weight: 600; font-family: inherit;
+  color: var(--text-2); font-size: 0.84375rem; font-weight: 600; font-family: inherit;
   cursor: pointer; white-space: nowrap;
   display: flex; align-items: center; justify-content: center; gap: 5px;
 }
@@ -553,7 +567,7 @@ body {
   display: inline-flex; align-items: center; gap: 4px;
   min-height: 32px; padding: 4px 10px; margin-top: 0.5rem;
   border: 1px dashed var(--border-2); border-radius: 20px; background: transparent;
-  font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer;
   color: var(--text-2);
 }
 .mod-chip.llevar { background: var(--info-bg); color: var(--info); border-style: solid; border-color: transparent; }
@@ -565,12 +579,12 @@ body {
 }
 .cart-item:last-child  { border-bottom: none; }
 .cart-item-info        { flex: 1; min-width: 0; }
-.cart-item-name        { font-size: 14.5px; font-weight: 700; color: var(--text); }
-.cart-item-sub         { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
-.cart-item-price       { font-size: 14.5px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.cart-item-name        { font-size: 0.90625rem; font-weight: 700; color: var(--text); }
+.cart-item-sub         { font-size: 0.78125rem; color: var(--muted); margin-top: 2px; }
+.cart-item-price       { font-size: 0.90625rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
 .cart-remove {
   background: none; border: none; color: var(--muted);
-  cursor: pointer; font-size: 20px; line-height: 1;
+  cursor: pointer; font-size: 1.25rem; line-height: 1;
   transition: color var(--t-fast); flex-shrink: 0;
   width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -579,14 +593,14 @@ body {
 
 .nombre-field { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .nombre-field label {
-  font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+  font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted);
   display: block; margin-bottom: 6px;
 }
 .nombre-field input {
   width: 100%; background: var(--bg-2); border: 1.5px solid var(--border);
   border-radius: var(--r-sm); padding: 12px 14px;
-  font-family: var(--font); font-size: 16px; color: var(--text);
+  font-family: var(--font); font-size: 1rem; color: var(--text);
   outline: none; transition: all var(--t-fast); min-height: 46px;
 }
 .nombre-field input:focus {
@@ -596,7 +610,7 @@ body {
 
 .cart-total {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 1rem 0 0.5rem; font-size: 16px; font-weight: 700; color: var(--text);
+  padding: 1rem 0 0.5rem; font-size: 1rem; font-weight: 700; color: var(--text);
 }
 .cart-total-price {
   font-family: var(--font-display); font-size: 1.4rem;
@@ -606,7 +620,7 @@ body {
 .btn-confirmar {
   width: 100%; background: var(--accent); color: white; border: none;
   border-radius: var(--r); padding: 15px; font-family: var(--font);
-  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-size: 0.9375rem; font-weight: 700; cursor: pointer;
   transition: all var(--t-fast); margin-top: 0.5rem; min-height: 50px;
   box-shadow: 0 6px 20px var(--accent-glow);
 }
@@ -630,13 +644,13 @@ body {
 }
 .res-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1rem; }
 .res-field label {
-  font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+  font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted);
 }
 .res-field input {
   background: var(--bg-2); border: 1.5px solid var(--border);
   border-radius: var(--r-sm); padding: 12px 14px;
-  font-family: var(--font); font-size: 16px; color: var(--text);
+  font-family: var(--font); font-size: 1rem; color: var(--text);
   outline: none; transition: all var(--t-fast); width: 100%; min-height: 46px;
 }
 .res-field input:focus {
@@ -648,7 +662,7 @@ body {
 .res-info-box {
   background: var(--info-bg);
   border: 1px solid color-mix(in srgb, var(--info) 30%, transparent);
-  border-radius: var(--r-sm); padding: 12px 14px; font-size: 13px;
+  border-radius: var(--r-sm); padding: 12px 14px; font-size: 0.8125rem;
   color: var(--info); margin-bottom: 1rem;
   display: flex; gap: 8px; align-items: flex-start; line-height: 1.5;
 }
@@ -658,11 +672,11 @@ body {
   border-radius: var(--r-sm); padding: 0.85rem 1rem; margin-bottom: 1rem;
 }
 .res-cart-summary-title {
-  font-size: 11px; font-weight: 800; text-transform: uppercase;
+  font-size: 0.6875rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.5rem;
 }
 .res-cart-item {
-  display: flex; justify-content: space-between; font-size: 13.5px;
+  display: flex; justify-content: space-between; font-size: 0.84375rem;
   padding: 5px 0; border-bottom: 1px dashed var(--border);
 }
 .res-cart-item:last-child { border-bottom: none; }
@@ -670,7 +684,7 @@ body {
 .btn-reservar {
   width: 100%; background: var(--green); color: white; border: none;
   border-radius: var(--r); padding: 15px; font-family: var(--font);
-  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-size: 0.9375rem; font-weight: 700; cursor: pointer;
   transition: all var(--t-fast); margin-top: 0.5rem; min-height: 50px;
   box-shadow: 0 6px 20px rgba(45, 122, 74, 0.3);
 }
@@ -680,7 +694,7 @@ body {
 
 .res-total {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 0.85rem 0 0.5rem; font-size: 15px; font-weight: 700; color: var(--text);
+  padding: 0.85rem 0 0.5rem; font-size: 0.9375rem; font-weight: 700; color: var(--text);
 }
 .res-total-price {
   font-family: var(--font-display); font-size: 1.3rem;
@@ -707,7 +721,7 @@ body {
   color: var(--text); margin-bottom: 0.5rem; letter-spacing: -0.015em;
 }
 .confirm-sub {
-  font-size: 14px; color: var(--text-2); line-height: 1.65;
+  font-size: 0.875rem; color: var(--text-2); line-height: 1.65;
   margin-bottom: 2rem; max-width: 360px;
 }
 .confirm-num { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.02em; }
@@ -715,7 +729,7 @@ body {
 .btn-nuevo {
   background: none; border: 1.5px solid var(--border);
   border-radius: var(--r-sm); padding: 13px 26px;
-  font-family: var(--font); font-size: 14px; font-weight: 700;
+  font-family: var(--font); font-size: 0.875rem; font-weight: 700;
   color: var(--text-2); cursor: pointer;
   transition: all var(--t-fast); margin-top: 1rem; min-height: 46px;
 }
@@ -749,7 +763,7 @@ body {
 
 .empty-msg {
   text-align: center; padding: 3rem 1rem;
-  color: var(--muted); font-size: 14px; line-height: 1.5;
+  color: var(--muted); font-size: 0.875rem; line-height: 1.5;
 }
 .empty-msg .icon { font-size: 2.8rem; margin-bottom: 0.5rem; }
 
@@ -803,14 +817,14 @@ body {
   color: #fff; text-align: center; letter-spacing: -0.01em;
 }
 .photo-modal-desc {
-  font-size: 13.5px; color: rgba(255,255,255,0.85);
+  font-size: 0.84375rem; color: rgba(255,255,255,0.85);
   text-align: center; max-width: 340px; line-height: 1.5;
 }
 .photo-modal-close {
   position: absolute; top: calc(env(safe-area-inset-top, 0px) + 16px);
   right: 16px; background: rgba(255,255,255,0.16); border: none;
   width: 40px; height: 40px; border-radius: 50%; color: #fff;
-  font-size: 22px; cursor: pointer; transition: background var(--t-fast);
+  font-size: 1.375rem; cursor: pointer; transition: background var(--t-fast);
   display: flex; align-items: center; justify-content: center;
 }
 .photo-modal-close:hover { background: rgba(255,255,255,0.28); }

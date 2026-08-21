@@ -8,7 +8,7 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 > (`conversacion_*.md`) y por lo tanto **no viajaba entre las 2 laptops del usuario**. Este archivo sí
 > está en git: es la copia viva del backlog. Actualizarlo al cerrar cada sesión.
 
-**Última actualización:** 2026-08-16
+**Última actualización:** 2026-08-21
 
 ---
 
@@ -310,11 +310,13 @@ agosto 2026".
 
 ## P0 — Features que salen directo de las pruebas
 
-### 3.1 Letra aún más grande — ✅ Completado 2026-08-10
+### 3.1 Letra aún más grande — ✅ Completado 2026-08-10 (owner) + 2026-08-21 (cliente)
 `ISS-028`. Escala **16,1 / 19,6 / 23,8px** (antes 14 / 16,1 / 18,2). Se mantienen 3 niveles, no 4:
 menos opciones es mejor para un dueño de 70 años. Migración `mp-font-scale-v2` sube la preferencia
-guardada un nivel, **nunca la baja**. `menu.html` (la carta del cliente) **no** se tocó — decisión del
-usuario, queda para más adelante.
+guardada un nivel, **nunca la baja**. `menu.html` (la carta del cliente) quedó pendiente en su
+momento — **cerrado como `ISS-057`** el 2026-08-21, tras reporte real del piloto (día 7: un
+cliente no alcanzaba a leer la carta). Mismo mecanismo, botón 🔤 propio, 3 niveles
+(Normal/Grande/Muy grande), `localStorage` separado del panel.
 
 ### 3.2 Sesión que no se cierre — ✅ Completado 2026-08-10
 `ISS-027`. Sesión de **30 días** con renovación deslizante; admin del SaaS acotado a 1 día. La causa
@@ -375,7 +377,12 @@ cambiar** — no es un ajuste de tamaño, es un rediseño de qué se muestra y p
 
 ### Después de eso
 
-- Qué **platos** va vendiendo (mismo criterio: del día, en vivo).
+- Qué **platos** va vendiendo (mismo criterio: del día, en vivo). **Reforzado 2026-08-21** — la
+  dueña volvió a pedirlo explícitamente en el día 7 del piloto ("¿cuántos asados he vendido?,
+  ¿cuántos pollos al horno?"), preguntando por un filtro en Órdenes/Reservas. Decisión: no
+  construir un filtro manual (selects son lentos en celular durante el servicio) — enganchar al
+  rediseño de Reportería ya planeado acá: una lista automática "Platos vendidos hoy" (plato +
+  cantidad, sin selects, ya filtrado a hoy). Ver `pilotos.md` → Día 7.
 - **Requiere análisis previo** antes de implementar: qué métricas reemplazan a las actuales, cuáles
   se eliminan, y cómo se ve en un celular de 360px. No empezar por el código.
 

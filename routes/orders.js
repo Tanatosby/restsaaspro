@@ -205,6 +205,12 @@ router.get('/', authorizePermiso(), (req, res) => {
       o.fecha,
       o.created_at,
       o.modalidad,
+      o.metodo_pago,
+      o.estado_pago,
+      o.comprobante_url,
+      o.comprobante_repetido_de,
+      o.comprobante_repetido_tipo,
+      o.es_manual,
       eo.nombre AS estatus
     FROM ordenes o
     JOIN estatus_orden eo ON o.id_estatus = eo.id

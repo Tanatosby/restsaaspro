@@ -100,7 +100,8 @@ no reemplaza la de julio — es la evolución.
 | — | 2026-08-15 (sábado) | **Restaurante cerrado / sin uso** — el único día de pausa desde que retomó el 12 de agosto. |
 | Día 4 | 2026-08-17 (lunes) | Recopilación en persona: cocinera adaptándose bien, dueña todavía no; 4 clientes no pudieron pedir por la app; incidente de un plato sin su proteína (→ ISS-046); pedido de un contador "Menús de hoy"; pregunta sobre comprobantes Yape duplicados; pedido de poder descargar la foto del menú. Detalle abajo. |
 | Día 5 | 2026-08-18 (martes) | Se despliegan las respuestas al Día 4 (descarga de foto, "Agregar manual", conteo de menús). Tres incidentes nuevos, todos contados el Día 6: un pedido de 2 menús —uno para llevar, otro para comer ahí— que el sistema no podía separar (→ ISS-047); un pedido perdido al salir a pagar por Yape, la pestaña "se reiniciaba" (→ ISS-049); y un número de pedido que no coincidía entre el comensal y la dueña (→ ISS-050). La dueña dice que le gustaría probar Pensionistas (saldo en cuenta en vez de foto o efectivo). Detalle abajo. |
-| Día 6 | 2026-08-19 (miércoles) | **Hoy.** ISS-047, Pensionistas Fase 1+2 (`pensionista.html`), ISS-048, ISS-049, ISS-050 e ISS-051 implementados y **desplegados**. Sin visita/reporte nuevo del piloto registrado todavía — día en curso. |
+| Día 6 | 2026-08-19 (miércoles) | ISS-047, Pensionistas Fase 1+2 (`pensionista.html`), ISS-048, ISS-049, ISS-050 e ISS-051 implementados y **desplegados**. |
+| Día 7 | 2026-08-20 (jueves) | Recopilación en persona, contada por el usuario el 2026-08-21: la cocinera mandó pedidos a "Listo" por error sin poder revertirlo; la dueña pidió contar ventas por plato y preguntó por fotos pasadas de comprobantes; un cliente no encontraba cómo volver a la app tras pagar por Yape; otro cliente dijo que prefiere pedir oralmente o a lápiz; y un cliente no alcanzaba a leer bien las letras de la carta. Detalle abajo. |
 
 > **El domingo 16 de agosto no lleva número de "Día" en esta tabla:** no hay reporte de uso ni de
 > pausa para esa fecha — a diferencia del sábado 15, que el usuario confirmó explícitamente como
@@ -302,6 +303,61 @@ módulo ya estaba armado desde el 11 de agosto; faltaba toda la parte visible.
 
 > **ISS-048 no va acá:** el usuario confirmó que lo encontró probando él mismo, no la dueña — no
 > es una experiencia real del piloto, así que queda solo en `issues/` y `status.md`.
+
+### Día 7 (2026-08-20, jueves) — cocinera sin forma de deshacer "Listo", dueña pide contar por plato, cliente perdido al volver de pagar
+
+Recopilación en persona del usuario, contada el 2026-08-21 (un día después de la visita —
+confirmado explícitamente con el usuario para no repetir el hueco de fechas del
+2026-08-19).
+
+**1. La cocinera mandó pedidos a "Listo" sin querer y no podía revertirlo.** Textual:
+*"Pedro, no me puedes hacer que de Listos pueda regresar a cocina, mandé algunos menús a
+listo por casualidad y no podía volver a cocina."* Pidió puntualmente un botón "Regresar"
+en la zona Listos, por orden individual (ej. el pedido #12 vuelve a #12, sin tocar el #11
+ni el #13). Diagnosticado: el backend ya permitía el cambio de flag hacia atrás, solo
+faltaba el botón — queda como [`ISS-055`](issues/ISS-055-regresar-listos-a-cocina.md).
+
+**2. La dueña quiere contar ventas por plato.** Textual: *"¿cómo puedo filtrar por plato?
+por ejemplo, ¿cuántos asados he vendido?, cuántos pollos al horno?"* — preguntó
+puntualmente por un filtro en Órdenes y Reservas. Se decidió no construir un filtro manual
+(selects son lentos en celular durante el servicio) sino enganchar el pedido al ítem ya
+abierto en `backlog.md` de rediseño de Reportería ("qué platos va vendiendo, del día, en
+vivo"): una lista automática "Platos vendidos hoy" sin selects.
+
+**3. La dueña preguntó por las fotos de comprobantes pasados.** Textual: *"¿No puedo ver
+las fotos pasadas? porque quiero revalidar por si acaso se me pasa uno que no estoy segura
+que cobré."* Primer diagnóstico (equivocado, corregido en la misma sesión tras confirmar con
+el usuario que en Historial de verdad no se ve): el componente `comprobanteThumb()` sí está
+llamado en el render de Órdenes → Historial, pero la query de
+`GET /api/orders` (`routes/orders.js`) **nunca seleccionaba** `metodo_pago`, `estado_pago`
+ni `comprobante_url` — la condición del frontend (`o.metodo_pago || o.es_manual`) siempre
+daba falso ahí, así que la miniatura nunca se pintaba. Reservas → Historial sí estaba bien
+(esos campos ya se seleccionaban en `routes/reservations.js`). Bug real, no de
+descubribilidad — queda como [`ISS-058`](issues/ISS-058-historial-ordenes-sin-comprobante.md).
+
+**4. Un cliente no encontraba cómo volver a la app después de pagar por Yape.** Textual del
+cliente, citado por el usuario: *"No entiendo, salgo de la web y voy a mi yape, ya pagué,
+¿cómo regreso a la app?"* — se quedaba en la pantalla de apps del celular. Distinto de
+`ISS-049` (que evita que el pedido se pierda al recargar): acá el pedido sigue intacto, el
+problema es puramente de navegación entre apps. Queda como
+[`ISS-056`](issues/ISS-056-volver-de-yape-instrucciones.md).
+
+**5. Comentario de un cliente, catalogado por el usuario como "netamente destructivo":**
+*"la gente se va a aburrir, es ir de un sitio a otro, mejor es pedir oralmente y ya, es
+mejor manejar todo por lápiz."* Un solo comentario, sin patrón repetido en el resto del
+piloto (reservas por QR sin fricción, clientes adaptándose mejor que la propia dueña —
+Día 3). Lectura del usuario y del asistente: probablemente la misma raíz que el hallazgo 4
+(la fricción de saltar a Yape y no saber volver) — si eso se resuelve, este tipo de queja
+baja sola. No genera acción de producto aparte.
+
+**6. Un cliente no alcanzaba a leer bien las letras de la carta.** El tamaño de letra
+ajustable (`ISS-028`, 2026-08-10) se construyó solo para `owner.html` — quedó anotado en su
+momento en `backlog.md`: *"`menu.html` (la carta del cliente) no se tocó — decisión del
+usuario, queda para más adelante."* Este reporte real confirma que hace falta. Queda como
+[`ISS-057`](issues/ISS-057-letra-ajustable-menu-cliente.md).
+
+**De esta ronda salieron 4 issues nuevos:** `ISS-055`, `ISS-056`, `ISS-057`, `ISS-058` —
+implementados el mismo día que se registró esta entrada (2026-08-21), ver `status.md`.
 
 ---
 

@@ -28,6 +28,45 @@
     } catch (_) {}
   })();
   </script>
+
+  <!-- ── ISS-057: tamaño de letra ajustable en la carta del cliente ──
+       Mismo mecanismo que owner.html (--font-scale en <html>, aplicado antes
+       del paint), clave propia porque el comensal no tiene sesión y comparte
+       celular con nadie. Por defecto 1 (sin cambio visual para quien no toca
+       nada) — a diferencia de owner.html, acá "Normal" es el tamaño actual,
+       no uno ya agrandado, porque la mayoría de comensales lee bien hoy. -->
+  <script>
+  (function () {
+    window.MP_FONT_SCALES_MENU = [1, 1.2, 1.45];
+    window.MP_FONT_KEY_MENU    = 'mp-font-scale-menu';
+    try {
+      var fs = parseFloat(localStorage.getItem(window.MP_FONT_KEY_MENU));
+      if (!window.MP_FONT_SCALES_MENU.includes(fs)) fs = 1;
+      document.documentElement.style.setProperty('--font-scale', fs);
+    } catch (e) {}
+    window.cyclarFontScale = function () {
+      var scales = window.MP_FONT_SCALES_MENU;
+      var actual = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale')) || 1;
+      var idx = scales.indexOf(actual);
+      var next = scales[(idx + 1) % scales.length];
+      document.documentElement.style.setProperty('--font-scale', next);
+      try { localStorage.setItem(window.MP_FONT_KEY_MENU, next); } catch (e) {}
+      var btn = document.getElementById('btn-font-scale');
+      if (btn) pintarBotonFontScale(btn, next);
+    };
+    window.pintarBotonFontScale = function (btn, valor) {
+      var scales = window.MP_FONT_SCALES_MENU;
+      var nivel = valor === 1 ? 'Normal' : valor === 1.2 ? 'Grande' : 'Muy grande';
+      btn.style.fontSize = (14 + scales.indexOf(valor) * 4) + 'px';
+      btn.setAttribute('aria-label', 'Tamaño de letra: ' + nivel + '. Toca para cambiar');
+    };
+    document.addEventListener('DOMContentLoaded', function () {
+      var btn = document.getElementById('btn-font-scale');
+      var actual = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale')) || 1;
+      if (btn) window.pintarBotonFontScale(btn, actual);
+    });
+  })();
+  </script>
 </head>
 <body>
 
@@ -46,8 +85,9 @@
     <div id="mode-label" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.25rem"></div>
     <!-- Banner de horario cerrado (Gap 18) -->
     <div id="horario-cerrado-banner" style="display:none;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;margin-bottom:0.75rem"></div>
-    <!-- Consultar reserva (siempre visible) -->
-    <div style="text-align:right;margin-bottom:0.5rem">
+    <!-- Consultar reserva + tamaño de letra (siempre visibles) -->
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:0.5rem;margin-bottom:0.5rem">
+      <button class="btn-font-scale" id="btn-font-scale" onclick="cyclarFontScale()" aria-label="Tamaño de letra: Normal. Toca para cambiar" title="Cambiar tamaño de letra">A</button>
       <button class="btn-consultar" onclick="showEstadoReserva(null)">
         📋 Consultar mi reserva
       </button>
@@ -1250,6 +1290,19 @@ async function renderReservarContent() {
     if (pagoPendiente?.tipo === 'orden') openDrawer();
   }
 
+  // ISS-056: clientes que salían a pagar por Yape/Plin no sabían cómo volver
+  // a la app ("salgo de la web y voy a mi yape, ya pagué, ¿cómo regreso a la
+  // app?"). El pedido en sí ya no se pierde (ISS-049, localStorage) — esto es
+  // puramente instrucción de navegación, para que sepan qué hacer con el
+  // celular antes de salir a la app de pago.
+  function volverInstruccionHtml() {
+    return `
+      <div style="text-align:left;font-size:14px;color:#374151;background:#fff;border-radius:10px;padding:10px 12px;margin-top:10px">
+        <div style="font-weight:700;margin-bottom:4px">📲 Para volver aquí después de pagar:</div>
+        <div>No cierres tu app de pago con la ✕ — cambia de app (desliza desde abajo y mantén, o toca ⬜) y busca esta pantalla. Tu pedido te espera tal como lo dejaste.</div>
+      </div>`;
+  }
+
   function seleccionarMetodoPago(metodo) {
     pagoMetodo = metodo;
     guardarPagoPendienteLocal(); // ISS-049 — a partir de acá puede salir a pagar
@@ -1270,7 +1323,7 @@ async function renderReservarContent() {
             Copiar número 📋
           </button>
           <div style="font-size:11px;color:#6b7280;margin-top:6px">Abre tu app Yape, paga a este número y luego sube la foto del comprobante.</div>
-        </div>`;
+        </div>${volverInstruccionHtml()}`;
       document.getElementById('pago-comprobante-wrap').style.display = 'block';
       const btnYape = document.getElementById('btn-ya-pague');
       btnYape.style.display = 'block'; btnYape.disabled = false;
@@ -1286,7 +1339,7 @@ async function renderReservarContent() {
             Copiar número 📋
           </button>
           <div style="font-size:11px;color:#6b7280;margin-top:6px">Abre tu app bancaria (BBVA, Scotiabank, Interbank) y transfiere con Plin.</div>
-        </div>`;
+        </div>${volverInstruccionHtml()}`;
       document.getElementById('pago-comprobante-wrap').style.display = 'block';
       const btnPlin = document.getElementById('btn-ya-pague');
       btnPlin.style.display = 'block'; btnPlin.disabled = false;

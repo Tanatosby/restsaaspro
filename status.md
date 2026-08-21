@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-20
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-21
 
 **Lo que está en producción** — ocho deploys entre el 17 y el 20 de agosto, todos confirmados
 por el usuario:
@@ -19,7 +19,8 @@ por el usuario:
 | 2026-08-20 | `5b3af72..1658902` | **ISS-053** ("Agregar manual" con fotos + soporte de carta) + doc: corrección del target de mercado (20-50 mesas, no <10). `git pull` fast-forward, `pm2 restart`, confirmado por el usuario (log de consola). |
 | 2026-08-20 | `1658902..e35eb4a` | **ISS-054** — el picker de "Agregar manual" no filtraba por `stock_restante`, solo por `agotado`. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:** nada — todo lo implementado hasta hoy está confirmado en producción.
+**Pendiente de deploy:** ISS-055, ISS-056, ISS-057 e ISS-058 (día 7 del piloto, ver sesión
+2026-08-21 abajo) — implementados y testeados, sin desplegar todavía.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -46,6 +47,51 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-21 — ISS-055, ISS-056, ISS-057, ISS-058: día 7 del piloto
+
+**Prompt del usuario:** recopilación de 4 hallazgos de la visita del día anterior (2026-08-20,
+"Día 7" del piloto #1) — cocinera, dueña y clientes — más un comentario de un cliente sin
+acción de producto. Ver el registro completo, con las citas textuales, en `pilotos.md` →
+"Día 7 (2026-08-20, jueves)".
+
+**ISS-055 — sin forma de regresar un pedido de "Listo" a "Cocina":** la cocinera mandó pedidos
+a Listo por error y no podía deshacerlo. El backend ya aceptaba el cambio de flag hacia atrás
+(`orders.js`/`reservations.js` solo bloquean pagado/cancelado) — solo faltaba el botón. Nuevo
+"↩️ Regresar a cocina" en la zona Listos de la Cola del día (`pedidos.js`), por ítem individual
+(reusa `accionRapidaOrden`/`accionRapidaReserva`, sin cambios de backend).
+
+**ISS-058 — Historial de Órdenes no mostraba la foto del comprobante:** la dueña preguntó por
+las fotos pasadas para revalidar cobros. El diagnóstico inicial ("ya existe, es solo
+descubribilidad") fue corregido en la misma sesión tras confirmar con el usuario que en
+producción no se ve. Causa real: `GET /api/orders` nunca seleccionaba `metodo_pago`,
+`estado_pago`, `comprobante_url` ni los campos de duplicado — el frontend (`ordenes.js`) ya
+sabía pintarlos, pero la condición para mostrarlos siempre daba falso. `GET /api/reservations`
+no tenía el bug. Se agregaron las columnas faltantes al `SELECT`.
+
+**ISS-056 — cliente sin saber cómo volver a la app tras pagar por Yape/Plin:** distinto de
+`ISS-049` (el pedido ya no se pierde) — era confusión de navegación. Bloque de instrucción
+nuevo bajo el número de Yape/Plin en `menu.html`, solo en esos 2 métodos.
+
+**ISS-057 — tamaño de letra ajustable en la carta del cliente:** un cliente no alcanzaba a leer
+las letras. `ISS-028` (2026-08-10) había cubierto solo `owner.html` — quedó anotado como
+pendiente en `backlog.md`. Se portó el mismo mecanismo (`--font-scale` en `<html>`, aplicado
+antes del paint): 63 declaraciones de `font-size` en `menu.css` convertidas de `px` a `rem`,
+botón 🔤 nuevo en el header (3 niveles: Normal/Grande/Muy grande), `localStorage` con clave
+propia (`mp-font-scale-menu`, separada de la del panel).
+
+**Sin acción de producto:** el comentario de un cliente ("mejor manejar todo por lápiz") —
+lectura registrada en `pilotos.md`, probablemente ligado a la misma fricción de ISS-056.
+
+**Verificación:** 457/457 jest sin regresiones en las 4. Sin tests E2E nuevos — los cuatro son
+cambios acotados (un botón que reusa mecanismo existente, columnas agregadas a un SELECT, texto
+estático, y una conversión de unidades CSS) sin lógica de negocio nueva que amerite un script
+Playwright propio; pendiente verificar ISS-057 a mano en un celular real (360px) antes del
+próximo servicio.
+
+**Deploy:** pendiente — el usuario lo hace manualmente (ver `deploy.md` §16).
 
 ---
 
