@@ -19,9 +19,9 @@ por el usuario:
 | 2026-08-20 | `5b3af72..1658902` | **ISS-053** ("Agregar manual" con fotos + soporte de carta) + doc: corrección del target de mercado (20-50 mesas, no <10). `git pull` fast-forward, `pm2 restart`, confirmado por el usuario (log de consola). |
 | 2026-08-20 | `1658902..e35eb4a` | **ISS-054** — el picker de "Agregar manual" no filtraba por `stock_restante`, solo por `agotado`. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-21 | `e35eb4a..9ea9a51` | **ISS-055** (regresar de Listos a Cocina), **ISS-056** (instrucción para volver de Yape/Plin), **ISS-057** (letra ajustable en la carta del cliente) e **ISS-058** (Historial de Órdenes sin foto de comprobante) — día 7 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online. |
+| 2026-08-21 (tarde) | `9ea9a51..1b38b57` | **ISS-056 (rediseño)** — la nota de "cómo volver de Yape/Plin" pasó de instrucciones de gestos del celular a 3 pasos numerados con emoji. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:** el rediseño de la nota de ISS-056 (commit sin pushear todavía) — ver
-sesión de abajo.
+**Pendiente de deploy:** nada — todo lo implementado hasta hoy está confirmado en producción.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -74,7 +74,9 @@ en vez de colores sueltos como antes. Detalle completo en `issues/ISS-056-...md`
 
 **Verificación:** 457/457 jest sin regresiones.
 
-**Deploy:** pendiente — el usuario hace los deploys a mano.
+**Deploy:** commit `1b38b57` pusheado a `main` y desplegado por el usuario en producción el
+2026-08-21 (`9ea9a51..1b38b57`, `git pull` fast-forward, `pm2 restart`, `/health` →
+`{"status":"ok"}`).
 
 ---
 
