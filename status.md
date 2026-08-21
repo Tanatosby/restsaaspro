@@ -22,6 +22,8 @@ por el usuario:
 | 2026-08-21 (tarde) | `9ea9a51..1b38b57` | **ISS-056 (rediseño)** — la nota de "cómo volver de Yape/Plin" pasó de instrucciones de gestos del celular a 3 pasos numerados con emoji. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
 **Pendiente de deploy:** nada — todo lo implementado hasta hoy está confirmado en producción.
+Los dos hallazgos de hoy (ver sesión más abajo) están **diagnosticados y documentados, sin
+implementar** — no hay código nuevo que desplegar todavía.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -48,6 +50,40 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-21 (noche) — ISS-059, ISS-060: diagnóstico del Día 8 del piloto, sin implementar
+
+**Prompt del usuario:** dos hallazgos del Día 8 del piloto #1 — "Pedro, no puedo devolverla para
+que se cuente como menú?" (la cocinera canceló un pedido por error) y una pregunta de negocio
+sobre cómo bajan la app sus pensionistas / si conviene subirla a Play Store. Pidió solo
+documentar y pushear — sin implementar código todavía.
+
+**ISS-059 — revertir pedido cancelado:** distinto de `ISS-055` (donde el backend ya permitía el
+regreso), acá `orders.js:440`/`reservations.js:282`/`orders.js:707` **bloquean explícitamente**
+cualquier cambio una vez `es_cancelado` — es un estado terminal a propósito, y cancelar además
+devuelve stock (`devolverStock`). Restaurar exige relajar esa regla, re-descontar stock (con el
+caso de que ya no alcance) y decidir a qué estado "aterriza" (propuesto: `es_en_cocina`, mismo
+criterio que ISS-055) ya que no hay historial de en qué zona estaba antes de cancelar. Los
+pedidos cancelados tampoco aparecen en ninguna zona de la Cola del día hoy. Diagnosticado,
+**sin implementar** — ver `ISS-059`.
+
+**ISS-060 — acceso de pensionistas:** se descartó Play Store (fricción de cuenta de
+desarrollador + revisión, sin aportar nada a un comensal que ya conoce el restaurante puntual)
+a favor del mecanismo de instalación PWA que ya existe (`pwa-install.js`). Se diagnosticó que
+hoy el único camino a `pensionista.html` es que el dueño dicte de palabra `menupro.tech/login`
+— no hay QR ni link desde `menu.html`. Se plantearon 3 opciones (QR al login genérico, ruta
+propia `/pensionista`, enlace desde `menu.html`) y el usuario eligió la tercera: un enlace
+"¿Eres pensionista?" en el header de `menu.html`, junto al botón "Consultar mi reserva".
+Diagnosticado y decidido, **sin implementar** — ver `ISS-060`.
+
+**Documentación actualizada:** `pilotos.md` (Día 8, con las citas textuales), `issues/ISS-059-*`
+e `issues/ISS-060-*` (nuevos), `issues/ISSUES.md` (índice, sección "Fix pendiente"),
+`backlog.md`.
+
+**Sin cambios de código, sin tests nuevos, sin deploy** — queda para una próxima sesión
+implementar ambos.
 
 ---
 

@@ -40,6 +40,8 @@ ISS-046, commit `a47d132` — ver `status.md`).
 | ~~ISS-048~~ | ~~Sin forma de volver desde "¿Cómo vas a pagar?" en `menu.html` a la carta~~ | ✅ **Hecho y desplegado 2026-08-19** (`60c9e6f`). Encontrado por el usuario probando, no por la dueña del piloto — ver `ISS-048` |
 | ~~ISS-049~~ | ~~El pedido se pierde si la pestaña se recarga sola al salir a pagar~~ | ✅ **Hecho y desplegado 2026-08-19** (`e7fc697`). Prioridad alta a pedido explícito del usuario. Reportado por la dueña, Día 5 del piloto: *"si se les reinicia cada vez que pagan van a aburrirse de usar la app"* — ver `ISS-049` |
 | ~~ISS-050~~ | ~~El número de pedido que ve el comensal no coincide con el de la dueña~~ | ✅ **Hecho y desplegado 2026-08-19** (`e7fc697`). Reportado por una clienta ("mi orden me sale 96"), Día 5 — ver `ISS-050` |
+| **ISS-059** | Sin forma de revertir un pedido cancelado por error — la dueña quiere que vuelva a contar como venta | 🔴 Alta. Diagnosticado 2026-08-21 (Día 8): a diferencia de ISS-055, el backend bloquea explícitamente cualquier cambio desde `es_cancelado` y cancelar devuelve stock. Sin implementar — ver `ISS-059` |
+| **ISS-060** | Pensionistas sin camino claro a `pensionista.html` (pregunta de la dueña sobre Play Store) | 🟡 Media. Se descartó Play Store; decidido con el usuario un enlace "¿Eres pensionista?" en `menu.html` + botón de instalar PWA en `pensionista.html`. Sin implementar — ver `ISS-060` |
 | — | **Verificar en el servicio real** un pedido con 2 menús y la etiqueta "para llevar" | Los 3 críticos están en producción pero nadie los vio funcionar en un servicio de verdad |
 | **ISS-043** | El menú sin secciones obligatorias **cobra de menos** (ver sección propia) | Es de cobro, no de vista. Falta correr la consulta en producción para saber si aplica |
 | ~~—~~ | ~~Imagen descargable del menú para compartir por WhatsApp (complementaria al link)~~ | ✅ **Hecho y desplegado 2026-08-17** (`9c9de62` + `32c8fb0`) — botón «⬇ Descargar menú» en la card de Configuración de menús, `public/js/widgets/menu-export.js`. Sin backend. Ver `features.md`. Falta verlo usado en un servicio real |
@@ -480,6 +482,14 @@ Mandar al pensionista a su propia página **no es complicado**: `login.html:420`
 - Reportería separada: recargas (ingreso real) vs. consumo (gasto de saldo ya cobrado), para no
   contar el mismo dinero dos veces en Ganancias — `pensionistas.md` §8.
 - Devolución automática de saldo al cancelar un pedido; el pedido respeta stock y horario de atención.
+
+### Acceso — hueco encontrado el 2026-08-21 (Día 8 del piloto)
+
+La dueña preguntó cómo bajan la app sus pensionistas / si convenía Play Store. Diagnóstico: hoy
+no hay QR ni link ni ruta con el nombre del restaurante — el único camino es que el dueño
+dicte de palabra `menupro.tech/login`. Se descartó Play Store; decisión tomada con el usuario:
+enlace "¿Eres pensionista?" en `menu.html` + botón `PwaInstall` en `pensionista.html`.
+Diagnosticado y decidido, sin implementar — ver `ISS-060`.
 
 ---
 

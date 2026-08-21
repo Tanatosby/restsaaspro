@@ -16,7 +16,10 @@ _(vacío)_
 
 ## Fix pendiente (diagnosticado, sin implementar)
 
-_(vacío)_
+| ID | Título | Módulo | Prioridad |
+|----|--------|--------|-----------|
+| [ISS-059](ISS-059-revertir-pedido-cancelado.md) | Sin forma de revertir un pedido cancelado por error | `orders.js`/`reservations.js`/`pedidos.js` | 🔴 Alta |
+| [ISS-060](ISS-060-acceso-pensionista-menu.md) | Pensionistas sin un camino claro para llegar a `pensionista.html` | `menu.html`/`pensionista.html` | 🟡 Media |
 
 ## Resueltos
 

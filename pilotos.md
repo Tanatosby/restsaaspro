@@ -102,6 +102,7 @@ no reemplaza la de julio — es la evolución.
 | Día 5 | 2026-08-18 (martes) | Se despliegan las respuestas al Día 4 (descarga de foto, "Agregar manual", conteo de menús). Tres incidentes nuevos, todos contados el Día 6: un pedido de 2 menús —uno para llevar, otro para comer ahí— que el sistema no podía separar (→ ISS-047); un pedido perdido al salir a pagar por Yape, la pestaña "se reiniciaba" (→ ISS-049); y un número de pedido que no coincidía entre el comensal y la dueña (→ ISS-050). La dueña dice que le gustaría probar Pensionistas (saldo en cuenta en vez de foto o efectivo). Detalle abajo. |
 | Día 6 | 2026-08-19 (miércoles) | ISS-047, Pensionistas Fase 1+2 (`pensionista.html`), ISS-048, ISS-049, ISS-050 e ISS-051 implementados y **desplegados**. |
 | Día 7 | 2026-08-20 (jueves) | Recopilación en persona, contada por el usuario el 2026-08-21: la cocinera mandó pedidos a "Listo" por error sin poder revertirlo; la dueña pidió contar ventas por plato y preguntó por fotos pasadas de comprobantes; un cliente no encontraba cómo volver a la app tras pagar por Yape; otro cliente dijo que prefiere pedir oralmente o a lápiz; y un cliente no alcanzaba a leer bien las letras de la carta. Detalle abajo. |
+| Día 8 | 2026-08-21 (viernes) | Contado por el usuario el mismo día: la cocinera canceló un pedido por error y la dueña preguntó si se puede "devolver" para que cuente como venta (→ ISS-059); y pregunta de la dueña sobre cómo los pensionistas descargan/acceden a la app, que llevó a decidir un acceso desde `menu.html` (→ ISS-060). Detalle abajo. |
 
 > **El domingo 16 de agosto no lleva número de "Día" en esta tabla:** no hay reporte de uso ni de
 > pausa para esa fecha — a diferencia del sábado 15, que el usuario confirmó explícitamente como
@@ -358,6 +359,34 @@ usuario, queda para más adelante."* Este reporte real confirma que hace falta. 
 
 **De esta ronda salieron 4 issues nuevos:** `ISS-055`, `ISS-056`, `ISS-057`, `ISS-058` —
 implementados el mismo día que se registró esta entrada (2026-08-21), ver `status.md`.
+
+### Día 8 (2026-08-21, viernes) — pedido cancelado sin poder revertir, acceso de pensionistas
+
+Contado por el usuario el mismo día (sin el desfase de un día que tuvo el Día 7).
+
+**1. La cocinera canceló un pedido por error y no se podía "devolver".** Textual de la dueña:
+*"no puedo devolverla para que se cuente como menú?"* — quiere que el pedido vuelva a contar
+como venta, no solo recuperar el ticket en pantalla. Distinto de `ISS-055` (Listo → Cocina):
+ahí el backend ya permitía el regreso y solo faltaba el botón. Acá el backend **bloquea
+explícitamente** cualquier cambio una vez que una orden/reserva queda `es_cancelado`
+(`orders.js:440`, `reservations.js:282`, y la ruta de cocina `orders.js:707`) — cancelar es hoy
+un estado terminal a propósito, y además **devuelve el stock** del plato (`devolverStock`).
+Restaurar exige relajar esa regla y decidir qué pasa si el stock ya se agotó mientras tanto.
+Los pedidos cancelados tampoco aparecen en ninguna zona de la Cola del día (`pedidos.js`) — solo
+se ven en el Historial de Órdenes, de solo lectura. Diagnosticado, sin implementar — queda como
+[`ISS-059`](issues/ISS-059-revertir-pedido-cancelado.md).
+
+**2. La dueña preguntó cómo bajan la app sus pensionistas** y si convenía subirla a Play Store.
+Se diagnosticó el flujo real: `pensionista.html` no es anónimo por slug como `menu.html` — es
+una cuenta con rol, y hoy el único camino es que el dueño le dicte de palabra
+`menupro.tech/login` más el correo inventado (`nombre@menupro.tech`) y contraseña que él mismo
+le asigna al darlo de alta. No hay QR, ni link desde `menu.html`, ni URL con el nombre del
+restaurante. Se descartó Play Store (fricción de cuenta de desarrollador + revisión, sin
+aportar nada a un comensal que ya conoce el restaurante puntual) a favor de reforzar el
+mecanismo de instalación PWA que ya existe. El usuario eligió, entre 3 opciones planteadas,
+agregar un enlace **"¿Eres pensionista?"** visible en `menu.html` (la carta que el cliente ya
+usa a diario) en vez de un QR aparte o una ruta dedicada. Diagnosticado y decidido, sin
+implementar — queda como [`ISS-060`](issues/ISS-060-acceso-pensionista-menu.md).
 
 ---
 
