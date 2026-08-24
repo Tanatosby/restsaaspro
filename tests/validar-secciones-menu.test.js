@@ -1,11 +1,16 @@
 /**
- * Pruebas de utils/validarSeccionesMenu.js — ISS-046.
+ * Pruebas de utils/validarSeccionesMenu.js — ISS-046 e ISS-066.
  *
- * Un plato de una sección puede exigir OTRA sección del mismo menú aunque esa
- * sección esté marcada como opcional en general (ej. "arroz con papas
- * fritas" exige "Proteínas"; "arroz con pollo", en la misma sección, no
+ * ISS-046: un plato de una sección puede EXIGIR otra sección del mismo menú
+ * aunque esa sección esté marcada como opcional en general (ej. "arroz con
+ * papas fritas" exige "Proteínas"; "arroz con pollo", en la misma sección, no
  * exige nada porque ya está completo). Sin esta validación, un pedido podía
  * llegar incompleto a cocina — pasó en el piloto real del 2026-08-17.
+ *
+ * ISS-066 (inverso de ISS-046): un plato puede BLOQUEAR otra sección opcional
+ * (ej. "ají de gallina" ya viene completo, no permite elegir "Proteínas").
+ * Solo aplica si la sección bloqueada es opcional — si el dueño la marcó
+ * obligatoria, el bloqueo se ignora (se exige igual, sin excepción por plato).
  *
  * Se valida POR INSTANCIA de menú (agrupando por `grupo`, ISS-041): un mismo
  * pedido puede traer 2+ menús del mismo tipo con selecciones distintas, y
@@ -24,7 +29,8 @@ function crearDB() {
       id INTEGER PRIMARY KEY, id_menu_dia INTEGER, id_seccion_menu INTEGER, requerido INTEGER
     );
     CREATE TABLE componentes_menu_dia (
-      id INTEGER PRIMARY KEY, id_menu_dia INTEGER, id_seccion_menu INTEGER, requiere_seccion_id INTEGER
+      id INTEGER PRIMARY KEY, id_menu_dia INTEGER, id_seccion_menu INTEGER,
+      requiere_seccion_id INTEGER, no_permite_seccion_id INTEGER
     );
   `);
   return db;
@@ -32,15 +38,17 @@ function crearDB() {
 
 // Menú 100: Entradas(1, oblig) + Arroces(2, oblig) + Proteínas(3, opcional).
 // Componentes: 10=Ensalada(Entradas), 20=arroz con pollo(Arroces, autocontenido),
-// 21=arroz con papas fritas(Arroces, exige Proteínas=3), 30=pollo(Proteínas).
+// 21=arroz con papas fritas(Arroces, exige Proteínas=3),
+// 22=ají de gallina(Arroces, BLOQUEA Proteínas=3), 30=pollo(Proteínas).
 function seedMenuConProteinaCondicional(db) {
   db.exec(`
     INSERT INTO secciones_menu VALUES (1,'Entradas'),(2,'Arroces'),(3,'Proteínas');
     INSERT INTO menu_secciones VALUES (1,100,1,1),(2,100,2,1),(3,100,3,0);
-    INSERT INTO componentes_menu_dia VALUES (10,100,1,NULL);
-    INSERT INTO componentes_menu_dia VALUES (20,100,2,NULL);
-    INSERT INTO componentes_menu_dia VALUES (21,100,2,3);
-    INSERT INTO componentes_menu_dia VALUES (30,100,3,NULL);
+    INSERT INTO componentes_menu_dia VALUES (10,100,1,NULL,NULL);
+    INSERT INTO componentes_menu_dia VALUES (20,100,2,NULL,NULL);
+    INSERT INTO componentes_menu_dia VALUES (21,100,2,3,NULL);
+    INSERT INTO componentes_menu_dia VALUES (22,100,2,NULL,3);
+    INSERT INTO componentes_menu_dia VALUES (30,100,3,NULL,NULL);
   `);
 }
 
@@ -93,6 +101,59 @@ describe('validarSeccionesMenu — sección condicional por plato (ISS-046)', ()
     const error = validarSeccionesMenu(db, [
       { id_componente: 10, id_menu_dia: 100, grupo: 1 },
       { id_componente: 20, id_menu_dia: 100, grupo: 1 }, // arroz con pollo, no exige nada
+    ]);
+    expect(error).toBeNull();
+  });
+});
+
+describe('validarSeccionesMenu — bloqueo de sección por plato (ISS-066)', () => {
+  test('plato que bloquea + selección en la sección bloqueada (opcional) → bloquea', () => {
+    const db = crearDB();
+    seedMenuConProteinaCondicional(db);
+    const error = validarSeccionesMenu(db, [
+      { id_componente: 10, id_menu_dia: 100, grupo: 1 }, // Entradas
+      { id_componente: 22, id_menu_dia: 100, grupo: 1 }, // ají de gallina, bloquea Proteínas
+      { id_componente: 30, id_menu_dia: 100, grupo: 1 }, // Proteínas (no debería poder venir)
+    ]);
+    expect(error).toMatch(/Proteínas/);
+  });
+
+  test('plato que bloquea sin selección en la sección bloqueada → pasa (el caso normal)', () => {
+    const db = crearDB();
+    seedMenuConProteinaCondicional(db);
+    const error = validarSeccionesMenu(db, [
+      { id_componente: 10, id_menu_dia: 100, grupo: 1 },
+      { id_componente: 22, id_menu_dia: 100, grupo: 1 }, // ají de gallina, sin proteína
+    ]);
+    expect(error).toBeNull();
+  });
+
+  test('plato que no bloquea nada + proteína elegida → pasa (arroz con papas + pollo)', () => {
+    const db = crearDB();
+    seedMenuConProteinaCondicional(db);
+    const error = validarSeccionesMenu(db, [
+      { id_componente: 10, id_menu_dia: 100, grupo: 1 },
+      { id_componente: 21, id_menu_dia: 100, grupo: 1 }, // arroz con papas, exige Proteínas
+      { id_componente: 30, id_menu_dia: 100, grupo: 1 }, // Proteínas
+    ]);
+    expect(error).toBeNull();
+  });
+
+  test('si la sección bloqueada es OBLIGATORIA, el bloqueo se ignora → pasa siempre', () => {
+    // Mismo componente 22 (bloquea sección 3), pero acá la sección 3 se
+    // configura obligatoria — el bloqueo no debe aplicar (se exige igual).
+    const db = crearDB();
+    db.exec(`
+      INSERT INTO secciones_menu VALUES (1,'Entradas'),(2,'Arroces'),(3,'Proteínas');
+      INSERT INTO menu_secciones VALUES (1,100,1,1),(2,100,2,1),(3,100,3,1);
+      INSERT INTO componentes_menu_dia VALUES (10,100,1,NULL,NULL);
+      INSERT INTO componentes_menu_dia VALUES (22,100,2,NULL,3);
+      INSERT INTO componentes_menu_dia VALUES (30,100,3,NULL,NULL);
+    `);
+    const error = validarSeccionesMenu(db, [
+      { id_componente: 10, id_menu_dia: 100, grupo: 1 },
+      { id_componente: 22, id_menu_dia: 100, grupo: 1 }, // ají de gallina
+      { id_componente: 30, id_menu_dia: 100, grupo: 1 }, // Proteínas, obligatoria — se permite igual
     ]);
     expect(error).toBeNull();
   });

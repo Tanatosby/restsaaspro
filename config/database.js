@@ -659,6 +659,14 @@ db.exec(`CREATE INDEX IF NOT EXISTS idx_pensionista_movimientos_pensionista ON p
 // plato incompleto y llega así a cocina.
 try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN requiere_seccion_id INTEGER DEFAULT NULL REFERENCES secciones_menu(id)`); } catch (_) {}
 
+// Migración idempotente: bloqueo de sección por plato (ISS-066, inverso de ISS-046)
+// Un plato de una sección puede BLOQUEAR otra sección opcional — ej. "ají de
+// gallina" ya viene completo, no debe permitir elegir nada de "Proteínas".
+// Solo aplica cuando la sección bloqueada es opcional en ese menú: si el
+// dueño la marcó obligatoria, se ignora el bloqueo (obligatoria siempre se
+// exige, sin excepción por plato).
+try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN no_permite_seccion_id INTEGER DEFAULT NULL REFERENCES secciones_menu(id)`); } catch (_) {}
+
 console.log('✅ Database ready');
 
 module.exports = db;

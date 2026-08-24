@@ -201,6 +201,7 @@ router.get('/menu', (req, res) => {
         SELECT
           cmd.id   AS id_componente,
           cmd.requiere_seccion_id,
+          cmd.no_permite_seccion_id,
           pm.id    AS id_plato,
           pm.nombre,
           pm.descripcion,

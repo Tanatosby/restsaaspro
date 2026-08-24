@@ -1,13 +1,18 @@
 // utils/validarSeccionesMenu.js
 //
-// Valida que los menu_items de un pedido/reserva no lleguen incompletos a
-// cocina — ISS-046. Dos reglas:
+// Valida que los menu_items de un pedido/reserva no lleguen incompletos (o
+// combinados de forma inválida) a cocina. Tres reglas:
 //   1) Las secciones marcadas obligatorias (menu_secciones.requerido=1)
 //      tienen que estar cubiertas.
-//   2) Un plato puede exigir OTRA sección aunque esa sección sea opcional en
-//      general (componentes_menu_dia.requiere_seccion_id) — ej. "arroz con
-//      papas fritas" exige "Proteínas", pero "arroz con pollo" no exige nada
-//      porque ya está completo.
+//   2) Un plato puede EXIGIR otra sección aunque esa sección sea opcional en
+//      general (componentes_menu_dia.requiere_seccion_id, ISS-046) — ej.
+//      "arroz con papas fritas" exige "Proteínas", pero "arroz con pollo" no
+//      exige nada porque ya está completo.
+//   3) Un plato puede BLOQUEAR otra sección opcional (ISS-066, inverso de la
+//      regla 2) — ej. "ají de gallina" ya viene completo, no debe permitir
+//      elegir nada de "Proteínas". Solo aplica si esa sección es OPCIONAL en
+//      el menú: si el dueño la marcó obligatoria, el bloqueo se ignora — una
+//      obligatoria siempre se exige, sin excepción por plato.
 //
 // Se valida POR INSTANCIA de menú (agrupando por `grupo`, ISS-041), no por
 // id_menu_dia a secas: un mismo pedido puede traer 2+ menús del mismo tipo
@@ -31,25 +36,33 @@ function validarSeccionesMenu(db, menuItems) {
       cmd.id_menu_dia,
       cmd.id_seccion_menu,
       cmd.requiere_seccion_id,
-      sm2.nombre              AS requiere_seccion_nombre
+      sm2.nombre              AS requiere_seccion_nombre,
+      cmd.no_permite_seccion_id,
+      sm3.nombre              AS no_permite_seccion_nombre
     FROM componentes_menu_dia cmd
     LEFT JOIN secciones_menu sm2 ON cmd.requiere_seccion_id = sm2.id
+    LEFT JOIN secciones_menu sm3 ON cmd.no_permite_seccion_id = sm3.id
     WHERE cmd.id IN (${placeholders})
   `).all(...idsComponente);
   const infoPorComponente = new Map(info.map(i => [i.id_componente, i]));
 
   const idsMenu = [...new Set(menuItems.map(i => i.id_menu_dia))];
   const phMenu = idsMenu.map(() => '?').join(',');
-  const obligatorias = db.prepare(`
-    SELECT ms.id_menu_dia, ms.id_seccion_menu, sm.nombre AS nombre_seccion
+  const secciones = db.prepare(`
+    SELECT ms.id_menu_dia, ms.id_seccion_menu, ms.requerido, sm.nombre AS nombre_seccion
     FROM menu_secciones ms
     JOIN secciones_menu sm ON sm.id = ms.id_seccion_menu
-    WHERE ms.id_menu_dia IN (${phMenu}) AND ms.requerido = 1
+    WHERE ms.id_menu_dia IN (${phMenu})
   `).all(...idsMenu);
   const obligatoriasPorMenu = new Map();
-  for (const o of obligatorias) {
-    if (!obligatoriasPorMenu.has(o.id_menu_dia)) obligatoriasPorMenu.set(o.id_menu_dia, []);
-    obligatoriasPorMenu.get(o.id_menu_dia).push(o);
+  const opcionalesPorMenu = new Set(); // clave "idMenu:idSeccion" — lookup O(1) para la regla 3
+  for (const s of secciones) {
+    if (s.requerido) {
+      if (!obligatoriasPorMenu.has(s.id_menu_dia)) obligatoriasPorMenu.set(s.id_menu_dia, []);
+      obligatoriasPorMenu.get(s.id_menu_dia).push(s);
+    } else {
+      opcionalesPorMenu.add(`${s.id_menu_dia}:${s.id_seccion_menu}`);
+    }
   }
 
   // Agrupar por instancia de menú: clave = grupo si viene, si no id_menu_dia.
@@ -76,6 +89,16 @@ function validarSeccionesMenu(db, menuItems) {
     for (const c of inst.componentes) {
       if (c.requiere_seccion_id && !inst.secciones.has(c.requiere_seccion_id))
         return `Un plato elegido también necesita la sección "${c.requiere_seccion_nombre || ''}"`;
+
+      // Regla 3 (ISS-066): solo bloquea si la sección referida es opcional en
+      // este menú — si es obligatoria, se ignora (se exige igual, sin excepción).
+      if (
+        c.no_permite_seccion_id &&
+        inst.secciones.has(c.no_permite_seccion_id) &&
+        opcionalesPorMenu.has(`${inst.id_menu_dia}:${c.no_permite_seccion_id}`)
+      ) {
+        return `Un plato elegido no se puede combinar con la sección "${c.no_permite_seccion_nombre || ''}"`;
+      }
     }
   }
 

@@ -366,9 +366,18 @@
   // `(mode, ...)` — acá `mode` se ignora, hay un solo carrito. Se abre
   // siempre con mode:'pedir' (ver abrirMenuModal) para que el widget arme
   // los `name` de los radios con el prefijo 'p', igual que menu.html.
-  function selectMenuPlato(mode, menuId, seccionId, componenteId, nombrePlato, nombreSeccion, precio, idMenuDia) {
+  function selectMenuPlato(mode, menuId, seccionId, componenteId, nombrePlato, nombreSeccion, precio, idMenuDia, noPermiteSeccionId) {
     if (!menuSelections[menuId]) menuSelections[menuId] = {};
     menuSelections[menuId][seccionId] = { id_componente: componenteId, id_menu_dia: idMenuDia, nombre: nombrePlato, seccion: nombreSeccion };
+
+    // Bloqueo condicional por plato (ISS-066) — mismo criterio que menu.html.
+    if (noPermiteSeccionId && menuSelections[menuId][noPermiteSeccionId]) {
+      const quitado = menuSelections[menuId][noPermiteSeccionId].nombre;
+      delete menuSelections[menuId][noPermiteSeccionId];
+      showMsg(`"${nombrePlato}" no se sirve con "${quitado}" — se quitó esa selección`, true);
+    }
+
+    if (typeof MenuModal !== 'undefined' && MenuModal.refresh) MenuModal.refresh();
   }
 
   function agregarMenu(mode, menuId, elegible, precio, nombreMenu) {
@@ -388,6 +397,14 @@
           const seccionExigida = menu.secciones.find(s => s.id_seccion === plato.requiere_seccion_id);
           showMsg(`"${plato.nombre}" también necesita que elijas: ${seccionExigida?.nombre_seccion || 'otra sección'}`, true);
           return;
+        }
+        // Bloqueo condicional por plato (ISS-066) — mismo criterio que menu.html.
+        if (plato?.no_permite_seccion_id && menuSelections[menuId]?.[plato.no_permite_seccion_id]) {
+          const seccionBloqueada = menu.secciones.find(s => s.id_seccion === plato.no_permite_seccion_id);
+          if (seccionBloqueada && !seccionBloqueada.requerido) {
+            showMsg(`"${plato.nombre}" no se sirve con "${menuSelections[menuId][plato.no_permite_seccion_id].nombre}"`, true);
+            return;
+          }
         }
       }
     }
@@ -414,7 +431,7 @@
     const menu = menusDia.find(m => m.id === menuId);
     if (!menu) return;
     menuSelections[menuId] = {};
-    MenuModal.open({ menu, mode: 'pedir' });
+    MenuModal.open({ menu, mode: 'pedir', getSel: () => menuSelections[menuId] || {} });
   }
 
   // ── Carta qty ─────────────────────────────────────────

@@ -22,8 +22,9 @@ por el usuario:
 | 2026-08-21 (tarde) | `9ea9a51..1b38b57` | **ISS-056 (rediseño)** — la nota de "cómo volver de Yape/Plin" pasó de instrucciones de gestos del celular a 3 pasos numerados con emoji. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-24 | `1b38b57..c269fb1` | **ISS-061** (status "En preparación" más claro), **ISS-062** (botón "Listo" en zona Cocina), **ISS-063** (Reservas: carta antes que el formulario), **ISS-064** ("+1 mismo menú") e **ISS-065** (reserva sin hora ya no se bloquea) — día 9 y día 10 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `/health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:** nada — todo lo implementado hasta hoy está confirmado en producción.
-ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto).
+**Pendiente de deploy:** **ISS-066** (plato que bloquea sección opcional — inverso de ISS-046),
+implementado hoy 2026-08-24 tras `c269fb1`. ISS-059 y ISS-060 siguen **diagnosticados, sin
+implementar** (Día 8 del piloto).
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -50,6 +51,45 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-24 (2) — ISS-066: plato que bloquea una sección opcional (inverso de ISS-046)
+
+**Prompt del usuario:** razonando sobre el mismo caso de ISS-046 (arroces + proteína opcional),
+planteó el caso inverso — si "Arroces" tiene "ají de gallina" y "arroz con papas" y "Proteínas"
+tiene "pollo" y "pescado", "arroz con papas" sí debe permitir elegir proteína, pero "ají de
+gallina" no debería permitirlo — con la salvedad de que si ambas secciones fueran obligatorias,
+deben permitirse siempre sin excepción. Aprobó el TODO propuesto y confirmó alcance a nivel de
+**sección completa** (no por opción individual dentro de la sección).
+
+**Diagnóstico:** `ISS-046` ya resolvió la dirección "el plato necesita más" con
+`requiere_seccion_id`. Faltaba la dirección opuesta — nada impedía combinar un plato
+autocontenido con una sección opcional que no necesita.
+
+**Fix:** nuevo `componentes_menu_dia.no_permite_seccion_id` (espejo exacto de
+`requiere_seccion_id`, migración idempotente). `utils/validarSeccionesMenu.js` gana una tercera
+regla: bloquea la combinación solo si la sección referida es opcional en ese menú — si es
+obligatoria, el bloqueo se ignora. Nuevo `PATCH …/no-permite-seccion` en `routes/menu.js`
+(mismo patrón que `…/requiere-seccion`); `GET /menus-dia` y `GET /api/public/menu` devuelven el
+campo nuevo. `owner.html`: badge `🚫 No permite <sección>` + acción para configurarlo (selector
+filtrado a solo secciones opcionales, ya que bloquear una obligatoria no tendría efecto).
+
+**Frontend dinámico:** `public/js/widgets/menu-modal.js` (compartido por `menu.html` y
+`pensionista.html`) gana `MenuModal.refresh()` — al elegir un plato con
+`no_permite_seccion_id`, la sección bloqueada se deshabilita en vivo dentro del mismo modal
+("🚫 No disponible — '<plato>' ya viene completo"), sin cerrarlo. `selectMenuPlato()` limpia y
+avisa si ya había una selección en la sección que el nuevo plato bloquea (cubre elegir en
+cualquier orden). `agregarMenu()` valida también como red de seguridad final.
+
+**Verificación:** `tests/validar-secciones-menu.test.js` ampliado con 4 casos nuevos (15/15).
+Suite completa: **34/34 test suites, 458/458 tests**. Migración verificada corriendo contra
+`database.sqlite` real (columna se crea sola, sin romper datos existentes).
+
+**Documentación actualizada:** `issues/ISS-066-plato-no-permite-seccion-opcional.md` (nuevo),
+`issues/ISSUES.md` (índice).
+
+**Pendiente: deploy** (lo hace el usuario, por consola web o SSH — ver `deploy.md` §16).
 
 ---
 

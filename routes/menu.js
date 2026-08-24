@@ -170,6 +170,8 @@ router.get('/menus-dia', authorizePermiso(), (req, res) => {
           cmd.stock_restante,
           cmd.requiere_seccion_id,
           sm2.nombre  AS requiere_seccion_nombre,
+          cmd.no_permite_seccion_id,
+          sm3.nombre  AS no_permite_seccion_nombre,
           pm.id       AS id_plato,
           pm.nombre,
           pm.descripcion,
@@ -177,6 +179,7 @@ router.get('/menus-dia', authorizePermiso(), (req, res) => {
         FROM componentes_menu_dia cmd
         JOIN platos_menu pm ON cmd.id_plato_menu = pm.id
         LEFT JOIN secciones_menu sm2 ON cmd.requiere_seccion_id = sm2.id
+        LEFT JOIN secciones_menu sm3 ON cmd.no_permite_seccion_id = sm3.id
         WHERE cmd.id_menu_dia = ? AND cmd.id_seccion_menu = ?
       `).all(menu.id, s.id_seccion);
 
@@ -498,7 +501,7 @@ router.post('/menus-dia/:id/secciones/:seccionId/platos', authorizePermiso(), (r
   if (!menu)
     return res.status(404).json({ error: 'Menú no encontrado' });
 
-  const { id_plato_menu, requiere_seccion_id } = req.body;
+  const { id_plato_menu, requiere_seccion_id, no_permite_seccion_id } = req.body;
   if (!id_plato_menu)
     return res.status(400).json({ error: 'id_plato_menu es requerido' });
 
@@ -538,17 +541,39 @@ router.post('/menus-dia/:id/secciones/:seccionId/platos', authorizePermiso(), (r
     requiereSeccion = requiere_seccion_id;
   }
 
+  // no_permite_seccion_id (ISS-066, inverso de ISS-046): mismo chequeo de
+  // pertenencia + no puede ser la propia sección ni coincidir con la que ya
+  // exige (contradictorio: no puede exigir y bloquear la misma sección).
+  let noPermiteSeccion = null;
+  if (no_permite_seccion_id) {
+    if (Number(no_permite_seccion_id) === Number(req.params.seccionId))
+      return res.status(400).json({ error: 'Un plato no puede bloquear su propia sección' });
+    if (requiereSeccion && Number(no_permite_seccion_id) === Number(requiereSeccion))
+      return res.status(400).json({ error: 'Un plato no puede exigir y bloquear la misma sección' });
+
+    const seccionBloqueadaEnMenu = db.prepare(`
+      SELECT id FROM menu_secciones
+      WHERE id_menu_dia = ? AND id_seccion_menu = ?
+    `).get(req.params.id, no_permite_seccion_id);
+
+    if (!seccionBloqueadaEnMenu)
+      return res.status(400).json({ error: 'La sección bloqueada no pertenece a este menú' });
+
+    noPermiteSeccion = no_permite_seccion_id;
+  }
+
   const { lastInsertRowid } = db.prepare(`
     INSERT INTO componentes_menu_dia
-      (id_menu_dia, dia, id_seccion_menu, id_plato_menu, id_restaurante, requiere_seccion_id)
-    VALUES (?, ?, ?, ?, ?, ?)
+      (id_menu_dia, dia, id_seccion_menu, id_plato_menu, id_restaurante, requiere_seccion_id, no_permite_seccion_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(
     req.params.id,
     menu.dia,
     req.params.seccionId,
     id_plato_menu,
     req.user.restaurant_id,
-    requiereSeccion
+    requiereSeccion,
+    noPermiteSeccion
   );
 
   res.status(201).json({ id: lastInsertRowid, message: 'Plato agregado al menú' });
@@ -565,7 +590,7 @@ router.patch('/menus-dia/:id/secciones/:seccionId/platos/:componenteId/requiere-
   if (!menu) return res.status(404).json({ error: 'Menú no encontrado' });
 
   const componente = db.prepare(`
-    SELECT id FROM componentes_menu_dia
+    SELECT id, no_permite_seccion_id FROM componentes_menu_dia
     WHERE id = ? AND id_menu_dia = ? AND id_seccion_menu = ?
   `).get(req.params.componenteId, req.params.id, req.params.seccionId);
   if (!componente) return res.status(404).json({ error: 'Componente no encontrado' });
@@ -576,6 +601,8 @@ router.patch('/menus-dia/:id/secciones/:seccionId/platos/:componenteId/requiere-
   if (requiere_seccion_id !== null && requiere_seccion_id !== undefined && requiere_seccion_id !== '') {
     if (Number(requiere_seccion_id) === Number(req.params.seccionId))
       return res.status(400).json({ error: 'Un plato no puede exigir su propia sección' });
+    if (componente.no_permite_seccion_id && Number(requiere_seccion_id) === Number(componente.no_permite_seccion_id))
+      return res.status(400).json({ error: 'Un plato no puede exigir y bloquear la misma sección' });
 
     const seccionExigidaEnMenu = db.prepare(`
       SELECT id FROM menu_secciones
@@ -592,6 +619,52 @@ router.patch('/menus-dia/:id/secciones/:seccionId/platos/:componenteId/requiere-
     .run(requiereSeccion, componente.id);
 
   res.json({ message: 'Plato actualizado', requiere_seccion_id: requiereSeccion });
+});
+
+// PATCH /api/menu/menus-dia/:id/secciones/:seccionId/platos/:componenteId/no-permite-seccion
+// Marca (o quita) que este plato en particular BLOQUEE otra sección opcional
+// del mismo menú — ISS-066, inverso de ISS-046. Ej: "ají de gallina" ya viene
+// completo, no debe permitir elegir nada de "Proteínas". Si la sección
+// bloqueada termina configurada como obligatoria, el bloqueo se ignora en
+// tiempo de pedido (ver utils/validarSeccionesMenu.js) — una obligatoria
+// siempre se exige, sin excepción por plato.
+// Body: { no_permite_seccion_id: <id de sección | null> }
+router.patch('/menus-dia/:id/secciones/:seccionId/platos/:componenteId/no-permite-seccion', authorizePermiso(), (req, res) => {
+  const menu = db.prepare(`
+    SELECT id FROM menus_dia WHERE id = ? AND id_restaurante = ?
+  `).get(req.params.id, req.user.restaurant_id);
+  if (!menu) return res.status(404).json({ error: 'Menú no encontrado' });
+
+  const componente = db.prepare(`
+    SELECT id, requiere_seccion_id FROM componentes_menu_dia
+    WHERE id = ? AND id_menu_dia = ? AND id_seccion_menu = ?
+  `).get(req.params.componenteId, req.params.id, req.params.seccionId);
+  if (!componente) return res.status(404).json({ error: 'Componente no encontrado' });
+
+  const { no_permite_seccion_id } = req.body;
+  let noPermiteSeccion = null;
+
+  if (no_permite_seccion_id !== null && no_permite_seccion_id !== undefined && no_permite_seccion_id !== '') {
+    if (Number(no_permite_seccion_id) === Number(req.params.seccionId))
+      return res.status(400).json({ error: 'Un plato no puede bloquear su propia sección' });
+    if (componente.requiere_seccion_id && Number(no_permite_seccion_id) === Number(componente.requiere_seccion_id))
+      return res.status(400).json({ error: 'Un plato no puede exigir y bloquear la misma sección' });
+
+    const seccionBloqueadaEnMenu = db.prepare(`
+      SELECT id FROM menu_secciones
+      WHERE id_menu_dia = ? AND id_seccion_menu = ?
+    `).get(req.params.id, no_permite_seccion_id);
+
+    if (!seccionBloqueadaEnMenu)
+      return res.status(400).json({ error: 'La sección bloqueada no pertenece a este menú' });
+
+    noPermiteSeccion = no_permite_seccion_id;
+  }
+
+  db.prepare(`UPDATE componentes_menu_dia SET no_permite_seccion_id = ? WHERE id = ?`)
+    .run(noPermiteSeccion, componente.id);
+
+  res.json({ message: 'Plato actualizado', no_permite_seccion_id: noPermiteSeccion });
 });
 
 // PATCH /api/menu/menus-dia/:id/secciones/:seccionId/platos/:componenteId/agotado

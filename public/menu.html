@@ -715,11 +715,23 @@ async function renderReservarContent() {
   }
 
   // ── Menu selection ───────────────────────────────
-  function selectMenuPlato(mode, menuId, seccionId, componenteId, nombrePlato, nombreSeccion, precio, idMenuDia) {
+  function selectMenuPlato(mode, menuId, seccionId, componenteId, nombrePlato, nombreSeccion, precio, idMenuDia, noPermiteSeccionId) {
     const sel = mode === 'pedir' ? menuSelections : resMenuSelections;
     if (!sel[menuId]) sel[menuId] = {};
     sel[menuId][seccionId] = { id_componente: componenteId, id_menu_dia: idMenuDia, nombre: nombrePlato, seccion: nombreSeccion };
+
+    // Si este plato bloquea otra sección opcional (ISS-066, inverso de
+    // ISS-046) y esa sección ya tenía una selección, se limpia — ej. si el
+    // comensal ya había elegido "pollo" en Proteínas y ahora cambia a "ají de
+    // gallina" en Arroces, la proteína ya no aplica.
+    if (noPermiteSeccionId && sel[menuId][noPermiteSeccionId]) {
+      const quitado = sel[menuId][noPermiteSeccionId].nombre;
+      delete sel[menuId][noPermiteSeccionId];
+      showMsg(`"${nombrePlato}" no se sirve con "${quitado}" — se quitó esa selección`, true);
+    }
+
     if (mode === 'reservar') updateResCartSummary();
+    if (typeof MenuModal !== 'undefined' && MenuModal.refresh) MenuModal.refresh();
   }
 
   // Aplana los menús del carrito para enviarlos, pero numerando cada uno —
@@ -769,6 +781,17 @@ async function renderReservarContent() {
           showMsg(`"${plato.nombre}" también necesita que elijas: ${seccionExigida?.nombre_seccion || 'otra sección'}`, true);
           return;
         }
+
+        // Bloqueo condicional por plato (ISS-066, inverso de ISS-046): red de
+        // seguridad — el modal ya deshabilita la sección bloqueada, esto cubre
+        // el caso borde de que igual llegue algo seleccionado ahí.
+        if (plato?.no_permite_seccion_id && sel[menuId]?.[plato.no_permite_seccion_id]) {
+          const seccionBloqueada = menu.secciones.find(s => s.id_seccion === plato.no_permite_seccion_id);
+          if (seccionBloqueada && !seccionBloqueada.requerido) {
+            showMsg(`"${plato.nombre}" no se sirve con "${sel[menuId][plato.no_permite_seccion_id].nombre}"`, true);
+            return;
+          }
+        }
       }
     }
 
@@ -809,7 +832,8 @@ async function renderReservarContent() {
     // Limpiar selecciones previas para este menú
     if (mode === 'pedir') menuSelections[menuId] = {};
     else resMenuSelections[menuId] = {};
-    MenuModal.open({ menu, mode });
+    const getSel = () => (mode === 'pedir' ? menuSelections : resMenuSelections)[menuId] || {};
+    MenuModal.open({ menu, mode, getSel });
   }
 
   // ── Carta qty ────────────────────────────────────

@@ -1733,6 +1733,10 @@ function mcSeccionAcordeon(m, s) {
     // fritas" exige "Proteínas" aunque esa sección sea opcional en general.
     const badgeExige = p.requiere_seccion_id
       ? `<span class="mc-badge-mini ambar">🔗 Exige ${esc(p.requiere_seccion_nombre || '')}</span>` : '';
+    // Badge: si este plato bloquea otra sección opcional (ISS-066, inverso de
+    // ISS-046), ej. "ají de gallina" no permite elegir nada de "Proteínas".
+    const badgeNoPermite = p.no_permite_seccion_id
+      ? `<span class="mc-badge-mini rojo">🚫 No permite ${esc(p.no_permite_seccion_nombre || '')}</span>` : '';
     return `
     <div class="mc-plato-row ${p.agotado ? 'agotado' : ''}">
       <span class="mc-plato-nom">
@@ -1741,6 +1745,7 @@ function mcSeccionAcordeon(m, s) {
         ${p.agotado ? '<span class="mc-badge-mini rojo">Agotado</span>' : ''}
         ${badgeStock}
         ${badgeExige}
+        ${badgeNoPermite}
       </span>
       <button class="mc-dots" onclick="toggleAccionesPlato(this)" aria-label="Más acciones">⋯</button>
     </div>
@@ -1748,6 +1753,7 @@ function mcSeccionAcordeon(m, s) {
       <button class="mc-mini-act" onclick="abrirStockPlato(${m.id},${s.id_seccion},${p.id_componente},${tieneStock ? p.stock_restante : 'null'})">📦 Stock</button>
       <button class="mc-mini-act" onclick="toggleAgotadoPlato(${m.id},${s.id_seccion},${p.id_componente},${p.agotado?1:0})">${p.agotado ? '✔ Disponible' : '⛔ Agotado'}</button>
       <button class="mc-mini-act" onclick="abrirRequiereSeccion(${m.id},${s.id_seccion},${p.id_componente},${p.requiere_seccion_id ?? 'null'})">🔗 ${p.requiere_seccion_id ? 'Cambiar exige' : 'Exige sección'}</button>
+      <button class="mc-mini-act" onclick="abrirNoPermiteSeccion(${m.id},${s.id_seccion},${p.id_componente},${p.no_permite_seccion_id ?? 'null'})">🚫 ${p.no_permite_seccion_id ? 'Cambiar bloqueo' : 'No permite sección'}</button>
       ${p.url_foto ? `<button class="mc-mini-act" onclick="setPortada(${m.id},${p.id_plato})">📷 ${m.id_plato_portada === p.id_plato ? 'Quitar portada' : 'Portada'}</button>` : ''}
       <button class="mc-mini-act danger" onclick="eliminarComponente(${m.id},${s.id_seccion},${p.id_componente})">✕ Quitar</button>
     </div>`;
@@ -1944,6 +1950,35 @@ function abrirRequiereSeccion(menuId, seccionId, componenteId, actual) {
     onSubmit: async (vals) => {
       const requiere_seccion_id = vals.requiere_seccion_id === '' ? null : Number(vals.requiere_seccion_id);
       const r = await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/requiere-seccion`, { requiere_seccion_id });
+      toast(r.message || 'Plato actualizado');
+      recargarModalConfig();
+    },
+  });
+}
+
+// Marca (o quita) que este plato en particular BLOQUEE otra sección opcional
+// del mismo menú — ISS-066, inverso de ISS-046. Ej: "ají de gallina" ya viene
+// completo, no debe permitir elegir nada de "Proteínas". Solo se ofrecen
+// secciones OPCIONALES: bloquear una obligatoria no tendría efecto (se exige
+// igual, ver utils/validarSeccionesMenu.js), así que ni se muestra la opción.
+function abrirNoPermiteSeccion(menuId, seccionId, componenteId, actual) {
+  const otras = (configMenuData?.secciones || []).filter(s => s.id_seccion !== seccionId && !s.requerido);
+  if (!otras.length) return toast('Este menú no tiene otra sección opcional para bloquear', 'err');
+
+  FormModal.open({
+    title: '🚫 ¿No permite otra sección?',
+    fields: [
+      { name: 'no_permite_seccion_id', label: 'Si eligen este plato, NO debe poder elegirse:', type: 'select',
+        value: actual ?? '',
+        options: [
+          { value: '', label: 'Ninguna (permite todo lo demás)' },
+          ...otras.map(s => ({ value: s.id_seccion, label: s.nombre_seccion })),
+        ] },
+    ],
+    submitLabel: 'Guardar',
+    onSubmit: async (vals) => {
+      const no_permite_seccion_id = vals.no_permite_seccion_id === '' ? null : Number(vals.no_permite_seccion_id);
+      const r = await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/no-permite-seccion`, { no_permite_seccion_id });
       toast(r.message || 'Plato actualizado');
       recargarModalConfig();
     },

@@ -85,6 +85,12 @@
   display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 .mm-btn-agregar:active { opacity: .88; transform: scale(.98); }
+.mm-bloqueada {
+  padding: 10px 12px; border-radius: 10px; margin-top: 6px;
+  background: var(--bg, rgba(0,0,0,.04));
+  color: var(--muted, #888); font-size: 12.5px; line-height: 1.4;
+  border: 1px dashed var(--border, rgba(0,0,0,.18));
+}
 `;
 
   function injectStyle() {
@@ -136,14 +142,37 @@
   }
 
   function render() {
-    const { menu, mode } = current;
+    const { menu, mode, getSel } = current;
     const prefix = mode === 'pedir' ? 'p' : 'r';
 
     overlay.querySelector('.mm-nombre').textContent = menu.nombre;
     overlay.querySelector('.mm-tipo').textContent   = menu.elegible ? 'Elige tus platos' : 'Menú fijo';
     overlay.querySelector('.mm-precio').textContent = `S/ ${Number(menu.precio).toFixed(2)}`;
 
+    // Secciones bloqueadas por el plato ya elegido en OTRA sección — ISS-066
+    // (inverso de ISS-046). Ej: si ya elegiste "ají de gallina" en Arroces y
+    // ese plato bloquea "Proteínas", Proteínas se deshabilita — pero solo si
+    // Proteínas es opcional (una sección obligatoria siempre se exige).
+    const seleccionActual = (getSel && getSel()) || {};
+    const seccionesBloqueadas = new Map(); // id_seccion → nombre del plato que la bloquea
+    for (const seccionId of Object.keys(seleccionActual)) {
+      const seccionOrigen = menu.secciones.find(s => s.id_seccion === Number(seccionId));
+      const platoElegido = seccionOrigen?.platos.find(p => p.id_componente === seleccionActual[seccionId].id_componente);
+      if (!platoElegido?.no_permite_seccion_id) continue;
+      const seccionDestino = menu.secciones.find(s => s.id_seccion === platoElegido.no_permite_seccion_id);
+      if (seccionDestino && !seccionDestino.requerido) {
+        seccionesBloqueadas.set(platoElegido.no_permite_seccion_id, platoElegido.nombre);
+      }
+    }
+
     const seccionesHtml = menu.secciones.map(s => {
+      const bloqueoPor = seccionesBloqueadas.get(s.id_seccion);
+      if (menu.elegible && bloqueoPor) {
+        return `<div class="seccion-block">
+          <div class="seccion-label">${esc(s.nombre_seccion)}</div>
+          <div class="mm-bloqueada">🚫 No disponible — "${esc(bloqueoPor)}" ya viene completo</div>
+        </div>`;
+      }
       const disponibles = s.platos.filter(p => !p.agotado);
       const agotadosHtml = s.platos.filter(p => p.agotado).map(p =>
         `<div class="plato-fijo" style="opacity:.45">
@@ -160,7 +189,7 @@
             : '';
           return `<label class="plato-option">
             <input type="radio" name="${prefix}-sec-${menu.id}-${s.id_seccion}" value="${p.id_componente}"
-              onchange="selectMenuPlato('${mode}',${menu.id},${s.id_seccion},${p.id_componente},'${esc(p.nombre)}','${esc(s.nombre_seccion)}',${menu.precio},${menu.id})">
+              onchange="selectMenuPlato('${mode}',${menu.id},${s.id_seccion},${p.id_componente},'${esc(p.nombre)}','${esc(s.nombre_seccion)}',${menu.precio},${menu.id},${p.no_permite_seccion_id ?? 'null'})">
             <div style="flex:1;min-width:0">
               <div class="plato-option-name">${esc(p.nombre)}</div>
               ${p.descripcion ? `<div class="plato-option-desc">${esc(p.descripcion)}</div>` : ''}
@@ -212,5 +241,12 @@
     current = null;
   }
 
-  window.MenuModal = { open, close };
+  // Re-renderiza sin cerrar el modal — usado tras cada selección para reflejar
+  // el bloqueo dinámico de secciones (ISS-066).
+  function refresh() {
+    if (!current || !overlay) return;
+    render();
+  }
+
+  window.MenuModal = { open, close, refresh };
 })();
