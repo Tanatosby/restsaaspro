@@ -53,18 +53,25 @@ function validarHorarioAhora(rest, ahora) {
 // Reservas: si el cliente especificó hora_llegada, lo que importa es que ESE
 // momento futuro caiga dentro del horario de atención — no si el restaurante
 // está abierto justo ahora (reservar de noche para el almuerzo de mañana debe
-// funcionar). Sin hora_llegada no hay momento futuro que validar, así que se
-// cae al chequeo de "ahora" (D1, decidido 2026-08-13).
-function validarHorarioReserva(rest, fecha, hora_llegada, ahora) {
-  if (hora_llegada) {
-    const momentoReserva = new Date(`${fecha}T${hora_llegada}:00Z`);
-    const { abierto } = estadoHorario(rest, momentoReserva);
-    if (!abierto)
-      return { permitido: false, error: `No puedes reservar para esa hora — ${mensajeHorario(rest)}` };
-    return { permitido: true };
-  }
+// funcionar).
+//
+// Sin hora_llegada, el campo es opcional a propósito (D1, 2026-08-13): no se
+// asume ninguna hora ni se bloquea la reserva por horario — la hora_llegada
+// solo existe para ayudar a la dueña/cocinera a anticipar cuándo pasarla a
+// cocina (a mano; no hay ningún paso automático), nunca como requisito para
+// poder reservar. Corregido Día 9 del piloto: antes caía a validar "¿el
+// restaurante está abierto AHORA?" — con la fecha de HOY, no la de la
+// reserva — así que reservar sin hora para un día futuro podía fallar aunque
+// esa fecha sí tuviera horario de atención. Confundía a la dueña y bloqueaba
+// reservas reales de comensales que no sabían a qué hora iban a llegar.
+function validarHorarioReserva(rest, fecha, hora_llegada) {
+  if (!hora_llegada) return { permitido: true };
 
-  return validarHorarioAhora(rest, ahora);
+  const momentoReserva = new Date(`${fecha}T${hora_llegada}:00Z`);
+  const { abierto } = estadoHorario(rest, momentoReserva);
+  if (!abierto)
+    return { permitido: false, error: `No puedes reservar para esa hora — ${mensajeHorario(rest)}` };
+  return { permitido: true };
 }
 
 module.exports = { estadoHorario, mensajeHorario, validarHorarioAhora, validarHorarioReserva };

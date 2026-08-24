@@ -105,48 +105,20 @@
     </div>
   </div>
 
-  <!-- ── Reservar: reservation panel ── -->
+  <!-- ── Reservar: reservation panel ──
+       Día 9 del piloto: antes el formulario completo (fecha/hora/nombre/
+       teléfono) iba arriba de todo, antes de que el comensal viera qué
+       había para comer. Ahora replica el patrón de "Pedir": la carta
+       primero, los datos recién al tocar la barra inferior — ver
+       #res-drawer más abajo. La fecha queda afuera del drawer porque
+       determina qué menú se muestra (resMenusDia depende de ella): es lo
+       único que hace falta elegir antes de poder navegar la carta, igual
+       que la mesa en modo Pedir. -->
   <div class="res-panel hidden" id="res-panel">
 
-    <div class="res-form-card">
-      <div class="res-form-title">📅 Datos de la reserva</div>
-      <!-- Modalidad de reserva -->
-      <div id="reserva-modalidad-wrap" style="margin-bottom:1rem">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem">¿Cómo quieres tu pedido?</div>
-        <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
-          <label style="flex:1;min-width:120px;display:flex;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
-            <input type="radio" name="reserva-modalidad" value="en_local" checked style="accent-color:var(--accent)"> 🪑 Comer aquí
-          </label>
-          <label id="res-mod-llevar-lbl" style="display:none;flex:1;min-width:120px;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
-            <input type="radio" name="reserva-modalidad" value="para_llevar" style="accent-color:var(--accent)"> 🥡 Para llevar
-          </label>
-          <label id="res-mod-delivery-lbl" style="display:none;flex:1;min-width:120px;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
-            <input type="radio" name="reserva-modalidad" value="delivery" style="accent-color:var(--accent)"> 🛵 Delivery
-          </label>
-        </div>
-      </div>
-
-      <div class="res-info-box">
-        ℹ️ Elige la fecha, completa tus datos y selecciona lo que deseas reservar del menú o la carta.
-      </div>
-
-      <div class="res-field">
-        <label for="res-fecha">Fecha de la reserva *</label>
-        <input id="res-fecha" type="date" onchange="renderReservarContent()" />
-      </div>
-      <div class="res-field">
-        <label for="res-hora">Hora de llegada (opcional)</label>
-        <input id="res-hora" type="time" placeholder="Ej: 20:00" />
-        <span style="font-size:11px;color:var(--muted)">Ayuda al restaurante a preparar tu mesa</span>
-      </div>
-      <div class="res-field">
-        <label for="res-nombre">Tu nombre *</label>
-        <input id="res-nombre" type="text" placeholder="Ej: María García" maxlength="80" />
-      </div>
-      <div class="res-field">
-        <label for="res-telefono">Teléfono (opcional)</label>
-        <input id="res-telefono" type="tel" placeholder="Ej: 987654321" maxlength="20" />
-      </div>
+    <div class="res-fecha-bar">
+      <label for="res-fecha">📅 Reservando para</label>
+      <input id="res-fecha" type="date" onchange="renderReservarContent()" />
     </div>
 
     <!-- Reservation menu selection (same content as pedir) -->
@@ -157,38 +129,18 @@
       </div>
     </div>
 
-    <!-- Reservation cart summary + confirm -->
-    <div class="res-form-card" id="res-cart-section" style="display:none">
-      <div class="res-form-title">Tu selección</div>
-      <div class="res-cart-summary">
-        <div class="res-cart-summary-title">Ítems seleccionados</div>
-        <div id="res-cart-items"></div>
-      </div>
-      <div id="cargo-res-line" style="display:none;justify-content:space-between;font-size:13px;color:var(--muted);padding:0.25rem 0">
-        <span id="cargo-res-label">🥡 Tapper</span>
-        <span id="cargo-res-monto">+S/ 0.00</span>
-      </div>
-      <div class="res-total">
-        <span>Total estimado</span>
-        <span class="res-total-price" id="res-total-price">S/ 0.00</span>
-      </div>
-      <button class="btn-reservar" id="btn-reservar" onclick="confirmarReserva()">
-        ✓ Confirmar reserva
-      </button>
-    </div>
-
   </div>
 
-  <!-- ── Sticky res bar (reservar mode) ── -->
+  <!-- ── Sticky res bar (reservar mode) — abre #res-drawer, ya no confirma directo ── -->
   <div class="res-bar" id="res-bar">
-    <button class="res-bar-btn" onclick="confirmarReserva()">
+    <button class="res-bar-btn" onclick="openResDrawer()">
       <div class="res-bar-left">
         <span class="res-bar-count" id="res-bar-count">0</span>
         <span>ítems seleccionados</span>
       </div>
       <div class="res-bar-right">
         <span id="res-bar-total">S/ 0.00</span>
-        <span class="res-bar-cta">Confirmar reserva →</span>
+        <span class="res-bar-cta">Continuar →</span>
       </div>
     </button>
   </div>
@@ -244,6 +196,67 @@
       </div>
       <button class="btn-confirmar" id="btn-confirmar" onclick="confirmarPedido()">
         Confirmar pedido
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Reserva drawer backdrop ── -->
+  <div class="drawer-backdrop" id="res-drawer-backdrop" onclick="closeResDrawer()"></div>
+
+  <!-- ── Reserva drawer: datos + resumen, se abre desde la barra inferior.
+       Día 9 del piloto: antes esto vivía todo arriba del menú, siempre
+       visible. Mismo patrón que #cart-drawer. ── -->
+  <div class="drawer" id="res-drawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-header">
+      <span class="drawer-title">📅 Confirma tu reserva</span>
+      <button class="drawer-close" onclick="closeResDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <!-- Modalidad de reserva -->
+      <div id="reserva-modalidad-wrap" style="margin-bottom:1rem">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem">¿Cómo quieres tu pedido?</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+          <label style="flex:1;min-width:120px;display:flex;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
+            <input type="radio" name="reserva-modalidad" value="en_local" checked style="accent-color:var(--accent)"> 🪑 Comer aquí
+          </label>
+          <label id="res-mod-llevar-lbl" style="display:none;flex:1;min-width:120px;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
+            <input type="radio" name="reserva-modalidad" value="para_llevar" style="accent-color:var(--accent)"> 🥡 Para llevar
+          </label>
+          <label id="res-mod-delivery-lbl" style="display:none;flex:1;min-width:120px;align-items:center;gap:6px;padding:10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px">
+            <input type="radio" name="reserva-modalidad" value="delivery" style="accent-color:var(--accent)"> 🛵 Delivery
+          </label>
+        </div>
+      </div>
+
+      <div class="res-field">
+        <label for="res-hora">Hora de llegada (opcional)</label>
+        <input id="res-hora" type="time" placeholder="Ej: 20:00" />
+        <span style="font-size:11px;color:var(--muted)">Ayuda al restaurante a preparar tu mesa</span>
+      </div>
+      <div class="res-field">
+        <label for="res-nombre">Tu nombre *</label>
+        <input id="res-nombre" type="text" placeholder="Ej: María García" maxlength="80" />
+      </div>
+      <div class="res-field">
+        <label for="res-telefono">Teléfono (opcional)</label>
+        <input id="res-telefono" type="tel" placeholder="Ej: 987654321" maxlength="20" />
+      </div>
+
+      <div class="res-cart-summary">
+        <div class="res-cart-summary-title">Ítems seleccionados</div>
+        <div id="res-cart-items"></div>
+      </div>
+      <div id="cargo-res-line" style="display:none;justify-content:space-between;font-size:13px;color:var(--muted);padding:0.25rem 0">
+        <span id="cargo-res-label">🥡 Tapper</span>
+        <span id="cargo-res-monto">+S/ 0.00</span>
+      </div>
+      <div class="res-total">
+        <span>Total estimado</span>
+        <span class="res-total-price" id="res-total-price">S/ 0.00</span>
+      </div>
+      <button class="btn-reservar" id="btn-reservar" onclick="confirmarReserva()">
+        ✓ Confirmar reserva
       </button>
     </div>
   </div>
@@ -776,12 +789,16 @@ async function renderReservarContent() {
       modalidad: 'en_local',
       payload: { menuItems: elegible ? menuItems : allItems }
     });
+    const nuevoItem = cartArr[cartArr.length - 1];
 
     sel[menuId] = {};
     document.querySelectorAll(`input[name^="${prefix}-sec-${menuId}-"]`).forEach(r => r.checked = false);
 
-    if (mode === 'pedir') { updateCart(); showMsg('¡Menú agregado!'); }
-    else { updateResCartSummary(); showMsg('¡Menú agregado a la reserva!'); }
+    if (mode === 'pedir') updateCart(); else updateResCartSummary();
+    // Día 9 del piloto: atajo para repetir el mismo menú sin reabrir el
+    // picker (reemplaza al toast simple de "¡Menú agregado!" — ver
+    // mostrarAtajoRepetirMenu()).
+    mostrarAtajoRepetirMenu(mode, nuevoItem);
     return true;
   }
 
@@ -858,6 +875,103 @@ async function renderReservarContent() {
     updateCart();
   }
 
+  // Mismo toggle que arriba, pero para un grupo completo de menús idénticos
+  // (ver agruparMenusCarrito) — un solo chip visible debe mover todas las
+  // unidades juntas, no solo la primera.
+  function toggleModalidadGrupo(mode, indicesCsv) {
+    const cartArr = mode === 'pedir' ? cart : resCart;
+    const indices = indicesCsv.split(',').map(Number);
+    const nueva = cartArr[indices[0]]?.modalidad === 'para_llevar' ? 'en_local' : 'para_llevar';
+    indices.forEach(i => { if (cartArr[i]) cartArr[i].modalidad = nueva; });
+    if (mode === 'pedir') updateCart(); else updateResCartSummary();
+  }
+
+  // ── "+1 mismo menú" — Día 9 del piloto ───────────────────
+  // Antes, pedir 2 menús idénticos exigía reabrir el picker y volver a
+  // marcar cada sección desde cero. Bajo el capó cada unidad SIGUE siendo
+  // su propia fila del carrito — necesario para ISS-041 (cada "grupo" es un
+  // menú completo, con su propia numeración para cocina); lo único que
+  // cambia es que el carrito las junta visualmente en una fila con
+  // contador, y hay un atajo para no repetir la selección a mano.
+  //
+  // Dos filas son "la misma" si tienen igual menú + misma selección + misma
+  // modalidad (subLabel ya trae los platos elegidos, concatenados).
+  function agruparMenusCarrito(cartArr) {
+    const grupos = [];
+    const porClave = new Map();
+    cartArr.forEach((item, idx) => {
+      if (item.type !== 'menu') { grupos.push({ item, indices: [idx], esMenu: false }); return; }
+      const clave = `${item.label}|${item.subLabel}|${item.modalidad || ''}`;
+      const existente = porClave.get(clave);
+      if (existente) existente.indices.push(idx);
+      else {
+        const g = { item, indices: [idx], esMenu: true };
+        porClave.set(clave, g);
+        grupos.push(g);
+      }
+    });
+    return grupos;
+  }
+
+  function clonarItemCarrito(item) {
+    return { ...item, payload: { menuItems: item.payload.menuItems.map(mi => ({ ...mi })) } };
+  }
+
+  // Duplica el ítem en `idx` e inserta justo después, para que
+  // numerarGrupos() (ISS-041) mantenga las unidades del mismo menú
+  // contiguas en la numeración.
+  function duplicarMenuEnIdx(mode, idx) {
+    const cartArr = mode === 'pedir' ? cart : resCart;
+    const item = cartArr[idx];
+    if (!item) return;
+    cartArr.splice(idx + 1, 0, clonarItemCarrito(item));
+    if (mode === 'pedir') updateCart(); else updateResCartSummary();
+  }
+
+  function quitarUnidadEnIdx(mode, idx) {
+    const cartArr = mode === 'pedir' ? cart : resCart;
+    cartArr.splice(idx, 1);
+    if (mode === 'pedir') updateCart(); else updateResCartSummary();
+  }
+
+  // Atajo mostrado justo al agregar un menú — a diferencia de showMsg()
+  // (toast mudo, sin botón), este queda unos segundos con un botón
+  // interactivo para repetir la misma selección con un solo toque. Guarda
+  // la referencia al ítem (no el índice) porque el carrito puede cambiar
+  // de orden mientras el atajo sigue visible.
+  let _ultimoMenuAgregado = null; // { mode, item }
+  let _atajoRepetirTimer  = null;
+
+  function mostrarAtajoRepetirMenu(mode, item) {
+    _ultimoMenuAgregado = { mode, item };
+    let el = document.getElementById('atajo-repetir-menu');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'atajo-repetir-menu';
+      el.className = 'atajo-repetir';
+      document.body.appendChild(el);
+    }
+    el.innerHTML = `¡Menú agregado! <button type="button" onclick="duplicarUltimoMenu()">+1 mismo menú</button>`;
+    el.classList.add('show');
+    clearTimeout(_atajoRepetirTimer);
+    _atajoRepetirTimer = setTimeout(ocultarAtajoRepetirMenu, 4500);
+  }
+
+  function ocultarAtajoRepetirMenu() {
+    const el = document.getElementById('atajo-repetir-menu');
+    if (el) el.classList.remove('show');
+  }
+
+  function duplicarUltimoMenu() {
+    if (!_ultimoMenuAgregado) return;
+    const { mode, item } = _ultimoMenuAgregado;
+    const cartArr = mode === 'pedir' ? cart : resCart;
+    const idx = cartArr.indexOf(item);
+    if (idx === -1) { ocultarAtajoRepetirMenu(); return; } // se borró mientras tanto
+    duplicarMenuEnIdx(mode, idx);
+    ocultarAtajoRepetirMenu();
+  }
+
   // Estado del toggle de arriba: marcado si TODO el carrito coincide; si está
   // mezclado no se marca ninguno y el hint dice cuántos se llevan.
   function pintarModalidadMaster() {
@@ -908,10 +1022,34 @@ async function renderReservarContent() {
     // activo y el pedido es de mesa — igual condición que el toggle de arriba.
     const conModalidad = !!(mesa && modalidades.para_llevar);
 
-    document.getElementById('drawer-items').innerHTML = cart.map((item, idx) => {
+    // Día 9: los menús idénticos se juntan en una sola fila con stepper
+    // (agruparMenusCarrito) — la carta sigue una fila por línea, sin cambios.
+    document.getElementById('drawer-items').innerHTML = agruparMenusCarrito(cart).map(g => {
+      const { item, indices, esMenu } = g;
       const llevar = item.modalidad === 'para_llevar';
+
+      if (!esMenu) {
+        const idx  = indices[0];
+        const chip = conModalidad ? `
+          <button type="button" class="mod-chip ${llevar ? 'llevar' : ''}" onclick="toggleModalidadItem(${idx})">
+            ${llevar ? '🥡 Para llevar' : '🪑 Comer aquí'} <span class="cambiar">· cambiar</span>
+          </button>` : '';
+        return `
+        <div class="cart-item" style="flex-wrap:wrap">
+          <div class="cart-item-info">
+            <div class="cart-item-name">${esc(item.label)}</div>
+            <div class="cart-item-sub">${esc(item.subLabel)}</div>
+          </div>
+          <span class="cart-item-price">S/ ${item.precio.toFixed(2)}</span>
+          <button class="cart-remove" onclick="removeCartItem(${idx})">×</button>
+          ${chip ? `<div style="flex:1 0 100%">${chip}</div>` : ''}
+        </div>`;
+      }
+
+      const count     = indices.length;
+      const ultimoIdx = indices[indices.length - 1];
       const chip = conModalidad ? `
-        <button type="button" class="mod-chip ${llevar ? 'llevar' : ''}" onclick="toggleModalidadItem(${idx})">
+        <button type="button" class="mod-chip ${llevar ? 'llevar' : ''}" onclick="toggleModalidadGrupo('pedir','${indices.join(',')}')">
           ${llevar ? '🥡 Para llevar' : '🪑 Comer aquí'} <span class="cambiar">· cambiar</span>
         </button>` : '';
       return `
@@ -920,8 +1058,12 @@ async function renderReservarContent() {
           <div class="cart-item-name">${esc(item.label)}</div>
           <div class="cart-item-sub">${esc(item.subLabel)}</div>
         </div>
-        <span class="cart-item-price">S/ ${item.precio.toFixed(2)}</span>
-        <button class="cart-remove" onclick="removeCartItem(${idx})">×</button>
+        <span class="cart-item-price">S/ ${(item.precio * count).toFixed(2)}</span>
+        <div class="menu-stepper">
+          <button class="menu-stepper-btn" onclick="quitarUnidadEnIdx('pedir',${ultimoIdx})" aria-label="Quitar una unidad de ${esc(item.label)}">−</button>
+          <span class="menu-stepper-num">${count}</span>
+          <button class="menu-stepper-btn add" onclick="duplicarMenuEnIdx('pedir',${ultimoIdx})" aria-label="Agregar otra unidad de ${esc(item.label)}">+</button>
+        </div>
         ${chip ? `<div style="flex:1 0 100%">${chip}</div>` : ''}
       </div>`;
     }).join('');
@@ -944,6 +1086,17 @@ async function renderReservarContent() {
   function closeDrawer() {
     document.getElementById('cart-drawer').classList.remove('open');
     document.getElementById('drawer-backdrop').classList.remove('open');
+  }
+
+  // ── Reserva drawer (Día 9 del piloto) — mismo patrón que openDrawer/closeDrawer ──
+  function openResDrawer() {
+    document.getElementById('res-drawer').classList.add('open');
+    document.getElementById('res-drawer-backdrop').classList.add('open');
+    updateResCartSummary();
+  }
+  function closeResDrawer() {
+    document.getElementById('res-drawer').classList.remove('open');
+    document.getElementById('res-drawer-backdrop').classList.remove('open');
   }
 
   // ── Modalidad helpers ────────────────────────────
@@ -1090,8 +1243,8 @@ async function renderReservarContent() {
     if (mod === 'para_llevar') cargo = contarTappers(resCart) * (modalidades.costo_tapper || 0);
     if (mod === 'delivery')    cargo = contarTappers(resCart) * (modalidades.costo_tapper || 0) + (modalidades.tarifa_delivery || 0);
     const total = itemsTotal + cargo;
-    const section = document.getElementById('res-cart-section');
-    section.style.display = resCart.length ? 'block' : 'none';
+    // Día 9: ya no hay una sección aparte que mostrar/ocultar — el resumen
+    // vive siempre dentro de #res-drawer, que se abre/cierra como unidad.
     document.getElementById('res-total-price').textContent = `S/ ${total.toFixed(2)}`;
 
     // Barra sticky de reserva
@@ -1107,14 +1260,40 @@ async function renderReservarContent() {
       document.getElementById('cargo-res-label').textContent  = mod === 'delivery' ? '🛵 Delivery' : '🥡 Tapper';
       document.getElementById('cargo-res-monto').textContent  = `+S/ ${cargo.toFixed(2)}`;
     }
-    document.getElementById('res-cart-items').innerHTML = resCart.map((item, idx) => `
+    // Día 9: mismo agrupado con stepper que el carrito de "Pedir" — ver
+    // agruparMenusCarrito(). La reserva no tiene chip de modalidad por
+    // ítem (es un solo radio para toda la reserva), así que la fila es más
+    // simple que la de #drawer-items.
+    document.getElementById('res-cart-items').innerHTML = agruparMenusCarrito(resCart).map(g => {
+      const { item, indices, esMenu } = g;
+
+      if (!esMenu) {
+        const idx = indices[0];
+        return `
+        <div class="res-cart-item">
+          <span>${esc(item.label)} <span style="color:var(--muted);font-size:12px">${esc(item.subLabel)}</span></span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span style="font-weight:700">S/ ${item.precio.toFixed(2)}</span>
+            <button onclick="removeResItem(${idx})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1">×</button>
+          </span>
+        </div>`;
+      }
+
+      const count     = indices.length;
+      const ultimoIdx = indices[indices.length - 1];
+      return `
       <div class="res-cart-item">
         <span>${esc(item.label)} <span style="color:var(--muted);font-size:12px">${esc(item.subLabel)}</span></span>
         <span style="display:flex;align-items:center;gap:8px">
-          <span style="font-weight:700">S/ ${item.precio.toFixed(2)}</span>
-          <button onclick="removeResItem(${idx})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1">×</button>
+          <span style="font-weight:700">S/ ${(item.precio * count).toFixed(2)}</span>
+          <div class="menu-stepper">
+            <button class="menu-stepper-btn" onclick="quitarUnidadEnIdx('reservar',${ultimoIdx})" aria-label="Quitar una unidad de ${esc(item.label)}">−</button>
+            <span class="menu-stepper-num">${count}</span>
+            <button class="menu-stepper-btn add" onclick="duplicarMenuEnIdx('reservar',${ultimoIdx})" aria-label="Agregar otra unidad de ${esc(item.label)}">+</button>
+          </div>
         </span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   function removeResItem(idx) {
@@ -1136,8 +1315,10 @@ async function renderReservarContent() {
 
   async function confirmarReserva() {
     // Sin gate de "abierto ahora" acá — se puede reservar con el restaurante
-    // cerrado (D1). El min/max de #res-hora guía la elección y el backend
-    // valida que la hora elegida caiga en horario de atención.
+    // cerrado (D1). El min/max de #res-hora guía la elección si el comensal
+    // SÍ pone una hora, y el backend valida que esa hora caiga en horario de
+    // atención — pero la hora es opcional: sin ella, la reserva pasa siempre
+    // (Día 9 del piloto, ver validarHorarioReserva()).
     const nombre   = document.getElementById('res-nombre').value.trim();
     const telefono = document.getElementById('res-telefono').value.trim();
     const fecha    = document.getElementById('res-fecha').value;
@@ -1175,6 +1356,7 @@ async function renderReservarContent() {
         total: resCart.reduce((s, i) => s + i.precio, 0) + cargo,
       };
       guardarPagoPendienteLocal();
+      closeResDrawer();
       showPagoStep();
       return;
     }
@@ -1183,6 +1365,7 @@ async function renderReservarContent() {
     btn.disabled = true; btn.textContent = 'Enviando reserva…';
     try {
       const data = await crearReserva(payload);
+      closeResDrawer();
       showConfirm('reservar', data.id_reserva, data.codigo);
     } catch(e) {
       showMsg(e.message, true);
@@ -1277,9 +1460,9 @@ async function renderReservarContent() {
   // preguntar nada — acá todavía no se creó ni la orden ni la reserva
   // (crearOrden()/crearReserva() recién se llaman desde
   // confirmarEnvioFinal(), en el repaso) y el carrito no se vació. Solo hay
-  // que reabrir el drawer si es un pedido: confirmarPedido() lo cierra antes
-  // de mostrar esta pantalla. La reserva no cierra nada — su carrito vive
-  // inline en la pestaña "Reservar", ya visible debajo.
+  // que reabrir el drawer que corresponda — confirmarPedido()/
+  // confirmarReserva() lo cierran antes de mostrar esta pantalla (Día 9:
+  // la reserva ganó su propio drawer, ver #res-drawer).
   function volverDePago() {
     // Si vuelve a editar la carta, el pago guardado en localStorage queda
     // desactualizado frente a lo que hay en pantalla — se limpia acá; si
@@ -1287,7 +1470,8 @@ async function renderReservarContent() {
     // de nuevo con el carrito ya editado.
     limpiarPagoPendienteLocal();
     document.getElementById('pago-screen').classList.remove('show');
-    if (pagoPendiente?.tipo === 'orden') openDrawer();
+    if (pagoPendiente?.tipo === 'orden')   openDrawer();
+    if (pagoPendiente?.tipo === 'reserva') openResDrawer();
   }
 
   // ISS-056: clientes que salían a pagar por Yape/Plin no sabían cómo volver
@@ -1549,7 +1733,7 @@ async function renderReservarContent() {
   const STATUS_MAP = {
     es_inicial:       { label: 'Pendiente de confirmación', color: '#92400e', bg: '#fef3c7', icon: '⏳' },
     es_confirmada:    { label: 'Confirmada — te esperamos', color: '#065f46', bg: '#d1fae5', icon: '✅' },
-    es_en_cocina:     { label: 'En preparación',            color: '#5b21b6', bg: '#ede9fe', icon: '👨‍🍳' },
+    es_en_cocina:     { label: 'Ya estamos cocinando tu pedido', color: '#5b21b6', bg: '#ede9fe', icon: '👨‍🍳' },
     es_listo:         { label: '¡Tu pedido está listo!',    color: '#065f46', bg: '#bbf7d0', icon: '🍽️' },
     es_cliente_llego: { label: 'Has llegado — te atendemos',color: '#1e40af', bg: '#dbeafe', icon: '👋' },
     es_full:          { label: 'Completada',                color: '#6b7280', bg: '#f3f4f6', icon: '✓'  },
@@ -1675,6 +1859,8 @@ async function renderReservarContent() {
     cart = []; cartaQty = {}; menuSelections = {};
     resCart = []; resCartaQty = {}; resMenuSelections = {};
     pagoPendiente = null; pagoMetodo = null;
+    _ultimoMenuAgregado = null;
+    ocultarAtajoRepetirMenu();
     limpiarPagoPendienteLocal();
     document.getElementById('btn-ver-estado').style.display = 'none';
     document.getElementById('estado-screen').classList.remove('show');

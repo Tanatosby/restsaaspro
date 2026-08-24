@@ -285,6 +285,11 @@ function btnOrden(o, zona) {
     : `<button class="btn btn-success btn-sm" onclick="accionRapidaOrden(${o.id},'es_pagado')">💰 Cobrar</button>`;
   if (zona === 'pendientes' && o.es_inicial)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_en_cocina')">🍳 A cocina</button>`;
+  // Día 9 del piloto: en la zona Cocina solo se podía cancelar, no marcar listo.
+  // Como "↩️ Regresar a cocina" ya existe en Listos (ISS-055), el ciclo queda
+  // simétrico y no hay riesgo de dejar un pedido sin forma de volver atrás.
+  if (zona === 'cocina' && o.es_en_cocina)
+    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_listo')">✅ Listo</button>`;
   if (zona === 'listos' && o.es_listo && !paraLlevar)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">🍽 Entregar</button>${btnRegresarACocinaOrden(o)}`;
   if (zona === 'listos' && o.es_listo && paraLlevar)
@@ -303,6 +308,9 @@ function btnReserva(r, zona) {
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_en_cocina')">🍳 A cocina</button>`;
   if (zona === 'pendientes' && r.es_inicial)
     return `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_confirmada')">✓ Confirmar</button>`;
+  // Día 9 del piloto — mismo criterio que btnOrden(): ver comentario arriba.
+  if (zona === 'cocina' && r.es_en_cocina)
+    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_listo')">✅ Listo</button>`;
   if (zona === 'listos' && r.es_listo && !sinMesa)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_cliente_llego')">🍽 Entregado</button>${btnRegresarACocinaReserva(r)}`;
   if (zona === 'listos' && r.es_listo && sinMesa)

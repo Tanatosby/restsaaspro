@@ -75,44 +75,33 @@ describe('validarHorarioAhora', () => {
 });
 
 describe('validarHorarioReserva', () => {
-  test('ahora cerrado, pero hora_llegada cae dentro del horario de atención — permitido (D1)', () => {
-    // "ahora" es domingo (cerrado), pero se reserva para el miércoles 13:00 (dentro de rango)
-    const r = validarHorarioReserva(REST, '2026-07-15', '13:00', new Date('2026-07-12T13:00:00Z'));
+  // Día 9 del piloto: "sin hora" ya no cae a validar "¿abierto AHORA?" (eso
+  // usaba la fecha de HOY, no la de la reserva, y bloqueaba reservas reales
+  // para un día futuro). Ahora sin hora_llegada la reserva SIEMPRE pasa —
+  // el campo es opcional a propósito y solo ayuda a anticipar cocina, nunca
+  // es un requisito para reservar.
+  test('sin hora_llegada — siempre permitido, sin importar el horario', () => {
+    expect(validarHorarioReserva(REST, '2026-07-15', null).permitido).toBe(true);
+    expect(validarHorarioReserva(REST, '2026-07-19', null).permitido).toBe(true); // domingo, no atendido
+    expect(validarHorarioReserva(REST, '2026-07-15', '').permitido).toBe(true);
+  });
+
+  test('con hora_llegada dentro del horario de atención — permitido (D1)', () => {
+    // 2026-07-15 es miércoles, 13:00 está dentro del rango 12:00-15:00
+    const r = validarHorarioReserva(REST, '2026-07-15', '13:00');
     expect(r.permitido).toBe(true);
   });
 
-  test('ahora cerrado y hora_llegada también fuera de horario — bloqueado', () => {
-    const r = validarHorarioReserva(REST, '2026-07-15', '20:00', new Date('2026-07-12T13:00:00Z'));
-    expect(r.permitido).toBe(false);
-    expect(r.error).toContain('No puedes reservar para esa hora');
-  });
-
-  test('ahora cerrado, sin hora_llegada — bloqueado (no hay hora futura, se valida "ahora")', () => {
-    const r = validarHorarioReserva(REST, '2026-07-15', null, new Date('2026-07-12T13:00:00Z'));
-    expect(r.permitido).toBe(false);
-  });
-
-  test('ahora abierto, sin hora_llegada — permitido (no hay hora futura que validar)', () => {
-    const r = validarHorarioReserva(REST, '2026-07-15', null, new Date('2026-07-14T13:00:00Z'));
-    expect(r.permitido).toBe(true);
-  });
-
-  test('ahora abierto, hora_llegada dentro del horario futuro — permitido', () => {
-    // 2026-07-15 es miércoles, 13:00 está dentro del rango
-    const r = validarHorarioReserva(REST, '2026-07-15', '13:00', new Date('2026-07-14T13:00:00Z'));
-    expect(r.permitido).toBe(true);
-  });
-
-  test('ahora abierto, hora_llegada fuera del horario futuro — bloqueado', () => {
+  test('con hora_llegada fuera del horario de atención — bloqueado', () => {
     // 20:00 está fuera del rango 12:00-15:00
-    const r = validarHorarioReserva(REST, '2026-07-15', '20:00', new Date('2026-07-14T13:00:00Z'));
+    const r = validarHorarioReserva(REST, '2026-07-15', '20:00');
     expect(r.permitido).toBe(false);
     expect(r.error).toContain('No puedes reservar para esa hora');
   });
 
-  test('ahora abierto, hora_llegada en un día no atendido (domingo) — bloqueado', () => {
+  test('con hora_llegada en un día no atendido (domingo) — bloqueado', () => {
     // 2026-07-19 es domingo
-    const r = validarHorarioReserva(REST, '2026-07-19', '13:00', new Date('2026-07-14T13:00:00Z'));
+    const r = validarHorarioReserva(REST, '2026-07-19', '13:00');
     expect(r.permitido).toBe(false);
   });
 });

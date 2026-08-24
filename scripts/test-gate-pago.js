@@ -98,6 +98,10 @@ function reservasDeHoy() {
   const antesRes = reservasDeHoy().length;
   await page.evaluate(() => {
     resCart.push({ type: 'carta', platoId: 2, cantidad: 1, label: 'Ceviche', subLabel: '', precio: 20 });
+    // Día 9 del piloto: nombre/fecha ya no viven inline — el nombre está en
+    // #res-drawer (hay que abrirlo para poder llenarlo) y la fecha sigue
+    // siempre visible arriba de la carta.
+    openResDrawer();
   });
   await page.fill('#res-nombre', 'GateTest Reserva');
   await page.fill('#res-fecha', new Date().toISOString().slice(0, 10));

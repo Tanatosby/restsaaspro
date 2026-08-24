@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-21
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-24
 
 **Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
@@ -21,9 +21,9 @@ por el usuario:
 | 2026-08-21 | `e35eb4a..9ea9a51` | **ISS-055** (regresar de Listos a Cocina), **ISS-056** (instrucción para volver de Yape/Plin), **ISS-057** (letra ajustable en la carta del cliente) e **ISS-058** (Historial de Órdenes sin foto de comprobante) — día 7 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online. |
 | 2026-08-21 (tarde) | `9ea9a51..1b38b57` | **ISS-056 (rediseño)** — la nota de "cómo volver de Yape/Plin" pasó de instrucciones de gestos del celular a 3 pasos numerados con emoji. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:** nada — todo lo implementado hasta hoy está confirmado en producción.
-Los dos hallazgos de hoy (ver sesión más abajo) están **diagnosticados y documentados, sin
-implementar** — no hay código nuevo que desplegar todavía.
+**Pendiente de deploy:** **ISS-061 a ISS-065** (ver sesión 2026-08-24 más abajo) — implementados
+y verificados (454/454 jest + E2E), pendiente de que el usuario haga el deploy manual. ISS-059 y
+ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto).
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -50,6 +50,66 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-24 — ISS-061 a ISS-065: día 9 y día 10 del piloto, implementado
+
+**Prompt del usuario:** cuatro hallazgos del Día 9 del piloto #1 (2026-08-22) — status
+"En preparación" poco claro, zona Cocina de la Cola del día sin botón "Listo", pedido de
+reordenar Reservas (carta primero, datos después) y de poder repetir un mismo menú sin rearmarlo
+— más, en el medio de la sesión, un hallazgo del Día 10 (2026-08-23): un comensal no pudo
+reservar por no poner hora de llegada. Pidió mockups (artifact) antes de tocar código para los
+dos cambios de flujo (reordenar Reservas, +1 mismo menú); una vez aprobados, "avanza todo".
+
+**Corrección de fecha, Día 8:** al arrancar la sesión el usuario dio 3 fechas distintas para el
+Día 8 (21, 27, luego 22 de agosto). Se verificó contra 3 fuentes commiteadas (narrativa del doc,
+encabezado de sesión, fecha del commit `b369646`) — las 3 apuntaban a **2026-08-21**, consistente.
+Confirmado con el usuario: Día 8 se queda en 21-08 tal como estaba; los hallazgos de esta sesión
+son Día 9 (22-08) y Día 10 (23-08).
+
+**Mockup:** artifact publicado con marcos de teléfono antes/después para Reservas y para "+1
+mismo menú" (concepto "comanda de cambios" — solo referencia de flujo, no del diseño final
+pixel a pixel). Aprobado por el usuario.
+
+**ISS-061 — status "En preparación" confuso:** copy cambiado a "Ya estamos cocinando tu pedido"
+en `STATUS_MAP` de `menu.html`.
+
+**ISS-062 — sin botón "Listo" en zona Cocina:** `btnOrden()`/`btnReserva()` en `pedidos.js` no
+manejaban `zona === 'cocina'`. Agregado, simétrico con "↩️ Regresar a cocina" (ISS-055).
+
+**ISS-063 — Reservas: carta primero, datos después:** `#res-panel` ya no tiene el formulario
+completo arriba — solo un selector de fecha compacto + la carta. Datos del comensal (modalidad,
+hora, nombre, teléfono) + resumen + confirmar se movieron a un drawer nuevo (`#res-drawer`),
+mismo patrón que `#cart-drawer`. `scripts/test-iss048-volver-pago.js` y `scripts/test-gate-pago.js`
+actualizados al nuevo flujo (abren el drawer antes de llenar los campos).
+
+**ISS-064 — "+1 mismo menú":** cada unidad sigue siendo su propia fila del carrito (compatible
+con la numeración de grupos de ISS-041), agrupadas visualmente con un stepper + atajo "+1 mismo
+menú" al agregar. Aplica a Pedir y Reservar. E2E nuevo: `scripts/test-repetir-menu.js` (17/17).
+
+**ISS-065 — reserva sin hora bloqueada por error (Día 10):** en el medio de implementar lo
+anterior, el usuario contó que un comensal no pudo reservar sin poner hora. Se encontró que
+`validarHorarioReserva()` caía a validar "¿abierto AHORA?" (fecha de hoy, no la de la reserva)
+cuando no había hora — el usuario lo asumió como error de diseño propio y pidió corregirlo en el
+momento: sin hora, la reserva debe pasar **siempre** (el campo es solo informativo, no hay ningún
+paso automático que lo use). Corregido en `utils/horarioAtencion.js` + `routes/public.js`;
+`tests/horario-atencion.test.js` reescrito para el nuevo contrato. Queda pendiente (no
+implementado): un tooltip junto al campo explicando que es opcional.
+
+**Verificación:** 454/454 jest (bajó de 457 por consolidar 7 tests de horario en 4, mismo
+cubrimiento). E2E corridos contra servidores locales temporales (puertos 3399 y 3311, apagados
+al terminar): `test-iss048-volver-pago.js` (15/15), `test-gate-pago.js` (24/24, con `plin_activo`
+reactivado temporalmente en la BD dev para completar el flujo y revertido después),
+`test-grupo-punta-a-punta.js` (13/13), `test-modalidad-mixta.js` (19/19),
+`test-iss049-recuperar-pago.js` (12/12), `test-repetir-menu.js` nuevo (17/17). Botón "Listo" de
+zona Cocina verificado invocando `btnOrden`/`btnReserva` directo (sin E2E dedicado — mismo patrón
+que botones ya cubiertos).
+
+**Documentación actualizada:** `pilotos.md` (Día 9 y Día 10, con corrección de fecha del Día 8),
+`issues/ISS-061-*` a `issues/ISS-065-*` (nuevos), `issues/ISSUES.md` (índice).
+
+**Pendiente de deploy** — el usuario lo hace manual, no Claude Code.
 
 ---
 

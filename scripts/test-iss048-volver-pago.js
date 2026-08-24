@@ -155,6 +155,12 @@ const NOMBRE_CLIENTE = `Cliente de prueba ISS-048 ${Date.now()}`;
     }, setup.menuId);
     await page.waitForTimeout(300);
 
+    // Día 9 del piloto: los datos de la reserva (nombre, hora, teléfono) ya
+    // no van inline en #res-panel — viven en #res-drawer, que se abre desde
+    // la barra sticky de abajo, igual que el carrito de "Pedir".
+    await page.click('.res-bar-btn');
+    await page.waitForTimeout(400);
+
     await page.fill('#res-nombre', 'Reserva de prueba ISS-048');
     await page.click('#btn-reservar');
     await page.waitForTimeout(600);
@@ -166,7 +172,7 @@ const NOMBRE_CLIENTE = `Cliente de prueba ISS-048 ${Date.now()}`;
     await page.waitForTimeout(400);
 
     check(!(await page.locator('#pago-screen').evaluate(el => el.classList.contains('show'))), 'La pantalla de pago se oculta');
-    check(await page.locator('#res-panel').isVisible(), 'El panel de reserva sigue visible debajo');
+    check(await page.locator('#res-drawer').evaluate(el => el.classList.contains('open')), 'El drawer de la reserva se reabre');
     const resCartLen = await page.evaluate(() => resCart.length);
     check(resCartLen === 1, `El carrito de la reserva no se perdió (${resCartLen} ítem)`);
 

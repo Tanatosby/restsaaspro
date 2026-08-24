@@ -446,7 +446,7 @@ router.post('/reservations', (req, res) => {
   if (!rest)
     return res.status(404).json({ error: 'Restaurante no encontrado o inactivo' });
 
-  const horario = validarHorarioReserva(rest, fecha, hora_llegada?.trim() || null, ahoraLima());
+  const horario = validarHorarioReserva(rest, fecha, hora_llegada?.trim() || null);
   if (!horario.permitido)
     return res.status(400).json({ error: horario.error });
 

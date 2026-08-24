@@ -103,6 +103,8 @@ no reemplaza la de julio — es la evolución.
 | Día 6 | 2026-08-19 (miércoles) | ISS-047, Pensionistas Fase 1+2 (`pensionista.html`), ISS-048, ISS-049, ISS-050 e ISS-051 implementados y **desplegados**. |
 | Día 7 | 2026-08-20 (jueves) | Recopilación en persona, contada por el usuario el 2026-08-21: la cocinera mandó pedidos a "Listo" por error sin poder revertirlo; la dueña pidió contar ventas por plato y preguntó por fotos pasadas de comprobantes; un cliente no encontraba cómo volver a la app tras pagar por Yape; otro cliente dijo que prefiere pedir oralmente o a lápiz; y un cliente no alcanzaba a leer bien las letras de la carta. Detalle abajo. |
 | Día 8 | 2026-08-21 (viernes) | Contado por el usuario el mismo día: la cocinera canceló un pedido por error y la dueña preguntó si se puede "devolver" para que cuente como venta (→ ISS-059); y pregunta de la dueña sobre cómo los pensionistas descargan/acceden a la app, que llevó a decidir un acceso desde `menu.html` (→ ISS-060). Detalle abajo. |
+| Día 9 | 2026-08-22 (sábado) | Contado por el usuario el 2026-08-24: status "En preparación" poco claro para el cliente (→ ISS-061), zona Cocina de la Cola del día sin botón "Listo" (→ ISS-062), pedido de reordenar Reservas para mostrar la carta antes que el formulario (→ ISS-063) y de poder repetir un mismo menú sin rearmarlo desde cero (→ ISS-064). Mockups aprobados antes de codear; los 4 implementados y verificados el mismo 2026-08-24. |
+| Día 10 | 2026-08-23 (domingo) | Contado por el usuario el 2026-08-24, junto con el Día 9: un comensal no pudo reservar por no poner hora de llegada — la reserva se bloqueaba validando el horario de "ahora" en vez de simplemente dejarla pasar (→ ISS-065). El usuario lo asumió como error de diseño propio y pidió la corrección en el momento; implementado y verificado el mismo 2026-08-24. Queda pendiente (no implementado) agregar un tooltip junto al campo explicando que la hora es opcional/informativa. |
 
 > **El domingo 16 de agosto no lleva número de "Día" en esta tabla:** no hay reporte de uso ni de
 > pausa para esa fecha — a diferencia del sábado 15, que el usuario confirmó explícitamente como
@@ -387,6 +389,42 @@ mecanismo de instalación PWA que ya existe. El usuario eligió, entre 3 opcione
 agregar un enlace **"¿Eres pensionista?"** visible en `menu.html` (la carta que el cliente ya
 usa a diario) en vez de un QR aparte o una ruta dedicada. Diagnosticado y decidido, sin
 implementar — queda como [`ISS-060`](issues/ISS-060-acceso-pensionista-menu.md).
+
+### Día 9 (2026-08-22, sábado) — status confuso, botón Listo faltante, reordenar Reservas, repetir menú
+
+Contado por el usuario el 2026-08-24 (desfase de 2 días, como el Día 7). Cuatro hallazgos de uso
+real, los 2 últimos con mockup aprobado antes de codear:
+
+**1. El status "En preparación" no le dejaba claro al cliente que su pedido estaba en curso.**
+Cambiado a "Ya estamos cocinando tu pedido" — [`ISS-061`](issues/ISS-061-status-preparando-confuso.md).
+
+**2. Desde la Cola del día, la zona Cocina solo tenía botón de cancelar, no de "Listo".**
+`btnOrden()`/`btnReserva()` nunca manejaron esa zona. Agregado, simétrico con "↩️ Regresar a
+cocina" (ISS-055) — [`ISS-062`](issues/ISS-062-boton-listo-zona-cocina.md).
+
+**3. En Reservas se pedían los datos del comensal (nombre, hora, teléfono) antes de mostrar la
+carta** — al revés que "Pedir". Reordenado: la carta primero, los datos en un drawer nuevo al
+tocar la barra inferior, mismo patrón que el carrito de pedir. Mockup (artifact) aprobado antes
+de implementar — [`ISS-063`](issues/ISS-063-reservas-formulario-antes-de-carta.md).
+
+**4. Pedir 2 menús idénticos exigía reabrir el picker y volver a elegir todo desde cero.** Nuevo
+atajo "+1 mismo menú" al agregar + agrupado visual con stepper en el carrito (Pedir y Reservar),
+sin tocar la numeración de grupos que usa cocina (ISS-041). Mockup aprobado antes de implementar
+— [`ISS-064`](issues/ISS-064-repetir-mismo-menu.md).
+
+### Día 10 (2026-08-23, domingo) — reserva sin hora bloqueada por error
+
+Contado por el usuario el 2026-08-24, junto con el Día 9. Un comensal quiso reservar y no pudo
+por no poner hora de llegada: el diseño original (D1, 2026-08-13) validaba, sin hora, que el
+restaurante estuviera abierto **ahora mismo** — con la fecha de hoy, no la de la reserva. El
+usuario lo asumió como error propio de diseño ("entiendo la confusión y bueno lo asumo como
+error mío") y pidió la corrección en el momento: sin hora, la reserva debe pasar siempre — el
+campo es solo informativo para anticipar cocina, nunca un requisito. Implementado el mismo día
+— [`ISS-065`](issues/ISS-065-reserva-sin-hora-bloqueada.md).
+
+**Pendiente (no implementado):** el usuario pidió además un tooltip/mensaje junto al campo
+explicando para qué sirve la hora de llegada, para que el comensal entienda que puede dejarlo en
+blanco sin problema.
 
 ---
 
