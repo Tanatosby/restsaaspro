@@ -42,11 +42,11 @@ ISS-046, commit `a47d132` — ver `status.md`).
 | ~~ISS-050~~ | ~~El número de pedido que ve el comensal no coincide con el de la dueña~~ | ✅ **Hecho y desplegado 2026-08-19** (`e7fc697`). Reportado por una clienta ("mi orden me sale 96"), Día 5 — ver `ISS-050` |
 | **ISS-059** | Sin forma de revertir un pedido cancelado por error — la dueña quiere que vuelva a contar como venta | 🔴 Alta. Diagnosticado 2026-08-21 (Día 8): a diferencia de ISS-055, el backend bloquea explícitamente cualquier cambio desde `es_cancelado` y cancelar devuelve stock. Sin implementar — ver `ISS-059` |
 | **ISS-060** | Pensionistas sin camino claro a `pensionista.html` (pregunta de la dueña sobre Play Store) | 🟡 Media. Se descartó Play Store; decidido con el usuario un enlace "¿Eres pensionista?" en `menu.html` + botón de instalar PWA en `pensionista.html`. Sin implementar — ver `ISS-060` |
-| ~~ISS-061~~ | ~~Status "En preparación" poco claro para el cliente~~ | ✅ **Hecho 2026-08-24, pendiente de deploy**. Día 9 del piloto — ver `ISS-061` |
-| ~~ISS-062~~ | ~~Zona Cocina de la Cola del día sin botón "Listo"~~ | ✅ **Hecho 2026-08-24, pendiente de deploy**. Día 9 del piloto, simétrico con ISS-055 — ver `ISS-062` |
-| ~~ISS-063~~ | ~~Reservas: la carta debía mostrarse antes que el formulario de datos~~ | ✅ **Hecho 2026-08-24, pendiente de deploy**. Día 9 del piloto, mockup aprobado antes de codear — ver `ISS-063` |
-| ~~ISS-064~~ | ~~Pedir 2 menús idénticos exigía rearmar todo desde cero~~ | ✅ **Hecho 2026-08-24, pendiente de deploy**. Día 9 del piloto, "+1 mismo menú", mockup aprobado antes de codear — ver `ISS-064` |
-| ~~ISS-065~~ | ~~Reservar sin hora de llegada podía bloquearse por error~~ | ✅ **Hecho 2026-08-24, pendiente de deploy**. Día 10 del piloto, corregido en la misma sesión a pedido explícito del usuario — ver `ISS-065` |
+| ~~ISS-061~~ | ~~Status "En preparación" poco claro para el cliente~~ | ✅ **Hecho y desplegado 2026-08-24**. Día 9 del piloto — ver `ISS-061` |
+| ~~ISS-062~~ | ~~Zona Cocina de la Cola del día sin botón "Listo"~~ | ✅ **Hecho y desplegado 2026-08-24**. Día 9 del piloto, simétrico con ISS-055 — ver `ISS-062` |
+| ~~ISS-063~~ | ~~Reservas: la carta debía mostrarse antes que el formulario de datos~~ | ✅ **Hecho y desplegado 2026-08-24**. Día 9 del piloto, mockup aprobado antes de codear — ver `ISS-063` |
+| ~~ISS-064~~ | ~~Pedir 2 menús idénticos exigía rearmar todo desde cero~~ | ✅ **Hecho y desplegado 2026-08-24**. Día 9 del piloto, "+1 mismo menú", mockup aprobado antes de codear — ver `ISS-064` |
+| ~~ISS-065~~ | ~~Reservar sin hora de llegada podía bloquearse por error~~ | ✅ **Hecho y desplegado 2026-08-24**. Día 10 del piloto, corregido en la misma sesión a pedido explícito del usuario — ver `ISS-065` |
 | — | Tooltip junto a "Hora de llegada" explicando que es opcional/informativa | 🟡 Media. Pedido del usuario al cerrar ISS-065 — el comensal no entendía que dejarlo en blanco es seguro. Sin implementar |
 | — | **Verificar en el servicio real** un pedido con 2 menús y la etiqueta "para llevar" | Los 3 críticos están en producción pero nadie los vio funcionar en un servicio de verdad |
 | **ISS-043** | El menú sin secciones obligatorias **cobra de menos** (ver sección propia) | Es de cobro, no de vista. Falta correr la consulta en producción para saber si aplica |

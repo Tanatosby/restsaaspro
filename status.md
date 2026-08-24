@@ -20,10 +20,10 @@ por el usuario:
 | 2026-08-20 | `1658902..e35eb4a` | **ISS-054** — el picker de "Agregar manual" no filtraba por `stock_restante`, solo por `agotado`. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-21 | `e35eb4a..9ea9a51` | **ISS-055** (regresar de Listos a Cocina), **ISS-056** (instrucción para volver de Yape/Plin), **ISS-057** (letra ajustable en la carta del cliente) e **ISS-058** (Historial de Órdenes sin foto de comprobante) — día 7 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online. |
 | 2026-08-21 (tarde) | `9ea9a51..1b38b57` | **ISS-056 (rediseño)** — la nota de "cómo volver de Yape/Plin" pasó de instrucciones de gestos del celular a 3 pasos numerados con emoji. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
+| 2026-08-24 | `1b38b57..c269fb1` | **ISS-061** (status "En preparación" más claro), **ISS-062** (botón "Listo" en zona Cocina), **ISS-063** (Reservas: carta antes que el formulario), **ISS-064** ("+1 mismo menú") e **ISS-065** (reserva sin hora ya no se bloquea) — día 9 y día 10 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `/health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:** **ISS-061 a ISS-065** (ver sesión 2026-08-24 más abajo) — implementados
-y verificados (454/454 jest + E2E), pendiente de que el usuario haga el deploy manual. ISS-059 y
-ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto).
+**Pendiente de deploy:** nada — todo lo implementado hasta hoy está confirmado en producción.
+ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto).
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -109,7 +109,9 @@ que botones ya cubiertos).
 **Documentación actualizada:** `pilotos.md` (Día 9 y Día 10, con corrección de fecha del Día 8),
 `issues/ISS-061-*` a `issues/ISS-065-*` (nuevos), `issues/ISSUES.md` (índice).
 
-**Pendiente de deploy** — el usuario lo hace manual, no Claude Code.
+**Deploy confirmado 2026-08-24** — el usuario lo hizo manual por SSH: `git pull origin main`
+(`1b38b57..c269fb1`, fast-forward), `pm2 restart menupro`, `pm2 status` → online,
+`curl /health` → `{"status":"ok"}`.
 
 ---
 
