@@ -98,8 +98,9 @@ Suite completa: **34/34 test suites, 458/458 tests**. Migración verificada corr
 **Prompt del usuario:** cuatro hallazgos del Día 9 del piloto #1 (2026-08-22) — status
 "En preparación" poco claro, zona Cocina de la Cola del día sin botón "Listo", pedido de
 reordenar Reservas (carta primero, datos después) y de poder repetir un mismo menú sin rearmarlo
-— más, en el medio de la sesión, un hallazgo del Día 10 (2026-08-23): un comensal no pudo
-reservar por no poner hora de llegada. Pidió mockups (artifact) antes de tocar código para los
+— más, en el medio de la sesión, un hallazgo del Día 10 (2026-08-24 — ver corrección de fecha
+más abajo): un comensal no pudo reservar por no poner hora de llegada. Pidió mockups (artifact)
+antes de tocar código para los
 dos cambios de flujo (reordenar Reservas, +1 mismo menú); una vez aprobados, "avanza todo".
 
 **Corrección de fecha, Día 8:** al arrancar la sesión el usuario dio 3 fechas distintas para el
@@ -136,6 +137,11 @@ momento: sin hora, la reserva debe pasar **siempre** (el campo es solo informati
 paso automático que lo use). Corregido en `utils/horarioAtencion.js` + `routes/public.js`;
 `tests/horario-atencion.test.js` reescrito para el nuevo contrato. Queda pendiente (no
 implementado): un tooltip junto al campo explicando que es opcional.
+
+**Corrección de fecha (misma sesión, más tarde):** el "Día 10" quedó anotado originalmente como
+2026-08-23 (domingo) — mal fechado. El restaurante piloto no abre domingos, así que el hecho no
+pudo pasar ese día; confirmado con el usuario que fue el mismo 2026-08-24. Corregido en
+`pilotos.md` (con nota permanente sobre el horario del local para no repetir el error).
 
 **Verificación:** 454/454 jest (bajó de 457 por consolidar 7 tests de horario en 4, mismo
 cubrimiento). E2E corridos contra servidores locales temporales (puertos 3399 y 3311, apagados

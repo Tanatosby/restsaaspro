@@ -29,6 +29,11 @@
 
 La dueña lleva **13 años** vendiendo menús con cuaderno — es el hábito que Menú Pro compite contra, no una simple preferencia.
 
+**Horario del local (dato permanente, confirmado 2026-08-24):** no abre los domingos. Al
+numerar "Día N" del piloto, no asumir que un domingo tuvo actividad — si algo se cuenta fechado
+en domingo, verificar con el usuario antes de registrarlo (ver corrección del "Día 10" más
+abajo, que originalmente quedó mal fechado en domingo).
+
 ### Quejas reportadas (en sus palabras, resumidas por Pedro)
 
 1. Tamaño de letra muy chico
@@ -412,15 +417,20 @@ atajo "+1 mismo menú" al agregar + agrupado visual con stepper en el carrito (P
 sin tocar la numeración de grupos que usa cocina (ISS-041). Mockup aprobado antes de implementar
 — [`ISS-064`](issues/ISS-064-repetir-mismo-menu.md).
 
-### Día 10 (2026-08-23, domingo) — reserva sin hora bloqueada por error
+### Día 10 (2026-08-24, lunes) — reserva sin hora bloqueada por error
 
-Contado por el usuario el 2026-08-24, junto con el Día 9. Un comensal quiso reservar y no pudo
-por no poner hora de llegada: el diseño original (D1, 2026-08-13) validaba, sin hora, que el
-restaurante estuviera abierto **ahora mismo** — con la fecha de hoy, no la de la reserva. El
-usuario lo asumió como error propio de diseño ("entiendo la confusión y bueno lo asumo como
-error mío") y pidió la corrección en el momento: sin hora, la reserva debe pasar siempre — el
-campo es solo informativo para anticipar cocina, nunca un requisito. Implementado el mismo día
-— [`ISS-065`](issues/ISS-065-reserva-sin-hora-bloqueada.md).
+> **Corrección de fecha (2026-08-24):** esta entrada decía originalmente "2026-08-23, domingo" —
+> mal fechada. El restaurante piloto **no abre los domingos** (horario habitual, dato
+> permanente), así que ese día no tuvo operación y el hallazgo no pudo pasar ahí. Confirmado
+> con el usuario: el comensal que no pudo reservar fue el mismo lunes 24-08, el día en que se
+> contó y se corrigió — no hay desfase entre el hecho y el reporte en este caso.
+
+Un comensal quiso reservar y no pudo por no poner hora de llegada: el diseño original (D1,
+2026-08-13) validaba, sin hora, que el restaurante estuviera abierto **ahora mismo** — con la
+fecha de hoy, no la de la reserva. El usuario lo asumió como error propio de diseño ("entiendo
+la confusión y bueno lo asumo como error mío") y pidió la corrección en el momento: sin hora, la
+reserva debe pasar siempre — el campo es solo informativo para anticipar cocina, nunca un
+requisito. Implementado el mismo día — [`ISS-065`](issues/ISS-065-reserva-sin-hora-bloqueada.md).
 
 **Pendiente (no implementado):** el usuario pidió además un tooltip/mensaje junto al campo
 explicando para qué sirve la hora de llegada, para que el comensal entienda que puede dejarlo en
