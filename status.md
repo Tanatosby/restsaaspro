@@ -23,18 +23,13 @@ por el usuario:
 | 2026-08-24 | `1b38b57..c269fb1` | **ISS-061** (status "En preparación" más claro), **ISS-062** (botón "Listo" en zona Cocina), **ISS-063** (Reservas: carta antes que el formulario), **ISS-064** ("+1 mismo menú") e **ISS-065** (reserva sin hora ya no se bloquea) — día 9 y día 10 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `/health` → `{"status":"ok"}`. |
 | 2026-08-25 | `c269fb1..bd2b991` | **ISS-066** (plato bloquea sección opcional), **ISS-067** (Cola: reservas sin hora enterradas + parpadeo) e **ISS-068** (Stock rápido desde Cola) — día 10 del piloto (visita en persona), más el mockup de descubribilidad (solo doc). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 | 2026-08-25 (tarde) | `bd2b991..440e9e8` | **ISS-069** — deselección de plato en sección opcional (radio nativo no se podía desmarcar) + tap en la foto ahora selecciona el plato en vez de abrir el zoom. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
+| 2026-08-25 (noche) | `440e9e8..c148008` | Explicación permanente de Obligatoria/Opcional + **ISS-070** (Compatibilidad de platos, control de 3 estados) + **ISS-071** ("Reservas" oculto del bottom-nav) + **ISS-072** (cobro en 1 clic) + **ISS-073** (anti-parpadeo en Cocina/Órdenes/Reservas) + **ISS-074** (Mesa grande/#orden chico) + **ISS-075** (Agregar manual simplificado) + **ISS-076** (modal "Qué hay de nuevo" + badge "🆕") — día 11 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:** explicación permanente de Obligatoria/Opcional en Configuración
-(reemplaza el toast de 3s) + **ISS-070** (control de 3 estados "Compatibilidad de platos",
-reemplaza los modales Exige/No permite sección detrás de "⋯") + **ISS-071** ("Reservas" oculto
-del bottom-nav, quedaba en el medio y causaba toques por error) + **ISS-072** (cobro en 1 clic
-para todos los métodos de pago) + **ISS-073** (anti-parpadeo extendido a Cocina/Órdenes/
-Reservas) + **ISS-074** (Mesa grande/#orden chico en las 4 pantallas) + **ISS-075** ("Agregar
-manual" simplificado: lista plana sin fotos, mesa/nombre opcionales) + **ISS-076** (modal "Qué
-hay de nuevo" + badge "🆕"), todos implementados hoy 2026-08-25 tras `440e9e8`. ISS-059 y
-ISS-060 siguen **diagnosticados, sin implementar** (Día 8
-del piloto). **Sin verificar todavía en uso real:** ISS-069 (deselección + tap en foto) ni
-ISS-070 (control de compatibilidad) — falta confirmar con la dueña y con un comensal nuevo.
+**Sin pendientes de deploy** — producción está al día con `main` (`c148008`). ISS-059 y ISS-060
+siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
+real:** ISS-069 a ISS-076, todos desplegados hoy — falta confirmar con la dueña y con un
+comensal nuevo (deselección, tap en foto, control de compatibilidad, cobro en 1 clic, Cocina
+sin parpadeo, mesa grande, Agregar manual sola, y que el modal de novedades aparezca).
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
