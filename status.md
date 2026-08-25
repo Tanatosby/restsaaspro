@@ -22,9 +22,10 @@ por el usuario:
 | 2026-08-21 (tarde) | `9ea9a51..1b38b57` | **ISS-056 (rediseño)** — la nota de "cómo volver de Yape/Plin" pasó de instrucciones de gestos del celular a 3 pasos numerados con emoji. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-24 | `1b38b57..c269fb1` | **ISS-061** (status "En preparación" más claro), **ISS-062** (botón "Listo" en zona Cocina), **ISS-063** (Reservas: carta antes que el formulario), **ISS-064** ("+1 mismo menú") e **ISS-065** (reserva sin hora ya no se bloquea) — día 9 y día 10 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `/health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:** **ISS-066** (plato que bloquea sección opcional — inverso de ISS-046),
-implementado hoy 2026-08-24 tras `c269fb1`. ISS-059 y ISS-060 siguen **diagnosticados, sin
-implementar** (Día 8 del piloto).
+**Pendiente de deploy:** **ISS-066** (plato bloquea sección opcional), **ISS-067** (Cola: reservas
+sin hora enterradas + parpadeo) e **ISS-068** (Stock rápido desde Cola), implementados hoy
+2026-08-24 tras `c269fb1`. ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8
+del piloto).
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -51,6 +52,45 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-24 (3) — ISS-067, ISS-068: visita en persona, Día 10 del piloto
+
+**Prompt del usuario:** contó 3 confusiones observadas en persona con la dueña del piloto #1
+("observa las tareas... solo ver dónde hay trabas") — Cola vs Reservas, stock lento de ajustar
+en caliente, y reservas sin hora que "no guardaron comida". Se documentaron primero en
+`pilotos.md` (Día 10 — visita en persona) con diagnóstico cruzado contra el código real; después,
+en la conversación, el usuario aclaró el punto 1 con más detalle: no era una confusión de
+nombres, era que las reservas sin hora quedaban invisibles en la Cola cuando el cliente llegaba.
+De paso reportó que el refresco de la Cola "parpadeaba" y perdía el scroll.
+
+**ISS-067 — Cola: reservas sin hora enterradas + parpadeo en cada refresco.**
+`urgenciaItem()` en `pedidos.js` le daba urgencia fija 0 a cualquier reserva sin hora — mientras
+las órdenes y reservas con hora vencida suben de urgencia con el tiempo, esa quedaba siempre al
+mismo nivel, enterrada. Fix: se calcula igual que una orden (por antigüedad). También: `renderZona()`
+reconstruía el DOM completo en cada poll sin comparar si algo cambió (de ahí el parpadeo) — ahora
+compara una "firma" de los datos y solo repinta si cambió algo de verdad; `renderColaDesdeCache()`
+preserva el `scrollTop` de `.content`. Polling bajado de 30s a 60s (pedido explícito). **Confirmado
+en vivo por el usuario: "ya no hay parpadeo con el refresco de los datos".**
+
+**ISS-068 — Stock rápido desde Cola.** La dueña no fija stock al inicio del día ("estimar las
+cantidades aún no le da"), así que ajusta sobre la marcha — pero el camino normal (Configuración
+→ Menú del día → sección → plato → ⋯ → Agotado) es demasiado lento en plena hora pico, y para
+cuando llegaba ahí varios pedidos ya habían fallado. Fix: botón "📦 Stock" nuevo en el header de
+Cola del día, abre una lista plana de todos los platos de hoy con toggle de 1 tap "⛔ Agotado" —
+reusa el endpoint que ya existía, sin cambios de backend. Pendiente de probar en uso real.
+
+**TODO 3 (reordenar "Usuarios" al grupo "Ajustes" en el sidebar) queda en pausa** — el usuario
+pidió no tocarlo todavía.
+
+**Verificación:** sintaxis (`node --check`) en ambos archivos; sin cambios de backend, suite
+completa sigue en 34/34 test suites · 458/458 tests.
+
+**Documentación actualizada:** `pilotos.md` (Día 10, diagnóstico + qué se implementó),
+`issues/ISS-067-*` e `issues/ISS-068-*` (nuevos), `issues/ISSUES.md` (índice).
+
+**Pendiente: deploy** (lo hace el usuario).
 
 ---
 

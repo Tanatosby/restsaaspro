@@ -436,6 +436,72 @@ requisito. Implementado el mismo día — [`ISS-065`](issues/ISS-065-reserva-sin
 explicando para qué sirve la hora de llegada, para que el comensal entienda que puede dejarlo en
 blanco sin problema.
 
+### Día 10 (2026-08-24, lunes) — visita en persona, observación silenciosa de uso real
+
+El usuario visitó el restaurante y, siguiendo su propio método (observar sin intervenir para ver
+"dónde hay trabas" antes de decir algo), registró 4 confusiones reales de la dueña con el panel
+`owner.html`. Diagnóstico cruzado contra el código real de cada una:
+
+**1. Confusión entre "Cola del día" y "Reservas".** Cita textual de la dueña: *"por qué sigue
+apareciendo este pedido en reservas si ya lo pasé"*. El usuario tuvo que explicarle varias veces:
+*"señora cola es donde ve su línea pedido tras pedido, pero reservas sería la lista de todas las
+reservas"*. Diagnóstico: son dos paneles con propósito distinto y accesibles por igual en la
+bottom-nav móvil (🔥 Cola / 📅 Reservas) — no es un problema de dónde están, es que el nombre
+"Reservas" no deja claro que es el listado **completo** (incluye ya completadas), mientras que
+"Cola" es la vista operativa por zonas del día de hoy. El modelo mental de la dueña es "si ya lo
+pasé, debería desaparecer de todos lados" — y eso no calza con lo que "Reservas" fue diseñado
+para mostrar.
+
+**2. Ajustar stock en caliente es lento y poco descubrible.** Cita: *"a ver, ¿cómo es para
+quitar stock?"*. La dueña no fija cantidades al inicio del día ("estimar las cantidades aún no
+le da"), así que intenta ajustar el stock sobre la marcha cuando nota que algo se acabó — para
+entonces varios comensales ya pidieron ese plato y el pedido falla en cocina. Diagnóstico: el
+control de stock (📦 Stock / ⛔ Agotado) vive dentro de Configuración → Menú del día → sección →
+plato → botón "⋯" — 4-5 niveles de profundidad, pensado para configurar antes del servicio, no
+para un ajuste de emergencia en medio de la hora pico.
+
+**3. Las reservas no "reservaron" comida — consecuencia técnica directa del punto 2, no un bug
+aparte.** El sistema sí descuenta stock al crear una reserva (`descontarStock()` en
+`routes/reservations.js`/`routes/public.js`), pero solo si el plato tiene `stock_inicial`
+fijado — sin eso, `stock_restante` queda `NULL` y el descuento es un no-op por diseño ("sin
+stock fijado, todo funciona sin límite", ver `status.md` 2026-07-02). Como la dueña no fija
+stock (punto 2), ningún plato tenía control activo ese día — cualquier walk-in podía seguir
+pidiendo un plato que ya tenía reservas esperándolo, porque para el sistema no existía límite
+que hacer respetar.
+
+**4. Configuración/Usuarios no descubribles — incluye la feature nueva de ISS-046/ISS-066.**
+Cita: *"guardar permisos nada que ver la señora, no sabe donde ver usuarios o configurar el
+menú para colocar qué plato es obligatorio que vaya con proteínas y que plato no, tampoco lo
+saca"*. Diagnóstico confirmado en `owner.html`: la bottom-nav móvil (lo único visible todo el
+tiempo en el celular) solo tiene 5 accesos — Cola, Cocina, Reservas, Menú, Inicio. "Usuarios" y
+"Configuración" **no están ahí** — solo se llega abriendo el botón hamburguesa (sidebar
+completo), y dentro del sidebar "Usuarios" está agrupado bajo "Operaciones" (junto a
+Órdenes/Reservas/Cocina/Cola), no bajo "Ajustes" donde está "Configuración" — mentalmente la
+dueña buscaría "dar de alta un mozo" junto a "configurar el negocio", no junto a "ver los
+pedidos del día". La relación "Exige/No permite sección" vive todavía más profundo (Configuración
+→ Menú del día → sección → plato → ⋯ → acción), sin ningún indicio visual de que existe salvo
+entrando ahí a propósito.
+
+**Sin implementar todavía** — el usuario planteó explícitamente que no tiene claro cómo
+simplificar esto ("no entiendo cómo hacerlo más fácil"). Queda como diagnóstico de campo
+pendiente de convertir en un plan concreto (ver `backlog.md`).
+
+**Corrección del punto 1, misma conversación:** el usuario aclaró que no era una confusión de
+nombres — el problema real era que las reservas **sin hora de llegada** quedaban invisibles en
+la Cola del día una vez que el cliente ya había llegado (*"ya llegó tal persona, cómo paso esta
+reserva a cocina"*, sin encontrarla). Causa técnica: `urgenciaItem()` les daba urgencia fija en 0,
+enterrándolas debajo de todo lo demás activo. De paso reportó que el refresco de la Cola
+"parpadeaba" (reconstruía todo en cada poll) y perdía el scroll. **Implementado el mismo día —**
+[`ISS-067`](issues/ISS-067-cola-refresco-y-reservas-sin-hora.md) **— confirmado en vivo por el
+usuario tras el fix.**
+
+**Punto 2 y 3 (stock lento), implementado el mismo día:** botón "📦 Stock" nuevo en Cola del día
+con lista plana + toggle de 1 tap, sin pasar por Configuración —
+[`ISS-068`](issues/ISS-068-stock-rapido-desde-cola.md). Pendiente de probar en uso real.
+
+**Punto 4 (Usuarios/Configuración no descubribles):** el usuario pidió explícitamente pausarlo
+por ahora — sigue como diagnóstico de campo, sin implementar.
+
 ---
 
 ## Plantilla para el próximo piloto

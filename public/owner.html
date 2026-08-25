@@ -747,10 +747,11 @@
         <div class="sec-header">
           <div>
             <div class="sec-title">📋 Cola del día</div>
-            <div class="sec-sub">Órdenes y reservas activas por etapa — se actualiza cada 30 s</div>
+            <div class="sec-sub">Órdenes y reservas activas por etapa — se actualiza cada 60 s</div>
           </div>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
             <button class="btn btn-primary btn-sm" onclick="abrirModalAgregarManual()">+ Agregar manual</button>
+            <button class="btn btn-ghost btn-sm" onclick="abrirStockRapido()">📦 Stock</button>
             <button class="btn btn-ghost btn-sm" onclick="loadColaDia()">↻ Actualizar</button>
           </div>
         </div>
@@ -1167,6 +1168,22 @@
       Quedaron abiertos de días anteriores. Hasta cerrarlos no aparecen en tus Ganancias.
     </div>
     <div id="cierre-caja-lista" style="padding:1rem 1.5rem;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0.75rem"></div>
+  </div>
+</div>
+
+<!-- ── Modal: Stock rápido (marcar "Agotado" sin entrar a Configuración) ──
+     Acceso directo desde Cola del día — día 11 del piloto: el camino normal
+     era demasiado lento en plena hora pico. -->
+<div id="modal-stock-rapido" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;box-shadow:var(--shadow)">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:1.142857rem;font-weight:700;color:var(--text)">📦 Stock de hoy</span>
+      <button onclick="cerrarStockRapido()" style="background:none;border:none;font-size:1.428571rem;color:var(--muted);cursor:pointer;line-height:1;padding:2px 6px" aria-label="Cerrar">✕</button>
+    </div>
+    <div style="padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);font-size:0.928571rem;color:var(--text-2)">
+      Marca "Agotado" apenas se acabe un plato — desaparece del QR al instante.
+    </div>
+    <div id="stock-rapido-lista" style="padding:0.5rem 1.5rem;overflow-y:auto;flex:1"></div>
   </div>
 </div>
 

@@ -1,7 +1,9 @@
 // ════════════════════════════════════════════════════════
 // MÓDULO: COLA DEL DÍA — KANBAN
 // Órdenes + reservas activas agrupadas por zona/etapa.
-// Hace polling cada 30 s mientras el panel está activo.
+// Hace polling cada 60 s mientras el panel está activo (bajado de 30s —
+// día 11 del piloto, cada refresh reordenaba los ítems por urgencia y se
+// sentía como "todo se sube al principio" en medio de la hora pico).
 // Globals requeridos (owner.html): detectNuevasOrdenes(),
 //   detectNuevasReservas(), cambiarEstatusOrdenFlag(),
 //   cambiarEstatusReservaFlag(), badgeEst(), toUTC()
@@ -27,6 +29,13 @@ const _enVuelo = new Set();
 // Última respuesta del servidor, para repintar tras una acción optimista
 let _cache = { ordenes: [], reservas: [] };
 
+// Última "firma" (JSON de los datos) pintada por zona — evita el parpadeo de
+// reconstruir todo el DOM en cada poll cuando no cambió nada. Día 11 del
+// piloto: "cada vez que refresca... no deja leer los pedidos bien". Solo
+// compara los datos, no el orden (la urgencia puede desplazarse solo por el
+// paso del tiempo sin que eso amerite un repintado).
+let _ultimaFirmaZona = {};
+
 // Flags de estatus, en orden. Aplicar uno implica apagar los demás — es como
 // el backend modela el estatus (una fila de estatus_orden/estatus_reserva).
 const FLAGS_ORDEN   = ['es_inicial', 'es_en_cocina', 'es_listo', 'es_entregado', 'es_pagado', 'es_cancelado'];
@@ -45,7 +54,7 @@ function initPedidosPoll() {
   // Los pedidos viejos no cambian solos: basta con mirarlos al abrir el panel,
   // no en cada poll.
   loadSinCerrar();
-  _pedidosPollTimer = setInterval(loadColaDia, 30000);
+  _pedidosPollTimer = setInterval(loadColaDia, 60000);
 }
 
 function stopPedidosPoll() {
@@ -60,7 +69,7 @@ function stopPedidosPoll() {
 function reiniciarPoll() {
   if (!_pedidosPollTimer) return;   // el panel no está activo
   clearInterval(_pedidosPollTimer);
-  _pedidosPollTimer = setInterval(loadColaDia, 30000);
+  _pedidosPollTimer = setInterval(loadColaDia, 60000);
 }
 
 // ── Cambio de tab ────────────────────────────────────────
@@ -115,6 +124,13 @@ function renderColaDesdeCache() {
   const { ordenes, reservas } = _cache;
   const zonas = clasificarZonas(ordenes, reservas);
 
+  // Preservar el scroll del panel (vive en .content, no en cada zona — ver
+  // owner.css:322) al repintar. Sin esto, cada poll (o cada acción) reconstruye
+  // las 4 zonas y el usuario que estaba viendo un pedido a mitad de la lista
+  // "pierde" su lugar en cada refresco — día 11 del piloto.
+  const content = document.querySelector('.content');
+  const scrollPrevio = content ? content.scrollTop : 0;
+
   // Badge del nav (total activos)
   const total = ordenes.length + reservas.length;
   const badgeNav = document.getElementById('badge-pedidos');
@@ -132,6 +148,8 @@ function renderColaDesdeCache() {
     }
     renderZona(z, zonas[z]);
   });
+
+  if (content) content.scrollTop = scrollPrevio;
 }
 
 // ── Clasificación por zona ───────────────────────────────
@@ -172,6 +190,13 @@ function clasificarZonas(ordenes, reservas) {
 function renderZona(zona, items) {
   const el = document.getElementById(`zona-${zona}`);
   if (!el) return;
+
+  // Si los datos son idénticos a lo último pintado, no tocar el DOM — evita
+  // el parpadeo de destruir y recrear todas las cards en cada poll.
+  const firma = JSON.stringify(items.map(i => i.datos));
+  if (_ultimaFirmaZona[zona] === firma) return;
+  _ultimaFirmaZona[zona] = firma;
+
   if (!items.length) {
     el.innerHTML = emptyState('✅', 'Sin pedidos en esta etapa');
     return;
@@ -186,7 +211,14 @@ function urgenciaItem(item) {
   if (item.tipo === 'orden') {
     return Date.now() - new Date(toUTC(item.datos.created_at)).getTime();
   }
-  if (!item.datos.hora_llegada) return 0;
+  // Reserva sin hora de llegada: se trata igual que una orden — mientras más
+  // tiempo lleva esperando sin avanzar, más urgente. Antes tenía urgencia fija
+  // en 0 y quedaba enterrada debajo de cualquier orden u otra reserva con hora
+  // ya vencida — día 11 del piloto: el cliente ya había llegado y la dueña no
+  // encontraba la reserva en la Cola para pasarla a cocina.
+  if (!item.datos.hora_llegada) {
+    return Date.now() - new Date(toUTC(item.datos.created_at)).getTime();
+  }
   const hoy    = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
   const llegada = new Date(`${hoy}T${item.datos.hora_llegada}:00-05:00`).getTime();
   return -(llegada - Date.now());
@@ -531,6 +563,67 @@ async function abrirModalAgregarManual() {
 
 function cerrarModalAgregarManual() {
   document.getElementById('modal-agregar-manual').style.display = 'none';
+}
+
+// ── Stock rápido: marcar "Agotado" sin entrar a Configuración ───────────
+// Acceso directo desde Cola del día — día 11 del piloto: el camino normal
+// (Configuración → Menú del día → sección → plato → ⋯ → Stock) es demasiado
+// lento para un ajuste de emergencia en plena hora pico. Reusa el mismo
+// endpoint de "agotado" que ya existía — solo cambia el camino para llegar,
+// y muestra los platos en una lista plana (sin el acordeón de secciones)
+// para encontrar cualquiera de un vistazo.
+let _stockRapidoMenus = [];
+
+async function abrirStockRapido() {
+  document.getElementById('modal-stock-rapido').style.display = 'flex';
+  await cargarStockRapido();
+}
+
+async function cargarStockRapido() {
+  const lista = document.getElementById('stock-rapido-lista');
+  lista.innerHTML = '<div class="loading-text">Cargando…</div>';
+  try {
+    const menus = await api('GET', `/api/menu/menus-dia?dia=${todayLimaPedidos()}`);
+    // Mismo criterio que "Agregar manual": solo menús activos hoy.
+    _stockRapidoMenus = menus.filter(m => m.activo);
+    renderStockRapidoLista();
+  } catch (e) {
+    lista.innerHTML = emptyState('⚠️', e.message);
+  }
+}
+
+function renderStockRapidoLista() {
+  const lista = document.getElementById('stock-rapido-lista');
+  const filas = _stockRapidoMenus.flatMap(m =>
+    m.secciones.flatMap(s => s.platos.map(p => ({ m, s, p })))
+  );
+  if (!filas.length) { lista.innerHTML = emptyState('🍽️', 'No hay menú configurado para hoy'); return; }
+
+  const multiMenu = _stockRapidoMenus.length > 1;
+  lista.innerHTML = filas.map(({ m, s, p }) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.55rem 0;border-bottom:1px solid var(--border)">
+      <div style="min-width:0">
+        <div style="font-weight:600;font-size:0.95rem;${p.agotado ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(p.nombre)}</div>
+        <div style="font-size:0.8rem;color:var(--muted)">${esc(s.nombre_seccion)}${multiMenu ? ' · ' + esc(m.nombre) : ''}</div>
+      </div>
+      <button onclick="toggleAgotadoRapido(${m.id},${s.id_seccion},${p.id_componente},${p.agotado ? 1 : 0})"
+        style="min-height:44px;padding:0 14px;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid ${p.agotado ? 'var(--accent)' : 'var(--danger,#dc3545)'};background:${p.agotado ? 'var(--accent)' : 'transparent'};color:${p.agotado ? '#fff' : 'var(--danger,#dc3545)'}">
+        ${p.agotado ? '✔ Disponible' : '⛔ Agotado'}
+      </button>
+    </div>
+  `).join('');
+}
+
+async function toggleAgotadoRapido(menuId, seccionId, componenteId, agotadoActual) {
+  try {
+    await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/agotado`, { agotado: agotadoActual ? 0 : 1 });
+    toast(agotadoActual ? 'Marcado como disponible' : 'Marcado como agotado');
+    await cargarStockRapido();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+function cerrarStockRapido() {
+  document.getElementById('modal-stock-rapido').style.display = 'none';
 }
 
 // Misma prioridad que usa menu.html para la portada: el plato que el owner
