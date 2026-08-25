@@ -60,32 +60,28 @@ medidas en las 3 escalas de letra; falta que elija **A**, **B** o **C**. Recomen
 se cambian los que acompañan una fecha real y los que hacen de ícono de "Reservas"; los 3 que
 van pegados al nombre del cliente (`cocina.js:133`, `pedidos.js:249` y `:515`) **no se tocan**.
 
-**Decisión del usuario pendiente, sin bloquear nada:** cómo hacer descubrible la relación
-"Exige/No permite sección" (ISS-046/ISS-066) al armar el menú del día — hoy vive escondida
-detrás de "⋯" con nombres técnicos, y la dueña no la encuentra sola (ver `pilotos.md` Día 10,
-punto 4, y el hilo de conversación 2026-08-24 sobre "ají de gallina"). Mockup con 3 alternativas
-publicado y revisado, **sin elegir todavía** — el usuario pidió pausarlo para retomar después:
-[mockup "Compatibilidad de Platos"](https://claude.ai/code/artifact/76b60128-c12a-4a3b-98f8-98a937a745c3).
-**Actualizado 2026-08-25:** el usuario probó la Opción A y no entendió la etiqueta "🤷 Como
-quiera" del estado neutral — se cambió a **"🔓 Puede llevar"** (mismo verbo que "No lleva") y
-se agregó un botón ⓘ junto a cada relación que despliega la explicación de los 3 estados al
-tocarlo, a pedido del usuario ("un tooltip siempre es bueno para estos casos").
+**Resuelto e implementado 2026-08-25 — ISS-070.** Cómo hacer descubrible la relación
+"Exige/No permite sección" (ISS-046/ISS-066) al armar el menú del día — vivía escondida
+detrás de "⋯" con nombres técnicos, y la dueña no la encontraba sola (ver `pilotos.md` Día 10,
+punto 4, y el hilo de conversación 2026-08-24 sobre "ají de gallina"). Mockup con 3
+alternativas: [mockup "Compatibilidad de Platos"](https://claude.ai/code/artifact/76b60128-c12a-4a3b-98f8-98a937a745c3)
+(actualizado con la etiqueta "Puede llevar" y el tooltip ⓘ tras probarlo con el usuario).
+**El usuario eligió la Opción A** — control de 3 estados siempre visible (🔓 Puede llevar /
+✅ Necesita / 🚫 No lleva) pegado a cada plato — y ya está implementada en `owner.html`/
+`owner.css`, ver `issues/ISS-070-compatibilidad-platos-opcion-a.md`. Pendiente: deploy +
+verificar con la dueña en uso real.
 
-- **A — Control de 3 estados siempre visible** (🔓 Puede llevar / ✅ Necesita / 🚫 No lleva) pegado
-  a cada plato, reemplaza los 2 botones de hoy. Recomendada — menos taps y sin vocabulario
-  técnico — pero el cambio de código más grande (toca el render de cada plato del acordeón).
-- **B — Checklist de una sola pasada**, se abre solo al crear/editar la sección opcional
-  relacionada, con todos los platos de la otra sección juntos. Resuelve bien el momento exacto,
-  pero un plato agregado después no dispara el checklist — necesitaría también un acceso manual.
-- **C — Cambio mínimo**: los mismos 2 botones de hoy, solo que visibles siempre en vez de detrás
-  de "⋯". El más barato de construir, pero no resuelve el vocabulario confuso.
+- **A — Control de 3 estados siempre visible** — ✅ implementada.
+- **B — Checklist de una sola pasada** — descartada. Resolvía bien el momento exacto, pero un
+  plato agregado después no disparaba el checklist.
+- **C — Cambio mínimo** (mismos 2 botones, solo visibles) — descartada. Más barata, pero no
+  resolvía el vocabulario confuso.
 
-**Pregunta abierta, sin responder todavía:** ¿un menú puede tener más de una sección opcional
-relacionada a la vez (ej. Arroces + Proteínas + Salsas, todas opcionales)? Cambia el diseño — en
-A cada plato mostraría un control por cada sección opcional relacionada; en B sería una pantalla
-de checklist por cada una. Confirmado con el usuario: el modelo de datos ya es genérico (nombres
-de sección son texto libre por restaurante, sin nada hardcodeado) — la duda es solo de diseño de
-UI ante múltiples relaciones, no del modelo.
+**La pregunta abierta que quedó** (¿un menú puede tener más de una sección opcional relacionada
+a la vez?) se resolvió al implementar: sí puede — `requiere_seccion_id` y
+`no_permite_seccion_id` son 2 columnas independientes por plato, así que la Opción A muestra
+un control de 3 estados por cada sección opcional del menú relacionada, no solo una. Con 1 sola
+sección opcional en el menú (el caso real hoy) es 1 control por plato, igual que en el mockup.
 
 ---
 

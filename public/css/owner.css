@@ -775,6 +775,47 @@ tbody tr:hover { background: var(--surface-2); }
 }
 .mc-dots:active { background: var(--bg); }
 
+/* Compatibilidad de platos — ISS-046/ISS-066, Opción A del mockup
+   "Compatibilidad de Platos" (2026-08-25). Siempre visible bajo el plato,
+   un bloque por cada sección opcional relacionada. */
+.mc-compat { padding: 0 0 8px; }
+.mc-compat-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.mc-compat-label {
+  font-size:0.75rem; font-weight: 800; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .03em;
+}
+/* Botón "ⓘ" — toggle por CSS puro (checkbox oculto), funciona igual con tap
+   que con click, sin depender de hover (mobile-first). */
+.mc-tip-toggle { position: absolute; opacity: 0; width: 0; height: 0; }
+.mc-info-btn {
+  width: 22px; height: 22px; min-width: 22px; border-radius: 50%;
+  border: 1px solid var(--border-2); background: var(--surface); color: var(--muted);
+  font-size:0.72rem; font-weight: 800; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.mc-tip-toggle:checked + .mc-info-btn {
+  background: var(--accent-soft); border-color: var(--accent-dim); color: var(--accent-strong);
+}
+.mc-tip-box {
+  display: none; font-size:0.8rem; line-height: 1.55; color: var(--text-2);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 0.5rem 0.65rem; margin: 0 0 8px;
+}
+.mc-tip-toggle:checked ~ .mc-tip-box { display: block; }
+.mc-tip-box b { color: var(--text); }
+
+.mc-seg3 { display: flex; gap: 4px; }
+.mc-seg3-opt {
+  flex: 1; min-width: 0; min-height: 44px; padding: 4px 3px; border-radius: 8px;
+  border: 1px solid var(--border-2); background: var(--surface); color: var(--text-2);
+  font-size:0.75rem; font-weight: 700; line-height: 1.25; cursor: pointer;
+}
+.mc-seg3-opt.on { font-weight: 900; }
+.mc-seg3-opt:not(.on-need):not(.on-block).on { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
+.mc-seg3-opt.on-need.on  { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+.mc-seg3-opt.on-block.on { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+
 /* Acciones expandidas del plato (al tocar ⋯) */
 .mc-plato-acts { display: none; gap: 6px; padding: 0 0 10px; }
 .mc-plato-acts.open { display: flex; }

@@ -1740,20 +1740,51 @@ function mcSeccionAcordeon(m, s) {
     ? `<span class="mc-sec-badge ok">${n} plato${n > 1 ? 's' : ''}</span>`
     : `<span class="mc-sec-badge warn">⚠ sin platos</span>`;
 
+  // Otras secciones opcionales del menú (nunca la propia, nunca una
+  // obligatoria — bloquearla no tendría efecto, se exige igual). Es la misma
+  // lista para todos los platos de esta sección, se calcula una sola vez.
+  const otrasOpcionales = m.secciones.filter(os => os.id_seccion !== s.id_seccion && !os.requerido);
+
   const filas = s.platos.map(p => {
     // Badge de stock: NULL = sin control (no se muestra nada)
     const tieneStock = p.stock_restante !== null && p.stock_restante !== undefined;
     const badgeStock = !tieneStock ? ''
       : p.stock_restante <= 0 ? '<span class="mc-badge-mini rojo">Sin stock</span>'
       : `<span class="mc-badge-mini ${p.stock_restante <= 5 ? 'ambar' : ''}">quedan ${p.stock_restante}</span>`;
-    // Badge: si este plato exige otra sección (ISS-046), ej. "arroz con papas
-    // fritas" exige "Proteínas" aunque esa sección sea opcional en general.
-    const badgeExige = p.requiere_seccion_id
-      ? `<span class="mc-badge-mini ambar">🔗 Exige ${esc(p.requiere_seccion_nombre || '')}</span>` : '';
-    // Badge: si este plato bloquea otra sección opcional (ISS-066, inverso de
-    // ISS-046), ej. "ají de gallina" no permite elegir nada de "Proteínas".
-    const badgeNoPermite = p.no_permite_seccion_id
-      ? `<span class="mc-badge-mini rojo">🚫 No permite ${esc(p.no_permite_seccion_nombre || '')}</span>` : '';
+
+    // Control de compatibilidad — ISS-046/ISS-066, Opción A del mockup
+    // "Compatibilidad de Platos" (2026-08-25). Reemplaza los 2 botones que
+    // vivían escondidos detrás de "⋯" ("Exige sección"/"No permite sección")
+    // por un selector de 3 estados por cada sección opcional relacionada,
+    // siempre visible junto al plato. Un plato puede necesitar una sección y
+    // no llevar otra a la vez (son 2 columnas independientes en la BD), así
+    // que se repite un control por cada `otra` — con 1 sola sección opcional
+    // en el menú (el caso real hoy) es 1 control por plato, igual que antes.
+    const compatHtml = otrasOpcionales.map(otra => {
+      const estado = p.requiere_seccion_id === otra.id_seccion ? 'necesita'
+        : p.no_permite_seccion_id === otra.id_seccion ? 'no_lleva'
+        : 'puede_llevar';
+      const tipId = `mc-tip-${p.id_componente}-${otra.id_seccion}`;
+      return `
+      <div class="mc-compat">
+        <div class="mc-compat-head">
+          <span class="mc-compat-label">🔗 ${esc(otra.nombre_seccion)}</span>
+          <input type="checkbox" class="mc-tip-toggle" id="${tipId}">
+          <label for="${tipId}" class="mc-info-btn" aria-label="Qué significa cada opción">ⓘ</label>
+        </div>
+        <div class="mc-tip-box">
+          <b>🔓 Puede llevar</b> — sin restricción, el cliente elige o no.<br>
+          <b>✅ Necesita</b> — el cliente debe elegir algo de ${esc(otra.nombre_seccion)}.<br>
+          <b>🚫 No lleva</b> — ${esc(otra.nombre_seccion)} no aparece para este plato.
+        </div>
+        <div class="mc-seg3">
+          <button class="mc-seg3-opt ${estado === 'puede_llevar' ? 'on' : ''}" onclick="setCompatibilidadPlato(${m.id},${s.id_seccion},${p.id_componente},${otra.id_seccion},'puede_llevar')">🔓 Puede llevar</button>
+          <button class="mc-seg3-opt on-need ${estado === 'necesita' ? 'on' : ''}" onclick="setCompatibilidadPlato(${m.id},${s.id_seccion},${p.id_componente},${otra.id_seccion},'necesita')">✅ Necesita</button>
+          <button class="mc-seg3-opt on-block ${estado === 'no_lleva' ? 'on' : ''}" onclick="setCompatibilidadPlato(${m.id},${s.id_seccion},${p.id_componente},${otra.id_seccion},'no_lleva')">🚫 No lleva</button>
+        </div>
+      </div>`;
+    }).join('');
+
     return `
     <div class="mc-plato-row ${p.agotado ? 'agotado' : ''}">
       <span class="mc-plato-nom">
@@ -1761,16 +1792,13 @@ function mcSeccionAcordeon(m, s) {
         ${m.id_plato_portada === p.id_plato ? '<span class="mc-badge-mini">📷 Portada</span>' : ''}
         ${p.agotado ? '<span class="mc-badge-mini rojo">Agotado</span>' : ''}
         ${badgeStock}
-        ${badgeExige}
-        ${badgeNoPermite}
       </span>
       <button class="mc-dots" onclick="toggleAccionesPlato(this)" aria-label="Más acciones">⋯</button>
     </div>
+    ${compatHtml}
     <div class="mc-plato-acts">
       <button class="mc-mini-act" onclick="abrirStockPlato(${m.id},${s.id_seccion},${p.id_componente},${tieneStock ? p.stock_restante : 'null'})">📦 Stock</button>
       <button class="mc-mini-act" onclick="toggleAgotadoPlato(${m.id},${s.id_seccion},${p.id_componente},${p.agotado?1:0})">${p.agotado ? '✔ Disponible' : '⛔ Agotado'}</button>
-      <button class="mc-mini-act" onclick="abrirRequiereSeccion(${m.id},${s.id_seccion},${p.id_componente},${p.requiere_seccion_id ?? 'null'})">🔗 ${p.requiere_seccion_id ? 'Cambiar exige' : 'Exige sección'}</button>
-      <button class="mc-mini-act" onclick="abrirNoPermiteSeccion(${m.id},${s.id_seccion},${p.id_componente},${p.no_permite_seccion_id ?? 'null'})">🚫 ${p.no_permite_seccion_id ? 'Cambiar bloqueo' : 'No permite sección'}</button>
       ${p.url_foto ? `<button class="mc-mini-act" onclick="setPortada(${m.id},${p.id_plato})">📷 ${m.id_plato_portada === p.id_plato ? 'Quitar portada' : 'Portada'}</button>` : ''}
       <button class="mc-mini-act danger" onclick="eliminarComponente(${m.id},${s.id_seccion},${p.id_componente})">✕ Quitar</button>
     </div>`;
@@ -1948,61 +1976,52 @@ function abrirStockPlato(menuId, seccionId, componenteId, actual) {
   });
 }
 
-// Marca (o quita) que este plato en particular exija otra sección del mismo
-// menú, aunque esa sección esté configurada como opcional en general —
-// ISS-046. Ej: "arroz con papas fritas" exige "Proteínas"; "arroz con pollo"
-// no exige nada porque ya está completo.
-function abrirRequiereSeccion(menuId, seccionId, componenteId, actual) {
-  const otras = (configMenuData?.secciones || []).filter(s => s.id_seccion !== seccionId);
-  if (!otras.length) return toast('Este menú no tiene otra sección para exigir', 'err');
-
-  FormModal.open({
-    title: '🔗 ¿Exige otra sección?',
-    fields: [
-      { name: 'requiere_seccion_id', label: 'Si eligen este plato, también hay que elegir:', type: 'select',
-        value: actual ?? '',
-        options: [
-          { value: '', label: 'Nada más (el plato ya está completo)' },
-          ...otras.map(s => ({ value: s.id_seccion, label: s.nombre_seccion })),
-        ] },
-    ],
-    submitLabel: 'Guardar',
-    onSubmit: async (vals) => {
-      const requiere_seccion_id = vals.requiere_seccion_id === '' ? null : Number(vals.requiere_seccion_id);
-      const r = await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/requiere-seccion`, { requiere_seccion_id });
-      toast(r.message || 'Plato actualizado');
-      recargarModalConfig();
-    },
-  });
+// Busca un componente (plato dentro de un menú) por id en configMenuData,
+// recorriendo todas las secciones — lo usa setCompatibilidadPlato() para
+// saber qué relación previa hay que limpiar antes de escribir la nueva.
+function buscarComponente(componenteId) {
+  for (const s of configMenuData?.secciones || []) {
+    const p = s.platos.find(pl => pl.id_componente === componenteId);
+    if (p) return p;
+  }
+  return null;
 }
 
-// Marca (o quita) que este plato en particular BLOQUEE otra sección opcional
-// del mismo menú — ISS-066, inverso de ISS-046. Ej: "ají de gallina" ya viene
-// completo, no debe permitir elegir nada de "Proteínas". Solo se ofrecen
-// secciones OPCIONALES: bloquear una obligatoria no tendría efecto (se exige
-// igual, ver utils/validarSeccionesMenu.js), así que ni se muestra la opción.
-function abrirNoPermiteSeccion(menuId, seccionId, componenteId, actual) {
-  const otras = (configMenuData?.secciones || []).filter(s => s.id_seccion !== seccionId && !s.requerido);
-  if (!otras.length) return toast('Este menú no tiene otra sección opcional para bloquear', 'err');
-
-  FormModal.open({
-    title: '🚫 ¿No permite otra sección?',
-    fields: [
-      { name: 'no_permite_seccion_id', label: 'Si eligen este plato, NO debe poder elegirse:', type: 'select',
-        value: actual ?? '',
-        options: [
-          { value: '', label: 'Ninguna (permite todo lo demás)' },
-          ...otras.map(s => ({ value: s.id_seccion, label: s.nombre_seccion })),
-        ] },
-    ],
-    submitLabel: 'Guardar',
-    onSubmit: async (vals) => {
-      const no_permite_seccion_id = vals.no_permite_seccion_id === '' ? null : Number(vals.no_permite_seccion_id);
-      const r = await api('PATCH', `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}/no-permite-seccion`, { no_permite_seccion_id });
+// Control de 3 estados (ISS-046/ISS-066, Opción A del mockup "Compatibilidad
+// de Platos", 2026-08-25) — reemplaza los modales "Exige sección"/"No permite
+// sección" que vivían detrás de "⋯". Escribe en las 2 columnas independientes
+// que ya existían (requiere_seccion_id, no_permite_seccion_id): cada plato
+// solo tiene UNA de cada, así que si la sección elegida ya estaba en la otra
+// columna se limpia antes — pero si esa otra columna apunta a una sección
+// DISTINTA (un plato puede necesitar una sección y no llevar otra a la vez),
+// se deja intacta.
+async function setCompatibilidadPlato(menuId, seccionId, componenteId, otraSeccionId, estado) {
+  const p = buscarComponente(componenteId);
+  const base = `/api/menu/menus-dia/${menuId}/secciones/${seccionId}/platos/${componenteId}`;
+  try {
+    if (estado === 'necesita') {
+      if (p?.no_permite_seccion_id === otraSeccionId) {
+        await api('PATCH', `${base}/no-permite-seccion`, { no_permite_seccion_id: null });
+      }
+      const r = await api('PATCH', `${base}/requiere-seccion`, { requiere_seccion_id: otraSeccionId });
       toast(r.message || 'Plato actualizado');
-      recargarModalConfig();
-    },
-  });
+    } else if (estado === 'no_lleva') {
+      if (p?.requiere_seccion_id === otraSeccionId) {
+        await api('PATCH', `${base}/requiere-seccion`, { requiere_seccion_id: null });
+      }
+      const r = await api('PATCH', `${base}/no-permite-seccion`, { no_permite_seccion_id: otraSeccionId });
+      toast(r.message || 'Plato actualizado');
+    } else {
+      if (p?.requiere_seccion_id === otraSeccionId) {
+        await api('PATCH', `${base}/requiere-seccion`, { requiere_seccion_id: null });
+      }
+      if (p?.no_permite_seccion_id === otraSeccionId) {
+        await api('PATCH', `${base}/no-permite-seccion`, { no_permite_seccion_id: null });
+      }
+      toast('Plato actualizado');
+    }
+    recargarModalConfig();
+  } catch (e) { /* api() ya muestra el toast de error */ }
 }
 
 // Define (o quita, si ya lo era) el plato cuya foto es la portada del menú.

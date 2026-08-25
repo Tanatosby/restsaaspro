@@ -25,9 +25,11 @@ por el usuario:
 | 2026-08-25 (tarde) | `bd2b991..440e9e8` | **ISS-069** — deselección de plato en sección opcional (radio nativo no se podía desmarcar) + tap en la foto ahora selecciona el plato en vez de abrir el zoom. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 
 **Pendiente de deploy:** explicación permanente de Obligatoria/Opcional en Configuración
-(reemplaza el toast de 3s), implementada hoy 2026-08-25 tras `440e9e8`. ISS-059 y ISS-060
-siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
-real:** falta confirmar con un comensal, idealmente uno nuevo, que ISS-069 se siente natural.
+(reemplaza el toast de 3s) + **ISS-070** (control de 3 estados "Compatibilidad de platos",
+reemplaza los modales Exige/No permite sección detrás de "⋯"), ambos implementados hoy
+2026-08-25 tras `440e9e8`. ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8
+del piloto). **Sin verificar todavía en uso real:** ISS-069 (deselección + tap en foto) ni
+ISS-070 (control de compatibilidad) — falta confirmar con la dueña y con un comensal nuevo.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -54,6 +56,36 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-25 (3) — ISS-070: Compatibilidad de platos, Opción A implementada
+
+**Continuación** de la sesión (2) — con el punto 1 (Obligatoria/Opcional) ya resuelto, se
+retomó el punto 2 pausado desde el 24 de agosto: la relación Exige/No permite sección.
+
+**Repaso del mockup:** el usuario probó la Opción A del mockup ["Compatibilidad de
+Platos"](https://claude.ai/code/artifact/76b60128-c12a-4a3b-98f8-98a937a745c3) y no entendió
+la etiqueta del estado neutral "🤷 Como quiera" — se cambió a **"🔓 Puede llevar"** (mismo verbo
+que "No lleva") y se agregó un botón ⓘ que despliega la explicación de los 3 estados al
+tocarlo. El usuario confirmó que así se entiende mejor y eligió la **Opción A**.
+
+**Pregunta abierta que quedó resuelta al implementar:** `requiere_seccion_id` y
+`no_permite_seccion_id` son 2 columnas independientes por plato — un plato puede necesitar una
+sección opcional y no llevar otra distinta a la vez. La solución: un control de 3 estados por
+cada sección opcional del menú relacionada (no solo una) — con 1 sola sección opcional en el
+menú (el caso real hoy) es 1 control por plato, igual que en el mockup.
+
+**Implementado en `owner.html`/`owner.css`** — ver detalle completo en
+`issues/ISS-070-compatibilidad-platos-opcion-a.md`. Reemplaza los 2 modales viejos
+(`abrirRequiereSeccion`/`abrirNoPermiteSeccion`) y los 2 botones detrás de "⋯" por un control
+siempre visible bajo cada plato, con el mismo tooltip ⓘ probado en el mockup. Reusa los 2
+endpoints PATCH existentes, sin cambios de backend.
+
+Sin cambios de backend. 34/34 test suites, 458/458 tests.
+
+**Pendiente:** deploy a producción + verificar con la dueña que el control se entiende sin
+explicación manual.
 
 ---
 
