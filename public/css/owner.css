@@ -816,6 +816,52 @@ tbody tr:hover { background: var(--surface-2); }
 .mc-seg3-opt.on-need.on  { background: var(--success-bg); color: var(--success); border-color: var(--success); }
 .mc-seg3-opt.on-block.on { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
 
+/* Badge "🆕" — funciones nuevas, ver utils.js badgeNuevo() */
+.badge-nuevo {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; min-height: 22px; padding: 0 5px; border-radius: 999px;
+  background: var(--accent); color: #fff; font-size:0.75rem; font-weight: 800;
+  cursor: pointer; flex-shrink: 0; line-height: 1;
+  animation: badge-nuevo-pulso 1.8s ease-in-out infinite;
+}
+@keyframes badge-nuevo-pulso { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .badge-nuevo { animation: none; } }
+
+/* "Qué hay de nuevo" — ver novedades.js */
+.nov-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 0;
+}
+.nov-sheet {
+  width: 100%; max-width: 480px; max-height: 85vh;
+  background: var(--surface); border-radius: 16px 16px 0 0;
+  border: 1px solid var(--border); border-bottom: none;
+  box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.nov-header {
+  padding: 1.1rem 1.5rem 0.8rem; border-bottom: 1px solid var(--border);
+}
+.nov-title {
+  font-family: var(--font-display); font-weight: 700; font-size:1.142857rem; color: var(--text);
+}
+.nov-body { padding: 0.9rem 1.5rem; overflow-y: auto; flex: 1; }
+.nov-bloque + .nov-bloque { margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-2); }
+.nov-fecha {
+  font-size:0.785714rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .03em; margin-bottom: 0.5rem;
+}
+.nov-lista { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.55rem; }
+.nov-lista li { font-size:0.964286rem; line-height: 1.5; color: var(--text); }
+.nov-btn-cerrar {
+  margin: 0.9rem 1.5rem calc(0.9rem + env(safe-area-inset-bottom));
+  min-height: 46px; border-radius: 10px; border: none; cursor: pointer;
+  background: var(--accent); color: #fff; font-size:1.035714rem; font-weight: 700;
+  font-family: inherit;
+}
+
 /* Acciones expandidas del plato (al tocar ⋯) */
 .mc-plato-acts { display: none; gap: 6px; padding: 0 0 10px; }
 .mc-plato-acts.open { display: flex; }

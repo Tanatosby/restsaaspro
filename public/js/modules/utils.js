@@ -54,6 +54,24 @@ function pintarSiCambio(zonaId, elId, itemsParaFirma, html) {
   if (content) content.scrollTop = scrollPrevio;
 }
 
+// ── Badge "🆕" para funciones nuevas ───────────────────────
+// Complementa el modal "Qué hay de nuevo" (novedades.js): para quien no lo
+// lee pero navega directo a la pantalla, marca el control nuevo durante
+// unos días. Tocarlo lo apaga para siempre en este celular/navegador; si
+// nadie lo toca, se apaga solo a los `diasVigencia` días.
+function badgeNuevo(featureKey, fechaIntroduccion, diasVigencia = 14) {
+  try {
+    if (localStorage.getItem(`novedadVista_${featureKey}`)) return '';
+    const introducido = new Date(fechaIntroduccion + 'T00:00:00').getTime();
+    if (Date.now() - introducido > diasVigencia * 86400000) return '';
+  } catch { return ''; }
+  return `<span class="badge-nuevo" onclick="marcarNovedadVista('${featureKey}', this)" title="Nuevo">🆕</span>`;
+}
+function marcarNovedadVista(featureKey, el) {
+  try { localStorage.setItem(`novedadVista_${featureKey}`, '1'); } catch {}
+  el?.remove();
+}
+
 function emptyState(icon, text) {
   return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div></div>`;
 }

@@ -30,8 +30,9 @@ reemplaza los modales Exige/No permite sección detrás de "⋯") + **ISS-071** 
 del bottom-nav, quedaba en el medio y causaba toques por error) + **ISS-072** (cobro en 1 clic
 para todos los métodos de pago) + **ISS-073** (anti-parpadeo extendido a Cocina/Órdenes/
 Reservas) + **ISS-074** (Mesa grande/#orden chico en las 4 pantallas) + **ISS-075** ("Agregar
-manual" simplificado: lista plana sin fotos, mesa/nombre opcionales), todos implementados hoy
-2026-08-25 tras `440e9e8`. ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8
+manual" simplificado: lista plana sin fotos, mesa/nombre opcionales) + **ISS-076** (modal "Qué
+hay de nuevo" + badge "🆕"), todos implementados hoy 2026-08-25 tras `440e9e8`. ISS-059 y
+ISS-060 siguen **diagnosticados, sin implementar** (Día 8
 del piloto). **Sin verificar todavía en uso real:** ISS-069 (deselección + tap en foto) ni
 ISS-070 (control de compatibilidad) — falta confirmar con la dueña y con un comensal nuevo.
 
@@ -60,6 +61,29 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-25 (7) — ISS-076: "Qué hay de nuevo", retomado antes del deploy
+
+**Prompt del usuario:** antes de desplegar, preguntó si a la dueña le va a aparecer algún
+aviso de qué cambió — recordó que el modal "Qué hay de nuevo" se había aprobado temprano en la
+conversación de hoy pero nunca se implementó (quedó pendiente cuando la sesión giró hacia la
+corrección de `kitchen.html` y siguió directo a ISS-070 a ISS-075).
+
+**Implementado:** las 2 piezas acordadas entonces.
+- `novedades.js` (nuevo módulo) — array `NOVEDADES` mantenido a mano, `mostrarNovedadesSiHay()`
+  compara contra `localStorage` y muestra todo lo no visto en un solo modal.
+- `badgeNuevo()` en `utils.js` — puntito "🆕" por control, se apaga a los 14 días o al tocarlo.
+- Disparado tras el login, **solo owner/admin** (las novedades de hoy son de Configuración).
+- Primera entrada cargada con los 6 cambios visibles de hoy (ISS-070 a ISS-075). Badge de
+  prueba aplicado al control de Compatibilidad de platos (ISS-070).
+
+Sin cambios de backend. 34/34 test suites, 458/458 tests.
+
+**Docs:** `issues/ISS-076-que-hay-de-nuevo.md` (nuevo), `issues/ISSUES.md`, este archivo.
+**Pendiente:** deploy a producción (con esto, el mismo deploy ya deja el aviso listo para la
+dueña) + confirmar que el modal aparece la primera vez que abre la app.
 
 ---
 

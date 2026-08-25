@@ -37,6 +37,7 @@
   <script src="/js/modules/reservas.js?v=__BUILD__"></script>
   <script src="/js/modules/reportes.js?v=__BUILD__"></script>
   <script src="/js/modules/pedidos.js?v=__BUILD__"></script>
+  <script src="/js/modules/novedades.js?v=__BUILD__"></script>
   <script src="/js/widgets/photo-editor.js?v=__BUILD__"></script>
   <script src="/js/widgets/form-modal.js?v=__BUILD__"></script>
   <script src="/js/widgets/plato-picker.js?v=__BUILD__"></script>
@@ -1415,6 +1416,11 @@ if (!isOwnerOrAdmin && Array.isArray(session.permisos)) {
   });
 })();
 
+// ── Qué hay de nuevo ──────────────────────────────────────
+// Solo owner/admin: las novedades de hoy son de Configuración, una
+// pantalla que el cocinero no usa — ver novedades.js.
+if (isOwnerOrAdmin) mostrarNovedadesSiHay();
+
 // El scroll vive en .content (overflow-y:auto en owner.css:322), no en window
 // — window.scrollTo() acá no hace nada. Sin este reset, al cambiar de panel la
 // vista se queda donde estaba y el "← Volver" y el stepper del panel nuevo
@@ -1777,6 +1783,7 @@ function mcSeccionAcordeon(m, s) {
           <span class="mc-compat-label">🔗 ${esc(otra.nombre_seccion)}</span>
           <input type="checkbox" class="mc-tip-toggle" id="${tipId}">
           <label for="${tipId}" class="mc-info-btn" aria-label="Qué significa cada opción">ⓘ</label>
+          ${badgeNuevo('compat-platos', '2026-08-25')}
         </div>
         <div class="mc-tip-box">
           <b>🔓 Puede llevar</b> — sin restricción, el cliente elige o no.<br>

@@ -25,6 +25,7 @@ _(vacío)_
 
 | ID | Título | Fecha resolución | Solución |
 |----|--------|-----------------|---------|
+| [ISS-076](ISS-076-que-hay-de-nuevo.md) | Sin forma de avisar cambios a la dueña salvo explicarlos en persona/teléfono | 2026-08-25 | Modal "🎉 Qué hay de nuevo" (una vez al abrir, compara `localStorage`) + badge "🆕" por control nuevo (14 días o hasta tocarlo). Se descartó un tour interactivo por costo de mantenimiento. Solo owner/admin. |
 | [ISS-075](ISS-075-agregar-manual-simplificado.md) | "Agregar manual" no se le pegaba a la dueña — modal-sobre-modal con fotos que no necesitaba | 2026-08-25 | Lista plana de nombres inline (sin PlatoPicker ni fotos) para elegir plato por sección; Mesa/Nombre marcados "(opcional)". Carta ya cumplía, sin cambios. Sin backend. |
 | [ISS-074](ISS-074-mesa-grande-orden-chico.md) | Mesa aparecía chica/gris y #orden grande — al revés de lo que necesita cocina | 2026-08-25 | Invertida la jerarquía en Cola, Cocina, Órdenes y Reservas: Mesa en negrita, #orden chico (para llevar/delivery sin mesa quedan como antes). |
 | [ISS-073](ISS-073-anti-parpadeo-cocina-ordenes-reservas.md) | Cocina/Órdenes/Reservas parpadeaban en cada refresco, mismo bug que ISS-067 nunca portado ahí | 2026-08-25 | Helper compartido `pintarSiCambio()` en `utils.js`, aplicado a los 3 paneles que no lo tenían. La Cola del día no se tocó, ya funcionaba bien. |
