@@ -55,6 +55,33 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-08-24 (4) — Mockup: descubribilidad de "Exige/No permite sección" — sin implementar
+
+**Prompt del usuario:** continuación del punto 4 del Día 10 (Configuración/Usuarios no
+descubribles) — contó que ese día sirvió "ají de gallina" como plato libre y preguntó qué
+alternativa había para que la dueña configure "este plato no lleva proteína" al armar su menú,
+en vez de tener que encontrar la relación "Exige/No permite sección" (ISS-046/ISS-066) escondida
+detrás de "⋯". Pidió un mockup en Artifact antes de elegir.
+
+**Mockup publicado:** ["Compatibilidad de Platos"](https://claude.ai/code/artifact/76b60128-c12a-4a3b-98f8-98a937a745c3)
+— 3 alternativas lado a lado con el mismo look de `owner.html` (mismos tokens de color/tipografía),
+sobre el caso real (Arroces: "ají de gallina" no lleva Proteínas, "arroz con papas" sí). Detalle
+de las 3 opciones y mi lectura de cada una, portado a `backlog.md` (sección "Decisión del usuario
+pendiente" junto al ícono de calendario) para no perderlo.
+
+**Aclaración pedida por el usuario:** si el ejemplo "Arroces/Proteínas" estaba hardcodeado —
+confirmado que no, `secciones_menu.nombre` es texto libre por restaurante y las relaciones son
+por ID, sin nada fijo en código. Quedó una pregunta abierta sin responder: si un menú puede tener
+más de una sección opcional relacionada a la vez (cambia el diseño de las 3 opciones).
+
+**Sin implementar — el usuario pidió pausar y solo documentar** ("ya no pienso, después
+continúo"). Nada de código tocado esta sesión.
+
+**Documentación actualizada:** `backlog.md` (decisión pendiente + mockup + pregunta abierta),
+`pilotos.md` (Día 10, punto 4, caso concreto vinculado al mockup).
+
+---
+
 ## 🎯 Sesión 2026-08-24 (3) — ISS-067, ISS-068: visita en persona, Día 10 del piloto
 
 **Prompt del usuario:** contó 3 confusiones observadas en persona con la dueña del piloto #1

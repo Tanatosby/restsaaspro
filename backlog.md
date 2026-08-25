@@ -60,6 +60,29 @@ medidas en las 3 escalas de letra; falta que elija **A**, **B** o **C**. Recomen
 se cambian los que acompañan una fecha real y los que hacen de ícono de "Reservas"; los 3 que
 van pegados al nombre del cliente (`cocina.js:133`, `pedidos.js:249` y `:515`) **no se tocan**.
 
+**Decisión del usuario pendiente, sin bloquear nada:** cómo hacer descubrible la relación
+"Exige/No permite sección" (ISS-046/ISS-066) al armar el menú del día — hoy vive escondida
+detrás de "⋯" con nombres técnicos, y la dueña no la encuentra sola (ver `pilotos.md` Día 10,
+punto 4, y el hilo de conversación 2026-08-24 sobre "ají de gallina"). Mockup con 3 alternativas
+publicado y revisado, **sin elegir todavía** — el usuario pidió pausarlo para retomar después:
+[mockup "Compatibilidad de Platos"](https://claude.ai/code/artifact/76b60128-c12a-4a3b-98f8-98a937a745c3).
+
+- **A — Control de 3 estados siempre visible** (🤷 Como quiera / ✅ Necesita / 🚫 No lleva) pegado
+  a cada plato, reemplaza los 2 botones de hoy. Recomendada — menos taps y sin vocabulario
+  técnico — pero el cambio de código más grande (toca el render de cada plato del acordeón).
+- **B — Checklist de una sola pasada**, se abre solo al crear/editar la sección opcional
+  relacionada, con todos los platos de la otra sección juntos. Resuelve bien el momento exacto,
+  pero un plato agregado después no dispara el checklist — necesitaría también un acceso manual.
+- **C — Cambio mínimo**: los mismos 2 botones de hoy, solo que visibles siempre en vez de detrás
+  de "⋯". El más barato de construir, pero no resuelve el vocabulario confuso.
+
+**Pregunta abierta, sin responder todavía:** ¿un menú puede tener más de una sección opcional
+relacionada a la vez (ej. Arroces + Proteínas + Salsas, todas opcionales)? Cambia el diseño — en
+A cada plato mostraría un control por cada sección opcional relacionada; en B sería una pantalla
+de checklist por cada una. Confirmado con el usuario: el modelo de datos ya es genérico (nombres
+de sección son texto libre por restaurante, sin nada hardcodeado) — la duda es solo de diseño de
+UI ante múltiples relaciones, no del modelo.
+
 ---
 
 ### T0 · `BUILD` automático — ✅ Hecho y desplegado 2026-08-17

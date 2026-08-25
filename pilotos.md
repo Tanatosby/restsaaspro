@@ -502,6 +502,15 @@ con lista plana + toggle de 1 tap, sin pasar por Configuración —
 **Punto 4 (Usuarios/Configuración no descubribles):** el usuario pidió explícitamente pausarlo
 por ahora — sigue como diagnóstico de campo, sin implementar.
 
+**Caso concreto del mismo punto 4, misma conversación:** el usuario contó que ese día sirvió
+"ají de gallina" como plato libre (no debería poder llevar ninguna proteína) — exactamente el
+caso que ISS-046/ISS-066 ya resuelven a nivel de datos, pero la relación "Exige/No permite
+sección" sigue escondida detrás de "⋯" con nombres técnicos, tal como ya diagnosticaba el punto
+4. Se armó un mockup con 3 alternativas de diseño para hacerla descubrible al armar el menú —
+**sin elegir todavía**, el usuario pidió pausar y solo documentar. Detalle completo, mockup y
+pregunta abierta (¿puede haber más de una sección opcional relacionada a la vez?) en
+`backlog.md`.
+
 ---
 
 ## Plantilla para el próximo piloto
