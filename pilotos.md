@@ -629,6 +629,28 @@ con código, distinto a los casos de descubribilidad anteriores (Configuración/
 Reservas en el bottom-nav): ahí el problema era encontrar algo; acá el problema es que un
 procedimiento de varios pasos, usado con poca frecuencia, no llega a volverse memoria muscular.
 
+**Cuarto tramo del mismo día — de la reflexión a la acción.** El usuario preguntó directamente
+por recomendaciones, contando que el hallazgo lo tenía desanimado ("¿fue un fracaso la app?").
+Se le devolvió que no: reservas, cocina en hora pico, pago con comprobante y pensionistas
+funcionan sin relación con este problema — lo que falla es una pieza específica (pedido por QR
+con pocas mesas) con una causa medida con precisión, el mejor tipo de problema para atacar. La
+primera propuesta (botón "Agregar manual" flotante en toda pantalla) la frenó el usuario a
+tiempo: el botón ya vive en el header de Cola, y ella preguntó "¿dónde voy?" **estando parada
+ahí mismo** — un botón flotante no hubiera resuelto nada, solo agregaba ruido visual sin atacar
+la causa real.
+
+Revisando el modal completo apareció la causa real: "Agregar manual" no era un atajo — abría el
+mismo camino que el cliente (tarjeta de menú → por sección, un chip que abría PlatoPicker, grid
+de fotos, encima del modal → repetir). **Implementado el mismo día** —
+[`ISS-075`](issues/ISS-075-agregar-manual-simplificado.md): lista plana de nombres inline, sin
+modal aparte ni fotos; Mesa/Nombre marcados "(opcional)".
+
+De paso, el usuario pidió que también descontara stock de la carta ("kardex de productos") —
+se investigó antes de prometer algo chico sin haber revisado el schema (`platos_carta` no tiene
+columnas de stock, el gap se repite en 4 rutas, mismo tamaño que el stock del menú del día de
+julio) y se corrigió en el momento con el usuario: decisión de separarlo, anotado en
+`backlog.md` como su propio ítem.
+
 ---
 
 ## Plantilla para el próximo piloto

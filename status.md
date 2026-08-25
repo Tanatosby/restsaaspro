@@ -29,7 +29,8 @@ por el usuario:
 reemplaza los modales Exige/No permite sección detrás de "⋯") + **ISS-071** ("Reservas" oculto
 del bottom-nav, quedaba en el medio y causaba toques por error) + **ISS-072** (cobro en 1 clic
 para todos los métodos de pago) + **ISS-073** (anti-parpadeo extendido a Cocina/Órdenes/
-Reservas) + **ISS-074** (Mesa grande/#orden chico en las 4 pantallas), todos implementados hoy
+Reservas) + **ISS-074** (Mesa grande/#orden chico en las 4 pantallas) + **ISS-075** ("Agregar
+manual" simplificado: lista plana sin fotos, mesa/nombre opcionales), todos implementados hoy
 2026-08-25 tras `440e9e8`. ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8
 del piloto). **Sin verificar todavía en uso real:** ISS-069 (deselección + tap en foto) ni
 ISS-070 (control de compatibilidad) — falta confirmar con la dueña y con un comensal nuevo.
@@ -59,6 +60,43 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-25 (6) — Reflexión de campo + ISS-075: Agregar manual simplificado
+
+**Prompt del usuario:** compartió, sin pedir un fix concreto, cómo usa la app la dueña en la
+práctica: no mira el celular en hora pico (coordina verbal con la cocinera), con pocas mesas
+"la app se vuelve inútil" y mide que pedir por la app toma ~1 minuto vs. 5-10 segundos a boca
+de jarro (6-12x más lento), la cena es 100% manual, y "Agregar manual" no se le pega — solo lo
+registró guiado, nunca solo. Terminó preguntando si la app fue un fracaso y si debería
+abandonarla.
+
+**Respuesta:** no es un fracaso — reservas, cocina en hora pico, pago con comprobante y
+pensionistas funcionan sin relación con este problema. Lo que falla es una pieza específica
+(pedido por QR con pocas mesas) con una causa medida con precisión, no vaga — el mejor tipo de
+problema para atacar. Documentado completo en `pilotos.md`, Día 11 (varias entradas).
+
+**ISS-075 — "Agregar manual" simplificado:** revisando el modal completo se encontró que no
+era un atajo — abría el mismo camino que el cliente (tarjeta de menú → por sección, un chip que
+abría PlatoPicker, grid de fotos, encima del modal → repetir). Se reemplazó por una lista plana
+de nombres inline, sin modal aparte ni fotos (ella ya sabe qué es cada plato); tocar el mismo
+plato lo deselecciona (mismo patrón de ISS-069). Mesa/Nombre marcados "(opcional)" — ya lo eran
+en el backend, faltaba que se viera. La carta no se tocó, ya era una lista plana.
+
+**Nota aparte, corregida en el momento:** al proponer que además descontara stock de la carta
+("kardex de productos"), primero se dijo que era un ajuste chico sin haber revisado el schema —
+equivocado. `platos_carta` no tiene columnas de stock y el patrón se repite en 4 rutas — es del
+mismo tamaño que el stock del menú del día de julio. Corregido con el usuario en el momento;
+decisión: separarlo. Anotado en `backlog.md` como su propio ítem, distinto del kardex de
+ingredientes completo (que ya estaba deliberadamente pausado desde el 19 de agosto).
+
+Sin cambios de backend en ISS-075. 34/34 test suites, 458/458 tests.
+
+**Docs:** `issues/ISS-075-agregar-manual-simplificado.md` (nuevo), `issues/ISSUES.md`,
+`backlog.md` (stock en carta anotado), este archivo, `pilotos.md` (Día 11, varias entradas).
+**Pendiente:** deploy a producción + verificar con la dueña que logra registrar un pedido
+manual sola.
 
 ---
 

@@ -659,57 +659,35 @@ function platoDisponibleManual(p) {
   return !p.agotado && (p.stock_restante === null || p.stock_restante > 0);
 }
 
-// El "chip" reemplaza al <select> de texto plano — vacío: borde punteado
-// "+ Elegir [sección]"; elegido: foto real + nombre + "cambiar". Tocar
-// cualquiera de los dos abre PlatoPicker (grid de fotos), el mismo widget
-// que ya se usa para armar las secciones del menú del día.
+// Lista plana de nombres, sin fotos ni modal aparte — antes cada sección
+// abría PlatoPicker (grid de fotos) encima de este modal, y era el mismo
+// camino largo que ya sabemos que le cuesta a la dueña (ISS-072, día 11 del
+// piloto: no le hace falta ver la foto, ella ya sabe qué es cada plato).
+// Tocar el mismo plato ya elegido lo deselecciona — mismo patrón de
+// ISS-069 en menu.html.
 function renderManualSeccion(menuId, idx, seccion, seleccion) {
   const disponibles = seccion.platos.filter(platoDisponibleManual);
   const actualId = seleccion[seccion.id_seccion] ?? null;
-  const actual = actualId ? disponibles.find(p => p.id_componente === Number(actualId)) : null;
 
-  const thumbVacio = `<span style="width:32px;height:32px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.928571rem;background:var(--surface-2);border:1px solid var(--border);color:var(--muted)">🍽️</span>`;
-  const thumbLleno = actual?.url_foto
-    ? `<img src="${esc(actual.url_foto)}" alt="" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0">`
-    : `<span style="width:32px;height:32px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.928571rem;background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:#fff">🍽️</span>`;
-
-  const chip = actual
-    ? `<button type="button" onclick="abrirPickerManual(${menuId},${idx},${seccion.id_seccion})"
-         style="display:flex;align-items:center;gap:0.55rem;padding:6px 8px;border-radius:9px;border:1.5px solid var(--accent-dim);background:var(--accent-light);min-height:44px;width:100%;text-align:left;cursor:pointer;font-family:inherit">
-        ${thumbLleno}
-        <span style="flex:1;font-size:0.857143rem;font-weight:600;color:var(--text)">${esc(actual.nombre)}</span>
-        <span style="font-size:0.714286rem;font-weight:700;color:var(--accent)">cambiar</span>
-       </button>`
-    : `<button type="button" onclick="abrirPickerManual(${menuId},${idx},${seccion.id_seccion})"
-         style="display:flex;align-items:center;gap:0.55rem;padding:6px 8px;border-radius:9px;border:1.5px dashed var(--border-2);background:var(--surface-2);min-height:44px;width:100%;text-align:left;cursor:pointer;font-family:inherit">
-        ${thumbVacio}
-        <span style="flex:1;font-size:0.857143rem;font-weight:600;color:var(--muted)">+ Elegir ${esc(seccion.nombre_seccion)}</span>
-       </button>`;
+  const opciones = disponibles.length
+    ? disponibles.map(p => {
+        const activo = actualId !== null && Number(actualId) === p.id_componente;
+        return `<button type="button"
+            onclick="elegirPlatoManual(${menuId},${idx},${seccion.id_seccion},${p.id_componente})"
+            style="text-align:left;padding:9px 10px;min-height:44px;border-radius:8px;font-family:inherit;cursor:pointer;font-size:0.892857rem;
+              border:1.5px solid ${activo ? 'var(--accent)' : 'var(--border-2)'};
+              background:${activo ? 'var(--accent-light)' : 'var(--white)'};
+              color:var(--text);font-weight:${activo ? '700' : '500'}">
+            ${activo ? '● ' : ''}${esc(p.nombre)}
+          </button>`;
+      }).join('')
+    : `<span style="font-size:0.8rem;color:var(--muted)">Sin platos disponibles</span>`;
 
   return `
     <label style="display:flex;flex-direction:column;gap:0.3rem">
       <span style="font-size:0.785714rem;color:var(--muted)">${esc(seccion.nombre_seccion)}${seccion.requerido ? ' <span style="color:var(--danger)">*</span>' : ''}</span>
-      ${chip}
+      <div style="display:flex;flex-direction:column;gap:5px">${opciones}</div>
     </label>`;
-}
-
-function abrirPickerManual(menuId, idx, idSeccion) {
-  const menu = _manualMenus.find(m => m.id === menuId);
-  if (!menu) return;
-  const seccion = menu.secciones.find(s => s.id_seccion === idSeccion);
-  if (!seccion) return;
-  const disponibles = seccion.platos.filter(platoDisponibleManual)
-    .map(p => ({ id: p.id_componente, nombre: p.nombre, url_foto: p.url_foto }));
-
-  PlatoPicker.open({
-    platos: disponibles,
-    title:  `Elegir — ${seccion.nombre_seccion}`,
-    onSelect: (plato) => {
-      elegirPlatoManual(menuId, idx, idSeccion, plato.id);
-      const cont = document.getElementById(`manual-secciones-${menuId}`);
-      if (cont) cont.innerHTML = renderManualInstancias(menu);
-    },
-  });
 }
 
 function cambiarCantidadManual(menuId, delta) {
@@ -730,8 +708,15 @@ function cambiarCantidadManual(menuId, delta) {
 function elegirPlatoManual(menuId, idx, idSeccion, idComponente) {
   const seleccion = (_manualInstancias[menuId] || [])[idx];
   if (!seleccion) return;
-  if (idComponente) seleccion[idSeccion] = Number(idComponente);
-  else delete seleccion[idSeccion];
+
+  // Tocar el mismo plato ya elegido lo deselecciona (ISS-069, mismo patrón).
+  if (seleccion[idSeccion] === Number(idComponente)) delete seleccion[idSeccion];
+  else seleccion[idSeccion] = Number(idComponente);
+
+  const menu = _manualMenus.find(m => m.id === menuId);
+  if (!menu) return;
+  const cont = document.getElementById(`manual-secciones-${menuId}`);
+  if (cont) cont.innerHTML = renderManualInstancias(menu);
 }
 
 // ── Carta — mismo patrón de card+stepper que el menú del día, sin picker

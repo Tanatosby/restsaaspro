@@ -542,6 +542,18 @@ Diagnosticado y decidido, sin implementar — ver `ISS-060`.
   pero sí a futuro** — a medida que la base crezca hacia locales de 40-50 mesas, un dueño a esa
   escala ya no puede sostener el control de ingredientes solo por experiencia. No construir
   hasta que la escala real (o un pedido concreto) lo justifique.
+- 🟡 **Stock por plato, extendido a la carta** (anotado 2026-08-25, día 11 del piloto) — hoy
+  `stock_restante`/`descontarStock()` solo existen para `componentes_menu_dia`; `platos_carta`
+  no tiene esas columnas y el descuento nunca se llama para `carta_items` en ninguno de los 4
+  lugares donde se crean órdenes/reservas (`routes/orders.js`, `routes/public.js` ×2,
+  `routes/reservations.js`). Surgió al simplificar "Agregar manual" (ver
+  `issues/ISS-075-agregar-manual-simplificado.md`) — el usuario pidió separarlo por ser del
+  mismo tamaño que el stock del menú del día de julio, no un ajuste chico. Requiere: migración
+  (`stock_inicial`/`stock_restante` en `platos_carta`), extender `utils/stock.js`, UI para
+  fijar stock por plato de carta en Configuración (hoy solo existe para menú del día), y
+  reflejar "Agotado"/"quedan N" en `menu.html`/Agregar manual/Stock rápido para carta también.
+  **Distinto del kardex de ingredientes de arriba** — esto es solo extender el mecanismo simple
+  que ya existe a una segunda tabla, no recetas ni unidades de medida.
 - 🔴 **Boletas y facturas electrónicas (SUNAT).** Distinto a un recibo simple: son documentos
   **fiscales regulados** — requieren RUC, contratar un proveedor certificado (OSE/PSE, ej.
   Nubefact), generar XML firmado bajo el estándar SUNAT, envío + constancia, con costo por
