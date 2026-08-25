@@ -565,6 +565,25 @@ uso real que la dueña ya no entra por error a Reservas, que entiende el control
 compatibilidad sin explicación, que el cobro en 1 clic se siente más simple, y que Cocina ya no
 parpadea.
 
+**Más tarde el mismo día — observación de comportamiento, sin bug ni pedido concreto:** el
+usuario compartió cómo usa la app la dueña realmente en el día a día, sin que hubiera un
+problema puntual que arreglar. Dos aprendizajes:
+
+1. **En hora pico no mira el celular.** La coordinación real es verbal con la cocinera ("mesa
+   tal para tal persona") — recién vuelve a la app cuando termina de entregar y está libre. Con
+   pocas mesas la app "se vuelve inútil": grita el pedido directo a cocina y entrega, sin pasar
+   por el sistema. Cita: *"más fácil, porque no hay mucha gente."* Lectura: no es que la Cola/
+   Cocina en vivo esté fallando, es que en un local chico de 2 personas la coordinación verbal
+   es más rápida que cualquier UI — probablemente esperable, no algo para "arreglar". Queda
+   abierta la pregunta de si lo no registrado en el momento se termina poniendo al día después
+   (el sistema sigue sirviendo como registro) o queda desincronizado (ahí sí sería un problema
+   real de confiabilidad de datos en reportes/ganancias) — sin responder todavía.
+
+2. **Platos vendidos por día — tercera vez que lo pide** (Día 7, reforzado el mismo Día 7, y de
+   nuevo hoy). Sigue sacándolo 100% manual: hace que las señoras anoten con palitos en el
+   cuaderno cuántos platos de cada cosa venden. Ya diagnosticado y priorizado en `backlog.md`
+   ("Platos vendidos hoy", lista automática sin selects) — sin implementar todavía.
+
 ---
 
 ## Plantilla para el próximo piloto
