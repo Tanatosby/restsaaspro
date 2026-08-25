@@ -24,7 +24,8 @@ por el usuario:
 | 2026-08-25 | `c269fb1..bd2b991` | **ISS-066** (plato bloquea sección opcional), **ISS-067** (Cola: reservas sin hora enterradas + parpadeo) e **ISS-068** (Stock rápido desde Cola) — día 10 del piloto (visita en persona), más el mockup de descubribilidad (solo doc). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 | 2026-08-25 (tarde) | `bd2b991..440e9e8` | **ISS-069** — deselección de plato en sección opcional (radio nativo no se podía desmarcar) + tap en la foto ahora selecciona el plato en vez de abrir el zoom. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 
-**Sin pendientes de deploy** — producción está al día con `main` (`440e9e8`). ISS-059 y ISS-060
+**Pendiente de deploy:** explicación permanente de Obligatoria/Opcional en Configuración
+(reemplaza el toast de 3s), implementada hoy 2026-08-25 tras `440e9e8`. ISS-059 y ISS-060
 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** falta confirmar con un comensal, idealmente uno nuevo, que ISS-069 se siente natural.
 
@@ -53,6 +54,36 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-25 (2) — Explicación permanente de Obligatoria/Opcional
+
+**Prompt del usuario:** contó que a la dueña le resulta confuso el tema "obligatorio vs
+opcional" y las condiciones entre platos (Exige/No permite sección) — preguntó si se podía
+explicar con UX o ya era tema de explicación manual.
+
+**Análisis:** son dos confusiones distintas. (1) Obligatoria/Opcional es un toggle simple
+(`owner.html:1790`) con palabras ya claras, pero el único feedback al tocarlo es un `toast()`
+que se esfuma a los 3s (`utils.js:25`) sin explicar la consecuencia para el cliente — si la
+dueña configuró el menú hace días, no queda nada en pantalla que se lo recuerde. (2)
+Exige/No permite sección (ISS-046/ISS-066) es la relación entre dos elementos que ya estaba
+diagnosticada y pausada el 24 de agosto (mockup "Compatibilidad de Platos" en `backlog.md`) —
+esa sigue pendiente de decisión, es más difícil de resolver solo con una etiqueta porque es
+lógica relacional, no un estado.
+
+**Implementado (solo el punto 1, bajo riesgo):** línea de ayuda permanente debajo del botón
+Obligatoria/Opcional en cada sección del acordeón de Configuración — ya no depende de pillar
+el toast a tiempo. Texto según el estado: *"El cliente debe elegir algo aquí para poder pedir
+este menú"* (obligatoria) / *"El cliente puede saltar esta sección sin elegir nada"* (opcional).
+
+- `public/owner.html` — nuevo `<div class="mc-sec-hint-req">` en el pie de cada sección.
+- `public/css/owner.css` — clase `.mc-sec-hint-req` (texto muted, 14px+, sin nuevo touch target).
+
+Sin cambios de backend. 34/34 test suites, 458/458 tests.
+
+**Pendiente:** el punto 2 (Exige/No permite sección) queda abierto para retomar la
+conversación pausada — decidir entre las opciones A/B/C del mockup. Deploy de este cambio.
 
 ---
 

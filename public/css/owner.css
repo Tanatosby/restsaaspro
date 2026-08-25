@@ -801,6 +801,9 @@ tbody tr:hover { background: var(--surface-2); }
   font-size:0.892857rem; cursor: pointer; color: var(--muted);
 }
 .mc-sec-foot .req-on { color: var(--primary); border-color: var(--primary); font-weight: 700; }
+/* Explicación permanente de obligatoria/opcional — antes solo se avisaba con
+   un toast que se esfumaba a los 3s (ver ISS-069, conversación 2026-08-25) */
+.mc-sec-hint-req { font-size:0.928571rem; color: var(--muted); margin-top: 6px; line-height: 1.35; }
 
 /* ＋ Agregar sección (acción rara, al final de la lista) */
 .mc-add-sec {

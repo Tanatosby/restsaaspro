@@ -1790,6 +1790,9 @@ function mcSeccionAcordeon(m, s) {
           <button class="${s.requerido ? 'req-on' : ''}" onclick="toggleRequeridoSeccion(${m.id},${s.id_seccion},${s.requerido?1:0})">${s.requerido ? '✅ Obligatoria' : '⏭ Opcional'}</button>
           <button onclick="eliminarSeccionDeMenu(${m.id},${s.id_seccion},'${esc(s.nombre_seccion)}')">Quitar sección</button>
         </div>
+        <div class="mc-sec-hint-req">${s.requerido
+          ? 'El cliente debe elegir algo aquí para poder pedir este menú.'
+          : 'El cliente puede saltar esta sección sin elegir nada.'}</div>
       </div>
     </div>`;
 }
