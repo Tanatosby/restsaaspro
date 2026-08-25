@@ -610,6 +610,25 @@ más lento que no registrar nada? Cambia la lectura — lo primero es un problem
 descubribilidad (mismo patrón que Configuración/Usuarios), lo segundo pediría que "Agregar
 manual" sea todavía más rápido para competir con "no anotar nada".
 
+**Respuesta del usuario, misma conversación — no es descubribilidad, es retención.** Las
+únicas veces que registró un pedido manual fueron con el usuario al lado guiándola paso a paso
+("¿y ahora? ah ya, el nombre no? ah ya, ¿y cómo lo coloco?"). Hoy, sin guía, **no registró
+ningún pedido manual en todo el día** — llegó a preguntar dónde queda la pantalla estando
+parada ahí mismo a punto de tomar el pedido, y volvió a preguntar cómo se hace 30 minutos
+después de que se lo explicaran. No es que no entienda los pasos — los sigue bien cuando la
+guían — es que **el procedimiento no se le queda entre usos**, probablemente por lo poco
+frecuente que lo usa. Confirmó además que le sigue pareciendo lento.
+
+Esto responde también la pregunta 1 de arriba: si hoy no registró ningún pedido manual, los
+pedidos verbales **quedan desincronizados**, no se ponen al día después — el subconteo de
+"Menús de hoy" (y cualquier reporte futuro que dependa de esos datos) es consistente, no solo
+aproximado.
+
+**Sin proponer ningún cambio todavía** — es un hallazgo para sentar bien antes de reaccionar
+con código, distinto a los casos de descubribilidad anteriores (Configuración/Usuarios,
+Reservas en el bottom-nav): ahí el problema era encontrar algo; acá el problema es que un
+procedimiento de varios pasos, usado con poca frecuencia, no llega a volverse memoria muscular.
+
 ---
 
 ## Plantilla para el próximo piloto
