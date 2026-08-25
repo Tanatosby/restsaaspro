@@ -28,17 +28,22 @@ Reglas que aplican a TODO el código frontend:
 
 ## Arquitectura de módulos JS
 
-`owner.html` es el orquestador. La lógica vive en `public/js/modules/`:
+`owner.html` es el **único** orquestador — todos los roles (owner, admin, mozo, cocinero)
+entran por ahí, con paneles filtrados según permisos (ver `usuarios.js` / `PERMISOS_DEF`). Un
+cocinero sin permisos delegados ve solo los paneles Cocina + Cola del día. `kitchen.html` **no
+existe como vista propia desde 2026-05-23** (ISS-007) — el archivo sigue en disco solo como
+stub de redirect a `/owner.html` (preserva bookmarks viejos), no importa nada.
+
+La lógica vive en `public/js/modules/`:
 - `utils.js` — api(), toast(), esc(), fDate(), fDT() — compartido
 - `ordenes.js` — lógica de órdenes
 - `reservas.js` — lógica de reservas
 - `pedidos.js` — vista unificada (cola del día)
 - `mesas.js` — plano de mesas
-- `cocina.js` — cola de cocina (compartido con kitchen.html)
+- `cocina.js` — cola de cocina, panel "Cocina" dentro de `owner.html`
 - `reportes.js` — métricas y gráficas
 - `config.js` — configuración del restaurante
 - `usuarios.js` — gestión de usuarios
-`kitchen.html` importa solo `cocina.js` — vista minimalista para cocinero.
 
 ## Otras configuraciones
 
