@@ -21,11 +21,10 @@ por el usuario:
 | 2026-08-21 | `e35eb4a..9ea9a51` | **ISS-055** (regresar de Listos a Cocina), **ISS-056** (instrucción para volver de Yape/Plin), **ISS-057** (letra ajustable en la carta del cliente) e **ISS-058** (Historial de Órdenes sin foto de comprobante) — día 7 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online. |
 | 2026-08-21 (tarde) | `9ea9a51..1b38b57` | **ISS-056 (rediseño)** — la nota de "cómo volver de Yape/Plin" pasó de instrucciones de gestos del celular a 3 pasos numerados con emoji. `git pull` fast-forward, `pm2 restart`, `/health` → `{"status":"ok"}`. |
 | 2026-08-24 | `1b38b57..c269fb1` | **ISS-061** (status "En preparación" más claro), **ISS-062** (botón "Listo" en zona Cocina), **ISS-063** (Reservas: carta antes que el formulario), **ISS-064** ("+1 mismo menú") e **ISS-065** (reserva sin hora ya no se bloquea) — día 9 y día 10 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `/health` → `{"status":"ok"}`. |
+| 2026-08-25 | `c269fb1..bd2b991` | **ISS-066** (plato bloquea sección opcional), **ISS-067** (Cola: reservas sin hora enterradas + parpadeo) e **ISS-068** (Stock rápido desde Cola) — día 10 del piloto (visita en persona), más el mockup de descubribilidad (solo doc). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 
-**Pendiente de deploy:** **ISS-066** (plato bloquea sección opcional), **ISS-067** (Cola: reservas
-sin hora enterradas + parpadeo) e **ISS-068** (Stock rápido desde Cola), implementados hoy
-2026-08-24 tras `c269fb1`. ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8
-del piloto).
+**Sin pendientes de deploy** — producción está al día con `main` (`bd2b991`). ISS-059 y ISS-060
+siguen **diagnosticados, sin implementar** (Día 8 del piloto).
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
