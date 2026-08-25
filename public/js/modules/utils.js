@@ -33,6 +33,27 @@ const fDT      = d => d ? new Date(toUTC(d)).toLocaleString('es-PE', { day:'nume
 const badgeEst = e => `<span class="badge badge-${e}">${e}</span>`;
 const setErr   = (id, msg) => { const el = document.getElementById(id); el.textContent = msg; el.classList.toggle('show', !!msg); };
 
+// ── Anti-parpadeo en polling (ISS-072) ────────────────────
+// La Cola del día ya tenía esto desde ISS-067 (implementado local a
+// pedidos.js). Cocina, Órdenes activas y Reservas activas repintaban todo
+// desde "Cargando…" en cada poll aunque nada hubiera cambiado — cada
+// refresco se sentía mucho más seguido de lo que realmente era. Un solo
+// tap toca el DOM solo si los datos son distintos a lo último pintado, y
+// preserva el scroll de `.content` al repintar.
+const _ultimaFirmaPorZona = {};
+function pintarSiCambio(zonaId, elId, itemsParaFirma, html) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const firma = JSON.stringify(itemsParaFirma);
+  if (_ultimaFirmaPorZona[zonaId] === firma) return;
+  _ultimaFirmaPorZona[zonaId] = firma;
+
+  const content = document.querySelector('.content');
+  const scrollPrevio = content ? content.scrollTop : 0;
+  el.innerHTML = html;
+  if (content) content.scrollTop = scrollPrevio;
+}
+
 function emptyState(icon, text) {
   return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div></div>`;
 }

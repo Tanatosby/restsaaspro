@@ -27,7 +27,9 @@ por el usuario:
 **Pendiente de deploy:** explicación permanente de Obligatoria/Opcional en Configuración
 (reemplaza el toast de 3s) + **ISS-070** (control de 3 estados "Compatibilidad de platos",
 reemplaza los modales Exige/No permite sección detrás de "⋯") + **ISS-071** ("Reservas" oculto
-del bottom-nav, quedaba en el medio y causaba toques por error), los tres implementados hoy
+del bottom-nav, quedaba en el medio y causaba toques por error) + **ISS-072** (cobro en 1 clic
+para todos los métodos de pago) + **ISS-073** (anti-parpadeo extendido a Cocina/Órdenes/
+Reservas) + **ISS-074** (Mesa grande/#orden chico en las 4 pantallas), todos implementados hoy
 2026-08-25 tras `440e9e8`. ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8
 del piloto). **Sin verificar todavía en uso real:** ISS-069 (deselección + tap en foto) ni
 ISS-070 (control de compatibilidad) — falta confirmar con la dueña y con un comensal nuevo.
@@ -57,6 +59,49 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-25 (5) — ISS-072/073/074: cobro en 1 clic, anti-parpadeo, mesa grande
+
+**Prompt del usuario:** contó una conversación del mismo día con la dueña, dos temas:
+1. *"No entiendo la función del cobro, ¿por qué son dos clics con yape? y solo uno cuando paga
+en efectivo?... me confundo cuando en una mesa uno es en efectivo y 2 en yape."*
+2. *"Cocina tiene un refresco de 20 segundos, a todas las zonas debes hacerle lo mismo que le
+hiciste a cola... debería aparecer el número de la mesa grande, aparece el # de orden grande y
+el número de mesa pequeño, debería ser al revés."*
+
+**Cobro (ISS-072):** el paso extra "Confirmar pago" para Yape/Plin era un candado de
+verificación a propósito (`utils/verificacionPago.js`), no un accidente. Antes de tocarlo
+pregunté si eliminarlo era realmente lo que quería, dado el riesgo de sacar una protección
+contra fraude. El usuario explicó el detalle real de uso que cambió la lectura: la dueña **ya
+revisa la foto hasta 3 veces** en el camino de un pedido y aun así verifica por fuera en la app
+real de Yape — el paso no le daba la confianza para la que estaba pensado. Además, comensales
+evaden el paso completo eligiendo "efectivo" y pagando por Yape en persona, y hubo 2 casos de
+comprobantes por un monto menor al debido que la app nunca avisó. Con esos hechos, la decisión
+de la dueña fue explícita: *"redúcelo a un clic."* Implementado — un solo botón hace las 2
+llamadas que antes requerían 2 taps, en los 4 lugares con el mismo patrón
+(`reservas.js`/`ordenes.js`/`pedidos.js` x2). **Sin cambios de backend** — el candado del
+servidor sigue vigente, solo que ahora un mismo tap lo satisface. Detalle en
+`issues/ISS-072-cobro-en-un-clic.md`, incluye 2 ideas sin implementar (aviso de monto distinto
+en el comprobante, corrección de método de pago post-creación).
+
+**Anti-parpadeo (ISS-073):** Cocina refresca cada 30s (no 20 como se percibía) y, junto con
+Órdenes activas y Reservas activas (ambas cada 20s), tenía el mismo parpadeo que ISS-067 ya
+había arreglado — pero solo en la Cola del día, nunca portado a estos 3 paneles. Se extrajo el
+mecanismo a un helper compartido `pintarSiCambio()` en `utils.js` y se aplicó a los 3 — la
+Cola del día no se tocó, ya funcionaba bien.
+
+**Mesa grande / #orden chico (ISS-074):** invertida la jerarquía visual en las 4 pantallas que
+comparten el patrón (Cola, Cocina, Órdenes, Reservas) — Mesa en negrita, #orden chico y gris.
+Para llevar/delivery sin mesa quedan como antes (el #orden es lo único que identifica el
+pedido ahí).
+
+Sin cambios de backend en ninguno de los 3. 34/34 test suites, 458/458 tests.
+
+**Docs:** `issues/ISS-072-cobro-en-un-clic.md`, `issues/ISS-073-anti-parpadeo-cocina-ordenes-reservas.md`,
+`issues/ISS-074-mesa-grande-orden-chico.md` (nuevos), `issues/ISSUES.md`, este archivo,
+`pilotos.md` (Día 11). **Pendiente:** deploy a producción + verificar en uso real los 3.
 
 ---
 

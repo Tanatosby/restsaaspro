@@ -25,7 +25,6 @@ function badgeManual(x) {
 
 async function loadOrdenesActivas() {
   const el = document.getElementById('list-ordenes-activas');
-  el.innerHTML = '<div class="loading-text">Cargando órdenes activas…</div>';
   try {
     const ordenes = await api('GET', '/api/orders/activas');
     detectNuevasOrdenes(ordenes);
@@ -33,8 +32,10 @@ async function loadOrdenesActivas() {
     badge.textContent = ordenes.length;
     badge.classList.toggle('show', ordenes.length > 0);
 
-    if (!ordenes.length) { el.innerHTML = emptyState('✅','¡Todo al día! No hay órdenes activas'); return; }
-    el.innerHTML = ordenes.map(o => renderOrdenCard(o, true)).join('');
+    const html = ordenes.length
+      ? ordenes.map(o => renderOrdenCard(o, true)).join('')
+      : emptyState('✅','¡Todo al día! No hay órdenes activas');
+    pintarSiCambio('ordenes-activas', 'list-ordenes-activas', ordenes, html);
   } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
 }
 
@@ -96,12 +97,12 @@ function renderOrdenCard(o, withActions) {
   const comprobanteHtml = comprobanteThumb(o);
 
   const paraLlevar = o.modalidad === 'para_llevar';
-  // Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante
-  // antes de poder cobrar/completar (el backend también lo bloquea).
+  // Cobro en 1 clic (decisión del usuario, 2026-08-25) — ver reservas.js para
+  // el porqué completo: revisar el comprobante en varios pasos no le daba a
+  // la dueña la seguridad para la que estaba pensado, solo fricción.
   const requiereConfirmar = ['yape', 'plin'].includes(o.metodo_pago) && o.estado_pago !== 'confirmado';
-  const btnCobrar = (label, flag) => requiereConfirmar
-    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoOrden(${o.id})">✓ Confirmar pago</button>`
-    : `<button class="btn btn-success btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'${flag}')">${label}</button>`;
+  const btnCobrar = (label, flag) =>
+    `<button class="btn btn-success btn-sm" onclick="cobrarOrden(${o.id},${requiereConfirmar ? 1 : 0},'${flag}')">${label}</button>`;
   const actions = withActions ? `
     <div class="order-actions">
       ${o.es_inicial   ? `<button class="btn btn-primary btn-sm" onclick="cambiarEstatusOrdenFlag(${o.id},'es_en_cocina')">→ Preparando</button>` : ''}
@@ -112,12 +113,18 @@ function renderOrdenCard(o, withActions) {
       <button class="btn btn-danger" onclick="cambiarEstatusOrdenFlag(${o.id},'es_cancelado')">Cancelar</button>
     </div>` : '';
 
+  // Mesa grande / #orden chico (día 11 del piloto) — mismo criterio que
+  // cocina.js: para llevar/delivery no tienen mesa, ahí el #orden es lo
+  // único que identifica el pedido.
+  const tituloHtml = o.mesa
+    ? `<strong>Mesa ${o.mesa}</strong> <span style="font-size:0.857143rem;color:var(--muted)">#${o.numero_dia ?? o.id}</span>`
+    : `<strong>#${o.numero_dia ?? o.id}</strong>`;
+
   return `
     <div class="order-card" id="orden-${o.id}">
       <div class="order-card-header">
         <div>
-          <strong>#${o.numero_dia ?? o.id}</strong>
-          ${o.mesa ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${o.mesa}</span>` : ''}
+          ${tituloHtml}
           ${o.nombre_cliente ? `<span style="font-size:0.857143rem;color:var(--muted)"> · ${esc(o.nombre_cliente)}</span>` : ''}
           ${badgeModalidad(o.modalidad)}
         </div>
@@ -141,10 +148,15 @@ async function cambiarEstatusOrden(id, estatus) {
   } catch(e) { toast(e.message, 'err'); }
 }
 
-async function confirmarPagoOrden(id) {
+// Un solo tap: si hace falta, confirma el pago digital y de una vez aplica
+// el flag final (es_pagado) — el backend sigue exigiendo el mismo orden
+// (confirmar-pago antes de es_pagado), solo que ahora lo satisface esta
+// misma llamada.
+async function cobrarOrden(id, requiereConfirmar, flag) {
   try {
-    await api('PATCH', `/api/orders/${id}/confirmar-pago`);
-    toast(`Pago de la orden #${id} confirmado ✓`);
+    if (requiereConfirmar) await api('PATCH', `/api/orders/${id}/confirmar-pago`);
+    await api('PATCH', `/api/orders/${id}/estatus`, { flag });
+    toast('Orden actualizada');
     loadOrdenesActivas();
   } catch(e) { toast(e.message, 'err'); }
 }

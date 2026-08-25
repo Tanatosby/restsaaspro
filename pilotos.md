@@ -110,7 +110,7 @@ no reemplaza la de julio — es la evolución.
 | Día 8 | 2026-08-21 (viernes) | Contado por el usuario el mismo día: la cocinera canceló un pedido por error y la dueña preguntó si se puede "devolver" para que cuente como venta (→ ISS-059); y pregunta de la dueña sobre cómo los pensionistas descargan/acceden a la app, que llevó a decidir un acceso desde `menu.html` (→ ISS-060). Detalle abajo. |
 | Día 9 | 2026-08-22 (sábado) | Contado por el usuario el 2026-08-24: status "En preparación" poco claro para el cliente (→ ISS-061), zona Cocina de la Cola del día sin botón "Listo" (→ ISS-062), pedido de reordenar Reservas para mostrar la carta antes que el formulario (→ ISS-063) y de poder repetir un mismo menú sin rearmarlo desde cero (→ ISS-064). Mockups aprobados antes de codear; los 4 implementados y verificados el mismo 2026-08-24. |
 | Día 10 | 2026-08-23 (domingo) | Contado por el usuario el 2026-08-24, junto con el Día 9: un comensal no pudo reservar por no poner hora de llegada — la reserva se bloqueaba validando el horario de "ahora" en vez de simplemente dejarla pasar (→ ISS-065). El usuario lo asumió como error de diseño propio y pidió la corrección en el momento; implementado y verificado el mismo 2026-08-24. Queda pendiente (no implementado) agregar un tooltip junto al campo explicando que la hora es opcional/informativa. |
-| Día 11 | 2026-08-25 (martes) | Contado por el usuario, sin visita en persona: la dueña sigue confundiendo "Cola" con "Reservas" — retoma del punto 1 del Día 10 (visita en persona), esta vez la causa real es que "Reservas" queda en la posición del medio del bottom-nav y lo toca por error yendo hacia "Cola" (→ ISS-071). También se cerró la decisión pendiente de Compatibilidad de platos (Opción A, → ISS-070) y se agregó explicación permanente de Obligatoria/Opcional. Detalle abajo. |
+| Día 11 | 2026-08-25 (martes) | Contado por el usuario, sin visita en persona: la dueña sigue confundiendo "Cola" con "Reservas" — retoma del punto 1 del Día 10 (visita en persona), esta vez la causa real es que "Reservas" queda en la posición del medio del bottom-nav y lo toca por error yendo hacia "Cola" (→ ISS-071). También se cerró la decisión pendiente de Compatibilidad de platos (Opción A, → ISS-070) y se agregó explicación permanente de Obligatoria/Opcional. Más tarde el mismo día: confusión con el cobro Yape/Plin en 2 clics vs. 1 en efectivo (→ ISS-072, reducido a 1 clic) y pedido de aplicar el anti-parpadeo de Cola a Cocina/Órdenes/Reservas (→ ISS-073) + mostrar la mesa grande en vez del # de orden (→ ISS-074). Detalle abajo. |
 
 > **El domingo 16 de agosto no lleva número de "Día" en esta tabla:** no hay reporte de uso ni de
 > pausa para esa fecha — a diferencia del sábado 15, que el usuario confirmó explícitamente como
@@ -535,9 +535,35 @@ cerró la decisión pausada sobre la relación Exige/No permite sección —
 3 estados siempre visible por plato. También se agregó una explicación permanente (antes solo
 un toast de 3s) de qué significa Obligatoria/Opcional en cada sección.
 
-**Sin verificar en uso real:** ISS-070 e ISS-071, recién desplegados hoy — falta confirmar que
-la dueña ya no entra por error a Reservas y que entiende el nuevo control de compatibilidad sin
-que se lo expliques.
+**Más tarde el mismo día — cobro y cocina:** el usuario contó otra conversación con la dueña,
+dos temas nuevos.
+
+*Cobro en 2 clics con Yape/Plin:* *"No entiendo la función del cobro, ¿por qué son dos clics
+con yape? y solo uno cuando paga en efectivo?... me confundo cuando en una mesa uno es en
+efectivo y 2 en yape, no lo entiendo."* El paso extra era un candado de verificación real
+(revisar el comprobante antes de cobrar), no un descuido — pero el usuario explicó por qué en
+la práctica no cumplía su función: la dueña **ya revisa la foto hasta 3 veces** en el camino de
+un pedido y aun así termina verificando por fuera en la app real de Yape ("voy a verificar a
+yape para verlo", anota el nombre en su cuaderno); comensales evaden el paso completo
+declarando "efectivo" y pagando por Yape en persona; y hubo 2 comprobantes por un monto menor
+al debido (S/10 en vez de S/11) que la app nunca avisó. Explicado el porqué del paso ("le digo:
+'Validación'"), la respuesta de la dueña fue *"no no, no entiendo, redúcelo a un clic"* — una
+decisión de negocio informada, no una simplificación sin consultar. **Implementado el mismo
+día** — [`ISS-072`](issues/ISS-072-cobro-en-un-clic.md).
+
+*Cocina — refresco y jerarquía visual:* *"Cocina tiene un refresco de 20 segundos, a todas las
+zonas debes hacerle lo mismo que le hiciste a cola... debería aparecer el número de la mesa
+grande, aparece el # de orden grande y el número de mesa pequeño, debería ser al revés."*
+Confirmado: Cocina refresca cada 30s (no 20) con el mismo parpadeo que ISS-067 ya había
+arreglado en Cola, pero nunca portado ahí — tampoco a Órdenes activas ni Reservas activas.
+**Implementado el mismo día** — [`ISS-073`](issues/ISS-073-anti-parpadeo-cocina-ordenes-reservas.md)
+(anti-parpadeo en los 3 paneles) y [`ISS-074`](issues/ISS-074-mesa-grande-orden-chico.md)
+(Mesa en negrita, #orden chico, en las 4 pantallas).
+
+**Sin verificar en uso real:** ISS-070 a ISS-074, todos implementados hoy — falta confirmar en
+uso real que la dueña ya no entra por error a Reservas, que entiende el control de
+compatibilidad sin explicación, que el cobro en 1 clic se siente más simple, y que Cocina ya no
+parpadea.
 
 ---
 

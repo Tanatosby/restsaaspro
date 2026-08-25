@@ -236,7 +236,13 @@ function renderKanbanCard(item, zona) {
 
 function renderKanbanOrden(o, zona) {
   const minutos    = Math.floor((Date.now() - new Date(toUTC(o.created_at)).getTime()) / 60000);
-  const mesaTag    = o.mesa ? `· Mesa ${o.mesa} ` : '';
+  // Mesa grande / #orden chico (día 11 del piloto) — el cocinero/mozo actúa
+  // por mesa, no por número de orden. Para llevar/delivery no tienen mesa:
+  // ahí el #orden vuelve a ser lo único que identifica el pedido.
+  const numTag     = `#${o.numero_dia ?? o.id}`;
+  const tituloHtml = o.mesa
+    ? `🧾 <strong>Mesa ${o.mesa}</strong> <span class="cola-meta">${numTag}</span>`
+    : `🧾 <strong>${numTag}</strong>`;
   const items      = renderItemLines(o.carta_items, o.menu_items, o.modalidad);
   const btnAccion  = btnOrden(o, zona);
   // Cancelar: siempre disponible en cualquier etapa (mismo criterio que el panel de Órdenes).
@@ -248,8 +254,8 @@ function renderKanbanOrden(o, zona) {
     <div class="cola-card cola-orden">
       <div class="cola-card-header">
         <div class="cola-card-title">
-          🧾 <strong>#${o.numero_dia ?? o.id}</strong>
-          <span class="cola-meta">${mesaTag}${o.nombre_cliente ? esc(o.nombre_cliente) : ''}</span>
+          ${tituloHtml}
+          <span class="cola-meta">${o.nombre_cliente ? esc(o.nombre_cliente) : ''}</span>
           ${modBadge}
         </div>
         <span class="cola-tiempo">${minutos} min</span>
@@ -262,7 +268,9 @@ function renderKanbanOrden(o, zona) {
 
 function renderKanbanReserva(r, zona) {
   const horaTag    = r.hora_llegada ? `🕐 ${r.hora_llegada} ` : '';
-  const mesaTag    = r.mesa ? `Mesa ${r.mesa} ` : '';
+  // Mesa grande (día 11 del piloto) — sale del rincón chico/gris y pasa al
+  // título, igual que en renderKanbanOrden().
+  const mesaHtml   = r.mesa ? `<strong>Mesa ${r.mesa}</strong>` : '';
   const codigo     = r.codigo ? `<span class="cola-codigo">🔑 ${r.codigo}</span>` : '';
   const items      = renderItemLines(r.carta_items, r.menu_items, r.modalidad);
   const btnAccion  = btnReserva(r, zona);
@@ -279,10 +287,11 @@ function renderKanbanReserva(r, zona) {
       <div class="cola-card-header">
         <div class="cola-card-title">
           📅 <strong>${esc(r.nombre_cliente || '—')}</strong>
+          ${mesaHtml}
           ${codigo}
           ${modBadge}
         </div>
-        <span class="cola-tiempo">${horaTag}${mesaTag}</span>
+        <span class="cola-tiempo">${horaTag}</span>
       </div>
       ${items ? `<div class="cola-items">${items}</div>` : ''}
       ${pagoHtml}
@@ -312,9 +321,7 @@ function btnRegresarACocinaReserva(r) {
 
 function btnOrden(o, zona) {
   const paraLlevar = o.modalidad === 'para_llevar';
-  const btnCobrar = requiereConfirmarPago(o)
-    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoColaOrden(${o.id})">✓ Confirmar pago</button>`
-    : `<button class="btn btn-success btn-sm" onclick="accionRapidaOrden(${o.id},'es_pagado')">💰 Cobrar</button>`;
+  const btnCobrar = `<button class="btn btn-success btn-sm" onclick="cobrarColaOrden(${o.id})">💰 Cobrar</button>`;
   if (zona === 'pendientes' && o.es_inicial)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_en_cocina')">🍳 A cocina</button>`;
   // Día 9 del piloto: en la zona Cocina solo se podía cancelar, no marcar listo.
@@ -333,9 +340,7 @@ function btnOrden(o, zona) {
 
 function btnReserva(r, zona) {
   const sinMesa = r.modalidad === 'para_llevar' || r.modalidad === 'delivery';
-  const btnCompletar = requiereConfirmarPago(r)
-    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoColaReserva(${r.id})">✓ Confirmar pago</button>`
-    : `<button class="btn btn-success btn-sm" onclick="accionRapidaReserva(${r.id},'es_full')">💰 Completar</button>`;
+  const btnCompletar = `<button class="btn btn-success btn-sm" onclick="cobrarColaReserva(${r.id})">💰 Completar</button>`;
   if (zona === 'pendientes' && r.es_confirmada)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_en_cocina')">🍳 A cocina</button>`;
   if (zona === 'pendientes' && r.es_inicial)
@@ -413,56 +418,34 @@ async function accionRapidaReserva(id, flag) {
   });
 }
 
-// ── Confirmar pago desde la Cola ──────────────────────────
-// No se reutilizan confirmarPagoOrden()/confirmarPagoReserva() de
-// ordenes.js/reservas.js porque esas refrescan sus propios paneles
-// (loadOrdenesActivas/loadReservasActivas): tocadas desde la Cola, el pago se
-// confirmaba en el servidor pero la card no se actualizaba hasta el siguiente
-// poll, y parecía que el botón no había hecho nada.
-async function confirmarPagoEnCola(clave, item, url, okMsg) {
-  if (_enVuelo.has(clave)) return;
-  _enVuelo.add(clave);
-  _cargaSeq++;
-
-  const previo = item ? { ...item } : null;
-  if (item) {
-    // Confirmar el pago cambia el botón a "Cobrar"/"Completar"
-    item.estado_pago = 'confirmado';
-    renderColaDesdeCache();
+// ── Cobro en 1 clic desde la Cola ──────────────────────────
+// Decisión del usuario, 2026-08-25: revisar el comprobante en 2 pasos
+// separados ("Confirmar pago" y luego "Cobrar"/"Completar") no le daba a la
+// dueña la seguridad para la que estaba pensado — igual termina verificando
+// por fuera en la app de Yape — y sí le sumaba un punto más donde perder el
+// hilo en plena hora pico. Ahora un solo tap hace las 2 llamadas que hacía
+// falta hacer por separado; el backend sigue validando lo mismo
+// (requiereConfirmarPagoAntes), solo que lo satisface este mismo tap.
+// No se reutilizan cobrarOrden()/completarReserva() de ordenes.js/reservas.js
+// porque esas refrescan sus propios paneles (loadOrdenesActivas/
+// loadReservasActivas): tocadas desde la Cola, el cambio no se veía hasta el
+// siguiente poll y parecía que el botón no había hecho nada.
+async function cobrarColaOrden(id) {
+  const item = _cache.ordenes.find(o => o.id === id);
+  if (item && requiereConfirmarPago(item)) {
+    try { await api('PATCH', `/api/orders/${id}/confirmar-pago`); }
+    catch (e) { toast(e.message, 'err'); return; }
   }
-
-  try {
-    await api('PATCH', url);
-    toast(okMsg);
-    reiniciarPoll();
-    await loadColaDia();
-  } catch (e) {
-    if (previo) {
-      Object.assign(item, previo);
-      renderColaDesdeCache();
-    }
-    toast(e.message, 'err');
-  } finally {
-    _enVuelo.delete(clave);
-  }
+  return accionRapidaOrden(id, 'es_pagado');
 }
 
-async function confirmarPagoColaOrden(id) {
-  return confirmarPagoEnCola(
-    `o${id}`,
-    _cache.ordenes.find(o => o.id === id),
-    `/api/orders/${id}/confirmar-pago`,
-    `Pago de la orden #${id} confirmado ✓`
-  );
-}
-
-async function confirmarPagoColaReserva(id) {
-  return confirmarPagoEnCola(
-    `r${id}`,
-    _cache.reservas.find(r => r.id === id),
-    `/api/reservations/${id}/confirmar-pago`,
-    `Pago de la reserva #${id} confirmado ✓`
-  );
+async function cobrarColaReserva(id) {
+  const item = _cache.reservas.find(r => r.id === id);
+  if (item && requiereConfirmarPago(item)) {
+    try { await api('PATCH', `/api/reservations/${id}/confirmar-pago`); }
+    catch (e) { toast(e.message, 'err'); return; }
+  }
+  return accionRapidaReserva(id, 'es_full');
 }
 
 // ════════════════════════════════════════════════════════
@@ -866,9 +849,7 @@ function cierreItemOrden(o) {
   const mesa  = o.mesa ? ` · Mesa ${o.mesa}` : '';
   const monto = o.total ? ` · S/ ${o.total.toFixed(2)}` : '';
   const pagoHtml = (o.metodo_pago || o.es_manual) ? `<div style="margin-top:4px">${badgeManual(o)}${badgePago(o)}${comprobanteThumb(o)}</div>` : '';
-  const btnCobro = requiereConfirmarPago(o)
-    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoCierre('orden',${o.id})">✓ Confirmar pago</button>`
-    : `<button class="btn btn-success btn-sm" onclick="cerrarPedidoViejo('orden',${o.id},'cobrado')">💰 Se cobró</button>`;
+  const btnCobro = `<button class="btn btn-success btn-sm" onclick="cobrarCierre('orden',${o.id})">💰 Se cobró</button>`;
 
   return `
     <div class="cierre-item">
@@ -887,9 +868,7 @@ function cierreItemReserva(r) {
   const items = renderItemLines(r.carta_items, r.menu_items, r.modalidad);
   const codigo = r.codigo ? ` · 🔑 ${esc(r.codigo)}` : '';
   const pagoHtml = r.metodo_pago ? `<div style="margin-top:4px">${badgePago(r)}${comprobanteThumb(r)}</div>` : '';
-  const btnCobro = requiereConfirmarPago(r)
-    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoCierre('reserva',${r.id})">✓ Confirmar pago</button>`
-    : `<button class="btn btn-success btn-sm" onclick="cerrarPedidoViejo('reserva',${r.id},'cobrado')">💰 Se cobró</button>`;
+  const btnCobro = `<button class="btn btn-success btn-sm" onclick="cobrarCierre('reserva',${r.id})">💰 Se cobró</button>`;
 
   return `
     <div class="cierre-item">
@@ -904,40 +883,23 @@ function cierreItemReserva(r) {
     </div>`;
 }
 
-// No se reutiliza confirmarPagoEnCola(): esa opera sobre _cache y repinta la
-// Cola del día con renderColaDesdeCache(). Acá la lista es _sinCerrar y el
-// modal tiene su propio render, así que el pago se confirmaba en el servidor
-// pero la tarjeta no cambiaba hasta reabrir el modal.
-async function confirmarPagoCierre(tipo, id) {
-  const clave = `cierre-pago-${tipo}${id}`;
-  if (_enVuelo.has(clave)) return;
-  _enVuelo.add(clave);
-
+// Un solo tap: si hace falta, confirma el pago digital y de una vez cierra
+// el pedido como cobrado — reusa cerrarPedidoViejo() para el paso final. No
+// se reutiliza cobrarColaOrden()/cobrarColaReserva(): esas operan sobre
+// _cache y repintan la Cola del día con renderColaDesdeCache(). Acá la
+// lista es _sinCerrar y el modal tiene su propio render.
+async function cobrarCierre(tipo, id) {
   const esOrden = tipo === 'orden';
   const lista   = esOrden ? 'ordenes' : 'reservas';
   const item    = _sinCerrar[lista].find(x => x.id === id);
-  const previo  = item ? { ...item } : null;
-
-  // Optimista: el botón pasa a "Se cobró" al instante, sin esperar la red
-  if (item) {
-    item.estado_pago = 'confirmado';
-    renderCierreCaja();
+  if (item && requiereConfirmarPago(item)) {
+    try {
+      await api('PATCH', esOrden
+        ? `/api/orders/${id}/confirmar-pago`
+        : `/api/reservations/${id}/confirmar-pago`);
+    } catch (e) { toast(e.message, 'err'); return; }
   }
-
-  try {
-    await api('PATCH', esOrden
-      ? `/api/orders/${id}/confirmar-pago`
-      : `/api/reservations/${id}/confirmar-pago`);
-    toast('Pago confirmado ✓ — ya podés cerrarlo');
-  } catch (e) {
-    if (previo) {
-      Object.assign(item, previo);
-      renderCierreCaja();
-    }
-    toast(e.message, 'err');
-  } finally {
-    _enVuelo.delete(clave);
-  }
+  return cerrarPedidoViejo(tipo, id, 'cobrado');
 }
 
 // 'cobrado' → cuenta en Ganancias (el backend calcula y persiste el total).

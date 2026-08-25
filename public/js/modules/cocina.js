@@ -26,7 +26,6 @@ const encabezadoMenuCocina = (texto, lineas) =>
 async function loadColaCocina() {
   const el = document.getElementById('cocina-cola');
   if (!el) return;
-  el.innerHTML = '<div class="loading-text">Cargando…</div>';
   try {
     const { ordenes, reservas: reservasEnCocina } = await api('GET', '/api/orders/cola-cocina');
     detectNuevasOrdenes(ordenes);
@@ -41,7 +40,8 @@ async function loadColaCocina() {
     }
 
     if (!ordenesActivas.length && !reservasEnCocina.length) {
-      el.innerHTML = emptyState('✅', '¡Todo al día! Sin órdenes pendientes');
+      pintarSiCambio('cocina', 'cocina-cola', { ordenesActivas, reservasEnCocina },
+        emptyState('✅', '¡Todo al día! Sin órdenes pendientes'));
       return;
     }
 
@@ -75,7 +75,7 @@ async function loadColaCocina() {
       html += pendientes.map(o => renderCocinaTicket(o)).join('');
     }
 
-    el.innerHTML = html;
+    pintarSiCambio('cocina', 'cocina-cola', { ordenesActivas, reservasEnCocina }, html);
   } catch(e) {
     el.innerHTML = emptyState('⚠️', e.message);
   }
@@ -101,12 +101,18 @@ function renderCocinaTicket(o) {
   // En línea propia, no dentro del header: en 360px compite con el estatus.
   const modBadge = badgeModalidad(o.modalidad, true, conteoMod);
 
+  // Mesa grande / #orden chico (día 11 del piloto) — el cocinero actúa por
+  // mesa, no por número de orden. Para llevar/delivery no tienen mesa: ahí
+  // el #orden vuelve a ser lo único que identifica el pedido.
+  const tituloHtml = o.mesa
+    ? `<strong>Mesa ${o.mesa}</strong> <span style="font-size:0.857143rem;color:var(--muted)">#${o.numero_dia ?? o.id}</span>`
+    : `<strong>#${o.numero_dia ?? o.id}</strong>`;
+
   return `
     <div class="order-card" id="cocina-ord-${o.id}" style="border-left:4px solid ${o.es_inicial ? '#fbbf24' : '#3b82f6'}">
       <div class="order-card-header">
         <div>
-          <strong>#${o.numero_dia ?? o.id}</strong>
-          ${o.mesa ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${o.mesa}</span>` : ''}
+          ${tituloHtml}
           ${o.nombre_cliente ? `<span style="font-size:0.857143rem;color:var(--muted)"> · ${esc(o.nombre_cliente)}</span>` : ''}
         </div>
         ${badgeEst(o.estatus)}
@@ -130,9 +136,8 @@ function renderCocinaReserva(r) {
   const horaTag = r.hora_llegada
     ? `<span style="font-size:0.857143rem;color:var(--muted)"> · 🕐 ${r.hora_llegada}</span>`
     : '';
-  const mesaTag = r.mesa
-    ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${r.mesa}</span>`
-    : '';
+  // Mesa grande (día 11 del piloto) — igual que en renderCocinaTicket().
+  const mesaTag = r.mesa ? ` · <strong>Mesa ${r.mesa}</strong>` : '';
 
   // Igual que en las órdenes (ISS-042). En reservas además explica la falta de
   // mesa: para llevar y delivery nunca la tienen.

@@ -4,7 +4,6 @@
 
 async function loadReservasActivas() {
   const el = document.getElementById('list-reservas-activas');
-  el.innerHTML = '<div class="loading-text">Cargando reservas…</div>';
   try {
     const [pendientes, confirmadas, enCocina, listas, llegaron] = await Promise.all([
       api('GET', '/api/reservations?flag=es_inicial'),
@@ -21,8 +20,10 @@ async function loadReservasActivas() {
     badge.textContent = reservas.length;
     badge.classList.toggle('show', reservas.length > 0);
 
-    if (!reservas.length) { el.innerHTML = emptyState('📅','Sin reservas pendientes ni confirmadas'); return; }
-    el.innerHTML = reservas.map(r => renderReservaCard(r, true)).join('');
+    const html = reservas.length
+      ? reservas.map(r => renderReservaCard(r, true)).join('')
+      : emptyState('📅','Sin reservas pendientes ni confirmadas');
+    pintarSiCambio('reservas-activas', 'list-reservas-activas', reservas, html);
   } catch(e) { el.innerHTML = emptyState('⚠️', e.message); }
 }
 
@@ -69,12 +70,14 @@ function renderReservaCard(r, withActions) {
   const comprobanteResHtml = comprobanteThumb(r);
 
   const sinMesa = r.modalidad === 'para_llevar' || r.modalidad === 'delivery';
-  // Pago digital (yape/plin) sin confirmar: el owner debe revisar el comprobante
-  // antes de poder completar la reserva (el backend también lo bloquea).
+  // Cobro en 1 clic (decisión del usuario, 2026-08-25) — antes Yape/Plin
+  // pedía un tap aparte para "Confirmar pago" antes de poder completar. La
+  // dueña ya revisa el comprobante varias veces en el camino (pendientes,
+  // listos, cobrar) y aun así termina verificando por fuera en la app de
+  // Yape — el paso extra no aportaba la seguridad para la que estaba
+  // pensado, solo un punto más donde perder el hilo en plena hora pico.
   const requiereConfirmar = ['yape', 'plin'].includes(r.metodo_pago) && r.estado_pago !== 'confirmado';
-  const btnCompletar = requiereConfirmar
-    ? `<button class="btn btn-success btn-sm" onclick="confirmarPagoReserva(${r.id})">✓ Confirmar pago</button>`
-    : `<button class="btn btn-success btn-sm" onclick="cambiarEstatusReservaFlag(${r.id},'es_full')">💰 Completar</button>`;
+  const btnCompletar = `<button class="btn btn-success btn-sm" onclick="completarReserva(${r.id},${requiereConfirmar ? 1 : 0})">💰 Completar</button>`;
   const actions = withActions ? `
     <div class="order-actions">
       ${r.es_inicial      ? `<button class="btn btn-success btn-sm"  onclick="cambiarEstatusReservaFlag(${r.id},'es_confirmada')">✓ Confirmar</button>` : ''}
@@ -91,7 +94,7 @@ function renderReservaCard(r, withActions) {
       <div class="order-card-header">
         <div>
           <strong>${esc(r.nombre_cliente)}</strong>
-          ${r.mesa ? `<span style="font-size:0.857143rem;color:var(--muted)"> · Mesa ${r.mesa}</span>` : ''}
+          ${r.mesa ? ` <strong>· Mesa ${r.mesa}</strong>` : ''}
           ${r.telefono_cliente ? `<span style="font-size:0.857143rem;color:var(--muted)"> · ${esc(r.telefono_cliente)}</span>` : ''}
           ${badgeModalidad(r.modalidad)}
           ${r.codigo ? `<div style="font-family:monospace;font-size:0.928571rem;font-weight:700;color:var(--accent);letter-spacing:.1em;margin-top:3px">🔑 ${r.codigo}</div>` : ''}
@@ -123,10 +126,14 @@ async function cambiarEstatusReserva(id, estatus) {
   } catch(e) { toast(e.message, 'err'); }
 }
 
-async function confirmarPagoReserva(id) {
+// Un solo tap: si hace falta, confirma el pago digital y de una vez completa
+// la reserva — el backend sigue exigiendo el mismo orden (confirmar-pago
+// antes de es_full), solo que ahora lo satisface esta misma llamada.
+async function completarReserva(id, requiereConfirmar) {
   try {
-    await api('PATCH', `/api/reservations/${id}/confirmar-pago`);
-    toast(`Pago de la reserva #${id} confirmado ✓`);
+    if (requiereConfirmar) await api('PATCH', `/api/reservations/${id}/confirmar-pago`);
+    await api('PATCH', `/api/reservations/${id}/estatus`, { flag: 'es_full' });
+    toast('Reserva completada');
     loadReservasActivas();
   } catch(e) { toast(e.message, 'err'); }
 }
