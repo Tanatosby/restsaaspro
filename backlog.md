@@ -66,8 +66,12 @@ detrás de "⋯" con nombres técnicos, y la dueña no la encuentra sola (ver `p
 punto 4, y el hilo de conversación 2026-08-24 sobre "ají de gallina"). Mockup con 3 alternativas
 publicado y revisado, **sin elegir todavía** — el usuario pidió pausarlo para retomar después:
 [mockup "Compatibilidad de Platos"](https://claude.ai/code/artifact/76b60128-c12a-4a3b-98f8-98a937a745c3).
+**Actualizado 2026-08-25:** el usuario probó la Opción A y no entendió la etiqueta "🤷 Como
+quiera" del estado neutral — se cambió a **"🔓 Puede llevar"** (mismo verbo que "No lleva") y
+se agregó un botón ⓘ junto a cada relación que despliega la explicación de los 3 estados al
+tocarlo, a pedido del usuario ("un tooltip siempre es bueno para estos casos").
 
-- **A — Control de 3 estados siempre visible** (🤷 Como quiera / ✅ Necesita / 🚫 No lleva) pegado
+- **A — Control de 3 estados siempre visible** (🔓 Puede llevar / ✅ Necesita / 🚫 No lleva) pegado
   a cada plato, reemplaza los 2 botones de hoy. Recomendada — menos taps y sin vocabulario
   técnico — pero el cambio de código más grande (toca el render de cada plato del acordeón).
 - **B — Checklist de una sola pasada**, se abre solo al crear/editar la sección opcional
