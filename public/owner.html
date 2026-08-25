@@ -1241,7 +1241,13 @@
     <span class="bn-ico" aria-hidden="true">🍳</span><span>Cocina</span>
     <span class="kanban-badge bn-badge" id="bn-badge-cocina" hidden>0</span>
   </button>
-  <button type="button" class="bottom-nav-item" id="bn-reservas" data-target="reservas"
+  <!-- Reservas oculto del acceso rápido — ISS-071 (2026-08-25). Quedaba en el
+       medio de la barra (Cola/Cocina/Reservas/Menú/Inicio) y la dueña lo tocaba
+       por error queriendo entrar a "Cola". Ya no hace falta como atajo: la
+       Cola del día muestra las reservas del día con las mismas acciones
+       (renderKanbanReserva, pedidos.js) desde ISS-067. Sigue accesible desde
+       el menú lateral (nav-reservas) para historial y reservas futuras. -->
+  <button type="button" class="bottom-nav-item hidden" id="bn-reservas" data-target="reservas"
           onclick="showPanel('reservas')" aria-label="Reservas">
     <span class="bn-ico" aria-hidden="true">📅</span><span>Reservas</span>
     <span class="kanban-badge bn-badge" id="bn-badge-reservas" hidden>0</span>

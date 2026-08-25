@@ -110,6 +110,7 @@ no reemplaza la de julio — es la evolución.
 | Día 8 | 2026-08-21 (viernes) | Contado por el usuario el mismo día: la cocinera canceló un pedido por error y la dueña preguntó si se puede "devolver" para que cuente como venta (→ ISS-059); y pregunta de la dueña sobre cómo los pensionistas descargan/acceden a la app, que llevó a decidir un acceso desde `menu.html` (→ ISS-060). Detalle abajo. |
 | Día 9 | 2026-08-22 (sábado) | Contado por el usuario el 2026-08-24: status "En preparación" poco claro para el cliente (→ ISS-061), zona Cocina de la Cola del día sin botón "Listo" (→ ISS-062), pedido de reordenar Reservas para mostrar la carta antes que el formulario (→ ISS-063) y de poder repetir un mismo menú sin rearmarlo desde cero (→ ISS-064). Mockups aprobados antes de codear; los 4 implementados y verificados el mismo 2026-08-24. |
 | Día 10 | 2026-08-23 (domingo) | Contado por el usuario el 2026-08-24, junto con el Día 9: un comensal no pudo reservar por no poner hora de llegada — la reserva se bloqueaba validando el horario de "ahora" en vez de simplemente dejarla pasar (→ ISS-065). El usuario lo asumió como error de diseño propio y pidió la corrección en el momento; implementado y verificado el mismo 2026-08-24. Queda pendiente (no implementado) agregar un tooltip junto al campo explicando que la hora es opcional/informativa. |
+| Día 11 | 2026-08-25 (martes) | Contado por el usuario, sin visita en persona: la dueña sigue confundiendo "Cola" con "Reservas" — retoma del punto 1 del Día 10 (visita en persona), esta vez la causa real es que "Reservas" queda en la posición del medio del bottom-nav y lo toca por error yendo hacia "Cola" (→ ISS-071). También se cerró la decisión pendiente de Compatibilidad de platos (Opción A, → ISS-070) y se agregó explicación permanente de Obligatoria/Opcional. Detalle abajo. |
 
 > **El domingo 16 de agosto no lleva número de "Día" en esta tabla:** no hay reporte de uso ni de
 > pausa para esa fecha — a diferencia del sábado 15, que el usuario confirmó explícitamente como
@@ -510,6 +511,33 @@ sección" sigue escondida detrás de "⋯" con nombres técnicos, tal como ya di
 **sin elegir todavía**, el usuario pidió pausar y solo documentar. Detalle completo, mockup y
 pregunta abierta (¿puede haber más de una sección opcional relacionada a la vez?) en
 `backlog.md`.
+
+### Día 11 (2026-08-25, martes) — retoma del punto 1 del Día 10: Cola vs. Reservas
+
+Conversación de escritorio, sin visita en persona. El usuario contó que la dueña "se confunde
+porque va entrando a 'Reservas' y no a 'Cola'" — el mismo síntoma que el punto 1 del Día 10
+(*"señora cola es donde ve su línea pedido tras pedido, pero reservas sería la lista de
+todas..."*), pero esta vez la causa resultó ser otra, no la misma que ISS-067 ya había resuelto
+(reservas sin hora invisibles). Costó unas cuantas preguntas encontrarla: primero se investigó
+el panel "Reservas activas" en sí (pensando en una reserva vieja sin cerrar, hallazgo real pero
+no el que preguntaba — ver ISS-071), hasta que el usuario aclaró: **"Reservas" queda justo en
+el medio del bottom-nav** (Cola · Cocina · Reservas · Menú · Inicio) y la dueña lo toca por
+error queriendo llegar a "Cola".
+
+**Implementado el mismo día:** botón de Reservas oculto del bottom-nav
+([`ISS-071`](issues/ISS-071-reservas-en-medio-bottom-nav.md)) — ya no hacía falta como atajo,
+la Cola del día muestra las reservas del día con las mismas acciones desde ISS-067. El panel
+Reservas sigue accesible desde el menú lateral, para historial y reservas futuras.
+
+**Mismo día, retomando el punto 4 del Día 10 (Configuración/Usuarios no descubribles):** se
+cerró la decisión pausada sobre la relación Exige/No permite sección —
+[`ISS-070`](issues/ISS-070-compatibilidad-platos-opcion-a.md), Opción A del mockup, control de
+3 estados siempre visible por plato. También se agregó una explicación permanente (antes solo
+un toast de 3s) de qué significa Obligatoria/Opcional en cada sección.
+
+**Sin verificar en uso real:** ISS-070 e ISS-071, recién desplegados hoy — falta confirmar que
+la dueña ya no entra por error a Reservas y que entiende el nuevo control de compatibilidad sin
+que se lo expliques.
 
 ---
 

@@ -26,7 +26,8 @@ por el usuario:
 
 **Pendiente de deploy:** explicación permanente de Obligatoria/Opcional en Configuración
 (reemplaza el toast de 3s) + **ISS-070** (control de 3 estados "Compatibilidad de platos",
-reemplaza los modales Exige/No permite sección detrás de "⋯"), ambos implementados hoy
+reemplaza los modales Exige/No permite sección detrás de "⋯") + **ISS-071** ("Reservas" oculto
+del bottom-nav, quedaba en el medio y causaba toques por error), los tres implementados hoy
 2026-08-25 tras `440e9e8`. ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8
 del piloto). **Sin verificar todavía en uso real:** ISS-069 (deselección + tap en foto) ni
 ISS-070 (control de compatibilidad) — falta confirmar con la dueña y con un comensal nuevo.
@@ -56,6 +57,36 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-25 (4) — ISS-071: "Reservas" oculto del bottom-nav
+
+**Prompt del usuario:** contó algo que le dijo la dueña — se confunde y entra a "Reservas"
+cuando quiere entrar a "Cola". Costó 3 idas y vueltas encontrar la causa exacta: al principio
+investigué la lista de reservas activas (el panel `reservas.js`) pensando que el problema era
+una reserva vieja del 17 de julio sin cerrar mezclada ahí — real, pero no era lo que preguntaba.
+La causa real: en el **bottom-nav** (barra de acceso rápido fija abajo del celular), "Reservas"
+queda en la posición del medio (Cola · Cocina · **Reservas** · Menú · Inicio) y la dueña lo toca
+por error yendo hacia "Cola".
+
+**Fix:** `owner.html` — botón `#bn-reservas` marcado `hidden` (clase CSS ya existente). Ya no
+hacía falta como atajo: desde ISS-067 la Cola del día muestra las reservas del día con las
+mismas acciones (`renderKanbanReserva`). El panel Reservas sigue accesible desde el menú
+lateral, para historial y reservas futuras que la Cola del día no cubre.
+
+Sin cambios de backend. 34/34 test suites, 458/458 tests.
+
+**Hallazgos aparte, sin implementar** (quedaron documentados en
+`issues/ISS-071-reservas-en-medio-bottom-nav.md`, no se tocó nada de esto):
+1. El panel "Reservas activas" (`reservas.js`) parpadea en cada refresco — corre cada 20s
+   (no ~5s como se percibía), pero repinta todo desde cero sin comparar cambios, el mismo
+   patrón que ISS-067 ya arregló en Cola del día pero nunca se portó a este archivo.
+2. No hay expiración de reservas viejas — una reserva nunca cerrada ("Completar"/"Cancelar")
+   se queda en "activas" para siempre. La reserva del 17 de julio que vio la dueña es
+   probablemente un caso real de esto, no un bug de renderizado.
+
+**Pendiente:** deploy a producción.
 
 ---
 
