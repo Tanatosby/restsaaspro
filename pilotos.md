@@ -584,6 +584,32 @@ problema puntual que arreglar. Dos aprendizajes:
    cuaderno cuántos platos de cada cosa venden. Ya diagnosticado y priorizado en `backlog.md`
    ("Platos vendidos hoy", lista automática sin selects) — sin implementar todavía.
 
+**Tercer tramo del mismo día — causa raíz probable de todo lo anterior, con medición propia
+del usuario:** la cena es 100% lapicero y cuaderno, sin usar la app — "tiene sentido porque van
+pocos". El usuario midió los tiempos él mismo: **pedir por la app (escanear QR + navegar +
+elegir + confirmar) toma ~1 minuto; pedir a boca de jarro, 5-10 segundos** — 6 a 12 veces más
+lento. Con 1-3 mesas no hay ninguna ventaja de velocidad en usar la app, y esto explica en
+cadena los 2 puntos anteriores: por qué con pocas mesas "se vuelve inútil", por qué la dueña no
+registra los pedidos verbales (registrarlos cuesta el mismo tiempo que evitó al no tomarlos por
+la app), y por qué la cena entera queda fuera del sistema.
+
+Con muchas mesas, la cocinera **sí** sigue la app ("es pilas"), pero la dueña (atiende el
+salón) no la mira hasta estar libre — y los pedidos que toma verbalmente en el camino no los
+registra, solo lleva la cuenta aproximada hacia el contador "Menús de hoy" (*"ya masomenos 45 +
+el que pidió Carlos, ya casi llego a 50"*). Confirmó que ese contador **sí le sirve** y no
+quiere más métricas ahí — pero el número que muestra la app es siempre un subconteo cuando hay
+pedidos verbales sin registrar; ella lo corrige mentalmente por su cuenta. No urgente de
+arreglar hoy (le funciona para lo que necesita), pero relevante si ese número se usa alguna vez
+para algo más (ganancias, reportes).
+
+**Pregunta abierta, sin responder:** existe el botón "Agregar manual" (desplegado
+2026-08-18) armado justo para este caso — que la dueña cargue ella misma un pedido verbal al
+sistema en unos taps. No lo está usando para los pedidos verbales de hoy. Falta entender por
+qué: ¿no sabe que existe / se le olvida en el momento, o ya lo probó y **también** le resultó
+más lento que no registrar nada? Cambia la lectura — lo primero es un problema de
+descubribilidad (mismo patrón que Configuración/Usuarios), lo segundo pediría que "Agregar
+manual" sea todavía más rápido para competir con "no anotar nada".
+
 ---
 
 ## Plantilla para el próximo piloto
