@@ -23,8 +23,10 @@ por el usuario:
 | 2026-08-24 | `1b38b57..c269fb1` | **ISS-061** (status "En preparación" más claro), **ISS-062** (botón "Listo" en zona Cocina), **ISS-063** (Reservas: carta antes que el formulario), **ISS-064** ("+1 mismo menú") e **ISS-065** (reserva sin hora ya no se bloquea) — día 9 y día 10 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `/health` → `{"status":"ok"}`. |
 | 2026-08-25 | `c269fb1..bd2b991` | **ISS-066** (plato bloquea sección opcional), **ISS-067** (Cola: reservas sin hora enterradas + parpadeo) e **ISS-068** (Stock rápido desde Cola) — día 10 del piloto (visita en persona), más el mockup de descubribilidad (solo doc). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 
-**Sin pendientes de deploy** — producción está al día con `main` (`bd2b991`). ISS-059 y ISS-060
-siguen **diagnosticados, sin implementar** (Día 8 del piloto).
+**Pendiente de deploy:** **ISS-069** — deselección de plato en sección opcional (radio nativo
+no se podía desmarcar) + tap en la foto ahora selecciona el plato en vez de abrir el zoom,
+implementado hoy 2026-08-25 tras `2f85f23`. ISS-059 y ISS-060 siguen **diagnosticados, sin
+implementar** (Día 8 del piloto).
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -51,6 +53,40 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-25 — ISS-069: deseleccionar plato opcional + tap en foto selecciona
+
+**Prompt del usuario:** reportó que dentro del menú no se puede deseleccionar un plato una vez
+elegido, ni siquiera en una sección opcional. En la misma conversación agregó un segundo
+hallazgo: varios comensales (sobre todo nuevos) tocan primero la foto del plato en vez del
+radio, y la foto abre un visor ampliado en lugar de seleccionar — pidió que tocar la foto
+elija el plato directamente, sin abrir el zoom, razonando que al pedir no hace falta ver la
+foto en grande.
+
+**Causa raíz encontrada al investigar el primer problema:** `render()` en `menu-modal.js`
+nunca marcaba el `<input type="radio">` como `checked` según la selección ya guardada. Como
+`MenuModal.refresh()` reconstruye `.mm-body` con `innerHTML` completo tras cada selección
+(mecanismo que ISS-066 agregó para el bloqueo de secciones en vivo), el radio recién elegido
+perdía su marca visual en cada refresco — el estado interno quedaba bien, pero visualmente no
+se notaba, y sin eso tampoco había forma confiable de detectar "el usuario tocó de nuevo el
+plato ya elegido".
+
+**Fix:**
+- `menu-modal.js` — el radio ahora recibe `checked` según `seleccionActual`, sobrevive al
+  `refresh()`.
+- `menu-modal.js` + `menu.html` (nueva función `deselectMenuPlato`) — el `<label>` de cada
+  plato registra en `onpointerdown` si su radio ya estaba marcado; si el usuario toca de nuevo
+  esa fila (radio, texto o foto), se desmarca y se borra la selección de esa sección.
+- `menu-modal.js` — se quitó el `onclick` de zoom en la foto de platos **elegibles**; tocarla
+  ahora selecciona el plato como el resto de la fila. El menú fijo y la carta libre conservan
+  el zoom (ahí no hay selección que hacer).
+
+Sin cambios de backend. 34/34 test suites, 458/458 tests — sin regresión.
+
+**Docs:** `issues/ISS-069-deseleccion-y-tap-en-foto.md` (nuevo), `issues/ISSUES.md`, este
+archivo. **Pendiente:** deploy a producción + verificar en uso real con un comensal nuevo.
 
 ---
 

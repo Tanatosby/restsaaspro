@@ -734,6 +734,17 @@ async function renderReservarContent() {
     if (typeof MenuModal !== 'undefined' && MenuModal.refresh) MenuModal.refresh();
   }
 
+  // Deselecciona un plato ya elegido — ISS-069. Un <input type="radio">
+  // nativo no se puede desmarcar con un segundo tap, así que menu-modal.js
+  // detecta ese segundo tap (radio, nombre o foto — toda la fila cuenta) y
+  // llama acá para volver esa sección a "sin selección".
+  function deselectMenuPlato(mode, menuId, seccionId) {
+    const sel = mode === 'pedir' ? menuSelections : resMenuSelections;
+    if (sel[menuId]) delete sel[menuId][seccionId];
+    if (mode === 'reservar') updateResCartSummary();
+    if (typeof MenuModal !== 'undefined' && MenuModal.refresh) MenuModal.refresh();
+  }
+
   // Aplana los menús del carrito para enviarlos, pero numerando cada uno —
   // ISS-041. Antes esto era un `flatMap` pelado y ahí se perdía el dato: dos
   // menús del día con entrada y segundo distintos llegaban al backend como 4

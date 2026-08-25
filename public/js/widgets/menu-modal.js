@@ -184,11 +184,22 @@
 
       const platosHtml = disponibles.map(p => {
         if (menu.elegible) {
+          // ISS-069 — la foto ya no abre el visor: tocarla selecciona el
+          // plato igual que el resto de la fila (varios comensales, sobre
+          // todo nuevos, tocaban la foto esperando elegir y no encontraban
+          // el radio a la izquierda). Al pedir no hace falta ver la foto
+          // ampliada, la descripción ya está al lado.
           const fotoAttr = p.url_foto
-            ? `<img src="${esc(p.url_foto)}" class="plato-thumb" alt="${esc(p.nombre)}" onclick="event.preventDefault();event.stopPropagation();openPhotoModal('${esc(p.url_foto)}','${esc(p.nombre)}','${esc(p.descripcion || '')}')">`
+            ? `<img src="${esc(p.url_foto)}" class="plato-thumb" alt="${esc(p.nombre)}">`
             : '';
-          return `<label class="plato-option">
-            <input type="radio" name="${prefix}-sec-${menu.id}-${s.id_seccion}" value="${p.id_componente}"
+          const marcado = seleccionActual[s.id_seccion]?.id_componente === p.id_componente;
+          // onpointerdown en el <label> (no en el radio) para que capture el
+          // toque sin importar dónde caiga el dedo dentro de la fila — foto,
+          // texto o el radio mismo — y quede registrado ANTES de que el
+          // click active el radio.
+          return `<label class="plato-option" onpointerdown="this.querySelector('input').dataset.checkedBefore=this.querySelector('input').checked">
+            <input type="radio" name="${prefix}-sec-${menu.id}-${s.id_seccion}" value="${p.id_componente}"${marcado ? ' checked' : ''}
+              onclick="if(this.dataset.checkedBefore==='true'){this.checked=false;deselectMenuPlato('${mode}',${menu.id},${s.id_seccion});}"
               onchange="selectMenuPlato('${mode}',${menu.id},${s.id_seccion},${p.id_componente},'${esc(p.nombre)}','${esc(s.nombre_seccion)}',${menu.precio},${menu.id},${p.no_permite_seccion_id ?? 'null'})">
             <div style="flex:1;min-width:0">
               <div class="plato-option-name">${esc(p.nombre)}</div>
