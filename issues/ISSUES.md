@@ -20,6 +20,7 @@ _(vacío)_
 |----|--------|--------|-----------|
 | [ISS-059](ISS-059-revertir-pedido-cancelado.md) | Sin forma de revertir un pedido cancelado por error | `orders.js`/`reservations.js`/`pedidos.js` | 🔴 Alta |
 | [ISS-060](ISS-060-acceso-pensionista-menu.md) | Pensionistas sin un camino claro para llegar a `pensionista.html` | `menu.html`/`pensionista.html` | 🟡 Media |
+| [ISS-077](ISS-077-novedades-js-fuera-de-assets.md) | `novedades.js` no está en el precache del service worker | `sw.js` | 🟢 Baja |
 
 ## Resueltos
 

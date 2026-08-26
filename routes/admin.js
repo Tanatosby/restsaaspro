@@ -446,6 +446,23 @@ router.patch('/restaurantes/:id/toggle', (req, res) => {
 });
 
 // ─────────────────────────────────────────
+// PATCH /api/admin/restaurantes/:id/nombre
+// Editar el nombre de un restaurante existente
+// ─────────────────────────────────────────
+router.patch('/restaurantes/:id/nombre', (req, res) => {
+  const nombre = (req.body.nombre || '').trim();
+  if (nombre.length < 2 || nombre.length > 60)
+    return res.status(400).json({ error: 'El nombre debe tener entre 2 y 60 caracteres' });
+
+  const restaurante = db.prepare(`SELECT id FROM restaurantes WHERE id = ?`).get(req.params.id);
+  if (!restaurante) return res.status(404).json({ error: 'Restaurante no encontrado' });
+
+  db.prepare(`UPDATE restaurantes SET nombre = ? WHERE id = ?`).run(nombre, req.params.id);
+
+  res.json({ message: 'Nombre actualizado correctamente', nombre });
+});
+
+// ─────────────────────────────────────────
 // DELETE /api/admin/restaurantes/:id
 // Delete a restaurant and ALL its data
 // ─────────────────────────────────────────

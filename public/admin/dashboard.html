@@ -892,6 +892,24 @@
   </div>
 </div>
 
+<!-- Modal: Editar nombre de restaurante -->
+<div class="modal-backdrop" id="modal-editar-nombre">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Editar nombre</span>
+      <button class="modal-close" onclick="closeModal('modal-editar-nombre')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre del restaurante</label><input id="f-editar-nombre" placeholder="El Buen Sabor" maxlength="60" /></div>
+      <div class="form-error" id="err-editar-nombre"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-editar-nombre')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarNombreRestauranteAdmin()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Nueva categoría de orden -->
 <div class="modal-backdrop" id="modal-cat-orden">
   <div class="modal">
@@ -997,8 +1015,9 @@
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
 
-  let selectedUserId    = null;
-  let restaurantesCache = [];
+  let selectedUserId        = null;
+  let selectedRestauranteId = null;
+  let restaurantesCache     = [];
 
   // ── Hamburger ──
   function toggleSidebar() {
@@ -1094,6 +1113,7 @@
         <td><div class="actions">
           <button class="btn btn-ghost btn-sm" onclick="abrirStatsDrawer(${r.id}, '${esc(r.nombre)}')">📊 Stats</button>
           <button class="btn btn-ghost btn-sm" onclick="verQR(${r.id}, '${esc(r.nombre)}')">QR</button>
+          <button class="btn btn-ghost btn-sm" onclick="openModalEditarNombre(${r.id}, '${esc(r.nombre)}')">✏️ Editar</button>
           <button class="btn btn-ghost btn-sm" onclick="toggleRestaurante(${r.id})">${r.activo ? 'Desactivar' : 'Activar'}</button>
           <button class="btn btn-danger-ghost" onclick="eliminarRestaurante(${r.id}, '${esc(r.nombre)}')">Eliminar</button>
         </div></td>
@@ -1110,6 +1130,22 @@
     if (!confirm(`¿Eliminar "${nombre}" y TODOS sus datos? Esta acción es irreversible.`)) return;
     try { const d = await api('DELETE', `/restaurantes/${id}`); toast(d.message, 'ok'); loadRestaurantes(); }
     catch (e) { toast(e.message, 'err'); }
+  }
+
+  function openModalEditarNombre(id, nombre) {
+    selectedRestauranteId = id;
+    document.getElementById('f-editar-nombre').value = nombre;
+    setErr('err-editar-nombre', '');
+    openModal('modal-editar-nombre');
+  }
+
+  async function guardarNombreRestauranteAdmin() {
+    const nombre = document.getElementById('f-editar-nombre').value.trim();
+    if (nombre.length < 2) return setErr('err-editar-nombre', 'El nombre debe tener al menos 2 caracteres');
+    try {
+      const d = await api('PATCH', `/restaurantes/${selectedRestauranteId}/nombre`, { nombre });
+      toast(d.message, 'ok'); closeModal('modal-editar-nombre'); loadRestaurantes();
+    } catch (e) { setErr('err-editar-nombre', e.message); }
   }
 
   function openModalNuevoRestaurante() {

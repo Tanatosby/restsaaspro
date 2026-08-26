@@ -77,6 +77,10 @@ Al finalizar cada tarea o sesión de trabajo, siempre actualizar todos los `*.md
   al lado es lo que generó el hueco del 2026-08-19: quedaron sin registrar los días entre una
   visita y la siguiente). Si el usuario cuenta algo de un piloto en la conversación (qué pasó, qué
   dijo el dueño, quién lo usó), anotarlo ahí el mismo día — no esperar a que pregunte por qué falta.
+- `public/js/modules/novedades.js` — no es `.md` pero sigue la misma regla: si el cambio es
+  visible para la dueña en el panel (owner/admin), agregar una entrada nueva al array
+  `NOVEDADES`, en su idioma, no técnico (mismo hábito que `status.md`, para otro público). Ver
+  `issues/ISS-076-que-hay-de-nuevo.md`.
 
 **El objetivo:** que cualquier sesión futura (desde cualquier laptop) arranque con documentación exacta del estado real del proyecto.
 

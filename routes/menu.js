@@ -1052,6 +1052,18 @@ router.patch('/config/slug', authorizePermiso(), (req, res) => {
   }
 });
 
+// PATCH /api/menu/config/nombre — la dueña cambia el nombre de su restaurante
+router.patch('/config/nombre', authorizePermiso(), (req, res) => {
+  const nombre = (req.body.nombre || '').trim();
+  if (nombre.length < 2 || nombre.length > 60)
+    return res.status(400).json({ error: 'El nombre debe tener entre 2 y 60 caracteres' });
+
+  db.prepare(`UPDATE restaurantes SET nombre = ? WHERE id = ?`)
+    .run(nombre, req.user.restaurant_id);
+
+  res.json({ nombre });
+});
+
 // PATCH /api/menu/config/minutos-preparacion — tiempo de anticipación por restaurante
 router.patch('/config/minutos-preparacion', authorizePermiso(), (req, res) => {
   const minutos = parseInt(req.body.minutos_preparacion, 10);

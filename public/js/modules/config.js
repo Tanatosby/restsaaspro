@@ -19,6 +19,10 @@ async function loadConfiguracion() {
   try {
     const cfg = await api('GET', '/api/menu/restaurante/config');
 
+    // Nombre del restaurante
+    const nombreEl = document.getElementById('config-nombre');
+    if (nombreEl) nombreEl.value = cfg.nombre || '';
+
     // Preview foto
     const preview = document.getElementById('config-foto-preview');
     const btnElim = document.getElementById('btn-eliminar-foto');
@@ -111,6 +115,16 @@ function actualizarSlugPreview(slug) {
   } else {
     preview.style.display = 'none';
   }
+}
+
+async function guardarNombreRestaurante() {
+  const nombre = (document.getElementById('config-nombre')?.value || '').trim();
+  if (nombre.length < 2) return toast('Ingresa un nombre de al menos 2 caracteres', 'err');
+  try {
+    await api('PATCH', '/api/menu/config/nombre', { nombre });
+    toast('Nombre actualizado correctamente');
+    loadRestauranteBrand();
+  } catch(e) { toast(e.message, 'err'); }
 }
 
 async function guardarSlug() {

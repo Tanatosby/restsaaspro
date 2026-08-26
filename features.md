@@ -1,5 +1,25 @@
 # Features — Menú Pro
 
+## Cambio de nombre del restaurante ✅ Completado 2026-08-26
+*Pedido directo de la dueña el mismo día — quiso renombrar su restaurante y no había forma.*
+
+Hasta hoy el nombre se fijaba una sola vez al crear el restaurante (alta desde el admin) y no
+se podía editar desde ningún lado.
+
+**Qué hace:** la dueña puede cambiar el nombre ella misma desde Configuración (self-service,
+`PATCH /api/menu/config/nombre`); también se puede editar desde el dashboard admin
+(`PATCH /api/admin/restaurantes/:id/nombre`, botón "✏️ Editar" por fila) para los casos en que
+el usuario necesite corregirlo directamente. Ambos validan 2–60 caracteres, con trim.
+
+**ARCH:** `routes/menu.js`, `routes/admin.js`, `public/owner.html` + `config.js` (card "Nombre
+del restaurante", refresca el sidebar al guardar), `public/admin/dashboard.html` (modal nuevo,
+mismo patrón visual que "Reset contraseña").
+
+**Verificación:** `tests/nombre-restaurante.test.js` (nuevo, 11 casos) + 35/35 test suites,
+469/469 tests.
+
+---
+
 ## Pensionistas — Fase 2: `pensionista.html` ✅ Completado 2026-08-19
 *Ver `pensionistas.md` §9. Backend y panel del owner (Fase 1) ya existían — esta fase construye
 la pantalla que le faltaba al propio pensionista.*

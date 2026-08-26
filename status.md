@@ -59,6 +59,50 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-08-26 — Cambio de nombre del restaurante + regla de novedades.js en CLAUDE.md
+
+**Prompt del usuario:** hoy la dueña pidió cambiar el nombre de su restaurante y no había forma
+de hacerlo — ni desde Configuración (self-service) ni desde el admin (para que el usuario lo
+corrija a mano). Antes de eso, también preguntó por la dinámica del modal "Qué hay de nuevo"
+(ISS-076): creyó que dependía de reloguearse porque ayer no le apareció hasta cerrar sesión.
+
+**Diagnóstico del modal de novedades (sin cambios de código, solo explicación):** no depende de
+la sesión — se dispara en cada carga de `owner.html`. Lo que probablemente pasó ayer es el
+`stale-while-revalidate` de `sw.js` para los HTML: la primera apertura tras el deploy sirvió el
+`owner.html` cacheado de *antes* del deploy mientras revalidaba en segundo plano; el cierre de
+sesión fue, por timing, la primera carga después de que esa revalidación terminara — no la causa
+real. Documentado ya en `ISS-044`, mismo mecanismo.
+
+**Hallazgo colateral (preexistente, no introducido hoy):** al correr
+`scripts/test-version-assets.js` para verificar los cambios de esta sesión, salió en rojo algo
+que no toqué — `novedades.js` **no está** en el array `ASSETS` de `sw.js`, a diferencia del
+resto de los módulos JS. No se precachea; siempre depende de la red. No es la causa del
+incidente de ayer (el HTML viejo cacheado ya alcanza para explicarlo), pero es un descuido real
+que el propio test detecta. **Sin corregir** — fuera del alcance aprobado hoy, queda para la
+próxima sesión.
+
+**Implementado:**
+- `routes/menu.js` — `PATCH /api/menu/config/nombre` (self-service, guard `authorizePermiso()`,
+  valida 2–60 caracteres).
+- `routes/admin.js` — `PATCH /api/admin/restaurantes/:id/nombre` (mismo tipo de validación, para
+  que el usuario lo edite desde el dashboard admin).
+- `public/owner.html` + `public/js/modules/config.js` — card "Nombre del restaurante" en
+  Configuración, con guardado que refresca el sidebar.
+- `public/admin/dashboard.html` — botón "✏️ Editar" por fila en la tabla de restaurantes, con
+  modal reutilizando el patrón visual de "Reset contraseña".
+- `.claude/CLAUDE.md` — agregada `public/js/modules/novedades.js` a la lista de "Documentación —
+  regla obligatoria": si un cambio es visible para la dueña, entra una entrada nueva al array
+  `NOVEDADES`, igual que ya se hace con `status.md`.
+
+**Tests:** `tests/nombre-restaurante.test.js` (nuevo, 11 casos: validación + BD). 35/35 test
+suites, 469/469 tests.
+
+**Docs:** `.claude/CLAUDE.md`, este archivo.
+**Pendiente:** deploy a producción. Corregir el hallazgo de `novedades.js` faltante en `ASSETS`
+(pendiente de aprobación, no incluido en el alcance de hoy).
+
+---
+
 ## 🎯 Sesión 2026-08-25 (7) — ISS-076: "Qué hay de nuevo", retomado antes del deploy
 
 **Prompt del usuario:** antes de desplegar, preguntó si a la dueña le va a aparecer algún
