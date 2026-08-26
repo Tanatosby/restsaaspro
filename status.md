@@ -27,7 +27,8 @@ por el usuario:
 | 2026-08-26 | `c148008..617f3e6` | Cambio de nombre del restaurante (self-service en Configuración + edición desde el admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 
 **Pendiente de deploy:** entrada nueva en `novedades.js` (avisa del cambio de nombre — se
-olvidó en el commit anterior, agregada ahora) — ver sesión de hoy más abajo. ISS-059 y ISS-060
+olvidó en el commit anterior, ya agregada) + **ISS-077** resuelto (módulos JS fuera de
+precache/versionado, ver sesión "(2)" de hoy más abajo). ISS-059 y ISS-060
 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076, todos desplegados el 2026-08-25 — falta confirmar con la dueña y con
 un comensal nuevo (deselección, tap en foto, control de compatibilidad, cobro en 1 clic, Cocina
@@ -58,6 +59,35 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-26 (2) — ISS-077 resuelto: módulos JS fuera del precache/versionado
+
+**Prompt del usuario:** pidió evaluar la mejor solución para el hallazgo de ISS-077 (2 casos:
+`novedades.js` sin precache, `charts-theme-admin.js` sin versionado en el admin).
+
+**Solución evaluada y aprobada:** extender el mecanismo ya probado en ISS-044 en vez de crear
+algo nuevo (se descartó registrar un service worker para el admin — no lo necesita, es
+herramienta de un solo usuario).
+
+**Implementado:**
+- `public/sw.js` — `novedades.js` agregado a `ASSETS`.
+- `app.js` — `/admin/dashboard.html` sumado a `PLANTILLAS` (recibe `__BUILD__` y
+  `Cache-Control: no-cache`, igual que `owner.html`/`menu.html`/`pensionista.html`).
+- `public/admin/dashboard.html` — el script `charts-theme-admin.js` pasa a pedirse con
+  `?v=__BUILD__`.
+- Antes de tocar nada, se verificó que la navegación real (PWA `start_url`, `ADMIN_REDIRECT` del
+  login admin) usa las URLs con `.html` — las rutas sin extensión (`/owner`, `/admin/dashboard`)
+  son alias que no participan del flujo real, así que el fix cubre el tráfico efectivo.
+
+**Verificación:** `scripts/test-version-assets.js` (server local `PORT=3311`) → 25/25 (antes
+24/25). Caso 2 verificado a mano con `curl` (no cubierto por ese script): sin `__BUILD__` sin
+reemplazar, script con `?v=`, `Cache-Control: no-cache`, asset versionado responde 200.
+469/469 jest.
+
+**Docs:** `issues/ISS-077-...md` (→ Resuelto), `issues/ISSUES.md`, este archivo.
+**Pendiente:** deploy a producción.
 
 ---
 

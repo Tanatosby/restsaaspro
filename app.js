@@ -97,10 +97,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads'), {
 // Va ANTES de express.static: si no, static los sirve tal cual con el
 // placeholder sin reemplazar.
 const PLANTILLAS = {
-  '/owner.html':       'text/html; charset=utf-8',
-  '/menu.html':        'text/html; charset=utf-8',
-  '/pensionista.html': 'text/html; charset=utf-8',
-  '/sw.js':            'application/javascript; charset=utf-8',
+  '/owner.html':            'text/html; charset=utf-8',
+  '/menu.html':             'text/html; charset=utf-8',
+  '/pensionista.html':      'text/html; charset=utf-8',
+  '/admin/dashboard.html':  'text/html; charset=utf-8',
+  '/sw.js':                 'application/javascript; charset=utf-8',
 };
 const _plantillaCache = new Map();
 

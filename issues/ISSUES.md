@@ -20,12 +20,12 @@ _(vacío)_
 |----|--------|--------|-----------|
 | [ISS-059](ISS-059-revertir-pedido-cancelado.md) | Sin forma de revertir un pedido cancelado por error | `orders.js`/`reservations.js`/`pedidos.js` | 🔴 Alta |
 | [ISS-060](ISS-060-acceso-pensionista-menu.md) | Pensionistas sin un camino claro para llegar a `pensionista.html` | `menu.html`/`pensionista.html` | 🟡 Media |
-| [ISS-077](ISS-077-novedades-js-fuera-de-assets.md) | Módulos JS fuera del precache/versionado (`novedades.js`, `charts-theme-admin.js`) | `sw.js`/`admin/dashboard.html` | 🟢 Baja |
 
 ## Resueltos
 
 | ID | Título | Fecha resolución | Solución |
 |----|--------|-----------------|---------|
+| [ISS-077](ISS-077-novedades-js-fuera-de-assets.md) | Módulos JS fuera del precache/versionado (`novedades.js`, `charts-theme-admin.js`) | 2026-08-26 | `novedades.js` agregado a `ASSETS` de `sw.js`. `admin/dashboard.html` sumado a `PLANTILLAS` (recibe `__BUILD__` + `Cache-Control: no-cache`, mismo patrón de ISS-044) y su script pasa a pedirse con `?v=`. Sin service worker nuevo para el admin — no lo necesita. |
 | [ISS-076](ISS-076-que-hay-de-nuevo.md) | Sin forma de avisar cambios a la dueña salvo explicarlos en persona/teléfono | 2026-08-25 | Modal "🎉 Qué hay de nuevo" (una vez al abrir, compara `localStorage`) + badge "🆕" por control nuevo (14 días o hasta tocarlo). Se descartó un tour interactivo por costo de mantenimiento. Solo owner/admin. |
 | [ISS-075](ISS-075-agregar-manual-simplificado.md) | "Agregar manual" no se le pegaba a la dueña — modal-sobre-modal con fotos que no necesitaba | 2026-08-25 | Lista plana de nombres inline (sin PlatoPicker ni fotos) para elegir plato por sección; Mesa/Nombre marcados "(opcional)". Carta ya cumplía, sin cambios. Sin backend. |
 | [ISS-074](ISS-074-mesa-grande-orden-chico.md) | Mesa aparecía chica/gris y #orden grande — al revés de lo que necesita cocina | 2026-08-25 | Invertida la jerarquía en Cola, Cocina, Órdenes y Reservas: Mesa en negrita, #orden chico (para llevar/delivery sin mesa quedan como antes). |

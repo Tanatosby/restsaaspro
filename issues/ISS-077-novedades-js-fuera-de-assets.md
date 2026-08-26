@@ -1,6 +1,6 @@
 # ISS-077 — Módulos JS fuera del precache del service worker
 
-**Estado:** Diagnosticado, sin implementar — 2026-08-26 (extendido el mismo día, segundo caso)
+**Estado:** ✅ Resuelto — 2026-08-26 (mismo día del diagnóstico)
 **Reportado por:** hallazgo propio, al correr `scripts/test-version-assets.js` mientras se
 verificaba un cambio no relacionado (cambio de nombre del restaurante).
 
@@ -74,9 +74,24 @@ agresivo — el navegador revalida por heurística (`Last-Modified`/`ETag`), no 
 ISS-044 sugeriría: la ventana de servir una copia vieja es más corta, aunque sigue sin la
 garantía dura que da el `?v=` explícito.
 
-## Pendiente
+## Fix implementado
 
-- Aprobación del usuario para implementar (fuera del alcance de la sesión que lo encontró).
-- Tras el fix del caso 1, volver a correr `scripts/test-version-assets.js` (server local en
-  `PORT=3311`) para confirmar las 25/25. El caso 2 no está cubierto por ese script — habría que
-  extenderlo o verificar a mano.
+- **Caso 1:** `v('/js/modules/novedades.js')` agregado a `ASSETS` en `public/sw.js`.
+- **Caso 2:** extendido el mecanismo de ISS-044 (mismo patrón que `owner.html`/`menu.html`/
+  `pensionista.html`) en vez de agregar un service worker nuevo para el admin:
+  - `app.js` — `/admin/dashboard.html` sumado a `PLANTILLAS`, recibe el reemplazo de `__BUILD__`
+    y el header `Cache-Control: no-cache`.
+  - `public/admin/dashboard.html` — el `<script>` de `charts-theme-admin.js` ahora lleva
+    `?v=__BUILD__`.
+  - Verificado que la navegación real (PWA `start_url` y `ADMIN_REDIRECT` del login) usa la URL
+    con extensión `.html` — las rutas sin extensión (`/owner`, `/admin/dashboard`) son alias que
+    no participan del flujo real, así que el fix cubre el tráfico efectivo.
+
+## Verificación
+
+- `scripts/test-version-assets.js` (server local `PORT=3311`) → **25/25** (antes 24/25, caso 1
+  ahora en verde).
+- Caso 2 verificado a mano (no cubierto por ese script): `/admin/dashboard.html` sale sin
+  `__BUILD__` sin reemplazar, el script pide `?v=<hash>`, `Cache-Control: no-cache` presente, y
+  la URL versionada del asset responde 200.
+- `npx jest` → 469/469.
