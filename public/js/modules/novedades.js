@@ -23,6 +23,13 @@ const NOVEDADES = [
       '"Reservas" ya no aparece en los accesos rápidos de abajo — las reservas del día se siguen viendo en "Cola".',
     ],
   },
+  {
+    id: 2,
+    fecha: '2026-08-26',
+    items: [
+      'Ahora podés cambiar el nombre de tu restaurante vos misma, desde Configuración.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

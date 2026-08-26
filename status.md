@@ -24,11 +24,13 @@ por el usuario:
 | 2026-08-25 | `c269fb1..bd2b991` | **ISS-066** (plato bloquea sección opcional), **ISS-067** (Cola: reservas sin hora enterradas + parpadeo) e **ISS-068** (Stock rápido desde Cola) — día 10 del piloto (visita en persona), más el mockup de descubribilidad (solo doc). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 | 2026-08-25 (tarde) | `bd2b991..440e9e8` | **ISS-069** — deselección de plato en sección opcional (radio nativo no se podía desmarcar) + tap en la foto ahora selecciona el plato en vez de abrir el zoom. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 | 2026-08-25 (noche) | `440e9e8..c148008` | Explicación permanente de Obligatoria/Opcional + **ISS-070** (Compatibilidad de platos, control de 3 estados) + **ISS-071** ("Reservas" oculto del bottom-nav) + **ISS-072** (cobro en 1 clic) + **ISS-073** (anti-parpadeo en Cocina/Órdenes/Reservas) + **ISS-074** (Mesa grande/#orden chico) + **ISS-075** (Agregar manual simplificado) + **ISS-076** (modal "Qué hay de nuevo" + badge "🆕") — día 11 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
+| 2026-08-26 | `c148008..617f3e6` | Cambio de nombre del restaurante (self-service en Configuración + edición desde el admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 
-**Sin pendientes de deploy** — producción está al día con `main` (`c148008`). ISS-059 y ISS-060
+**Pendiente de deploy:** entrada nueva en `novedades.js` (avisa del cambio de nombre — se
+olvidó en el commit anterior, agregada ahora) — ver sesión de hoy más abajo. ISS-059 y ISS-060
 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
-real:** ISS-069 a ISS-076, todos desplegados hoy — falta confirmar con la dueña y con un
-comensal nuevo (deselección, tap en foto, control de compatibilidad, cobro en 1 clic, Cocina
+real:** ISS-069 a ISS-076, todos desplegados el 2026-08-25 — falta confirmar con la dueña y con
+un comensal nuevo (deselección, tap en foto, control de compatibilidad, cobro en 1 clic, Cocina
 sin parpadeo, mesa grande, Agregar manual sola, y que el modal de novedades aparezca).
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
@@ -98,8 +100,23 @@ próxima sesión.
 suites, 469/469 tests.
 
 **Docs:** `.claude/CLAUDE.md`, este archivo.
-**Pendiente:** deploy a producción. Corregir el hallazgo de `novedades.js` faltante en `ASSETS`
-(pendiente de aprobación, no incluido en el alcance de hoy).
+**Desplegado 2026-08-26** (commit `617f3e6`) — `git pull` fast-forward, `pm2 restart`, `pm2
+status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola
+pegado en la conversación).
+
+**Corrección tras el deploy, mismo día:** el usuario preguntó si iba a salir aviso del cambio de
+nombre en el modal de novedades — no había entrada cargada, se pasó por alto pese a la regla
+recién agregada a `CLAUDE.md` en esta misma sesión. Agregada `id: 2` en `novedades.js`. Queda
+pendiente de un nuevo commit/deploy (ver tabla de arriba).
+
+**ISS-077 extendido:** al listar todos los módulos JS en disco contra el array `ASSETS` de
+`sw.js`, apareció un **segundo** archivo fuera de precache — `charts-theme-admin.js`, usado
+solo por `admin/dashboard.html`. Ahí el caso es más grave: ese HTML **no registra el service
+worker en absoluto** (el admin no es una PWA), así que ese script depende 100% del caché HTTP
+normal del navegador — y se pide sin `?v=` de cache-busting, a diferencia de todo lo demás. Es
+el mismo patrón de fondo que ISS-044, sin ninguna de las mitigaciones que ya se aplicaron ahí.
+Detalle actualizado en `issues/ISS-077-novedades-js-fuera-de-assets.md`. Sigue sin
+implementarse — pendiente de aprobación.
 
 ---
 
