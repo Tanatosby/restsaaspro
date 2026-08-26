@@ -111,6 +111,7 @@ no reemplaza la de julio — es la evolución.
 | Día 9 | 2026-08-22 (sábado) | Contado por el usuario el 2026-08-24: status "En preparación" poco claro para el cliente (→ ISS-061), zona Cocina de la Cola del día sin botón "Listo" (→ ISS-062), pedido de reordenar Reservas para mostrar la carta antes que el formulario (→ ISS-063) y de poder repetir un mismo menú sin rearmarlo desde cero (→ ISS-064). Mockups aprobados antes de codear; los 4 implementados y verificados el mismo 2026-08-24. |
 | Día 10 | 2026-08-23 (domingo) | Contado por el usuario el 2026-08-24, junto con el Día 9: un comensal no pudo reservar por no poner hora de llegada — la reserva se bloqueaba validando el horario de "ahora" en vez de simplemente dejarla pasar (→ ISS-065). El usuario lo asumió como error de diseño propio y pidió la corrección en el momento; implementado y verificado el mismo 2026-08-24. Queda pendiente (no implementado) agregar un tooltip junto al campo explicando que la hora es opcional/informativa. |
 | Día 11 | 2026-08-25 (martes) | Contado por el usuario, sin visita en persona: la dueña sigue confundiendo "Cola" con "Reservas" — retoma del punto 1 del Día 10 (visita en persona), esta vez la causa real es que "Reservas" queda en la posición del medio del bottom-nav y lo toca por error yendo hacia "Cola" (→ ISS-071). También se cerró la decisión pendiente de Compatibilidad de platos (Opción A, → ISS-070) y se agregó explicación permanente de Obligatoria/Opcional. Más tarde el mismo día: confusión con el cobro Yape/Plin en 2 clics vs. 1 en efectivo (→ ISS-072, reducido a 1 clic) y pedido de aplicar el anti-parpadeo de Cola a Cocina/Órdenes/Reservas (→ ISS-073) + mostrar la mesa grande en vez del # de orden (→ ISS-074). Detalle abajo. |
+| Día 12 | 2026-08-26 (miércoles) | Contado por el usuario, sin visita en persona. Seguimiento de ISS-074 (mesa mejor, pero el # de orden sigue confundiendo, piden sacarlo) e ISS-073 (ya no parpadea, pero el refresco de Cocina sigue siendo incómodo). 5 hallazgos nuevos de comensales: stock agotado a mitad de un pedido obliga a rehacer todo desde cero, no se puede editar un menú puntual del carrito, elegir el mismo menú para varias personas seguidas no es intuitivo, el botón del carrito es poco descubrible, y nombre+foto es un paso complicado para varios (recomienda agrandarlo). **Sin implementar — a discutir en la próxima sesión.** Detalle abajo. |
 
 > **El domingo 16 de agosto no lleva número de "Día" en esta tabla:** no hay reporte de uso ni de
 > pausa para esa fecha — a diferencia del sábado 15, que el usuario confirmó explícitamente como
@@ -650,6 +651,49 @@ se investigó antes de prometer algo chico sin haber revisado el schema (`platos
 columnas de stock, el gap se repite en 4 rutas, mismo tamaño que el stock del menú del día de
 julio) y se corrigió en el momento con el usuario: decisión de separarlo, anotado en
 `backlog.md` como su propio ítem.
+
+---
+
+### Día 12 (2026-08-26, miércoles) — 7 hallazgos de comensales, sin implementar (a discutir)
+
+Conversación de escritorio, sin visita en persona — contado el mismo día. **Ninguno de estos 7
+puntos se implementó todavía**, a pedido explícito del usuario: quedan documentados acá para
+seguir la discusión en la próxima sesión, desde la otra laptop.
+
+**Seguimiento de ISS-074 (Mesa grande / #orden chico, desplegado 2026-08-25):** mejoró, pero no
+resolvió el problema de fondo. La mesa se ve mejor, pero el número de orden sigue confundiendo
+en Cola y Cocina — preguntaron si se puede sacar directamente de la visualización en vez de
+solo achicarlo.
+
+**Seguimiento de ISS-073 (anti-parpadeo, mismo deploy):** ya no parpadea, pero Cocina "sigue
+refrescándose cada cierto tiempo" y sigue siendo incómodo para la cocinera. El anti-parpadeo
+evitó el repintado visual; el polling en sí (cada 60s) sigue siendo perceptible de alguna otra
+forma que no quedó clara en la conversación — a investigar antes de proponer un fix.
+
+**Comensales — 5 hallazgos, observados por el usuario en persona hoy:**
+
+1. **Stock agotado a mitad de armar un pedido con varios menús → obliga a rehacer todo desde
+   cero.** Quedaban 2 milanesas; una familia pidió 4. Saltó la alerta de stock insuficiente,
+   pero no hubo forma de corregir solo el ítem problemático — la familia tuvo que volver a
+   armar todos los menús del pedido desde el principio.
+2. **No se puede editar un menú puntual ya agregado al carrito.** Mismo síntoma que el punto
+   anterior, causa raíz compartida: la única salida para corregir algo es borrar todos los
+   menús, recargar la página y elegir todo de nuevo. Le tomó bastante tiempo a la familia
+   afectada por el punto 1.
+3. **Elegir el mismo tipo de menú para varias personas de una sola vez no es intuitivo.** Con
+   los radio buttons (ISS-069) elegir un plato a la vez funciona bien para una persona, pero
+   cuando una mamá pregunta "¿tú qué quieres? ¿y tú? ¿y tú?" para varios hijos seguidos, tiene
+   que salir del picker y volver a entrar por cada uno, "como si volviera a elegir" desde cero.
+   Se aprende con el uso, pero no resultó intuitivo la primera vez. Para pensar: ¿alguna forma
+   de elegir 2+ menús iguales en una sola pasada?
+4. **Botón/ícono del carrito poco descubrible.** Otra comensal se perdió al momento de elegir —
+   no encontraba qué botón la llevaba a ver lo que ya había elegido.
+5. **Nombre + adjuntar foto del comprobante: paso complicado para varios comensales.**
+   Recomendación del usuario: agrandar esos elementos por defecto (no solo con el ajuste de
+   letra que ya existe).
+
+**Pendiente:** discutir prioridad y solución para cada uno de los 7 puntos en la próxima
+sesión. Sin cambios de código hoy.
 
 ---
 

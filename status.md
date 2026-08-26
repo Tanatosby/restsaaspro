@@ -62,6 +62,32 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-08-26 (3) — Día 12 del piloto: 7 hallazgos, solo documentación
+
+**Prompt del usuario:** reporte de uso real de hoy (Día 12 — la fecha desambiguó la duda entre
+"día 11 o 12" del propio usuario), pidiendo explícitamente **solo documentar, sin implementar**
+— la discusión de prioridad y solución sigue en la próxima sesión, desde la otra laptop.
+
+**Registrado en `pilotos.md` (Día 12, 2026-08-26):**
+- Seguimiento de ISS-074: la mesa se ve mejor, pero el # de orden sigue confundiendo en
+  Cola/Cocina — piden evaluar sacarlo de la vista, no solo achicarlo.
+- Seguimiento de ISS-073: ya no parpadea, pero el refresco periódico de Cocina sigue siendo
+  incómodo para la cocinera — causa exacta sin determinar todavía.
+- 5 hallazgos de comensales: (1) stock agotado a mitad de un pedido con varios menús obliga a
+  rehacer todo desde cero; (2) no se puede editar un menú puntual ya en el carrito (misma causa
+  raíz que el 1); (3) elegir el mismo menú para varias personas seguidas (ej. una mamá por sus
+  hijos) no es intuitivo — hay que salir y re-entrar al picker por cada uno; (4) el botón del
+  carrito es poco descubrible; (5) nombre + adjuntar foto es un paso complicado para varios,
+  se recomienda agrandarlo por defecto.
+
+**Sin cambios de código.** No se tocó `backlog.md` — la priorización de estos 7 puntos es
+justamente lo que queda por discutir.
+
+**Docs:** `pilotos.md`, este archivo.
+**Pendiente:** retomar la discusión de estos 7 puntos en la próxima sesión.
+
+---
+
 ## 🎯 Sesión 2026-08-26 (2) — ISS-077 resuelto: módulos JS fuera del precache/versionado
 
 **Prompt del usuario:** pidió evaluar la mejor solución para el hallazgo de ISS-077 (2 casos:
