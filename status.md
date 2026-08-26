@@ -25,14 +25,14 @@ por el usuario:
 | 2026-08-25 (tarde) | `bd2b991..440e9e8` | **ISS-069** — deselección de plato en sección opcional (radio nativo no se podía desmarcar) + tap en la foto ahora selecciona el plato en vez de abrir el zoom. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 | 2026-08-25 (noche) | `440e9e8..c148008` | Explicación permanente de Obligatoria/Opcional + **ISS-070** (Compatibilidad de platos, control de 3 estados) + **ISS-071** ("Reservas" oculto del bottom-nav) + **ISS-072** (cobro en 1 clic) + **ISS-073** (anti-parpadeo en Cocina/Órdenes/Reservas) + **ISS-074** (Mesa grande/#orden chico) + **ISS-075** (Agregar manual simplificado) + **ISS-076** (modal "Qué hay de nuevo" + badge "🆕") — día 11 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 | 2026-08-26 | `c148008..617f3e6` | Cambio de nombre del restaurante (self-service en Configuración + edición desde el admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
+| 2026-08-26 (noche) | `617f3e6..0eb1f56` | Entrada de `novedades.js` para el cambio de nombre (se había olvidado) + **ISS-077** (módulos JS fuera de precache/versionado: `novedades.js` y `charts-theme-admin.js` del admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 
-**Pendiente de deploy:** entrada nueva en `novedades.js` (avisa del cambio de nombre — se
-olvidó en el commit anterior, ya agregada) + **ISS-077** resuelto (módulos JS fuera de
-precache/versionado, ver sesión "(2)" de hoy más abajo). ISS-059 y ISS-060
+**Sin pendientes de deploy** — producción está al día con `main` (`0eb1f56`). ISS-059 y ISS-060
 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
-real:** ISS-069 a ISS-076, todos desplegados el 2026-08-25 — falta confirmar con la dueña y con
-un comensal nuevo (deselección, tap en foto, control de compatibilidad, cobro en 1 clic, Cocina
-sin parpadeo, mesa grande, Agregar manual sola, y que el modal de novedades aparezca).
+real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
+hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, tap en foto, control de
+compatibilidad, cobro en 1 clic, Cocina sin parpadeo, mesa grande, Agregar manual sola, modal de
+novedades con las 2 entradas, y el campo de nombre en Configuración).
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -87,7 +87,9 @@ reemplazar, script con `?v=`, `Cache-Control: no-cache`, asset versionado respon
 469/469 jest.
 
 **Docs:** `issues/ISS-077-...md` (→ Resuelto), `issues/ISSUES.md`, este archivo.
-**Pendiente:** deploy a producción.
+**Desplegado 2026-08-26 (noche)** (commit `0eb1f56`, junto con `b6c3fc3`) — `git pull`
+fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`.
+Confirmado por el usuario.
 
 ---
 
