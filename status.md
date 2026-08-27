@@ -26,8 +26,10 @@ por el usuario:
 | 2026-08-25 (noche) | `440e9e8..c148008` | Explicación permanente de Obligatoria/Opcional + **ISS-070** (Compatibilidad de platos, control de 3 estados) + **ISS-071** ("Reservas" oculto del bottom-nav) + **ISS-072** (cobro en 1 clic) + **ISS-073** (anti-parpadeo en Cocina/Órdenes/Reservas) + **ISS-074** (Mesa grande/#orden chico) + **ISS-075** (Agregar manual simplificado) + **ISS-076** (modal "Qué hay de nuevo" + badge "🆕") — día 11 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. |
 | 2026-08-26 | `c148008..617f3e6` | Cambio de nombre del restaurante (self-service en Configuración + edición desde el admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-08-26 (noche) | `617f3e6..0eb1f56` | Entrada de `novedades.js` para el cambio de nombre (se había olvidado) + **ISS-077** (módulos JS fuera de precache/versionado: `novedades.js` y `charts-theme-admin.js` del admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
+| 2026-08-27 | `0eb1f56..1085807` | Doc del Día 12 del piloto (7 hallazgos, sin implementar). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
+| 2026-08-27 (2) | `1085807..bc4109e` | **"⬇ Descargar carta"** — foto de los platos a la carta con precio (`carta-export.js`), pedido real de la dueña, día 13 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 
-**Sin pendientes de deploy** — producción está al día con `main` (`0eb1f56`). ISS-059 y ISS-060
+**Sin pendientes de deploy** — producción está al día con `main` (`bc4109e`). ISS-059 y ISS-060
 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
 hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, tap en foto, control de
