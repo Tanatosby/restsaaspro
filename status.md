@@ -65,6 +65,39 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-08-27 (4) — ISS-079: homologar "Cobrar" para llevar/delivery
+
+**Prompt del usuario:** confirmó ISS-078 desplegado y pidió seguir con el #11 de la lista
+priorizada — homologar "Cobrar" (aprobado 2 sesiones atrás: el caso real era para llevar/delivery,
+no dine-in).
+
+**Implementado:**
+- `public/js/modules/pedidos.js` — `btnOrden()`/`btnReserva()`: la zona "Listos" ya no bifurca por
+  modalidad. Antes, para llevar/delivery mostraba "💰 Cobrar"/"💰 Completar" directo (cerraba de un
+  toque, sin pasar por "Cobrar"); ahora hace la misma parada intermedia que con mesa
+  (`es_entregado`/`es_cliente_llego`), con la etiqueta "📦 Recogido" en vez de "🍽 Entregar/
+  Entregado". La zona "Cobrar" no cambió — ya mostraba genéricamente cualquiera con esos flags.
+- `public/js/modules/reservas.js` — mismo cambio en `renderReservaCard()` (panel clásico
+  "Reservas", accesible desde el menú lateral desde ISS-071), para que no quede una segunda
+  pantalla con el comportamiento viejo.
+- Sin backend: los flags ya eran válidos para cualquier modalidad, la restricción era solo de qué
+  botón mostraba el frontend.
+
+**Verificación:** `scripts/test-cobrar-homologado.js` nuevo (14/14) — verifica los 2 botones por
+función con las 4 combinaciones modalidad×zona, y punta a punta con una orden y una reserva para
+llevar reales (confirma que NO están en "Cobrar" al llegar a "Listos", y que sí aparecen ahí tras
+tocar "📦 Recogido"). `test-modalidad-mixta.js` 19/19 sin regresiones. 469/469 jest.
+
+**Hallazgo colateral, sin corregir (fuera de alcance):** `scripts/test-cola-carrera.js` falla por
+un dato hardcodeado (`Plato #1 no disponible`) que ya no existe así en la BD local de desarrollo —
+sin relación con este cambio, no se investigó más a fondo.
+
+**Docs:** `issues/ISS-079-...md` (nuevo), `issues/ISSUES.md`, `backlog.md`, `pilotos.md`,
+`novedades.js` (entrada id 3, ampliada de nuevo), este archivo.
+**Pendiente:** deploy (el usuario decide cuándo).
+
+---
+
 ## 🎯 Sesión 2026-08-27 (3) — ISS-078: total de pago no coincidía con el carrito (carrito mixto)
 
 **Prompt del usuario:** confirmó que la dueña verificó "Descargar carta" en uso real (OK) y pidió

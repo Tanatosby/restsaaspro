@@ -774,8 +774,12 @@ comportamiento chico pero real (agregar un paso intermedio tipo "📦 Recogido" 
 las 2 entidades).
 
 **Decisión confirmada por el usuario:** sí, el caso es para llevar/delivery (no dine-in) — aprobó
-la solución del paso intermedio "📦 Recogido". **Queda en la lista priorizada de la sesión, sin
-implementar todavía** — se ataca uno por uno según orden de prioridad a decidir.
+la solución del paso intermedio "📦 Recogido".
+
+**Resuelto (2026-08-27):** `btnOrden()`/`btnReserva()` (`pedidos.js`) y `renderReservaCard()`
+(`reservas.js`, el panel clásico) ya no bifurcan por modalidad en "Listos" — para llevar/delivery
+hace la misma parada intermedia que con mesa, con la etiqueta "📦 Recogido". Ver
+[ISS-079](issues/ISS-079-homologar-cobrar-para-llevar.md). Pendiente de deploy.
 
 ---
 

@@ -36,6 +36,7 @@ const NOVEDADES = [
     items: [
       'Nuevo botón "⬇ Descargar carta" en Carta → Platos a la carta — baja una foto con todos tus platos y precios, lista para compartir por WhatsApp (igual que "Descargar menú").',
       'Corregido: cuando un pedido mezclaba "para llevar" y "comer aquí", la pantalla de pago podía mostrarle al cliente un monto menor al real (faltaba cobrar el envase). Ya está arreglado.',
+      'En la Cola del día, los pedidos y reservas "para llevar" ahora pasan por "📦 Recogido" antes de aparecer en "Cobrar" — igual que los que son con mesa, para que siempre quede un lugar donde confirmar si ya se cobró.',
     ],
   },
 ];

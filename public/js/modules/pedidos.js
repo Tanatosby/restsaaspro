@@ -329,10 +329,13 @@ function btnOrden(o, zona) {
   // simétrico y no hay riesgo de dejar un pedido sin forma de volver atrás.
   if (zona === 'cocina' && o.es_en_cocina)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_listo')">✅ Listo</button>`;
-  if (zona === 'listos' && o.es_listo && !paraLlevar)
-    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">🍽 Entregar</button>${btnRegresarACocinaOrden(o)}`;
-  if (zona === 'listos' && o.es_listo && paraLlevar)
-    return `${btnCobrar}${btnRegresarACocinaOrden(o)}`;
+  // ISS-079: antes, para llevar se cobraba directo desde "Listos" (btnCobrar),
+  // sin pasar por "Cobrar" — la orden se cerraba de un solo toque y no quedaba
+  // ningún lugar donde confirmar si pagó o no. Ahora ambas modalidades hacen
+  // la misma parada intermedia (marcar es_entregado) antes de "Cobrar";
+  // homologa el flujo con el de mesa y con reservas — ver btnReserva().
+  if (zona === 'listos' && o.es_listo)
+    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">${paraLlevar ? '📦 Recogido' : '🍽 Entregar'}</button>${btnRegresarACocinaOrden(o)}`;
   if (zona === 'cobrar' && o.es_entregado)
     return btnCobrar;
   return '';
@@ -348,10 +351,12 @@ function btnReserva(r, zona) {
   // Día 9 del piloto — mismo criterio que btnOrden(): ver comentario arriba.
   if (zona === 'cocina' && r.es_en_cocina)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_listo')">✅ Listo</button>`;
-  if (zona === 'listos' && r.es_listo && !sinMesa)
-    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_cliente_llego')">🍽 Entregado</button>${btnRegresarACocinaReserva(r)}`;
-  if (zona === 'listos' && r.es_listo && sinMesa)
-    return `${btnCompletar}${btnRegresarACocinaReserva(r)}`;
+  // ISS-079: para llevar/delivery se completaba directo desde "Listos", sin
+  // pasar por "Cobrar" — igual que btnOrden(), ahora hace la misma parada
+  // intermedia (marcar es_cliente_llego) para que siempre haya un lugar donde
+  // confirmar el pago antes de cerrar.
+  if (zona === 'listos' && r.es_listo)
+    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_cliente_llego')">${sinMesa ? '📦 Recogido' : '🍽 Entregado'}</button>${btnRegresarACocinaReserva(r)}`;
   if (zona === 'cobrar' && r.es_cliente_llego)
     return btnCompletar;
   return '';
