@@ -35,6 +35,7 @@ const NOVEDADES = [
     fecha: '2026-08-27',
     items: [
       'Nuevo botón "⬇ Descargar carta" en Carta → Platos a la carta — baja una foto con todos tus platos y precios, lista para compartir por WhatsApp (igual que "Descargar menú").',
+      'Corregido: cuando un pedido mezclaba "para llevar" y "comer aquí", la pantalla de pago podía mostrarle al cliente un monto menor al real (faltaba cobrar el envase). Ya está arreglado.',
     ],
   },
 ];

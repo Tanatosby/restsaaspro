@@ -1245,7 +1245,12 @@ async function renderReservarContent() {
     // de elegir método de pago (antes se creaba acá y el pago quedaba como
     // paso posterior, sin bloquear nada — ver Gap 17 en vision_negocio.md).
     if (tienePagos) {
-      const cargo = getModalidadOrden() === 'para_llevar' ? contarTappers(cart) * (modalidades.costo_tapper || 0) : 0;
+      // ISS-078: acá se usaba getModalidadOrden() === 'para_llevar', que solo
+      // cobraba el tapper si TODO el pedido era para llevar — con un carrito
+      // mixto (ISS-047) el cargo se caía a 0 y el total de esta pantalla no
+      // coincidía con el que ya mostraba el carrito. contarTappersLlevar()
+      // es la misma cuenta por ítem que usa updateCart().
+      const cargo = contarTappersLlevar(cart) * (modalidades.costo_tapper || 0);
       pagoPendiente = {
         tipo: 'orden', payload, nombre,
         items: cart.slice(),

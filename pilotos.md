@@ -722,8 +722,10 @@ calcula el cargo correcto server-side (`calcularCargoModalidad()`, ISS-029/ISS-0
 sistema registra S/ 23.50, pero la dueña cobró S/ 1.50 menos de lo que el comensal transfirió.
 **Es una fuga de dinero real, no solo un número que no coincide en pantalla.**
 
-**Pendiente:** el usuario propuso revisar esta parte — queda para decidir alcance y aprobar el fix
-antes de tocar código (ver turno siguiente de la conversación).
+**Resuelto el mismo día (2026-08-27):** `confirmarPedido()` pasó a usar `contarTappersLlevar(cart)`
+(la misma cuenta por ítem que ya usa el carrito) en vez del chequeo viejo `getModalidadOrden() ===
+'para_llevar'`. Ver [ISS-078](issues/ISS-078-precio-pago-no-coincide-carrito-mixto.md). Pendiente
+de deploy.
 
 ---
 
@@ -792,8 +794,7 @@ versión simple (una sola imagen, sin PDF): su carta real tiene 3 categorías y 
 Fondos 4, Ceviches 2), de sobra para una sola foto sin pagineado. Implementado como
 `public/js/widgets/carta-export.js` (hermano de `menu-export.js`) + botón "⬇ Descargar carta" en
 Carta → Platos a la carta. 16/16 E2E nuevo + 469/469 jest sin regresiones. Ver `features.md`.
-**Pendiente:** verlo usado por la dueña con su carta real y confirmar que la foto le sirve para
-compartir por WhatsApp.
+**Verificado en uso real (2026-08-27):** la dueña confirmó que la carta descargada está bien.
 
 ---
 

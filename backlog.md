@@ -54,7 +54,7 @@ ISS-046, commit `a47d132` — ver `status.md`).
 | — | Fiados / pago diferido (cliente sin dinero que promete pagar después) | 🟢 P2/backlog explícito — el usuario lo bajó de prioridad a propósito |
 | ~~—~~ | ~~"⬇ Descargar carta" — foto de los platos a la carta con precio, como ya existe para el menú del día~~ | ✅ **Hecho 2026-08-27** — `carta-export.js`, sin backend nuevo, solo imagen (sin PDF, ver `features.md`). Pedido real, día 13 del piloto — pendiente de deploy y de verlo usado |
 | — | Homologar "Cobrar": para llevar/delivery (orden y reserva) deben pasar por Cobrar antes de cerrarse, no completarse directo desde "Listos" | 🔴 Aprobado por el usuario, día 13. Sin implementar — siguiente en la lista priorizada, ver `pilotos.md` |
-| — | Discrepancia de precio: carrito mixto (en_local + para_llevar) muestra un total en el carrito y otro en la pantalla de pago — pérdida de dinero real | 🔴 Diagnosticado, día 13. Sin implementar — primero en la lista priorizada |
+| ~~ISS-078~~ | ~~Discrepancia de precio: carrito mixto (en_local + para_llevar) muestra un total en el carrito y otro en la pantalla de pago — pérdida de dinero real~~ | ✅ **Hecho 2026-08-27** — `confirmarPedido()` ahora usa `contarTappersLlevar()`, igual que el carrito. 5/5 E2E nuevo (`test-pago-mixto.js`) + 469/469 jest. Pendiente de deploy — ver `ISS-078` |
 | — | Stock agotado a mitad de un pedido con varios menús obliga a rehacer todo desde cero; no se puede editar un menú puntual en el carrito | 🔴 Bloquea el uso en hora pico. Reportado día 12. Sin implementar |
 | — | Reservas sin hora no activan el auto-avance a cocina (`utils/autoPreparacion.js` exige `hora_llegada`) → quedan atascadas en "confirmada" | 🟡 Diagnosticado, día 13. Sin implementar |
 

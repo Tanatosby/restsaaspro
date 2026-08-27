@@ -64,6 +64,31 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-08-27 (3) — ISS-078: total de pago no coincidía con el carrito (carrito mixto)
+
+**Prompt del usuario:** confirmó que la dueña verificó "Descargar carta" en uso real (OK) y pidió
+seguir con el #8 de la lista priorizada — la discrepancia de precio carrito vs. pantalla de pago
+diagnosticada en la sesión anterior.
+
+**Implementado:**
+- `public/menu.html` — `confirmarPedido()`: el cargo del tapper pasa de
+  `getModalidadOrden() === 'para_llevar' ? contarTappers(cart) * costo_tapper : 0` a
+  `contarTappersLlevar(cart) * costo_tapper` — misma cuenta por ítem que ya usa `updateCart()`. Con
+  un carrito mixto (1 menú para llevar + 1 en local) ya no se cae a 0.
+- Reservas revisadas aparte: **no tenían el bug** — la modalidad de una reserva es un radio button
+  para todo el pedido, no por ítem, así que no existe el caso de carrito mixto ahí.
+
+**Verificación:** `scripts/test-pago-mixto.js` nuevo (5/5) — arma el carrito mixto real, activa
+Yape, y compara el total del carrito contra el de la pantalla de pago (con el código viejo este
+test fallaba: S/ 30.00 en pago vs. S/ 31.50 en el carrito). `scripts/test-modalidad-mixta.js`
+19/19 sin regresiones. 469/469 jest.
+
+**Docs:** `issues/ISS-078-...md` (nuevo), `issues/ISSUES.md`, `backlog.md`, `pilotos.md`,
+`novedades.js` (entrada id 3, ampliada), este archivo.
+**Pendiente:** deploy (el usuario decide cuándo).
+
+---
+
 ## 🎯 Sesión 2026-08-27 (2) — Día 13: "Descargar carta" implementado + homologación de Cobrar priorizada
 
 **Prompt del usuario:** de los 10 puntos abiertos de la sesión anterior, eligió empezar por el #10
