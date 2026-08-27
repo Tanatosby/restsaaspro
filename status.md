@@ -62,6 +62,85 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-08-27 (2) — Día 13: "Descargar carta" implementado + homologación de Cobrar priorizada
+
+**Prompt del usuario:** de los 10 puntos abiertos de la sesión anterior, eligió empezar por el #10
+(descargar la carta como foto). En el camino surgieron 2 temas más: aclarar el flujo real de
+estados de reservas (4 zonas de la Cola del día vs. los 5-6 estados internos) y confirmar el pedido
+de homologar "Cobrar" para para llevar/delivery en ambas entidades — quedó aprobado pero **sin
+implementar todavía**, se ataca en una próxima sesión según la lista priorizada.
+
+**Implementado — #10, "⬇ Descargar carta":**
+- `public/js/widgets/carta-export.js` — nuevo, hermano autocontenido de `menu-export.js`. Compone
+  un canvas con banda superior (nombre + "CARTA"), título "Nuestra carta" y una fila de cards por
+  categoría (foto + nombre + **precio por plato**, que el menú del día no necesita). Reusa
+  `GET /api/menu/platos-carta` y `GET /api/menu/restaurante/config` — sin backend nuevo. Platos con
+  `activo = 0` quedan afuera.
+- `public/owner.html` — botón "⬇ Descargar carta" junto a "＋ Crear plato" (Carta → Platos a la
+  carta) + script tag versionado (`?v=__BUILD__`).
+- `public/sw.js` — `carta-export.js` sumado a `ASSETS` (mismo criterio de ISS-044/ISS-077).
+- **Decisión de alcance con el usuario:** solo imagen única por ahora, sin PDF ni paginado — se
+  evaluó jsPDF (primera librería de ese tipo en el proyecto) y se descartó para un caso
+  hipotético; la carta real de la dueña (3 categorías, 10 platos) no lo necesita. Se revisa si
+  hace falta cuando exista una carta real que se vea mal en una sola foto.
+
+**Verificación:** `scripts/test-carta-export.js` nuevo, 16/16. `scripts/test-version-assets.js`
+25/25. 469/469 jest sin regresiones.
+
+**Hallazgo colateral, corregido de paso:** `scripts/test-menu-export.js` estaba roto desde ISS-076
+(25/08) — el modal "Qué hay de nuevo" tapa los botones en un navegador de test nuevo y nadie lo
+había vuelto a correr. Mismo fix de una línea (cerrar el modal antes de interactuar) en ambos
+tests; vuelve a dar 25/25.
+
+**Sin implementar, aprobado y priorizado para la próxima sesión:** homologar "Cobrar" — que
+para llevar/delivery (orden y reserva) pasen por la pestaña "Cobrar" antes de cerrarse, en vez de
+completarse directo desde "Listos". Ver `pilotos.md` Día 13 y la tabla de prioridades.
+
+**Aparte, sin acción:** se notó que `dotenv` (v17.4.2) imprime un "tip" promocional al arrancar
+el server (`◇ injected env... // tip: ...`), incluyendo una mención a un producto de terceros
+("vestauth.com"). Se confirmó en el código de la librería que es una función propia de dotenv
+(array `TIPS` en `node_modules/dotenv/lib/main.js`), no un problema de seguridad — solo ruido en
+los logs. No se tocó nada; mencionado por transparencia.
+
+**Docs:** `features.md`, `novedades.js` (entrada id 3), `pilotos.md`, `backlog.md`,
+`issues/ISSUES.md`, este archivo.
+**Pendiente:** deploy (el usuario decide cuándo). Retomar la lista priorizada: #8 (discrepancia de
+precio) → homologar Cobrar → #3/#4 (stock a mitad de pedido) → #9 (reservas atascadas) → resto de
+UX del Día 12.
+
+---
+
+## 🎯 Sesión 2026-08-27 — Día 13 del piloto: 3 hallazgos nuevos, solo documentación
+
+**Prompt del usuario:** 3 reportes en conversación de escritorio, sin implementar nada — se pidió
+explícitamente documentar y armar una tabla para decidir qué se trabaja.
+
+1. **Discrepancia de precio carrito vs. pantalla de pago** (con pérdida de dinero real). Causa
+   raíz encontrada en `menu.html`: `confirmarPedido()` calcula el cargo del tapper con
+   `getModalidadOrden() === 'para_llevar'` (chequeo de TODO el pedido, previo a ISS-047), en vez
+   de `contarTappersLlevar()` (por ítem, lo que ya usa el carrito) — con un carrito mixto
+   (1 menú para llevar + 1 en local) el cargo se cae a 0 en la pantalla de pago. El comensal paga
+   por Yape/Plin el monto de menos; el backend sí calcula el total correcto al crear el pedido. El
+   mismo patrón está duplicado en `updateResCartSummary()`/`confirmarReserva()` (reservas).
+2. **Reservas atascadas en "confirmada", no llegan a Cobrar.** No es un bug de pérdida de datos —
+   el avance por estados es manual (botones en `pedidos.js`/`reservas.js`). La causa concreta:
+   `utils/autoPreparacion.js` (el job que empuja sola una reserva confirmada a "🍳 A cocina")
+   exige `hora_llegada IS NOT NULL`, y desde **ISS-065** (2026-08-24) reservar sin hora ya no se
+   bloquea — las reservas sin hora nunca activan el job y quedan atascadas hasta que alguien las
+   toca a mano. Si pasa la fecha, salen de la Cola del día y aparecen solo en el banner "Pedidos
+   sin cerrar".
+3. **Idea nueva:** descargar la carta (à la carta) como foto/PDF, mismo estilo que
+   `MenuExport`/"⬇ Descargar menú" pero con platos + precios; PDF si la lista es muy larga para
+   una sola imagen.
+
+**Sin cambios de código.** Los 3 quedan sumados a los 7 hallazgos del Día 12 (todavía sin
+priorizar) para la próxima sesión.
+
+**Docs:** `pilotos.md` (Día 13, 3 entradas), este archivo.
+**Pendiente:** priorizar en conjunto los 10 puntos abiertos (7 del Día 12 + 3 de hoy).
+
+---
+
 ## 🎯 Sesión 2026-08-26 (3) — Día 12 del piloto: 7 hallazgos, solo documentación
 
 **Prompt del usuario:** reporte de uso real de hoy (Día 12 — la fecha desambiguó la duda entre

@@ -55,6 +55,7 @@ const ASSETS = [
   v('/js/widgets/pwa-install.js'),
   v('/js/widgets/menu-wizard.js'),
   v('/js/widgets/menu-export.js'),
+  v('/js/widgets/carta-export.js'),
   v('/js/widgets/menu-modal.js'),
 ];
 

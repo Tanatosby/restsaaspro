@@ -697,6 +697,106 @@ sesión. Sin cambios de código hoy.
 
 ---
 
+### Día 13 (2026-08-27, jueves) — discrepancia de precio: carrito vs. pantalla de pago
+
+Reportado por el usuario en conversación de escritorio: un comensal eligió un menú para llevar y
+otro para comer en el local (mismo pedido). El carrito le mostró **S/ 23.50**, pero al pasar a la
+pantalla "¿Cómo vas a pagar?" (Yape) el total cambió a **S/ 22.00** — una diferencia de S/ 1.50,
+exactamente el costo de un tapper.
+
+**Diagnóstico (mismo día, código revisado, sin implementar todavía):** desde ISS-047 la modalidad
+vive por ítem y `getModalidadOrden()` resume el carrito como `'en_local' | 'para_llevar' |
+'mixto'`. El carrito (`updateCart()`) calcula el cargo con `contarTappersLlevar()`, que cuenta
+solo los ítems marcados "para llevar" — correcto, da 23.50. Pero `confirmarPedido()`, al armar
+`pagoPendiente.total` para la pantalla de pago, usa una condición vieja que no se actualizó con
+ISS-047: `getModalidadOrden() === 'para_llevar'` — solo aplica el cargo si **todo** el pedido es
+para llevar. Con un carrito mixto, `getModalidadOrden()` da `'mixto'`, la condición es falsa, y el
+cargo del tapper se cae a 0 → total mostrado 22.00. El mismo patrón se repite en
+`updateResCartSummary()`/`confirmarReserva()` (reservas), aunque ahí la modalidad se elige con un
+radio button para todo el pedido, no por ítem, así que el caso mixto no aplica igual — a revisar
+si existe un camino real para combinarlo ahí también.
+
+**Impacto real, no solo visual:** el monto de la pantalla de pago es el que el comensal usa para
+saber cuánto transferir por Yape/Plin — pagó S/ 22 reales. El pedido que se crea en el backend sí
+calcula el cargo correcto server-side (`calcularCargoModalidad()`, ISS-029/ISS-047), así que el
+sistema registra S/ 23.50, pero la dueña cobró S/ 1.50 menos de lo que el comensal transfirió.
+**Es una fuga de dinero real, no solo un número que no coincide en pantalla.**
+
+**Pendiente:** el usuario propuso revisar esta parte — queda para decidir alcance y aprobar el fix
+antes de tocar código (ver turno siguiente de la conversación).
+
+---
+
+### Día 13 (2026-08-27, jueves, continuación) — reservas atascadas en "confirmada", nunca llegan a Cobrar
+
+Pregunta del usuario: notó que varias reservas no llegan a la lista de "Cobrar" y quedan con
+status "confirmar", que "mata todo". Preguntó si eso lo administra él mismo desde su panel.
+
+**Respuesta, con el código revisado:**
+
+Sí — el avance de una reserva por sus estados (Confirmar → 🍳 A cocina → ✅ Listo → 🍽 Entregado/💰
+Completar) es **manual**, con un botón por paso en la Cola del día (`pedidos.js`) o en el panel
+clásico "Reservas" (accesible desde el menú lateral desde ISS-071). No es un bug que pierda datos.
+
+**Pero hay una causa concreta de por qué "varios pedidos no llegan":** existe un job automático
+(`utils/autoPreparacion.js`) que debería mover solo una reserva confirmada a "🍳 A cocina" cuando
+se acerca su hora de llegada — así el owner no tiene que acordarse de tocar el botón. Ese job
+**exige `hora_llegada IS NOT NULL`** para calcular cuándo dispararse. Desde **ISS-065
+(2026-08-24)** reservar sin hora de llegada dejó de bloquearse — es decir, desde esa fecha es más
+común tener reservas sin hora, y **esas reservas nunca activan el job automático**: quedan en
+"confirmada" (zona "Pendientes" de la Cola) hasta que alguien las toca a mano. Si nadie las
+avanza y pasa la fecha, salen de las 4 zonas del día y aparecen en el banner "Pedidos sin cerrar"
+(cierre de caja) — no se pierden, pero sí quedan escondidas de la vista principal día a día.
+
+**Hipótesis, no confirmada con el usuario:** el aumento de reservas sin hora (permitido a
+propósito por ISS-065) es probablemente lo que está generando más reservas "atascadas" que antes,
+porque ahora una porción de ellas nunca recibe el empujón automático.
+
+**Sin cambios de código.** Falta decidir con el usuario si el fix es (a) explicarle mejor que debe
+tocar "🍳 A cocina" a mano cuando no hay hora, o (b) hacer que el job también dispare para reservas
+sin hora (con qué criterio de tiempo, si no hay hora que usar), o (c) ambas.
+
+**Refinamiento del mismo día:** el usuario describió el flujo real que ve como "confirmar →
+pendientes → cocina → listos → desaparece" (sin botón "Entregar", sin pasar por "Cobrar"). Se
+verificó en el código: eso ocurre exactamente cuando la reserva es `para_llevar`/`delivery` — en
+"Listos" el único botón es "💰 Completar", que cierra la reserva de una sin visitar "Cobrar" (mismo
+atajo que ya existe para órdenes para llevar, es simétrico). Las reservas con mesa (`en_local`) sí
+tienen "🍽 Entregado" y sí pasan por "Cobrar". Preguntado cuál de los 2 casos es el real, el usuario
+no está seguro — pidió revisarlo con casos reales. **Sin confirmar si hay además un bug en el caso
+con mesa.**
+
+**Pedido explícito del usuario:** homologar para que TANTO reservas como órdenes pasen siempre por
+"Cobrar" antes de cerrarse, sin importar la modalidad — así siempre hay un lugar donde confirmar si
+pagó o no, en vez de que para llevar/delivery se cierre de un solo toque. Es un cambio de
+comportamiento chico pero real (agregar un paso intermedio tipo "📦 Recogido" antes de Cobrar, para
+las 2 entidades).
+
+**Decisión confirmada por el usuario:** sí, el caso es para llevar/delivery (no dine-in) — aprobó
+la solución del paso intermedio "📦 Recogido". **Queda en la lista priorizada de la sesión, sin
+implementar todavía** — se ataca uno por uno según orden de prioridad a decidir.
+
+---
+
+### Día 13 (2026-08-27, jueves, continuación 2) — idea: descargar la carta (à la carta) como foto/PDF
+
+El usuario pide el mismo tipo de "foto para compartir" que ya existe para el menú del día
+(`MenuExport`, botón "⬇ Descargar menú" en Configuración), pero para los **platos a la carta**
+— con sus precios, mismo estilo visual. Como la carta suele ser más larga que un menú del día,
+propone que si la lista es muy larga se genere un PDF en vez de una sola imagen.
+
+**Sin cambios de código todavía** — queda como idea a planificar (ver tabla de la sesión).
+
+**Actualización (mismo día, implementado):** el usuario confirmó que **no es hipótesis** — la
+dueña ya empezó a usar "Carta" de verdad y pidió esto en persona. Se decidió arrancar con la
+versión simple (una sola imagen, sin PDF): su carta real tiene 3 categorías y 10 platos (Bebidas 4,
+Fondos 4, Ceviches 2), de sobra para una sola foto sin pagineado. Implementado como
+`public/js/widgets/carta-export.js` (hermano de `menu-export.js`) + botón "⬇ Descargar carta" en
+Carta → Platos a la carta. 16/16 E2E nuevo + 469/469 jest sin regresiones. Ver `features.md`.
+**Pendiente:** verlo usado por la dueña con su carta real y confirmar que la foto le sirve para
+compartir por WhatsApp.
+
+---
+
 ## Plantilla para el próximo piloto
 
 ```

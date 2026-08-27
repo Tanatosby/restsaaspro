@@ -30,6 +30,13 @@ const NOVEDADES = [
       'Ahora podés cambiar el nombre de tu restaurante vos misma, desde Configuración.',
     ],
   },
+  {
+    id: 3,
+    fecha: '2026-08-27',
+    items: [
+      'Nuevo botón "⬇ Descargar carta" en Carta → Platos a la carta — baja una foto con todos tus platos y precios, lista para compartir por WhatsApp (igual que "Descargar menú").',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

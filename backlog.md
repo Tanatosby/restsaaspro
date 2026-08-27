@@ -52,6 +52,11 @@ ISS-046, commit `a47d132` — ver `status.md`).
 | **ISS-043** | El menú sin secciones obligatorias **cobra de menos** (ver sección propia) | Es de cobro, no de vista. Falta correr la consulta en producción para saber si aplica |
 | ~~—~~ | ~~Imagen descargable del menú para compartir por WhatsApp (complementaria al link)~~ | ✅ **Hecho y desplegado 2026-08-17** (`9c9de62` + `32c8fb0`) — botón «⬇ Descargar menú» en la card de Configuración de menús, `public/js/widgets/menu-export.js`. Sin backend. Ver `features.md`. Falta verlo usado en un servicio real |
 | — | Fiados / pago diferido (cliente sin dinero que promete pagar después) | 🟢 P2/backlog explícito — el usuario lo bajó de prioridad a propósito |
+| ~~—~~ | ~~"⬇ Descargar carta" — foto de los platos a la carta con precio, como ya existe para el menú del día~~ | ✅ **Hecho 2026-08-27** — `carta-export.js`, sin backend nuevo, solo imagen (sin PDF, ver `features.md`). Pedido real, día 13 del piloto — pendiente de deploy y de verlo usado |
+| — | Homologar "Cobrar": para llevar/delivery (orden y reserva) deben pasar por Cobrar antes de cerrarse, no completarse directo desde "Listos" | 🔴 Aprobado por el usuario, día 13. Sin implementar — siguiente en la lista priorizada, ver `pilotos.md` |
+| — | Discrepancia de precio: carrito mixto (en_local + para_llevar) muestra un total en el carrito y otro en la pantalla de pago — pérdida de dinero real | 🔴 Diagnosticado, día 13. Sin implementar — primero en la lista priorizada |
+| — | Stock agotado a mitad de un pedido con varios menús obliga a rehacer todo desde cero; no se puede editar un menú puntual en el carrito | 🔴 Bloquea el uso en hora pico. Reportado día 12. Sin implementar |
+| — | Reservas sin hora no activan el auto-avance a cocina (`utils/autoPreparacion.js` exige `hora_llegada`) → quedan atascadas en "confirmada" | 🟡 Diagnosticado, día 13. Sin implementar |
 
 **Decisión del usuario pendiente, sin bloquear nada:** el ícono de calendario con la fecha real
 (reemplazo del emoji 📅, que dibuja "17 de julio" fijo). Están las 3 variantes renderizadas y

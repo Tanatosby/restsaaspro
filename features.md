@@ -249,6 +249,39 @@ descarga real con su nombre de archivo, el aviso cuando el menú no tiene platos
 consola. Además se revisó **la imagen generada a ojo**, que es lo que destapó el bug de la grilla.
 423/423 jest y 51/51 de `test-menu-wizard.js` sin regresiones.
 
+## ~~Descargar la carta (à la carta) como foto~~ ✅ Completado 2026-08-27
+
+Pedido real de la dueña del piloto #1, día 13 (2026-08-27) — ya empezó a usar "Carta" de verdad y
+quiso el mismo botón que ya tiene "Descargar menú", pero para los platos a la carta, con el precio
+de cada uno (la carta no tiene un precio único como el menú del día).
+
+**Dónde:** Carta → Platos a la carta → **«⬇ Descargar carta»**, junto a «＋ Crear plato».
+
+**ARCH:** `public/js/widgets/carta-export.js` — hermano autocontenido de `menu-export.js`, mismo
+mecanismo (canvas compuesto en el celular → JPEG, `carta.jpg`). Sin backend nuevo: reusa
+`GET /api/menu/platos-carta` (ya existía) y `GET /api/menu/restaurante/config` (mismo caché que
+`MenuExport`). Los platos ocultos (`activo = 0`) no entran, igual criterio que la vista pública.
+
+**El diseño:** banda superior con el nombre del restaurante + "CARTA", título "Nuestra carta", y
+cada categoría en una fila de cards (foto + nombre + precio) — misma grilla adaptable de
+`MenuExport` (1-3 platos ocupan la fila entera, 4 se parten 2+2, de 5 en adelante van de a 3), pero
+cada card suma su propia línea de precio, que el menú del día no necesita.
+
+**Decisión de alcance, tomada con el usuario:** por ahora **solo imagen única**, sin PDF ni
+paginado. La carta real de la dueña tiene 3 categorías y 10 platos — de sobra para una sola foto.
+Se decidió no sumar una librería de PDF (primera dependencia de ese tipo en el proyecto) para un
+caso que todavía no existe; si alguna carta real resulta demasiado larga para una imagen, se revisa
+con ese caso concreto en mano.
+
+**Verificación:** `scripts/test-carta-export.js` nuevo, 16/16 — botón presente y con touch target
+≥44px, medidas del lienzo contra la fórmula del diseño, color de la banda por píxel, descarga real
+como `carta.jpg`, sin overflow horizontal, 0 errores de consola. 469/469 jest sin regresiones.
+
+**Hallazgo colateral, corregido de paso:** `scripts/test-menu-export.js` estaba roto desde
+ISS-076 (25/08) — el modal "Qué hay de nuevo" tapa los botones en un navegador de test nuevo
+(sin nada en `localStorage`) y nadie lo había vuelto a correr desde entonces. Se agregó el mismo
+cierre del modal que ya lleva el test nuevo; vuelve a dar 25/25.
+
 ## ~~Un deploy ya no puede dejar el panel vacío~~ ✅ Completado 2026-08-16
 *Ver [ISS-044](issues/ISS-044-panel-vacio-tras-deploy.md) y **T11** del backlog, que compartían causa.*
 

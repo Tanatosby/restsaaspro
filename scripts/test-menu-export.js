@@ -77,6 +77,12 @@ function expectedHeight(secciones, conPortada) {
     await page.waitForLoadState('networkidle');
     console.log('Login OK →', page.url());
 
+    // Cerrar el modal "Qué hay de nuevo" (ISS-076) si aparece — un contexto
+    // de navegador nuevo no tiene nada en localStorage, así que siempre sale
+    // en la primera carga y tapa los botones del panel.
+    const novCerrar = page.locator('.nov-btn-cerrar');
+    if (await novCerrar.count() > 0) await novCerrar.click();
+
     console.log('\n── El widget carga ──');
     check(await page.evaluate(() => typeof window.MenuExport?.download === 'function'), 'MenuExport.download() expuesto');
     check(await page.evaluate(() => typeof window.MenuExport?.render === 'function'), 'MenuExport.render() expuesto');

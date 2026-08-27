@@ -44,6 +44,7 @@
   <script src="/js/widgets/pwa-install.js?v=__BUILD__"></script>
   <script src="/js/widgets/menu-wizard.js?v=__BUILD__"></script>
   <script src="/js/widgets/menu-export.js?v=__BUILD__"></script>
+  <script src="/js/widgets/carta-export.js?v=__BUILD__"></script>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c8692a">
 
@@ -2247,9 +2248,28 @@ async function loadPlatosCarta() {
     mount.innerHTML = `
       <div class="mw">
         <button class="mw-create-btn" onclick="abrirCrearPlatoCarta()">＋ Crear plato</button>
+        <button class="mw-btn" id="btn-descargar-carta" onclick="descargarCarta()">⬇ Descargar carta</button>
         <div class="mw-menus pc-plate-gallery">${cards}</div>
       </div>`;
   } catch(e) { mount.innerHTML = emptyState('⚠️', e.message); }
+}
+
+// Foto de la carta completa para compartir por WhatsApp — mismo mecanismo que
+// "⬇ Descargar menú" (MenuExport), pedido real de la dueña del piloto día 13.
+async function descargarCarta() {
+  const btn = document.getElementById('btn-descargar-carta');
+  if (!btn) return;
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Generando…';
+  try {
+    await window.CartaExport?.download();
+  } catch (err) {
+    toast(err.message || 'No se pudo generar la imagen', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
 }
 
 function platoCartaCard(p) {
