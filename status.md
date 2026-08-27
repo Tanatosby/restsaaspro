@@ -28,8 +28,9 @@ por el usuario:
 | 2026-08-26 (noche) | `617f3e6..0eb1f56` | Entrada de `novedades.js` para el cambio de nombre (se había olvidado) + **ISS-077** (módulos JS fuera de precache/versionado: `novedades.js` y `charts-theme-admin.js` del admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-08-27 | `0eb1f56..1085807` | Doc del Día 12 del piloto (7 hallazgos, sin implementar). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-08-27 (2) | `1085807..bc4109e` | **"⬇ Descargar carta"** — foto de los platos a la carta con precio (`carta-export.js`), pedido real de la dueña, día 13 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
+| 2026-08-27 (3) | `bc4109e..4947e23` | **ISS-078** — la pantalla de pago no cobraba el tapper en un carrito mixto (para llevar + en local), el comensal pagaba de menos por Yape/Plin. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 
-**Sin pendientes de deploy** — producción está al día con `main` (`bc4109e`). ISS-059 y ISS-060
+**Sin pendientes de deploy** — producción está al día con `main` (`4947e23`). ISS-059 y ISS-060
 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
 hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, tap en foto, control de
