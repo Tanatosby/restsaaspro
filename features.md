@@ -282,6 +282,50 @@ ISS-076 (25/08) — el modal "Qué hay de nuevo" tapa los botones en un navegado
 (sin nada en `localStorage`) y nadie lo había vuelto a correr desde entonces. Se agregó el mismo
 cierre del modal que ya lleva el test nuevo; vuelve a dar 25/25.
 
+## ~~Pedir: cantidad primero, configurar después~~ ✅ Completado 2026-08-27
+
+Rediseño completo del flujo de "Pedir" en `menu.html` (Reservar no cambió). Resuelve 3 hallazgos
+del Día 12 del piloto — stock a mitad de pedido obligaba a rehacer todo, no se podía editar un
+menú puntual, carrito poco descubrible — más 2 problemas de flujo encontrados al probar un
+prototipo interactivo el día 13, antes de aprobar el diseño final.
+
+**Antes:** tocar la card de un menú abría el picker directo, de a una unidad. Sin cantidad previa,
+sin editar una unidad ya agregada (solo borrar la fila entera), sin freno si el carrito quedaba
+con algo a medio pedir.
+
+**Ahora:**
+- **Cantidad primero:** stepper en la card del menú (igual al que ya tenía la carta) — elegir
+  cuántos no abre nada todavía.
+- **Configurar después:** botón "Elegir opciones (N)" arranca el picker, que encadena solo unidad
+  tras unidad ("1/2", "2/2"…) y, si se pidieron 2+ tipos de menú, sigue directo con el próximo
+  pendiente al terminar uno — sin volver a la lista entre medio.
+- **El carrito nunca se abre incompleto:** si queda algún menú con cantidad marcada sin
+  configurar, tocar el carrito arranca el wizard ahí primero.
+- **"✏️ Editar" por unidad del carrito:** reabre el picker con la selección real de esa unidad
+  puntual y la reemplaza al guardar — sin tocar las demás ni perder nada del resto del pedido.
+- Cada unidad de menú es su propia fila en el carrito (antes se agrupaban las idénticas con un
+  stepper — decisión tomada con el usuario: con el flujo nuevo cada una ya pasó por su propio
+  picker, tiene sentido que se edite por separado).
+
+**ARCH:** `renderMenuDiaCard()` bifurca por modo (Pedir cambia, Reservar intacto).
+`elegirOpcionesPedir()`/`continuarWizardPedir()`/`abrirCarritoPedir()` nuevas en `menu.html`.
+`validarSeleccionMenu()`/`armarItemMenu()` extraídas de `agregarMenu()` para compartir la misma
+validación (ISS-046/ISS-066) entre agregar y editar. `menu-modal.js` extendido con `posicion`/
+`total`/`onAdded`/`onSave` opcionales — sin ellas se comporta exactamente igual que siempre, así
+Reservar queda intacto. El atajo "+1 mismo menú" (ISS-064) se retiró solo para Pedir (ya no hace
+falta con la cantidad decidida antes); sigue existiendo para Reservar.
+
+**Proceso:** antes de tocar código real, se armó un prototipo interactivo (JS puro, sin backend)
+publicado como artifact — el usuario lo probó, encontró 2 problemas de flujo reales (un bug del
+contador de stock, y el freno del carrito con pendientes) y solo tras 4 iteraciones sobre el
+prototipo aprobó migrar el diseño a `menu.html`.
+
+**Verificación:** `scripts/test-pedir-cantidad-primero.js` nuevo, 24/24. `test-repetir-menu.js`
+recortado a solo Reservar (el atajo de Pedir que probaba ya no existe), 11/11. Sin regresiones en
+`test-modalidad-mixta.js`, `test-pago-mixto.js`, `test-iss048-volver-pago.js`,
+`test-iss049-recuperar-pago.js`, `test-gate-pago.js`, `test-comprobante-duplicado.js`,
+`test-numero-dia-pedido.js`, `test-pensionista-cliente.js`. 469/469 jest.
+
 ## ~~Un deploy ya no puede dejar el panel vacío~~ ✅ Completado 2026-08-16
 *Ver [ISS-044](issues/ISS-044-panel-vacio-tras-deploy.md) y **T11** del backlog, que compartían causa.*
 

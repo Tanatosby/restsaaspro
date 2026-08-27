@@ -65,6 +65,60 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-08-27 (5) — ISS-080: rediseño de "Pedir" — cantidad primero, configurar después
+
+**Prompt del usuario:** seguir con #3/#4 de la lista priorizada (stock a mitad de pedido / editar
+un menú puntual), pero primero pidió un **mockup interactivo** para probar la solución antes de
+dar veredicto. Sobre la marcha sumó ideas propias de UX (cantidad antes de configurar, carrito con
+2 accesos, encadenar entre menús, forzar el freno del carrito) que terminaron ampliando bastante
+el alcance original — 4 iteraciones sobre el prototipo hasta la aprobación final.
+
+**Prototipo (artifact "Pedido Directo", JS puro sin backend):** simuló el flujo completo — stepper
+de cantidad en la card, picker encadenado ("1/n"), resumen editable por unidad, modalidad
+para llevar/comer aquí, y el freno del carrito con pendientes sin configurar. Sirvió para atrapar
+un bug real antes de tocar producción: el contador de stock sumaba en vez de restar la selección
+en curso.
+
+**Migrado a código real, solo "Pedir"** (decisión de alcance tomada antes de empezar: Reservar
+queda para otra sesión, ya tuvo su propio rediseño en ISS-063 — cambiar los 2 flujos el mismo día
+en producción duplicaba el riesgo).
+
+**Implementado** (detalle técnico completo en
+[ISS-080](issues/ISS-080-flujo-pedir-cantidad-primero.md)):
+- `public/menu.html` — `renderMenuDiaCard()` bifurca por modo (Pedir: stepper + "Elegir opciones";
+  Reservar: sin cambios). `elegirOpcionesPedir()`/`continuarWizardPedir()` encadenan unidad tras
+  unidad y entre tipos de menú. `abrirCarritoPedir()` frena el carrito si queda algo pendiente sin
+  configurar. `editarUnidadPedir()`/`guardarEdicionMenuPedir()` — "✏️ Editar" por unidad del
+  carrito, resuelve directo los hallazgos #1 y #2 del Día 12. `validarSeleccionMenu()`/
+  `armarItemMenu()` extraídas de `agregarMenu()` para compartir la validación (ISS-046/ISS-066)
+  entre agregar y editar. Atajo "+1 mismo menú" (ISS-064) retirado solo para Pedir — Reservar lo
+  sigue teniendo. `toggleModalidadGrupo()` eliminado (quedó sin ningún llamador).
+- `public/js/widgets/menu-modal.js` — extendido con `posicion`/`total` (aviso "Estás eligiendo tu
+  Menú X i/n"), `onAdded` (encadenar en vez de cerrar solo) y `onSave` (modo edición). Sin estas 3
+  opciones se comporta exactamente igual que siempre, así Reservar queda intacto.
+- `public/css/menu.css` — `.menu-dia-footer`/`.menu-dia-estado` (stepper + CTA de la card),
+  `.cart-edit` (botón "✏️ Editar" del carrito).
+
+**Verificación:** `scripts/test-pedir-cantidad-primero.js` nuevo (24/24). `test-repetir-menu.js`
+recortado a solo Reservar (11/11 — la parte de Pedir que probaba el atajo retirado ya no aplica).
+Sin regresiones: `test-modalidad-mixta.js` (19/19), `test-pago-mixto.js` (5/5),
+`test-iss048-volver-pago.js` (15/15), `test-iss049-recuperar-pago.js` (12/12), `test-gate-pago.js`
+(24/24), `test-comprobante-duplicado.js` (7/7), `test-numero-dia-pedido.js` (10/10),
+`test-pensionista-cliente.js` (29/29), `test-carta-export.js` (16/16),
+`test-cobrar-homologado.js` (14/14), `test-version-assets.js` (25/25). 469/469 jest.
+
+**Hallazgos colaterales, sin relación con este cambio (no corregidos, fuera de alcance):**
+`test-cola-carrera.js` (dato hardcodeado desactualizado, visto en ISS-079), `test-horario-atencion.js`
+(un caso quedó desactualizado desde ISS-065, previo a esta sesión), `test-fixes-pago-comprobante.js`
+(nunca llena `#nombre-cliente`, parece roto desde antes). Varios scripts mutan la config de pagos/
+horario del restaurante de prueba sin restaurarla — se restauró a mano durante la verificación.
+
+**Docs:** `issues/ISS-080-...md` (nuevo), `issues/ISSUES.md`, `backlog.md`, `pilotos.md`,
+`features.md`, `novedades.js` (entrada id 4, nueva), este archivo.
+**Pendiente:** deploy (el usuario decide cuándo).
+
+---
+
 ## 🎯 Sesión 2026-08-27 (4) — ISS-079: homologar "Cobrar" para llevar/delivery
 
 **Prompt del usuario:** confirmó ISS-078 desplegado y pidió seguir con el #11 de la lista

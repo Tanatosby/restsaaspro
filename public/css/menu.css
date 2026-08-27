@@ -313,6 +313,12 @@ body {
   background: var(--accent-light); color: var(--accent);
 }
 
+/* Cantidad primero (Pedir) — el stepper de la card decide "cuántos", el
+   picker recién abre al tocar "Elegir opciones". Ver elegirOpcionesPedir(). */
+.menu-dia-footer { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
+.menu-dia-estado { font-size: 0.8125rem; color: var(--text-2); text-align: center; }
+.menu-dia-estado b { color: var(--accent); font-family: var(--font-display); }
+
 .menu-secciones { padding: 1.1rem 1.25rem; }
 .seccion-block { margin-bottom: 1.1rem; }
 .seccion-block:last-child { margin-bottom: 0; }
@@ -616,6 +622,16 @@ body {
 }
 .mod-chip.llevar { background: var(--info-bg); color: var(--info); border-style: solid; border-color: transparent; }
 .mod-chip .cambiar { font-weight: 600; opacity: .75; }
+
+/* "✏️ Editar" por unidad del carrito (Pedir) — ver editarUnidadPedir() */
+.cart-edit {
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: 32px; padding: 4px 10px; margin-top: 0.5rem;
+  border: 1px solid var(--border-2); border-radius: 20px; background: var(--bg-2);
+  font-family: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  color: var(--text-2);
+}
+.cart-edit:hover { border-color: var(--accent); color: var(--accent); }
 
 .cart-item {
   display: flex; align-items: center; justify-content: space-between;

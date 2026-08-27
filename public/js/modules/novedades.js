@@ -39,6 +39,14 @@ const NOVEDADES = [
       'En la Cola del día, los pedidos y reservas "para llevar" ahora pasan por "📦 Recogido" antes de aparecer en "Cobrar" — igual que los que son con mesa, para que siempre quede un lugar donde confirmar si ya se cobró.',
     ],
   },
+  {
+    id: 4,
+    fecha: '2026-08-27',
+    items: [
+      'Cambió cómo tus clientes piden desde la carta: primero eligen cuántos menús quieren con un botón +/−, y recién después van eligiendo las opciones de cada uno, uno por uno. Ya no se les abre la selección de golpe al tocar "+1".',
+      'Ahora tus clientes pueden tocar "✏️ Editar" en cualquier menú que ya agregaron al carrito, sin tener que borrar todo y empezar de nuevo — útil si se equivocan o si se acaba un plato a mitad de armar el pedido.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

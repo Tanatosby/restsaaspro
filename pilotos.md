@@ -695,6 +695,13 @@ forma que no quedó clara en la conversación — a investigar antes de proponer
 **Pendiente:** discutir prioridad y solución para cada uno de los 7 puntos en la próxima
 sesión. Sin cambios de código hoy.
 
+**Resueltos el 2026-08-27 (#1 y #2 del Día 12), ver Día 13 más abajo:** el rediseño completo del
+flujo de Pedir ("cantidad primero, configurar después" + "✏️ Editar" por unidad) resuelve
+directamente el bloqueo de stock a mitad de pedido y la falta de edición puntual. Ver
+[ISS-080](issues/ISS-080-flujo-pedir-cantidad-primero.md). El #6 (carrito poco descubrible) mejora
+de paso: el carrito ahora nunca se abre vacío/incompleto, siempre guía al comensal a terminar antes
+de mostrarlo.
+
 ---
 
 ### Día 13 (2026-08-27, jueves) — discrepancia de precio: carrito vs. pantalla de pago
@@ -799,6 +806,28 @@ Fondos 4, Ceviches 2), de sobra para una sola foto sin pagineado. Implementado c
 `public/js/widgets/carta-export.js` (hermano de `menu-export.js`) + botón "⬇ Descargar carta" en
 Carta → Platos a la carta. 16/16 E2E nuevo + 469/469 jest sin regresiones. Ver `features.md`.
 **Verificado en uso real (2026-08-27):** la dueña confirmó que la carta descargada está bien.
+
+---
+
+### Día 13 (2026-08-27, continuación 3) — rediseño de "Pedir": prototipo interactivo → código real
+
+Antes de tocar `menu.html`, el usuario pidió ver un mockup interactivo (JS puro, sin backend) para
+probar la solución de "editar un menú puntual" (#3/#4 del Día 12) antes de dar su veredicto —
+prototipo publicado como artifact ("Pedido Directo"). Sobre la marcha, agregó ideas de UX propias
+observadas el día anterior: elegir cantidad ANTES de configurar cada menú (en vez de que el picker
+se abra solo al tocar "+1"), la carta junto a los menús desde el arranque, la opción de para
+llevar/comer aquí reflejada, y — el hallazgo más importante — que el carrito no se abra nunca con
+un menú "a medio pedir" (cantidad marcada en el stepper pero sin configurar), porque de otro modo
+el comensal ve la carta en el carrito pero el menú "desaparece" sin explicación.
+
+4 iteraciones sobre el prototipo (bug del contador de stock que sumaba en vez de restar, 2do acceso
+al carrito arriba, separar "elegir cantidad" de "configurar", encadenar entre distintos tipos de
+menú, forzar el freno del carrito) hasta la aprobación final ("ojalá que este sea el definitivo").
+
+**Migrado a código real el mismo día** — ver [ISS-080](issues/ISS-080-flujo-pedir-cantidad-primero.md)
+para el detalle técnico completo. Alcance acotado a "Pedir" solamente (decisión tomada con el
+usuario antes de empezar: Reservar ya tuvo su propio rediseño reciente en ISS-063, cambiar los 2
+flujos el mismo día en producción duplicaba el riesgo sin necesidad).
 
 ---
 

@@ -147,7 +147,7 @@
 
   <!-- ── Sticky cart bar (pedir mode) ── -->
   <div class="cart-bar" id="cart-bar">
-    <button class="cart-btn" onclick="openDrawer()">
+    <button class="cart-btn" onclick="abrirCarritoPedir()">
       <div class="cart-btn-left">
         <span class="cart-count" id="cart-count">0</span>
         <span>Ver pedido</span>
@@ -405,6 +405,10 @@
   let cart           = [];
   let cartaQty       = {};
   let menuSelections = {};
+  // Cantidad deseada por menú (stepper de la card) — puede ir por delante de
+  // lo que ya está configurado en `cart`. Solo existe para Pedir: Reservar
+  // sigue con el flujo de "tocar la card abre el picker" de siempre.
+  let menuPending = {};
 
   // Reservar state
   let resCart           = [];
@@ -675,7 +679,39 @@ async function renderReservarContent() {
       ? `<img src="${fotoUrl}" alt="${esc(m.nombre)}">`
       : `<div class="menu-dia-photo-ph">🍽️</div>`;
 
-    return `<div class="menu-dia-card" onclick="abrirMenuModal(${m.id},'${mode}')">
+    // Reservar no cambia — sigue igual que siempre (tocar la card abre el
+    // picker directo, un menú a la vez). Este rediseño es solo para Pedir.
+    if (mode === 'reservar') {
+      return `<div class="menu-dia-card" onclick="abrirMenuModal(${m.id},'reservar')">
+        <div class="menu-dia-photo">
+          ${foto}
+          <span class="menu-dia-price-badge">S/ ${Number(m.precio).toFixed(2)}</span>
+        </div>
+        <div class="menu-dia-body">
+          <div class="menu-dia-name">${esc(m.nombre)}</div>
+          <div class="menu-tipo">${m.elegible ? 'Elige tus platos' : 'Menú fijo'}</div>
+          <div class="menu-dia-pills">${secPills}</div>
+          <button class="btn-add-menu" onclick="event.stopPropagation();abrirMenuModal(${m.id},'reservar')">
+            Ver opciones →
+          </button>
+        </div>
+      </div>`;
+    }
+
+    // Pedir: cantidad primero con el stepper (igual que ya hace la carta),
+    // configurar recién al tocar "Elegir opciones" — feedback real del
+    // piloto, día 13: agregar de a uno con el picker abriéndose solo perdía
+    // pedidos a mitad de armar cuando la señora se equivocaba con el stepper.
+    const configurados = configuradosDeMenu(m.id);
+    const target = targetDeMenu(m.id);
+    const faltan = target - configurados;
+    const estadoHtml = target === 0
+      ? `<div class="menu-dia-estado">Elige cuántos quieres</div>`
+      : (faltan > 0
+          ? `<button class="btn-add-menu" onclick="elegirOpcionesPedir(${m.id})">Elegir opciones (${faltan})</button>`
+          : `<div class="menu-dia-estado"><b>${target}</b> en tu pedido</div>`);
+
+    return `<div class="menu-dia-card">
       <div class="menu-dia-photo">
         ${foto}
         <span class="menu-dia-price-badge">S/ ${Number(m.precio).toFixed(2)}</span>
@@ -684,9 +720,14 @@ async function renderReservarContent() {
         <div class="menu-dia-name">${esc(m.nombre)}</div>
         <div class="menu-tipo">${m.elegible ? 'Elige tus platos' : 'Menú fijo'}</div>
         <div class="menu-dia-pills">${secPills}</div>
-        <button class="btn-add-menu" onclick="event.stopPropagation();abrirMenuModal(${m.id},'${mode}')">
-          Ver opciones →
-        </button>
+        <div class="menu-dia-footer">
+          ${estadoHtml}
+          <div class="qty-control">
+            <button class="qty-btn" onclick="cambiarCantidadMenuPedir(${m.id},-1)" aria-label="Quitar uno">−</button>
+            <span class="qty-num" id="menu-qty-${m.id}">${target}</span>
+            <button class="qty-btn add" onclick="cambiarCantidadMenuPedir(${m.id},1)" aria-label="Agregar uno">+</button>
+          </div>
+        </div>
       </div>
     </div>`;
   }
@@ -763,6 +804,66 @@ async function renderReservarContent() {
   }
 
 
+  // Valida las reglas de negocio de una selección de menú — sección
+  // obligatoria, ISS-046 (plato que exige otra sección) e ISS-066 (plato que
+  // bloquea otra) — compartida por agregarMenu() y por guardarEdicionMenuPedir()
+  // (editar una unidad ya en el carrito). Devuelve el mensaje de error, o
+  // null si la selección está completa.
+  function validarSeleccionMenu(menu, elegible, selections) {
+    if (!elegible) return null;
+
+    const requeridas = menu.secciones.filter(s => s.requerido);
+    for (const s of requeridas) {
+      if (!selections?.[s.id_seccion]) return `Selecciona: ${s.nombre_seccion}`;
+    }
+
+    // Validación condicional por plato (ISS-046): una sección opcional
+    // puede tener platos que en realidad NO están completos por sí solos
+    // (ej. "arroz con papas fritas" necesita elegir Proteínas), a diferencia
+    // de otros platos de esa misma sección que sí lo están (ej. "arroz con
+    // pollo"). Sin esto, el pedido puede llegar incompleto a cocina.
+    for (const seccionId of Object.keys(selections || {})) {
+      const seccionOrigen = menu.secciones.find(s => s.id_seccion === Number(seccionId));
+      const plato = seccionOrigen?.platos.find(p => p.id_componente === selections[seccionId].id_componente);
+      if (plato?.requiere_seccion_id && !selections?.[plato.requiere_seccion_id]) {
+        const seccionExigida = menu.secciones.find(s => s.id_seccion === plato.requiere_seccion_id);
+        return `"${plato.nombre}" también necesita que elijas: ${seccionExigida?.nombre_seccion || 'otra sección'}`;
+      }
+
+      // Bloqueo condicional por plato (ISS-066, inverso de ISS-046): red de
+      // seguridad — el modal ya deshabilita la sección bloqueada, esto cubre
+      // el caso borde de que igual llegue algo seleccionado ahí.
+      if (plato?.no_permite_seccion_id && selections?.[plato.no_permite_seccion_id]) {
+        const seccionBloqueada = menu.secciones.find(s => s.id_seccion === plato.no_permite_seccion_id);
+        if (seccionBloqueada && !seccionBloqueada.requerido) {
+          return `"${plato.nombre}" no se sirve con "${selections[plato.no_permite_seccion_id].nombre}"`;
+        }
+      }
+    }
+    return null;
+  }
+
+  // Arma el objeto de carrito de una unidad de menú a partir de sus
+  // selecciones — sin tocar `cart`/`resCart`, para poder reusarlo tanto al
+  // agregar (agregarMenu) como al editar una unidad ya existente.
+  function armarItemMenu(menu, elegible, precio, nombreMenu, selections, modalidadPrevia) {
+    const subs = Object.values(selections).map(v => v.nombre).join(', ');
+    const menuItems = Object.values(selections).map(v => ({
+      id_componente: v.id_componente, id_menu_dia: v.id_menu_dia, cantidad: 1
+    }));
+    const allItems = menu.secciones.flatMap(s =>
+      s.platos.map(p => ({ id_componente: p.id_componente, id_menu_dia: menu.id, cantidad: 1 }))
+    );
+    return {
+      type: 'menu', label: nombreMenu,
+      subLabel: subs || 'Menú fijo',
+      precio: parseFloat(precio),
+      // ISS-047: cada menú arranca en "comer aquí"; nunca queda sin modalidad
+      modalidad: modalidadPrevia || 'en_local',
+      payload: { menuItems: elegible ? menuItems : allItems }
+    };
+  }
+
   function agregarMenu(mode, menuId, elegible, precio, nombreMenu) {
     const source = mode === 'pedir' ? menusDia : resMenusDia;
     const menu = source.find(m => m.id === menuId);
@@ -771,58 +872,10 @@ async function renderReservarContent() {
     const cartArr = mode === 'pedir' ? cart : resCart;
     const prefix  = mode === 'pedir' ? 'p' : 'r';
 
-    if (elegible) {
-      const requeridas = menu.secciones.filter(s => s.requerido);
-      for (const s of requeridas) {
-        if (!sel[menuId]?.[s.id_seccion]) {
-          showMsg(`Selecciona: ${s.nombre_seccion}`, true); return;
-        }
-      }
+    const error = validarSeleccionMenu(menu, elegible, sel[menuId]);
+    if (error) { showMsg(error, true); return; }
 
-      // Validación condicional por plato (ISS-046): una sección opcional
-      // puede tener platos que en realidad NO están completos por sí solos
-      // (ej. "arroz con papas fritas" necesita elegir Proteínas), a diferencia
-      // de otros platos de esa misma sección que sí lo están (ej. "arroz con
-      // pollo"). Sin esto, el pedido puede llegar incompleto a cocina.
-      for (const seccionId of Object.keys(sel[menuId] || {})) {
-        const seccionOrigen = menu.secciones.find(s => s.id_seccion === Number(seccionId));
-        const plato = seccionOrigen?.platos.find(p => p.id_componente === sel[menuId][seccionId].id_componente);
-        if (plato?.requiere_seccion_id && !sel[menuId]?.[plato.requiere_seccion_id]) {
-          const seccionExigida = menu.secciones.find(s => s.id_seccion === plato.requiere_seccion_id);
-          showMsg(`"${plato.nombre}" también necesita que elijas: ${seccionExigida?.nombre_seccion || 'otra sección'}`, true);
-          return;
-        }
-
-        // Bloqueo condicional por plato (ISS-066, inverso de ISS-046): red de
-        // seguridad — el modal ya deshabilita la sección bloqueada, esto cubre
-        // el caso borde de que igual llegue algo seleccionado ahí.
-        if (plato?.no_permite_seccion_id && sel[menuId]?.[plato.no_permite_seccion_id]) {
-          const seccionBloqueada = menu.secciones.find(s => s.id_seccion === plato.no_permite_seccion_id);
-          if (seccionBloqueada && !seccionBloqueada.requerido) {
-            showMsg(`"${plato.nombre}" no se sirve con "${sel[menuId][plato.no_permite_seccion_id].nombre}"`, true);
-            return;
-          }
-        }
-      }
-    }
-
-    const selections = sel[menuId] || {};
-    const subs     = Object.values(selections).map(v => v.nombre).join(', ');
-    const menuItems = Object.values(selections).map(v => ({
-      id_componente: v.id_componente, id_menu_dia: v.id_menu_dia, cantidad: 1
-    }));
-    const allItems = menu.secciones.flatMap(s =>
-      s.platos.map(p => ({ id_componente: p.id_componente, id_menu_dia: menuId, cantidad: 1 }))
-    );
-
-    cartArr.push({
-      type: 'menu', label: nombreMenu,
-      subLabel: subs || 'Menú fijo',
-      precio: parseFloat(precio),
-      // ISS-047: cada menú arranca en "comer aquí"; nunca queda sin modalidad
-      modalidad: 'en_local',
-      payload: { menuItems: elegible ? menuItems : allItems }
-    });
+    cartArr.push(armarItemMenu(menu, elegible, precio, nombreMenu, sel[menuId] || {}));
     const nuevoItem = cartArr[cartArr.length - 1];
 
     sel[menuId] = {};
@@ -830,9 +883,11 @@ async function renderReservarContent() {
 
     if (mode === 'pedir') updateCart(); else updateResCartSummary();
     // Día 9 del piloto: atajo para repetir el mismo menú sin reabrir el
-    // picker (reemplaza al toast simple de "¡Menú agregado!" — ver
-    // mostrarAtajoRepetirMenu()).
-    mostrarAtajoRepetirMenu(mode, nuevoItem);
+    // picker. Ahora solo aplica a Reservar (que sigue agregando de a uno) —
+    // Pedir ya no lo necesita: la cantidad se decide antes con el stepper de
+    // la card, y el flujo de "cantidad primero" encadena solo con la
+    // próxima unidad pendiente (ver continuarWizardPedir).
+    if (mode === 'reservar') mostrarAtajoRepetirMenu(mode, nuevoItem);
     return true;
   }
 
@@ -845,6 +900,138 @@ async function renderReservarContent() {
     else resMenuSelections[menuId] = {};
     const getSel = () => (mode === 'pedir' ? menuSelections : resMenuSelections)[menuId] || {};
     MenuModal.open({ menu, mode, getSel });
+  }
+
+  // ── Pedir: cantidad primero, configurar después ──────────────
+  // Reservar NO usa nada de esto — sigue con abrirMenuModal() de siempre.
+
+  function configuradosDeMenu(menuId) {
+    return cart.filter(i => i.type === 'menu' && i.payload.menuItems[0]?.id_menu_dia === menuId).length;
+  }
+  function targetDeMenu(menuId) {
+    return menuPending[menuId] ?? configuradosDeMenu(menuId);
+  }
+
+  function cambiarCantidadMenuPedir(menuId, delta) {
+    const target = Math.max(0, targetDeMenu(menuId) + delta);
+    while (configuradosDeMenu(menuId) > target) quitarUltimaUnidadMenu(menuId);
+    menuPending[menuId] = target;
+    renderPedirContent();
+  }
+
+  function quitarUltimaUnidadMenu(menuId) {
+    for (let i = cart.length - 1; i >= 0; i--) {
+      if (cart[i].type === 'menu' && cart[i].payload.menuItems[0]?.id_menu_dia === menuId) {
+        cart.splice(i, 1);
+        return;
+      }
+    }
+  }
+
+  // Arranca (o retoma) el trámite de configurar las unidades que faltan de
+  // este menú — siempre la próxima sin configurar, nunca reabre las ya
+  // hechas (para eso está "✏️ Editar" en el carrito).
+  function elegirOpcionesPedir(menuId) {
+    abrirUnidadPedir(menuId, configuradosDeMenu(menuId) + 1, targetDeMenu(menuId));
+  }
+
+  function abrirUnidadPedir(menuId, posicion, total) {
+    const menu = menusDia.find(m => m.id === menuId);
+    if (!menu) return;
+    menuSelections[menuId] = {};
+    const getSel = () => menuSelections[menuId] || {};
+    MenuModal.open({
+      menu, mode: 'pedir', getSel, posicion, total,
+      onAdded: () => continuarWizardPedir(menuId, posicion, total),
+      onClose: () => renderPedirContent(),
+    });
+  }
+
+  // Con 2+ tipos de menú pedidos a la vez (ej. 3 Criollo + 2 Marino), al
+  // terminar uno no tiene sentido volver a la lista si el otro todavía
+  // tiene pendientes — sigue directo ahí, sin que haga falta volver a tocar
+  // "Elegir opciones" a mano.
+  function proximoMenuPendientePedir(excluirMenuId) {
+    return menusDia.find(m => m.id !== excluirMenuId && targetDeMenu(m.id) > configuradosDeMenu(m.id));
+  }
+
+  function continuarWizardPedir(menuId, posicionRecien, total) {
+    const siguiente = posicionRecien + 1;
+    if (siguiente <= total) {
+      abrirUnidadPedir(menuId, siguiente, total);
+      return;
+    }
+    const proximo = proximoMenuPendientePedir(menuId);
+    if (proximo) {
+      abrirUnidadPedir(proximo.id, configuradosDeMenu(proximo.id) + 1, targetDeMenu(proximo.id));
+      return;
+    }
+    // Ya no queda ningún menú pendiente: lo básico es pedir menús, así que
+    // en vez de volver a la carta, cierra y aterriza directo en el carrito.
+    MenuModal.close();
+    openDrawer();
+  }
+
+  // El carrito NO se abre con menús "a medio pedir" — si el stepper dice 2
+  // Criollo pero todavía no se configuró ninguno, esos 2 no existen en
+  // ningún lado más que en ese número; el comensal los buscaría en el
+  // carrito y no estarían ahí. Se intercepta acá y se manda a terminarlos
+  // primero — al acabar la tanda, continuarWizardPedir() ya abre el
+  // carrito solo, así que desde acá es un solo toque, no dos pantallas.
+  function abrirCarritoPedir() {
+    const pendiente = menusDia.find(m => targetDeMenu(m.id) > configuradosDeMenu(m.id));
+    if (pendiente) {
+      showMsg(`Antes, elige las opciones de tu ${pendiente.nombre}`);
+      elegirOpcionesPedir(pendiente.id);
+      return;
+    }
+    openDrawer();
+  }
+
+  // Reabre el picker precargado con lo que ya eligió esa unidad puntual del
+  // carrito, para poder cambiar solo esa (ej. la proteína de un solo menú
+  // entre varios) sin borrar ni rearmar nada más — pedido real de la dueña,
+  // día 12 del piloto: "no se puede editar un menú puntual ya en el carrito".
+  function editarUnidadPedir(idx) {
+    const item = cart[idx];
+    if (!item || item.type !== 'menu') return;
+    const menuId = item.payload.menuItems[0]?.id_menu_dia;
+    const menu = menusDia.find(m => m.id === menuId);
+    if (!menu) return;
+
+    // Reconstruye `menuSelections[menuId]` desde lo ya guardado: para cada
+    // id_componente elegido, busca en qué sección del menú vive.
+    menuSelections[menuId] = {};
+    item.payload.menuItems.forEach(mi => {
+      const seccion = menu.secciones.find(s => s.platos.some(p => p.id_componente === mi.id_componente));
+      const plato = seccion?.platos.find(p => p.id_componente === mi.id_componente);
+      if (!seccion || !plato) return;
+      menuSelections[menuId][seccion.id_seccion] = {
+        id_componente: mi.id_componente, id_menu_dia: menuId,
+        nombre: plato.nombre, seccion: seccion.nombre_seccion,
+      };
+    });
+
+    const getSel = () => menuSelections[menuId] || {};
+    MenuModal.open({
+      menu, mode: 'pedir', getSel,
+      onSave: () => guardarEdicionMenuPedir(idx, menu),
+      onClose: () => renderPedirContent(),
+    });
+  }
+
+  function guardarEdicionMenuPedir(idx, menu) {
+    const item = cart[idx];
+    if (!item) return;
+    const selections = menuSelections[menu.id] || {};
+    const error = validarSeleccionMenu(menu, menu.elegible, selections);
+    if (error) { showMsg(error, true); return; }
+
+    // Conserva la modalidad que ya tenía esa unidad (🪑/🥡) — editar la
+    // composición no debería resetear si se lleva o se come ahí.
+    cart[idx] = armarItemMenu(menu, menu.elegible, menu.precio, menu.nombre, selections, item.modalidad);
+    updateCart();
+    return true;
   }
 
   // ── Carta qty ────────────────────────────────────
@@ -908,17 +1095,6 @@ async function renderReservarContent() {
     if (!item) return;
     item.modalidad = item.modalidad === 'para_llevar' ? 'en_local' : 'para_llevar';
     updateCart();
-  }
-
-  // Mismo toggle que arriba, pero para un grupo completo de menús idénticos
-  // (ver agruparMenusCarrito) — un solo chip visible debe mover todas las
-  // unidades juntas, no solo la primera.
-  function toggleModalidadGrupo(mode, indicesCsv) {
-    const cartArr = mode === 'pedir' ? cart : resCart;
-    const indices = indicesCsv.split(',').map(Number);
-    const nueva = cartArr[indices[0]]?.modalidad === 'para_llevar' ? 'en_local' : 'para_llevar';
-    indices.forEach(i => { if (cartArr[i]) cartArr[i].modalidad = nueva; });
-    if (mode === 'pedir') updateCart(); else updateResCartSummary();
   }
 
   // ── "+1 mismo menú" — Día 9 del piloto ───────────────────
@@ -1057,19 +1233,22 @@ async function renderReservarContent() {
     // activo y el pedido es de mesa — igual condición que el toggle de arriba.
     const conModalidad = !!(mesa && modalidades.para_llevar);
 
-    // Día 9: los menús idénticos se juntan en una sola fila con stepper
-    // (agruparMenusCarrito) — la carta sigue una fila por línea, sin cambios.
-    document.getElementById('drawer-items').innerHTML = agruparMenusCarrito(cart).map(g => {
-      const { item, indices, esMenu } = g;
+    // Cada unidad es su propia fila, siempre — ya no se agrupan los menús
+    // idénticos con un stepper (como sí sigue haciendo Reservar). Con el
+    // flujo de "cantidad primero" cada unidad ya pasó por su propio picker,
+    // así que tiene sentido que cada una se pueda editar por separado — el
+    // caso real reportado (familia con un plato distinto por hijo) ya no
+    // agrupaba, pero tampoco tenía forma de editar solo esa fila.
+    document.getElementById('drawer-items').innerHTML = cart.map((item, idx) => {
       const llevar = item.modalidad === 'para_llevar';
-
-      if (!esMenu) {
-        const idx  = indices[0];
-        const chip = conModalidad ? `
-          <button type="button" class="mod-chip ${llevar ? 'llevar' : ''}" onclick="toggleModalidadItem(${idx})">
-            ${llevar ? '🥡 Para llevar' : '🪑 Comer aquí'} <span class="cambiar">· cambiar</span>
-          </button>` : '';
-        return `
+      const chip = conModalidad ? `
+        <button type="button" class="mod-chip ${llevar ? 'llevar' : ''}" onclick="toggleModalidadItem(${idx})">
+          ${llevar ? '🥡 Para llevar' : '🪑 Comer aquí'} <span class="cambiar">· cambiar</span>
+        </button>` : '';
+      const editarBtn = item.type === 'menu'
+        ? `<button type="button" class="cart-edit" onclick="editarUnidadPedir(${idx})">✏️ Editar</button>`
+        : '';
+      return `
         <div class="cart-item" style="flex-wrap:wrap">
           <div class="cart-item-info">
             <div class="cart-item-name">${esc(item.label)}</div>
@@ -1077,30 +1256,9 @@ async function renderReservarContent() {
           </div>
           <span class="cart-item-price">S/ ${item.precio.toFixed(2)}</span>
           <button class="cart-remove" onclick="removeCartItem(${idx})">×</button>
+          ${editarBtn ? `<div style="flex:1 0 100%">${editarBtn}</div>` : ''}
           ${chip ? `<div style="flex:1 0 100%">${chip}</div>` : ''}
         </div>`;
-      }
-
-      const count     = indices.length;
-      const ultimoIdx = indices[indices.length - 1];
-      const chip = conModalidad ? `
-        <button type="button" class="mod-chip ${llevar ? 'llevar' : ''}" onclick="toggleModalidadGrupo('pedir','${indices.join(',')}')">
-          ${llevar ? '🥡 Para llevar' : '🪑 Comer aquí'} <span class="cambiar">· cambiar</span>
-        </button>` : '';
-      return `
-      <div class="cart-item" style="flex-wrap:wrap">
-        <div class="cart-item-info">
-          <div class="cart-item-name">${esc(item.label)}</div>
-          <div class="cart-item-sub">${esc(item.subLabel)}</div>
-        </div>
-        <span class="cart-item-price">S/ ${(item.precio * count).toFixed(2)}</span>
-        <div class="menu-stepper">
-          <button class="menu-stepper-btn" onclick="quitarUnidadEnIdx('pedir',${ultimoIdx})" aria-label="Quitar una unidad de ${esc(item.label)}">−</button>
-          <span class="menu-stepper-num">${count}</span>
-          <button class="menu-stepper-btn add" onclick="duplicarMenuEnIdx('pedir',${ultimoIdx})" aria-label="Agregar otra unidad de ${esc(item.label)}">+</button>
-        </div>
-        ${chip ? `<div style="flex:1 0 100%">${chip}</div>` : ''}
-      </div>`;
     }).join('');
 
     pintarModalidadMaster();
@@ -1110,6 +1268,13 @@ async function renderReservarContent() {
     const item = cart[idx];
     if (item.type === 'carta') { cartaQty[item.platoId] = 0; updateQtyDisplay(item.platoId, 'pedir'); }
     cart.splice(idx, 1);
+    if (item.type === 'menu') {
+      // Sincroniza el stepper de la card con lo que de verdad queda — si
+      // no, al volver a la lista aparecería "Elegir opciones (1)" por una
+      // unidad que el comensal quiso borrar, no dejar pendiente.
+      const menuId = item.payload.menuItems[0]?.id_menu_dia;
+      if (menuId != null) menuPending[menuId] = configuradosDeMenu(menuId);
+    }
     updateCart();
   }
 
@@ -1896,7 +2061,7 @@ async function renderReservarContent() {
 
   // ── Reset ────────────────────────────────────────
   function resetTodo() {
-    cart = []; cartaQty = {}; menuSelections = {};
+    cart = []; cartaQty = {}; menuSelections = {}; menuPending = {};
     resCart = []; resCartaQty = {}; resMenuSelections = {};
     pagoPendiente = null; pagoMetodo = null;
     _ultimoMenuAgregado = null;

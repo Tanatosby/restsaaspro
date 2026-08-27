@@ -6,6 +6,20 @@
  * Uso (desde menu.html):
  *   MenuModal.open({ menu, mode })  // menu: objeto completo con secciones; mode: 'pedir'|'reservar'
  *   MenuModal.close()
+ *
+ * Opts extendidas (flujo "cantidad primero" de Pedir — ver menu.html):
+ *   MenuModal.open({ menu, mode, getSel, posicion, total, onAdded, onClose, onSave })
+ *   `posicion`/`total`: si vienen, se muestra el aviso "Estás eligiendo tu
+ *   Menú X i/n" arriba del cuerpo. `onAdded`: si viene, se llama en vez de
+ *   cerrar solo tras un "Agregar" exitoso — quien abrió el modal decide si
+ *   encadena con la próxima unidad o recién ahí cierra. `onClose`: se llama
+ *   siempre que el modal se cierra por cualquier camino (terminó la tanda,
+ *   o el comensal lo cerró a mano a mitad) — para refrescar la lista con el
+ *   progreso real. `onSave(getSel())`: modo edición — reemplaza el llamado
+ *   a `agregarMenu()`, para actualizar una unidad ya en el carrito en vez de
+ *   agregar una nueva; debe devolver `true`/falsy igual que `agregarMenu()`.
+ *   Sin nada de esto, el modal se comporta exactamente igual que siempre
+ *   (así Reservar, que no manda nada de esto, queda intacto).
  */
 (function () {
   'use strict';
@@ -91,6 +105,16 @@
   color: var(--muted, #888); font-size: 12.5px; line-height: 1.4;
   border: 1px dashed var(--border, rgba(0,0,0,.18));
 }
+.mm-progreso {
+  display: none;
+  padding: 10px 1.25rem;
+  background: var(--accent-soft, rgba(200,105,42,.12));
+  color: var(--accent, #c8692a);
+  font-size: 13px; font-weight: 600; line-height: 1.4;
+  flex-shrink: 0;
+}
+.mm-progreso.show { display: block; }
+.mm-progreso b { font-family: var(--font-display, Georgia, serif); }
 `;
 
   function injectStyle() {
@@ -127,6 +151,7 @@
           </div>
           <button class="mm-close" aria-label="Cerrar">✕</button>
         </div>
+        <div class="mm-progreso"></div>
         <div class="mm-body"></div>
         <div class="mm-footer">
           <button class="mm-btn-agregar"></button>
@@ -142,12 +167,27 @@
   }
 
   function render() {
-    const { menu, mode, getSel } = current;
+    const { menu, mode, getSel, posicion, total, onSave } = current;
     const prefix = mode === 'pedir' ? 'p' : 'r';
 
     overlay.querySelector('.mm-nombre').textContent = menu.nombre;
     overlay.querySelector('.mm-tipo').textContent   = menu.elegible ? 'Elige tus platos' : 'Menú fijo';
     overlay.querySelector('.mm-precio').textContent = `S/ ${Number(menu.precio).toFixed(2)}`;
+
+    // Aviso "Estás eligiendo/editando tu Menú X" — solo en el flujo de
+    // cantidad primero de Pedir (ver menu.html). Sin nada de esto, no se
+    // muestra (así queda Reservar, que no manda ninguno de los 2).
+    const progreso = overlay.querySelector('.mm-progreso');
+    if (onSave) {
+      progreso.classList.add('show');
+      progreso.innerHTML = `Estás editando tu <b>${esc(menu.nombre)}</b>`;
+    } else if (total) {
+      progreso.classList.add('show');
+      progreso.innerHTML = `Estás eligiendo tu <b>${esc(menu.nombre)} ${posicion}/${total}</b>`;
+    } else {
+      progreso.classList.remove('show');
+      progreso.innerHTML = '';
+    }
 
     // Secciones bloqueadas por el plato ya elegido en OTRA sección — ISS-066
     // (inverso de ISS-046). Ej: si ya elegiste "ají de gallina" en Arroces y
@@ -228,14 +268,26 @@
 
     overlay.querySelector('.mm-body').innerHTML = seccionesHtml || '<div style="text-align:center;padding:2rem;color:var(--muted,#aaa);font-size:13px">Sin secciones configuradas</div>';
 
-    const btnLabel = menu.elegible
-      ? `🛒 Agregar al pedido — S/ ${Number(menu.precio).toFixed(2)}`
-      : `🛒 Agregar menú — S/ ${Number(menu.precio).toFixed(2)}`;
+    const btnLabel = onSave
+      ? '💾 Guardar cambios'
+      : (total && posicion < total
+          ? `🛒 Guardar y seguir (${posicion + 1}/${total})`
+          : (menu.elegible
+              ? `🛒 Agregar al pedido — S/ ${Number(menu.precio).toFixed(2)}`
+              : `🛒 Agregar menú — S/ ${Number(menu.precio).toFixed(2)}`));
     const btn = overlay.querySelector('.mm-btn-agregar');
     btn.textContent = btnLabel;
     btn.onclick = () => {
-      const ok = agregarMenu(mode, menu.id, menu.elegible ? 1 : 0, menu.precio, menu.nombre);
-      if (ok) close();
+      // `onSave` (editar una unidad ya en el carrito) reemplaza el camino
+      // normal de "agregar" — valida y guarda in-place, no empuja un ítem
+      // nuevo. Sin `onSave`, es el flujo de siempre.
+      const ok = current.onSave ? current.onSave() : agregarMenu(mode, menu.id, menu.elegible ? 1 : 0, menu.precio, menu.nombre);
+      if (!ok) return;
+      // Quien abrió el modal decide qué sigue (encadenar con la próxima
+      // unidad, u otro menú pendiente) — si no dio `onAdded`, mismo
+      // comportamiento de siempre: cerrar solo.
+      if (current && current.onAdded) current.onAdded();
+      else close();
     };
   }
 
@@ -243,13 +295,26 @@
     buildDOM();
     current = opts;
     render();
+    // Al pasar a una unidad nueva (encadenado del flujo de Pedir) el cuerpo
+    // se reemplaza entero — sin esto, si venías con scroll en la unidad
+    // anterior, la próxima podía abrir a mitad de la lista. `refresh()` no
+    // toca esto: ahí el scroll del usuario dentro de la MISMA unidad sí
+    // debe respetarse.
+    overlay.querySelector('.mm-body').scrollTop = 0;
     overlay.classList.add('open');
   }
 
   function close() {
     if (!overlay) return;
     overlay.classList.remove('open');
+    // `onClose` (opcional, ver open()) avisa a quien abrió el modal que se
+    // cerró — por CUALQUIER camino: terminó la tanda, o el comensal lo cerró
+    // a mano a mitad (✕, backdrop, Escape). Así el flujo de "cantidad
+    // primero" de Pedir siempre puede refrescar la lista y reflejar el
+    // progreso real, se haya completado o no.
+    const onClose = current && current.onClose;
     current = null;
+    if (onClose) onClose();
   }
 
   // Re-renderiza sin cerrar el modal — usado tras cada selección para reflejar
