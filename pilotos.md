@@ -831,6 +831,30 @@ flujos el mismo día en producción duplicaba el riesgo sin necesidad).
 
 ---
 
+### Día 14 (2026-08-28) — feedback tras probar ISS-080 en producción: pago en 1 paso + encuesta
+
+Un día después del deploy de ISS-080, el usuario probó el flujo real y trajo 3 pedidos —
+validados de nuevo con el mismo prototipo interactivo antes de tocar código:
+
+1. Letra chica en "Estás eligiendo tu Menú X i/n" del picker.
+2. La pantalla de pago solo mostraba el total; preguntó además si "Revisa tu pedido" (la pantalla
+   de repaso de Gap 17) se podía sacar, ahora que el flujo nuevo ya lleva directo a pagar y ese
+   paso extra ya no aportaba nada que el propio formulario de pago no pudiera mostrar.
+3. Idea nueva: un aviso temporal (3 días) explicando el cambio a los comensales, y una encuesta
+   corta al terminar el pedido — 2 preguntas con botones + comentario opcional — para saber si
+   entendieron el cambio, si les costó, o si lo prefieren. Aclaró explícitamente que las
+   respuestas las vería **él, desde `menupro.tech/admin`, no la dueña** — es feedback del
+   producto, no algo operativo del restaurante.
+
+**Migrado a código real el mismo día** — ver [ISS-081](issues/ISS-081-pago-en-un-paso-mas-banner-y-encuesta.md).
+Se investigó primero por qué existía la pantalla de repaso (Gap 17, `vision_negocio.md`,
+2026-07-13): la garantía real nunca fue "2 pantallas", fue "no crear la orden/reserva hasta tener
+método + comprobante resueltos" — esa validación se conservó igual, solo se acortó a una sola
+pantalla. El propio `vision_negocio.md` ya tenía esto anotado como replanteable, sin urgencia,
+desde julio.
+
+---
+
 ## Plantilla para el próximo piloto
 
 ```

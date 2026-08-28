@@ -118,9 +118,9 @@ const NOMBRE_CLIENTE = `Cliente ISS-049 ${Date.now()}`;
     // El pedido se puede terminar de confirmar después de recuperarse
     // ════════════════════════════════════════════════
     console.log('\n── Confirmar después de recuperado — sin duplicar nada ──');
+    // ISS-081: "Ya pagué" ya hace todo de una — no hay pantalla de repaso
+    // aparte que confirmar después.
     await page.click('#btn-ya-pague');
-    await page.waitForTimeout(500);
-    await page.click('#btn-repaso-confirmar');
     await page.waitForTimeout(1200);
     check(await page.locator('#confirm-screen').evaluate(el => el.classList.contains('show')), 'El pedido se confirma normalmente tras recuperarse');
     check(!(await page.evaluate(() => !!localStorage.getItem('mp-pago-pendiente'))), 'Se limpió el guardado local al confirmar con éxito');

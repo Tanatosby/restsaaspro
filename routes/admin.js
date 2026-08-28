@@ -881,4 +881,28 @@ router.delete('/estatus-reserva/:id', (req, res) => {
   res.json({ message: `Estatus "${estatus.nombre}" eliminado correctamente` });
 });
 
+// ─────────────────────────────────────────
+// GET /api/admin/feedback
+// Respuestas de la encuesta de producto (ISS-081) — cruza todos los
+// restaurantes, algo que la dueña nunca ve desde su panel. `?tipo=` filtra
+// por encuesta puntual (ej. 'flujo_pedir_2026_08'); sin el parámetro trae
+// todas, más recientes primero.
+// ─────────────────────────────────────────
+router.get('/feedback', (req, res) => {
+  const { tipo } = req.query;
+  let sql = `
+    SELECT f.id, f.tipo, f.valoracion, f.preferencia, f.comentario, f.created_at,
+           r.nombre AS restaurante
+    FROM feedback_producto f
+    LEFT JOIN restaurantes r ON f.id_restaurante = r.id
+  `;
+  const params = [];
+  if (tipo) {
+    sql += ` WHERE f.tipo = ?`;
+    params.push(tipo);
+  }
+  sql += ` ORDER BY f.created_at DESC`;
+  res.json(db.prepare(sql).all(...params));
+});
+
 module.exports = router;

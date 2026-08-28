@@ -70,6 +70,51 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-08-28 — ISS-081: pago en 1 paso + aviso temporal + encuesta de producto
+
+**Prompt del usuario:** un día después del deploy de ISS-080, feedback de uso real: letra chica
+en el picker, pantalla de pago solo con el total, y la pregunta de si se podía sacar "Revisa tu
+pedido" — más la idea nueva de un aviso temporal y una encuesta de 2 preguntas al terminar el
+pedido, con las respuestas visibles **solo en el panel admin** (menupro.tech/admin), nunca en el
+panel de la dueña. Validado primero con el mismo prototipo interactivo del día anterior (banner,
+pantalla de pago reordenada, encuesta con panel "lo que vería el admin" simulado) antes de tocar
+código real.
+
+**Implementado** (detalle técnico completo en
+[ISS-081](issues/ISS-081-pago-en-un-paso-mas-banner-y-encuesta.md)):
+- `public/js/widgets/menu-modal.js` — `.mm-progreso` de 13px a 15.5px.
+- `public/menu.html` — se eliminó `#repaso-screen`; `enviarPago()` absorbió toda la lógica de
+  `confirmarEnvioFinal()`/`showRepasoStep()`/`volverAPago()` (eliminadas), conservando la misma
+  garantía de Gap 17 (nunca crear sin método + comprobante resueltos) en una sola pantalla en vez
+  de dos. `#pago-screen` suma el resumen de ítems (antes solo en el repaso) y sube la letra del
+  comprobante a 14.5px (estaba bajo el mínimo mobile-first de 14px). Banner temporal
+  `#aviso-flujo-banner` (localStorage, hasta 2026-08-31) y encuesta `#encuesta-flujo-wrap` (2
+  preguntas con botones + comentario opcional, misma fecha límite) nuevos.
+- `config/database.js` — tabla `feedback_producto` (con `tipo`, reusable para futuras encuestas).
+- `routes/public.js` — `POST /api/public/feedback` (sin sesión, valida tipo/enum/al menos una
+  respuesta).
+- `routes/admin.js` — `GET /api/admin/feedback` (rol admin, filtra por `?tipo=`).
+- `public/admin/dashboard.html` — panel nuevo "Feedback de producto" (nav + bottom-nav + tabla).
+  Comentario escaped antes de pintarlo — verificado a mano que un intento de `<script>` no se
+  ejecuta.
+
+**Verificación:** `scripts/test-gate-pago.js` reescrito para el flujo de 1 pantalla (21/21, misma
+cobertura de garantías que antes). `scripts/test-feedback-flujo.js` nuevo (16/16). Ajustados sin
+cambiar el fondo: `test-iss049-recuperar-pago.js` (12/12), `test-comprobante-duplicado.js` (7/7),
+`test-numero-dia-pedido.js` (10/10), `test-monto-pago-visible.js` (9/9). Sin cambios necesarios en
+`test-iss048-volver-pago.js`, `test-pago-mixto.js`, `test-pedir-cantidad-primero.js`,
+`test-repetir-menu.js`, `test-cobrar-homologado.js`, `test-carta-export.js`,
+`test-version-assets.js`. 469/469 jest. Panel admin verificado a mano end-to-end.
+
+**Sin cambios (fuera de alcance, previo a esta sesión):** `test-fixes-pago-comprobante.js` sigue
+roto por no llenar `#nombre-cliente` — visto y documentado desde ISS-080.
+
+**Docs:** `issues/ISS-081-...md` (nuevo), `issues/ISSUES.md`, `vision_negocio.md` (Gap 17),
+`backlog.md`, `pilotos.md` (Día 14), `features.md`, `novedades.js` (entrada id 5), este archivo.
+**Pendiente:** deploy (el usuario decide cuándo).
+
+---
+
 ## 🎯 Sesión 2026-08-27 (5) — ISS-080: rediseño de "Pedir" — cantidad primero, configurar después
 
 **Prompt del usuario:** seguir con #3/#4 de la lista priorizada (stock a mitad de pedido / editar

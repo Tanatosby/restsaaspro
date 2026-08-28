@@ -123,9 +123,8 @@ function check(cond, msg) {
     check(await page.locator('#pago-screen').evaluate(el => el.classList.contains('show')), 'Llega a "¿Cómo vas a pagar?"');
     await page.click('#btn-met-efectivo');
     await page.waitForTimeout(300);
+    // ISS-081: "Ya pagué" ya crea la orden de una — sin pantalla de repaso.
     await page.click('#btn-ya-pague');
-    await page.waitForTimeout(400);
-    await page.click('#btn-repaso-confirmar');
     await page.waitForTimeout(1200);
     check(await page.locator('#confirm-screen').evaluate(el => el.classList.contains('show')), 'Llega a la pantalla de confirmación');
 

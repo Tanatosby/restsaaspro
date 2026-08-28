@@ -600,3 +600,8 @@ contexto del negocio (más volumen, capacidad de absorber el costo por transacci
 Lo que sí es replanteable sin pasarela: revisar si el flujo de 3 pantallas
 (pago → repaso → confirmar, Gap 17) puede acortarse en pasos, sin tocar el mecanismo de
 comprobante en sí. Sin diseño aún — anotado para evaluar, no urgente.
+
+**Actualización 2026-08-28 (ISS-081):** hecho. Se confirmó que la garantía real de Gap 17 nunca
+fue "2 pantallas" sino "no crear la orden/reserva hasta tener método + comprobante ya resueltos"
+— esa validación se conservó igual, solo se acortó a una sola pantalla (`#pago-screen` absorbió
+el resumen que antes solo vivía en `#repaso-screen`, que se eliminó). Ver `issues/ISS-081-...md`.

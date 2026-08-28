@@ -2,6 +2,11 @@
 // gate de pago obligatorio antes de crear la orden/reserva — y de la
 // validación de nombre obligatorio en órdenes.
 //
+// ISS-081 fusionó "¿Cómo vas a pagar?" + "Revisa tu pedido" en una sola
+// pantalla — este test se actualizó para reflejar eso: "Ya pagué" ahora
+// crea la orden/reserva directo (con el mismo gate: nunca antes de tener
+// método + comprobante resueltos), no hay una pantalla de repaso aparte.
+//
 // Uso: PORT=3311 node app.js &   (servidor ya debe estar corriendo)
 //      node scripts/test-gate-pago.js
 const { chromium } = require('playwright');
@@ -52,13 +57,18 @@ function reservasDeHoy() {
   });
   check(backendRes.status === 400, `backend rechaza orden sin nombre_cliente (status ${backendRes.status})`);
 
-  // ── Test 2: gate de pago — la orden NO existe hasta confirmar en el repaso ──
+  // ── Test 2: gate de pago — la orden NO existe hasta tocar "Ya pagué" ──
   console.log('\n[Test 2] Gate de pago — orden (método Plin, con foto)');
   await page.fill('#nombre-cliente', 'GateTest Orden');
   await page.evaluate(() => confirmarPedido());
   await page.waitForSelector('#pago-screen.show', { timeout: 5000 });
   check(true, 'con nombre → avanza a la pantalla de pago');
   check(ordenesDeHoy().length === antes1, 'la orden AÚN no existe en la BD al mostrar la pantalla de pago (antes se creaba acá)');
+
+  // ISS-081: el resumen de solo lectura ya se ve en esta misma pantalla —
+  // antes solo aparecía en el repaso, ahora eliminado.
+  const itemsResumen = await page.locator('#pago-items .cart-item').count();
+  check(itemsResumen > 0, `el resumen del pedido ya se ve en la pantalla de pago (${itemsResumen} ítem(s))`);
 
   await page.click('#btn-met-plin');
   await page.waitForTimeout(200);
@@ -68,24 +78,13 @@ function reservasDeHoy() {
   require('fs').writeFileSync(tmpPath, fakeJpg);
   await fileInput.setInputFiles(tmpPath);
   await page.waitForTimeout(200);
+  check(ordenesDeHoy().length === antes1, 'adjuntar el comprobante todavía no crea nada — falta tocar "Ya pagué"');
 
   await page.click('#btn-ya-pague');
-  await page.waitForSelector('#repaso-screen.show', { timeout: 5000 });
-  check(true, '"Ya pagué" con foto adjunta → avanza al repaso final');
-  check(ordenesDeHoy().length === antes1, 'la orden SIGUE sin existir en la BD en el repaso (solo se valida, no se envía)');
-
-  const repasoNombre = await page.locator('#repaso-nombre').textContent();
-  const repasoMetodo = await page.locator('#repaso-metodo').textContent();
-  const repasoFotoVisible = await page.locator('#repaso-foto-wrap').evaluate(el => getComputedStyle(el).display !== 'none');
-  check(repasoNombre.includes('GateTest Orden'), `el repaso muestra el nombre correcto (${repasoNombre})`);
-  check(repasoMetodo.includes('Plin'), `el repaso muestra el método correcto (${repasoMetodo})`);
-  check(repasoFotoVisible, 'el repaso muestra la miniatura del comprobante adjuntado');
-
-  await page.click('#btn-repaso-confirmar');
   await page.waitForSelector('#confirm-screen.show', { timeout: 5000 });
   await page.waitForTimeout(300);
   const nuevasOrdenes = ordenesDeHoy();
-  check(nuevasOrdenes.length === antes1 + 1, 'al confirmar en el repaso → RECIÉN AHÍ se crea la orden');
+  check(nuevasOrdenes.length === antes1 + 1, '"Ya pagué" con foto adjunta → RECIÉN AHÍ crea la orden (sin pantalla de repaso aparte)');
   check(nuevasOrdenes[0]?.metodo_pago === 'plin', 'la orden creada ya tiene metodo_pago=plin adjunto (no queda "sin pago" ni un instante)');
   check(!!nuevasOrdenes[0]?.comprobante_url, 'la orden creada ya tiene comprobante_url adjunto');
   require('fs').unlinkSync(tmpPath);
@@ -111,14 +110,13 @@ function reservasDeHoy() {
 
   await page.click('#btn-met-efectivo');
   await page.waitForTimeout(200);
-  await page.click('#btn-ya-pague');
-  await page.waitForSelector('#repaso-screen.show', { timeout: 5000 });
-  check(reservasDeHoy().length === antesRes, 'la reserva SIGUE sin existir en el repaso (efectivo tampoco salta el gate)');
+  check(reservasDeHoy().length === antesRes, 'elegir Efectivo todavía no crea nada — falta tocar el botón');
 
-  await page.click('#btn-repaso-confirmar');
-  await page.waitForTimeout(600);
+  await page.click('#btn-ya-pague');
+  await page.waitForSelector('#confirm-screen.show', { timeout: 5000 });
+  await page.waitForTimeout(300);
   const nuevasReservas = reservasDeHoy();
-  check(nuevasReservas.length === antesRes + 1, 'al confirmar en el repaso → recién ahí se crea la reserva');
+  check(nuevasReservas.length === antesRes + 1, 'al tocar el botón → recién ahí se crea la reserva');
   check(nuevasReservas[0]?.metodo_pago === 'efectivo', 'la reserva creada ya tiene metodo_pago=efectivo adjunto');
 
   // ── Test 4: sin métodos de pago activos → sigue creando directo (no hay nada que gatear) ──
@@ -133,38 +131,40 @@ function reservasDeHoy() {
   check(await page.locator('#pago-screen.show').count() === 0, 'sin métodos de pago → nunca pasa por la pantalla de pago');
   check(ordenesDeHoy().length === antesDirecta + 1, 'sin métodos de pago → la orden se crea directo (comportamiento sin cambios para este caso)');
 
-  // ── Test 5: botón "← Volver" en el repaso regresa al pago sin perder nombre/ítems ──
-  console.log('\n[Test 5] Botón "← Volver" desde el repaso');
+  // ── Test 5: cambiar de método antes de enviar — ya no hay pantalla de
+  //    repaso a la que "volver" (ISS-081), pero sigue siendo el mismo caso
+  //    real: corregir el método elegido sin perder nombre/ítems.
+  console.log('\n[Test 5] Cambiar de método en la misma pantalla, sin perder nombre/ítems');
   // Recargar: Test 4 pisó pagoInfo=null en memoria de la página, hay que restaurarlo
   await page.goto(`${BASE}/menu?restaurante=1&mesa=1`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(200);
   await page.evaluate(() => { cart.push({ type: 'carta', platoId: 2, cantidad: 1, label: 'Ceviche', precio: 20 }); updateCart(); });
-  await page.fill('#nombre-cliente', 'GateTest Volver');
+  await page.fill('#nombre-cliente', 'GateTest Cambia Metodo');
   await page.evaluate(() => confirmarPedido());
   await page.waitForSelector('#pago-screen.show', { timeout: 5000 });
+
   await page.click('#btn-met-efectivo');
   await page.waitForTimeout(150);
-  await page.click('#btn-ya-pague');
-  await page.waitForSelector('#repaso-screen.show', { timeout: 5000 });
-  await page.click('#repaso-screen button[aria-label="Volver"]');
-  await page.waitForTimeout(200);
-  check(await page.locator('#pago-screen.show').count() > 0, '"← Volver" regresa a la pantalla de pago');
-  check(await page.locator('#repaso-screen.show').count() === 0, '"← Volver" oculta el repaso');
-  // Puede corregir el método (ya no efectivo, ahora Plin) y seguir el flujo con el mismo nombre/ítems
+  check((await page.locator('#btn-ya-pague').textContent()).toLowerCase().includes('efectivo'), 'con Efectivo, el botón queda listo para confirmar');
+
+  // Cambia de opinión, ahora Plin — sigue en la MISMA pantalla, sin navegar
   await page.click('#btn-met-plin');
   await page.waitForTimeout(150);
+  check(await page.locator('#pago-comprobante-wrap').evaluate(el => getComputedStyle(el).display !== 'none'), 'al cambiar a Plin, pide el comprobante');
+
   const fileInput2 = await page.locator('#pago-foto');
   const fakeJpg2 = Buffer.from([0xFF,0xD8,0xFF,0xE0,0,0,0,0,0,0,0,0,0,0,0xFF,0xD9]);
   const tmpPath2 = require('path').join(__dirname, '_tmp_comprobante2.jpg');
   require('fs').writeFileSync(tmpPath2, fakeJpg2);
   await fileInput2.setInputFiles(tmpPath2);
   await page.waitForTimeout(150);
+
   await page.click('#btn-ya-pague');
-  await page.waitForSelector('#repaso-screen.show', { timeout: 5000 });
-  const nombreTrasVolver = await page.locator('#repaso-nombre').textContent();
-  const metodoTrasVolver = await page.locator('#repaso-metodo').textContent();
-  check(nombreTrasVolver.includes('GateTest Volver'), 'tras corregir el método, el nombre se conserva');
-  check(metodoTrasVolver.includes('Plin'), `tras corregir el método, refleja el nuevo método elegido (${metodoTrasVolver})`);
+  await page.waitForSelector('#confirm-screen.show', { timeout: 5000 });
+  await page.waitForTimeout(300);
+  const ordenCambioMetodo = ordenesDeHoy()[0];
+  check(ordenCambioMetodo?.nombre_cliente === 'GateTest Cambia Metodo', 'el nombre se conserva tras cambiar de método');
+  check(ordenCambioMetodo?.metodo_pago === 'plin', `queda con el ÚLTIMO método elegido, no con el primero (${ordenCambioMetodo?.metodo_pago})`);
   require('fs').unlinkSync(tmpPath2);
 
   check(consoleErrors.length === 0, `0 errores de consola (hubo ${consoleErrors.length}: ${consoleErrors.slice(0,3).join(' | ')})`);

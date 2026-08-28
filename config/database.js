@@ -667,6 +667,26 @@ try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN requiere_seccion_id I
 // exige, sin excepción por plato).
 try { db.exec(`ALTER TABLE componentes_menu_dia ADD COLUMN no_permite_seccion_id INTEGER DEFAULT NULL REFERENCES secciones_menu(id)`); } catch (_) {}
 
+// Feedback de producto (ISS-081) — encuestas cortas al comensal sobre un
+// cambio puntual (ej. el rediseño de "Pedir", día 13 del piloto), NO datos
+// operativos del restaurante. `tipo` identifica de qué encuesta es cada
+// respuesta, para poder reusar esta misma tabla en futuras rondas sin
+// migrar de nuevo. Solo la ve el panel ADMIN (routes/admin.js) — la dueña
+// nunca tiene acceso, por diseño.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS feedback_producto (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo           TEXT NOT NULL,
+    id_restaurante INTEGER,
+    valoracion     TEXT,
+    preferencia    TEXT,
+    comentario     TEXT,
+    created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_restaurante) REFERENCES restaurantes(id)
+  )
+`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_feedback_producto_tipo ON feedback_producto(tipo)`);
+
 console.log('✅ Database ready');
 
 module.exports = db;

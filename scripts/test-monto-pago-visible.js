@@ -84,21 +84,19 @@ const VIEWPORT = { width: 360, height: 600 };
     check(true, 'la pantalla entra sin scroll a 360×600 — el monto nunca sale de vista');
   }
 
-  console.log('\nEfectivo también, y coherencia con el repaso final');
+  console.log('\nEfectivo también, y coincide con lo que de verdad se va a cobrar');
   await page.evaluate(() => seleccionarMetodoPago('efectivo'));
   const visibleEfectivo = await page.locator('#pago-total').isVisible();
   const textoEfectivo   = await page.locator('#pago-total').textContent();
   check(visibleEfectivo && textoEfectivo.trim() === 'S/ 33.50',
     'con efectivo el monto sigue visible (el comensal necesita saber cuánto preparar)');
 
-  // El monto de la pantalla de pago debe ser el mismo que el del repaso: si
-  // divergen, el comensal transfiere un importe distinto al que confirma.
-  const totalRepaso = await page.evaluate(() => {
-    document.getElementById('repaso-total').textContent = `S/ ${pagoPendiente.total.toFixed(2)}`;
-    return document.getElementById('repaso-total').textContent;
-  });
-  check(totalRepaso === textoEfectivo.trim(),
-    `el monto de pago coincide con el del repaso final (${totalRepaso})`);
+  // ISS-081: ya no hay una pantalla de repaso aparte con su propio total —
+  // esta es la única pantalla, y su monto tiene que ser el mismo que
+  // pagoPendiente.total, lo que de verdad se manda a cobrar al backend.
+  const totalReal = await page.evaluate(() => `S/ ${pagoPendiente.total.toFixed(2)}`);
+  check(totalReal === textoEfectivo.trim(),
+    `el monto mostrado coincide con pagoPendiente.total (${totalReal})`);
 
   await browser.close();
   console.log(`\n${pass} pasaron, ${fail} fallaron`);

@@ -658,6 +658,10 @@
       <div class="nav-item" onclick="showPanel('cat-orden')">
         <span class="nav-icon">◨</span> Categorías de orden
       </div>
+      <div class="nav-section">Producto</div>
+      <div class="nav-item" onclick="showPanel('feedback')">
+        <span class="nav-icon">◔</span> Feedback
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="admin-chip">
@@ -749,6 +753,23 @@
           <table>
             <thead><tr><th>#</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Restaurante</th><th>Creado</th><th>Acciones</th></tr></thead>
             <tbody id="tbody-usuarios"><tr><td colspan="7" class="state-msg">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANEL: Feedback de producto (ISS-081) — nunca lo ve la dueña -->
+      <div class="panel" id="panel-feedback">
+        <div class="section-header">
+          <span class="section-title">Feedback de producto</span>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:1rem">
+          Encuestas cortas al comensal sobre cambios puntuales — cruza todos los restaurantes.
+          No es información operativa: las dueñas nunca ven esto.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Fecha</th><th>Restaurante</th><th>Valoración</th><th>Preferencia</th><th>Comentario</th></tr></thead>
+            <tbody id="tbody-feedback"><tr><td colspan="5" class="state-msg">Cargando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1003,6 +1024,9 @@
   <button type="button" class="bottom-nav-item"        id="bn-cat-orden"    data-target="cat-orden"    onclick="showPanel('cat-orden')"    aria-label="Categorías de orden">
     <span class="bn-ico" aria-hidden="true">◨</span><span>Órdenes</span>
   </button>
+  <button type="button" class="bottom-nav-item"        id="bn-feedback"     data-target="feedback"     onclick="showPanel('feedback')"     aria-label="Feedback">
+    <span class="bn-ico" aria-hidden="true">◔</span><span>Feedback</span>
+  </button>
 </nav>
 
 <script>
@@ -1037,7 +1061,8 @@
     restaurantes:'Restaurantes',
     usuarios:    'Usuarios',
     'cat-reserva': 'Categorías de reserva',
-    'cat-orden':   'Categorías de orden'
+    'cat-orden':   'Categorías de orden',
+    feedback:      'Feedback de producto'
   };
   function showPanel(name) {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -1062,6 +1087,7 @@
     if (name === 'usuarios')     loadUsuarios();
     if (name === 'cat-reserva')  loadCatReserva();
     if (name === 'cat-orden')    loadCatOrden();
+    if (name === 'feedback')     loadFeedback();
   }
 
   // ── API ──
@@ -1187,6 +1213,26 @@
   }
 
   const badgeRol = r => r === 'admin' ? 'badge-admin' : r === 'owner' ? 'badge-owner' : 'badge-staff';
+
+  // ── Feedback de producto (ISS-081) ──
+  const VALORACION_EMOJI  = { mala: '😞 Mala', regular: '😐 Regular', buena: '🙂 Buena', excelente: '🤩 Excelente' };
+  const PREFERENCIA_LABEL = { nueva: '✅ Nueva', anterior: '↩️ Anterior' };
+
+  async function loadFeedback() {
+    const tbody = document.getElementById('tbody-feedback');
+    tbody.innerHTML = '<tr><td colspan="5" class="state-msg">Cargando…</td></tr>';
+    try {
+      const list = await api('GET', '/feedback');
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" class="state-msg">Sin respuestas todavía</td></tr>'; return; }
+      tbody.innerHTML = list.map(f => `<tr>
+        <td style="color:var(--muted)">${fDate(f.created_at)}</td>
+        <td>${f.restaurante || '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${f.valoracion ? VALORACION_EMOJI[f.valoracion] || f.valoracion : '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${f.preferencia ? PREFERENCIA_LABEL[f.preferencia] || f.preferencia : '<span style="color:var(--muted)">—</span>'}</td>
+        <td style="color:var(--text)">${f.comentario ? esc(f.comentario) : '<span style="color:var(--muted)">—</span>'}</td>
+      </tr>`).join('');
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="5" class="state-msg">⚠ ${e.message}</td></tr>`; }
+  }
 
   // ── Modal: Nuevo usuario ──
   async function openModalNuevoUsuario() {

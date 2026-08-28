@@ -707,4 +707,34 @@ router.patch('/reserva/:codigo/cancelar', (req, res) => {
   res.json({ message: 'Reserva cancelada correctamente', estatus: 'cancelada' });
 });
 
+// ─────────────────────────────────────────────────────
+// FEEDBACK DE PRODUCTO — ISS-081
+// Encuesta corta post-pedido sobre un cambio puntual (ISS-080, el rediseño
+// de "Pedir"). No requiere sesión (la manda el comensal desde menu.html) y
+// nunca bloquea ni retrasa el pedido — si falla, el frontend lo ignora en
+// silencio. Solo la lee el panel ADMIN (routes/admin.js), nunca la dueña.
+// ─────────────────────────────────────────────────────
+const VALORACIONES_FEEDBACK  = ['mala', 'regular', 'buena', 'excelente'];
+const PREFERENCIAS_FEEDBACK  = ['nueva', 'anterior'];
+
+router.post('/feedback', (req, res) => {
+  const { id_restaurante, tipo, valoracion, preferencia, comentario } = req.body;
+
+  if (!tipo?.trim())
+    return res.status(400).json({ error: 'tipo es requerido' });
+  if (valoracion && !VALORACIONES_FEEDBACK.includes(valoracion))
+    return res.status(400).json({ error: 'valoracion inválida' });
+  if (preferencia && !PREFERENCIAS_FEEDBACK.includes(preferencia))
+    return res.status(400).json({ error: 'preferencia inválida' });
+  if (!valoracion && !preferencia && !comentario?.trim())
+    return res.status(400).json({ error: 'Se requiere al menos una respuesta' });
+
+  db.prepare(`
+    INSERT INTO feedback_producto (tipo, id_restaurante, valoracion, preferencia, comentario)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(tipo.trim(), id_restaurante || null, valoracion || null, preferencia || null, comentario?.trim() || null);
+
+  res.status(201).json({ message: 'Gracias por tu opinión' });
+});
+
 module.exports = router;

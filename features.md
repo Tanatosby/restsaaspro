@@ -326,6 +326,33 @@ recortado a solo Reservar (el atajo de Pedir que probaba ya no existe), 11/11. S
 `test-iss049-recuperar-pago.js`, `test-gate-pago.js`, `test-comprobante-duplicado.js`,
 `test-numero-dia-pedido.js`, `test-pensionista-cliente.js`. 469/469 jest.
 
+## ~~Pago en un solo paso + banner + encuesta de producto~~ ✅ Completado 2026-08-28
+
+Día 14 del piloto: 3 pedidos tras probar ISS-080 en producción, validados primero con el mismo
+prototipo interactivo del día anterior.
+
+- **Letra del picker más grande** (`.mm-progreso`, 13px → 15.5px).
+- **Se eliminó "Revisa tu pedido":** la garantía de Gap 17 (nunca crear sin método + comprobante
+  resueltos) se conserva — solo se acortó de 2 pantallas a 1. `#pago-screen` ahora también
+  muestra el resumen del pedido, y "📎 Foto del comprobante" subió a 14.5px (estaba por debajo
+  del mínimo mobile-first de 14px). `enviarPago()` hace directo lo que antes hacía "Confirmar" en
+  el repaso.
+- **Aviso temporal** (3 días, 1 vez por celular vía localStorage) explicando el cambio del flujo
+  de Pedir a los comensales.
+- **Encuesta de producto** al terminar un pedido: 2 preguntas con botones (nunca texto libre
+  obligatorio) + comentario opcional. Solo dura los mismos 3 días.
+
+**ARCH:** tabla nueva `feedback_producto` (con `tipo`, reusable para futuras encuestas sin
+migrar de nuevo), `POST /api/public/feedback` (sin sesión) y `GET /api/admin/feedback` (rol
+admin). Panel nuevo "Feedback de producto" en `public/admin/dashboard.html` — **la dueña nunca
+ve esto**, es feedback de producto para decidir si un cambio funcionó, no información operativa
+del restaurante.
+
+**Verificación:** `scripts/test-gate-pago.js` reescrito para 1 sola pantalla (21/21).
+`scripts/test-feedback-flujo.js` nuevo (16/16). Ajustados sin cambiar el fondo:
+`test-iss049-recuperar-pago.js`, `test-comprobante-duplicado.js`, `test-numero-dia-pedido.js`,
+`test-monto-pago-visible.js`. Sin cambios necesarios en 7 scripts más. 469/469 jest.
+
 ## ~~Un deploy ya no puede dejar el panel vacío~~ ✅ Completado 2026-08-16
 *Ver [ISS-044](issues/ISS-044-panel-vacio-tras-deploy.md) y **T11** del backlog, que compartían causa.*
 

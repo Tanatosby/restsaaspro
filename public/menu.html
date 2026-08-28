@@ -85,6 +85,12 @@
     <div id="mode-label" style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.25rem"></div>
     <!-- Banner de horario cerrado (Gap 18) -->
     <div id="horario-cerrado-banner" style="display:none;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;margin-bottom:0.75rem"></div>
+    <!-- Aviso temporal del rediseño de Pedir (ISS-080/081) — solo los
+         primeros días, 1 vez por celular. Ver initAvisoFlujoPedir(). -->
+    <div id="aviso-flujo-banner" style="display:none;align-items:flex-start;gap:10px;background:var(--accent-light);color:var(--accent-dark);border:1px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;line-height:1.4;margin-bottom:0.75rem">
+      <span style="flex:1">🔔 Mejoramos la forma de elegir tu menú: primero elegís cuántos vas a pedir, y después los vas configurando uno por uno.</span>
+      <button type="button" onclick="cerrarAvisoFlujoPedir()" aria-label="Cerrar aviso" style="background:none;border:none;color:inherit;opacity:0.7;font-size:16px;cursor:pointer;line-height:1;padding:0;flex-shrink:0">✕</button>
+    </div>
     <!-- Consultar reserva + tamaño de letra (siempre visibles) -->
     <div style="display:flex;align-items:center;justify-content:flex-end;gap:0.5rem;margin-bottom:0.5rem">
       <button class="btn-font-scale" id="btn-font-scale" onclick="cyclarFontScale()" aria-label="Tamaño de letra: Normal. Toca para cambiar" title="Cambiar tamaño de letra">A</button>
@@ -262,7 +268,7 @@
   </div>
 
   <!-- ── Confirmation screen ── -->
-  <div class="confirm-screen" id="confirm-screen">
+  <div class="confirm-screen" id="confirm-screen" style="overflow-y:auto">
     <div class="confirm-icon" id="confirm-icon">🎉</div>
     <div class="confirm-title" id="confirm-title">¡Pedido enviado!</div>
     <div class="confirm-sub" id="confirm-sub">
@@ -271,6 +277,32 @@
       <span style="font-weight:600;color:var(--text)">Número:</span><br>
       <span class="confirm-num" id="confirm-num" style="color:var(--accent)">#—</span>
     </div>
+
+    <!-- ISS-081: encuesta de 2 preguntas + comentario opcional, solo los
+         primeros días del flujo nuevo — ver mostrarEncuestaFlujo(). Nunca
+         texto libre obligatorio. Las respuestas van a un endpoint público
+         nuevo y solo se ven en el panel ADMIN (Pedro, cruza restaurantes),
+         nunca en el panel de la dueña — es feedback del producto, no algo
+         operativo del restaurante. -->
+    <div id="encuesta-flujo-wrap" style="display:none;width:100%;max-width:320px;margin-top:0.5rem;margin-bottom:1rem;text-align:left;border-top:1px solid var(--border);padding-top:1rem">
+      <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:8px">¿Qué tal te pareció esta forma nueva de pedir?</div>
+      <div id="encuesta-valoracion" style="display:flex;gap:8px;justify-content:space-between;margin-bottom:14px">
+        <button type="button" data-val="mala" onclick="elegirEncuestaFlujo('valoracion','mala')" style="flex:1;font-size:22px;padding:8px 0;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer">😞</button>
+        <button type="button" data-val="regular" onclick="elegirEncuestaFlujo('valoracion','regular')" style="flex:1;font-size:22px;padding:8px 0;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer">😐</button>
+        <button type="button" data-val="buena" onclick="elegirEncuestaFlujo('valoracion','buena')" style="flex:1;font-size:22px;padding:8px 0;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer">🙂</button>
+        <button type="button" data-val="excelente" onclick="elegirEncuestaFlujo('valoracion','excelente')" style="flex:1;font-size:22px;padding:8px 0;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer">🤩</button>
+      </div>
+      <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:8px">¿Preferís esta forma nueva o la de antes?</div>
+      <div id="encuesta-preferencia" style="display:flex;gap:8px;margin-bottom:14px">
+        <button type="button" data-val="nueva" onclick="elegirEncuestaFlujo('preferencia','nueva')" style="flex:1;font-size:13px;font-weight:700;padding:10px 6px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer">✅ Esta nueva</button>
+        <button type="button" data-val="anterior" onclick="elegirEncuestaFlujo('preferencia','anterior')" style="flex:1;font-size:13px;font-weight:700;padding:10px 6px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer">↩️ La de antes</button>
+      </div>
+      <textarea id="encuesta-comentario" placeholder="¿Algo que quieras contarnos? (opcional)" style="width:100%;min-height:56px;border:1.5px solid var(--border);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;color:var(--text);background:var(--surface);resize:vertical;margin-bottom:10px"></textarea>
+      <button class="btn-confirmar" onclick="enviarEncuestaFlujo()">Enviar</button>
+      <button type="button" onclick="omitirEncuestaFlujo()" style="width:100%;background:none;border:none;color:var(--muted);font-size:13px;padding:10px 0 0;cursor:pointer;text-decoration:underline">Omitir</button>
+    </div>
+    <div id="encuesta-flujo-gracias" style="display:none;width:100%;max-width:320px;margin-bottom:1rem;font-size:13.5px;font-weight:700;color:var(--accent)">¡Gracias por tu opinión! 🙌</div>
+
     <div id="confirm-actions" style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:0.75rem;margin-top:0.5rem">
       <button id="btn-ver-estado" class="btn-confirmar" style="display:none" onclick="verEstadoReserva()">📋 Ver estado de mi reserva</button>
       <button class="btn-nuevo" onclick="resetTodo()">Volver al menú</button>
@@ -278,19 +310,21 @@
   </div>
 
   <!-- ── Payment screen ── -->
+  <!-- ISS-081: fusiona lo que antes eran 2 pantallas (pago + repaso final).
+       "Ya pagué" ahora hace directo lo que antes hacía "Confirmar" en el
+       repaso — sigue sin crear nada hasta tener método (y foto si aplica)
+       resueltos, esa es la garantía real de Gap 17, no la cantidad de
+       pantallas. Ver enviarPago(). -->
   <div class="confirm-screen" id="pago-screen" style="justify-content:flex-start;overflow-y:auto">
-    <div style="width:100%;max-width:400px;padding:0 1rem">
+    <div style="width:100%;max-width:400px;padding:0 1rem 1.5rem">
       <!-- ISS-048: antes no había forma de volver a la carta desde acá para
-           revisar u olvidar un ítem — quedaba varado hasta pagar. Mismo botón
-           que #repaso-screen. -->
+           revisar u olvidar un ítem — quedaba varado hasta pagar. -->
       <button onclick="volverDePago()" aria-label="Volver" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:1rem 0 0.25rem;color:var(--text)">←</button>
-      <div class="confirm-title" style="font-size:1.4rem">💳 ¿Cómo vas a pagar?</div>
-      <div id="pago-orden-ref" style="font-size:13px;color:var(--muted);margin-bottom:0.75rem"></div>
+      <div class="confirm-title" style="font-size:1.4rem;margin-bottom:0.75rem">💳 ¿Cómo vas a pagar?</div>
 
       <!-- Monto a pagar — ISS-040. Va sticky porque el comensal lo necesita a
            la vista mientras abre Yape/Plin y mientras sube el comprobante, no
-           solo al entrar a la pantalla. Antes solo aparecía en el carrito
-           (ya cerrado) y en el repaso final (ya pagó). -->
+           solo al entrar a la pantalla. -->
       <div style="position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:0.75rem;background:var(--accent-light);border:1px solid var(--accent);border-radius:12px;padding:0.85rem 1rem;margin-bottom:1.25rem">
         <span style="font-size:14px;font-weight:700;color:var(--text)">Total a pagar</span>
         <span id="pago-total" style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--accent);white-space:nowrap">S/ 0.00</span>
@@ -304,47 +338,26 @@
 
       <!-- Upload comprobante -->
       <div id="pago-comprobante-wrap" style="display:none;margin-top:1rem;text-align:left">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">📎 Foto del comprobante (obligatoria)</label>
-        <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted)">
+        <label style="font-size:14.5px;font-weight:600;display:block;margin-bottom:6px">📎 Foto del comprobante (obligatoria)</label>
+        <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-size:14px;color:var(--muted)">
           📷 Seleccionar imagen
           <input type="file" id="pago-foto" accept="image/*" style="display:none">
         </label>
         <div id="pago-foto-preview"></div>
       </div>
 
+      <!-- Resumen de solo lectura — antes solo se veía en el repaso, ahora
+           queda visible acá mismo antes de enviar. Sin botones de editar:
+           para eso ya está el carrito, un paso atrás. -->
+      <div id="pago-items-wrap" style="margin-top:1.25rem;text-align:left">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px">Tu pedido</div>
+        <div id="pago-items"></div>
+      </div>
+
       <!-- Acciones -->
       <div style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1.5rem">
         <button id="btn-ya-pague" class="btn-confirmar" onclick="enviarPago()" style="display:none">✓ Ya pagué</button>
       </div>
-    </div>
-  </div>
-
-  <!-- ── Payment review screen (repaso final antes de enviar) ── -->
-  <div class="confirm-screen" id="repaso-screen" style="justify-content:flex-start;overflow-y:auto">
-    <div style="width:100%;max-width:400px;padding:0 1rem 2rem">
-      <button onclick="volverAPago()" aria-label="Volver" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:1rem 0 0.25rem;color:var(--text)">←</button>
-      <div class="confirm-title" id="repaso-titulo" style="font-size:1.4rem">📋 Revisa tu pedido</div>
-
-      <div class="nombre-field" style="margin-top:0.75rem">
-        <label>Nombre</label>
-        <div id="repaso-nombre" style="font-size:14.5px;font-weight:700;color:var(--text)"></div>
-      </div>
-
-      <div id="repaso-items" style="margin-top:0.5rem"></div>
-      <div class="cart-total">
-        <span>Total</span>
-        <span class="cart-total-price" id="repaso-total">S/ 0.00</span>
-      </div>
-
-      <div style="margin-top:1rem;padding:0.85rem 1rem;background:var(--bg-2, rgba(0,0,0,.03));border-radius:12px;text-align:left">
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:4px">Método de pago</div>
-        <div id="repaso-metodo" style="font-size:14.5px;font-weight:700;color:var(--text)"></div>
-        <div id="repaso-foto-wrap" style="display:none;margin-top:8px">
-          <img id="repaso-foto-img" src="" alt="Comprobante" style="max-height:90px;border-radius:8px;border:1px solid var(--border)">
-        </div>
-      </div>
-
-      <button id="btn-repaso-confirmar" class="btn-confirmar" style="margin-top:1.5rem" onclick="confirmarEnvioFinal()">✓ Confirmar pedido</button>
     </div>
   </div>
 
@@ -421,7 +434,7 @@
   let pagoInfo             = null; // { yape, plin, efectivo } del restaurante
   let horarioInfo          = null; // { activo, apertura, cierre, dias, abierto_ahora, mensaje } del restaurante (Gap 18)
   // Orden/reserva armada en memoria mientras el cliente resuelve el pago —
-  // no se crea nada en el backend hasta confirmarEnvioFinal(). Gate de pago
+  // no se crea nada en el backend hasta enviarPago(). Gate de pago
   // obligatorio (Gap 17, vision_negocio.md): antes el pedido se creaba de
   // entrada y el pago quedaba como paso posterior, sin bloquear nada.
   let pagoPendiente        = null; // { tipo, payload, nombre, items, total, metodo, foto }
@@ -484,6 +497,7 @@
       horarioInfo = restData.horario     || null;
       initModalidadSelectors();
       actualizarEstadoHorario();
+      initAvisoFlujoPedir();
 
       // Si hay algún método de pago activo, el pago se resuelve ANTES de
       // crear el pedido/reserva — los botones reflejan que el siguiente
@@ -1339,6 +1353,26 @@ async function renderReservarContent() {
     if (btnConfirmar) btnConfirmar.disabled = cerrado;
   }
 
+  // Aviso temporal del rediseño de "Pedir" (ISS-081) — solo los primeros
+  // días desde el deploy, y una sola vez por celular (localStorage, mismo
+  // mecanismo que "Qué hay de nuevo" en owner.html). La fecha límite es fija
+  // en el código, no configurable — pasado ese día el aviso deja de
+  // mostrarse aunque nadie lo haya cerrado a mano.
+  const AVISO_FLUJO_KEY   = 'avisoFlujoPedirVisto_2026_08';
+  const AVISO_FLUJO_LIMITE = new Date('2026-08-31T00:00:00-05:00'); // 3 días desde el deploy (28/08)
+  function initAvisoFlujoPedir() {
+    if (new Date() >= AVISO_FLUJO_LIMITE) return;
+    let visto = false;
+    try { visto = localStorage.getItem(AVISO_FLUJO_KEY) === '1'; } catch (e) {}
+    if (visto) return;
+    const banner = document.getElementById('aviso-flujo-banner');
+    if (banner) banner.style.display = 'flex';
+  }
+  function cerrarAvisoFlujoPedir() {
+    document.getElementById('aviso-flujo-banner').style.display = 'none';
+    try { localStorage.setItem(AVISO_FLUJO_KEY, '1'); } catch (e) {}
+  }
+
   // ISS-047: ya no sale de un radio del pedido, sino del carrito. El backend
   // vuelve a derivarlo de las líneas —esto es solo el resumen que se manda—,
   // así que 'mixto' se calcula igual del otro lado.
@@ -1373,7 +1407,8 @@ async function renderReservarContent() {
 
   // Crea la orden vía API. Separado de confirmarPedido() porque ahora puede
   // dispararse en 2 momentos distintos: directo (si el restaurante no tiene
-  // ningún método de pago activo) o recién al final del repaso de pago.
+  // ningún método de pago activo) o recién al tocar "Ya pagué" en la
+  // pantalla de pago.
   async function crearOrden(payload) {
     const res = await fetchConTimeout('/api/public/orders', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1406,9 +1441,10 @@ async function renderReservarContent() {
     const tienePagos = pagoInfo && (pagoInfo.yape || pagoInfo.plin || pagoInfo.efectivo);
 
     // Si hay algún método de pago activo, todavía no se crea nada — el
-    // pedido recién se envía al confirmar en la pantalla de repaso, después
-    // de elegir método de pago (antes se creaba acá y el pago quedaba como
-    // paso posterior, sin bloquear nada — ver Gap 17 en vision_negocio.md).
+    // pedido recién se envía al tocar "Ya pagué", después de elegir método
+    // (y adjuntar el comprobante si aplica). Antes se creaba acá y el pago
+    // quedaba como paso posterior, sin bloquear nada — ver Gap 17 en
+    // vision_negocio.md.
     if (tienePagos) {
       // ISS-078: acá se usaba getModalidadOrden() === 'para_llevar', que solo
       // cobraba el tapper si TODO el pedido era para llevar — con un carrito
@@ -1549,7 +1585,7 @@ async function renderReservarContent() {
     const tienePagos = pagoInfo && (pagoInfo.yape || pagoInfo.plin || pagoInfo.efectivo);
 
     // Mismo gate que confirmarPedido(): si hay pago activo, todavía no se
-    // crea la reserva — recién se envía al confirmar en el repaso final.
+    // crea la reserva — recién se envía al tocar "Ya pagué".
     if (tienePagos) {
       const mod = getModalidadReserva();
       let cargo = 0;
@@ -1633,12 +1669,20 @@ async function renderReservarContent() {
   // ── Payment step ─────────────────────────────────
   function showPagoStep() {
     pagoMetodo = null;
-    const { tipo, items, total } = pagoPendiente;
-    document.getElementById('pago-orden-ref').textContent =
-      `${tipo === 'reserva' ? 'Tu reserva' : 'Tu pedido'} — ${items.length} ítem${items.length === 1 ? '' : 's'}`;
+    const { items, total } = pagoPendiente;
     // ISS-040 — el monto ya venía calculado en pagoPendiente.total (incluye
     // tapper/delivery); lo único que faltaba era pintarlo acá.
     document.getElementById('pago-total').textContent = `S/ ${Number(total || 0).toFixed(2)}`;
+    // ISS-081: antes este resumen solo se veía en el repaso final (ahora
+    // eliminado) — queda visible acá mismo, de solo lectura.
+    document.getElementById('pago-items').innerHTML = items.map(item => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${esc(item.label)}</div>
+          <div class="cart-item-sub">${esc(item.subLabel || '')}</div>
+        </div>
+        <span class="cart-item-price">S/ ${item.precio.toFixed(2)}</span>
+      </div>`).join('');
     document.getElementById('pago-metodo-detalle').innerHTML = '';
     document.getElementById('pago-comprobante-wrap').style.display = 'none';
     const btnPague = document.getElementById('btn-ya-pague');
@@ -1663,11 +1707,10 @@ async function renderReservarContent() {
 
   // ISS-048: volver de "¿Cómo vas a pagar?" a la carta. Es seguro sin
   // preguntar nada — acá todavía no se creó ni la orden ni la reserva
-  // (crearOrden()/crearReserva() recién se llaman desde
-  // confirmarEnvioFinal(), en el repaso) y el carrito no se vació. Solo hay
-  // que reabrir el drawer que corresponda — confirmarPedido()/
-  // confirmarReserva() lo cierran antes de mostrar esta pantalla (Día 9:
-  // la reserva ganó su propio drawer, ver #res-drawer).
+  // (crearOrden()/crearReserva() recién se llaman desde enviarPago()) y el
+  // carrito no se vació. Solo hay que reabrir el drawer que corresponda —
+  // confirmarPedido()/confirmarReserva() lo cierran antes de mostrar esta
+  // pantalla (Día 9: la reserva ganó su propio drawer, ver #res-drawer).
   function volverDePago() {
     // Si vuelve a editar la carta, el pago guardado en localStorage queda
     // desactualizado frente a lo que hay en pantalla — se limpia acá; si
@@ -1773,10 +1816,23 @@ async function renderReservarContent() {
     reader.readAsDataURL(file);
   });
 
-  // "Ya pagué" — SOLO valida (foto adjunta si aplica) y guarda el método
-  // elegido. Todavía no crea nada ni llama al backend: eso ocurre recién en
-  // confirmarEnvioFinal(), tras el repaso final que pidió el usuario.
-  function enviarPago() {
+  // "Ya pagué" — valida (foto adjunta si aplica) y de una crea la orden/
+  // reserva y le adjunta el pago. Es el único punto del flujo donde el
+  // pedido pasa a existir de verdad — la garantía real de Gap 17 (nunca
+  // crear sin método + comprobante ya resueltos) sigue siendo esta
+  // validación de acá arriba, no una pantalla de repaso aparte (ISS-081:
+  // se eliminó "Revisa tu pedido", ya no aportaba una revisión distinta
+  // de lo que este mismo formulario ya mostraba).
+  //
+  // Son 2 pasos con 2 requests distintas, y el botón avisa en cuál está
+  // parado (ISS-039): primero crear el pedido/reserva (rápido, JSON), después
+  // subir la foto del comprobante (más lento, sube una imagen).
+  //
+  // Si el paso 1 tuvo éxito pero el paso 2 falla o se cae por timeout,
+  // `pagoPendiente.creado` queda guardado con el id ya creado — un reintento
+  // (mismo tap en "Ya pagué") solo repite el PATCH de la foto, nunca vuelve
+  // a crear el pedido. Sin esto, reintentar duplicaba el pedido en cocina.
+  async function enviarPago() {
     if (!pagoMetodo || !pagoPendiente) return;
     const foto = document.getElementById('pago-foto').files[0] || null;
     if (['yape', 'plin'].includes(pagoMetodo) && !foto)
@@ -1785,70 +1841,12 @@ async function renderReservarContent() {
     pagoPendiente.metodo = pagoMetodo;
     pagoPendiente.foto   = foto;
 
-    document.getElementById('pago-screen').classList.remove('show');
-    showRepasoStep();
-  }
-
-  // ── Payment review step (repaso final) ────────────
-  const METODO_LABEL = { yape: '💚 Yape', plin: '🔵 Plin', efectivo: '💵 Efectivo' };
-
-  function showRepasoStep() {
-    const { tipo, nombre, items, total, metodo, foto } = pagoPendiente;
-    const isReserva = tipo === 'reserva';
-
-    document.getElementById('repaso-titulo').textContent = isReserva ? '📋 Revisa tu reserva' : '📋 Revisa tu pedido';
-    document.getElementById('repaso-nombre').textContent = nombre;
-    document.getElementById('repaso-metodo').textContent = METODO_LABEL[metodo] || metodo;
-    document.getElementById('repaso-items').innerHTML = items.map(item => `
-      <div class="cart-item">
-        <div class="cart-item-info">
-          <div class="cart-item-name">${esc(item.label)}</div>
-          <div class="cart-item-sub">${esc(item.subLabel || '')}</div>
-        </div>
-        <span class="cart-item-price">S/ ${item.precio.toFixed(2)}</span>
-      </div>`).join('');
-    document.getElementById('repaso-total').textContent = `S/ ${total.toFixed(2)}`;
-
-    const fotoWrap = document.getElementById('repaso-foto-wrap');
-    if (foto) {
-      const reader = new FileReader();
-      reader.onload = e => { document.getElementById('repaso-foto-img').src = e.target.result; };
-      reader.readAsDataURL(foto);
-      fotoWrap.style.display = 'block';
-    } else {
-      fotoWrap.style.display = 'none';
-    }
-
-    const btn = document.getElementById('btn-repaso-confirmar');
-    btn.disabled = false;
-    btn.textContent = isReserva ? '✓ Confirmar reserva' : '✓ Confirmar pedido';
-
-    document.getElementById('repaso-screen').classList.add('show');
-  }
-
-  // Volver corrige el método sin perder nombre/ítems ya cargados en pagoPendiente.
-  function volverAPago() {
-    document.getElementById('repaso-screen').classList.remove('show');
-    showPagoStep();
-  }
-
-  // Acá recién se crea la orden/reserva en el backend y se le adjunta el
-  // pago — el único punto del flujo donde el pedido pasa a existir de verdad.
-  //
-  // Son 2 pasos con 2 requests distintas, y el botón avisa en cuál está
-  // parado (ISS-039): primero crear el pedido/reserva (rápido, JSON), después
-  // subir la foto del comprobante (más lento, sube una imagen).
-  //
-  // Si el paso 1 tuvo éxito pero el paso 2 falla o se cae por timeout,
-  // `pagoPendiente.creado` queda guardado con el id ya creado — un reintento
-  // (mismo tap en "Confirmar") solo repite el PATCH de la foto, nunca vuelve
-  // a crear el pedido. Sin esto, reintentar duplicaba el pedido en cocina.
-  async function confirmarEnvioFinal() {
-    const btn = document.getElementById('btn-repaso-confirmar');
+    const btn = document.getElementById('btn-ya-pague');
+    const textoListo = btn.textContent; // para restaurar si falla
     btn.disabled = true;
 
     try {
-      const { tipo, payload, metodo, foto } = pagoPendiente;
+      const { tipo, payload, metodo } = pagoPendiente;
       let id, codigo, numeroDia;
 
       if (pagoPendiente.creado) {
@@ -1863,7 +1861,7 @@ async function renderReservarContent() {
         // ISS-049: si el pedido/reserva ya se creó en el backend y la
         // pestaña se recarga antes del PATCH del pago, el reintento no debe
         // volver a crearlo — restaurarPagoPendienteLocal() trae `creado` de
-        // vuelta y confirmarEnvioFinal() lo detecta arriba.
+        // vuelta y enviarPago() lo detecta arriba.
         guardarPagoPendienteLocal();
       }
 
@@ -1880,14 +1878,14 @@ async function renderReservarContent() {
       const pagoData = await res.json();
       if (!res.ok) throw new Error(pagoData.error || 'Error al registrar el pago');
 
-      document.getElementById('repaso-screen').classList.remove('show');
+      document.getElementById('pago-screen').classList.remove('show');
       showConfirm(tipo === 'reserva' ? 'reservar' : 'pedir', id, codigo, numeroDia);
       pagoPendiente = null;
       limpiarPagoPendienteLocal();
     } catch(e) {
       alert(e.message);
       btn.disabled = false;
-      btn.textContent = pagoPendiente.tipo === 'reserva' ? '✓ Confirmar reserva' : '✓ Confirmar pedido';
+      btn.textContent = textoListo;
     }
   }
 
@@ -1927,6 +1925,64 @@ async function renderReservarContent() {
     }
 
     document.getElementById('confirm-screen').classList.add('show');
+    mostrarEncuestaFlujo();
+  }
+
+  // ── Encuesta del flujo nuevo de Pedir (ISS-081) ───
+  // Solo los primeros días desde el deploy — fecha límite fija en el
+  // código, no configurable. Sin texto libre obligatorio: 2 preguntas con
+  // botones + un comentario opcional. Nunca bloquea ni retrasa el pedido
+  // ya enviado — si el POST falla, no se avisa ni se reintenta, el pedido
+  // ya está confirmado de todas formas.
+  const ENCUESTA_FLUJO_TIPO    = 'flujo_pedir_2026_08';
+  const ENCUESTA_FLUJO_LIMITE  = new Date('2026-08-31T00:00:00-05:00');
+  let encuestaFlujoResp = { valoracion: null, preferencia: null };
+
+  function mostrarEncuestaFlujo() {
+    if (new Date() >= ENCUESTA_FLUJO_LIMITE) return;
+    encuestaFlujoResp = { valoracion: null, preferencia: null };
+    document.querySelectorAll('#encuesta-valoracion button, #encuesta-preferencia button').forEach(b => {
+      b.style.borderColor = 'var(--border)';
+      b.style.background  = 'var(--surface)';
+    });
+    document.getElementById('encuesta-comentario').value = '';
+    document.getElementById('encuesta-flujo-wrap').style.display = 'block';
+    document.getElementById('encuesta-flujo-gracias').style.display = 'none';
+  }
+
+  function elegirEncuestaFlujo(campo, valor) {
+    encuestaFlujoResp[campo] = valor;
+    const contenedor = document.getElementById(campo === 'valoracion' ? 'encuesta-valoracion' : 'encuesta-preferencia');
+    contenedor.querySelectorAll('button').forEach(b => {
+      const activo = b.dataset.val === valor;
+      b.style.borderColor = activo ? 'var(--accent)' : 'var(--border)';
+      b.style.background  = activo ? 'var(--accent-light)' : 'var(--surface)';
+    });
+  }
+
+  async function enviarEncuestaFlujo() {
+    const comentario = document.getElementById('encuesta-comentario').value.trim();
+    if (!encuestaFlujoResp.valoracion && !encuestaFlujoResp.preferencia && !comentario) {
+      return showMsg('Elige al menos una respuesta, o toca "Omitir"', true);
+    }
+    try {
+      await fetchConTimeout('/api/public/feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_restaurante: parseInt(restauranteId),
+          tipo: ENCUESTA_FLUJO_TIPO,
+          valoracion: encuestaFlujoResp.valoracion,
+          preferencia: encuestaFlujoResp.preferencia,
+          comentario: comentario || null,
+        }),
+      }, 8000);
+    } catch (_) { /* el pedido ya se envió — la encuesta nunca lo bloquea */ }
+    document.getElementById('encuesta-flujo-wrap').style.display = 'none';
+    document.getElementById('encuesta-flujo-gracias').style.display = 'block';
+  }
+
+  function omitirEncuestaFlujo() {
+    document.getElementById('encuesta-flujo-wrap').style.display = 'none';
   }
 
   // ── Ver estado de reserva (stub — sesión 4 implementa showEstadoReserva) ──
@@ -2072,7 +2128,6 @@ async function renderReservarContent() {
     clearInterval(estadoPollInterval); estadoPollInterval = null;
     document.getElementById('confirm-screen').classList.remove('show');
     document.getElementById('pago-screen').classList.remove('show');
-    document.getElementById('repaso-screen').classList.remove('show');
     document.getElementById('nombre-cliente').value = '';
     document.getElementById('res-nombre').value     = '';
     document.getElementById('res-telefono').value   = '';

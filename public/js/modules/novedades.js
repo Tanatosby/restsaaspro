@@ -47,6 +47,14 @@ const NOVEDADES = [
       'Ahora tus clientes pueden tocar "✏️ Editar" en cualquier menú que ya agregaron al carrito, sin tener que borrar todo y empezar de nuevo — útil si se equivocan o si se acaba un plato a mitad de armar el pedido.',
     ],
   },
+  {
+    id: 5,
+    fecha: '2026-08-28',
+    items: [
+      'La pantalla de pago del cliente ahora es un solo paso — antes había una pantalla extra de "Revisa tu pedido" antes de enviar, ya no hace falta.',
+      'Tus clientes van a ver por unos días un aviso arriba del menú explicando el cambio de cómo se pide, y una encuesta cortita al terminar su pedido (esto es solo para nosotros, para saber si el cambio les gustó — vos no necesitas hacer nada).',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

@@ -99,9 +99,8 @@ const FOTO_B = Buffer.from([0xFF,0xD8,0xFF,0xE0,1,1,1,1,1,1,1,1,1,1,0xFF,0xD9]);
       await page.waitForTimeout(200);
       await page.locator('#pago-foto').setInputFiles(fotoPath);
       await page.waitForTimeout(200);
+      // ISS-081: "Ya pagué" ya crea la orden de una — sin pantalla de repaso.
       await page.click('#btn-ya-pague');
-      await page.waitForTimeout(400);
-      await page.click('#btn-repaso-confirmar');
       await page.waitForTimeout(1200);
       const ok = await page.locator('#confirm-screen').evaluate(el => el.classList.contains('show')).catch(() => false);
       return ok;

@@ -110,11 +110,11 @@
   padding: 10px 1.25rem;
   background: var(--accent-soft, rgba(200,105,42,.12));
   color: var(--accent, #c8692a);
-  font-size: 13px; font-weight: 600; line-height: 1.4;
+  font-size: 15.5px; font-weight: 600; line-height: 1.4;
   flex-shrink: 0;
 }
 .mm-progreso.show { display: block; }
-.mm-progreso b { font-family: var(--font-display, Georgia, serif); }
+.mm-progreso b { font-family: var(--font-display, Georgia, serif); font-size: 17px; }
 `;
 
   function injectStyle() {
