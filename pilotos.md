@@ -665,6 +665,11 @@ resolvió el problema de fondo. La mesa se ve mejor, pero el número de orden si
 en Cola y Cocina — preguntaron si se puede sacar directamente de la visualización en vez de
 solo achicarlo.
 
+**Resuelto 2026-08-28:** con mesa, el `#orden` se saca por completo de Cola y Cocina — queda solo
+`Mesa N`. Sin mesa (para llevar/delivery) sigue igual, ahí es el único dato disponible. Órdenes/
+Reservas/Historial no se tocaron (nadie reportó confusión ahí). Ver
+[ISS-074](issues/ISS-074-mesa-grande-orden-chico.md), sección de seguimiento.
+
 **Seguimiento de ISS-073 (anti-parpadeo, mismo deploy):** ya no parpadea, pero Cocina "sigue
 refrescándose cada cierto tiempo" y sigue siendo incómodo para la cocinera. El anti-parpadeo
 evitó el repintado visual; el polling en sí (cada 60s) sigue siendo perceptible de alguna otra

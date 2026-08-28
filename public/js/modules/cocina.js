@@ -101,11 +101,13 @@ function renderCocinaTicket(o) {
   // En línea propia, no dentro del header: en 360px compite con el estatus.
   const modBadge = badgeModalidad(o.modalidad, true, conteoMod);
 
-  // Mesa grande / #orden chico (día 11 del piloto) — el cocinero actúa por
-  // mesa, no por número de orden. Para llevar/delivery no tienen mesa: ahí
-  // el #orden vuelve a ser lo único que identifica el pedido.
+  // Mesa grande, #orden afuera (día 11 y seguimiento día 12 del piloto): el
+  // cocinero actúa por mesa, no por número de orden — achicar el #orden
+  // (ISS-074) no alcanzó, seguía confundiendo al lado de la mesa. Con mesa,
+  // se saca directo de la vista. Para llevar/delivery no tienen mesa: ahí el
+  // #orden sigue siendo lo único que identifica el pedido, no se toca.
   const tituloHtml = o.mesa
-    ? `<strong>Mesa ${o.mesa}</strong> <span style="font-size:0.857143rem;color:var(--muted)">#${o.numero_dia ?? o.id}</span>`
+    ? `<strong>Mesa ${o.mesa}</strong>`
     : `<strong>#${o.numero_dia ?? o.id}</strong>`;
 
   return `

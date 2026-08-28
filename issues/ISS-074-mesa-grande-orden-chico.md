@@ -31,3 +31,17 @@ Sin cambios de backend. 34/34 test suites, 458/458 tests.
 
 Sin probar en uso real — confirmar en cocina que ahora es más rápido ubicar la mesa a simple
 vista.
+
+## Seguimiento — Día 12 del piloto (2026-08-26): achicar no alcanzó
+
+La dueña confirmó que la mesa se ve mejor, pero el `#orden` chico y gris **seguía confundiendo**
+al lado de la mesa en Cola y Cocina — pidieron evaluar sacarlo de la vista directamente, no solo
+seguir achicándolo.
+
+**Resuelto 2026-08-28:** con mesa, el `#orden` se saca por completo de `renderKanbanOrden()`
+(`pedidos.js`) y `renderCocinaTicket()` (`cocina.js`) — queda solo `Mesa N`. Sin mesa (para
+llevar/delivery), sigue mostrándose igual que antes: ahí es el único dato que identifica el
+pedido, no hay nada que sacar. Alcance acotado a Cola y Cocina — Órdenes/Reservas/Historial no se
+tocaron, ahí el número puede seguir sirviendo para búsquedas administrativas y nadie reportó
+confusión en esas pantallas. 469/469 jest sin regresiones, verificado a mano en ambas pantallas
+con una orden real.

@@ -73,6 +73,32 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-08-28 (2) — ISS-074 seguimiento: sacar el #orden con mesa (no solo achicarlo)
+
+**Prompt del usuario:** de la lista priorizada, el hallazgo #1 del Día 12 — la mesa se ve mejor
+desde ISS-074, pero el `#orden` chico y gris seguía confundiendo al lado. Pidieron evaluar
+sacarlo de la vista directamente.
+
+**Implementado:**
+- `public/js/modules/pedidos.js` — `renderKanbanOrden()`: con mesa, el título queda solo
+  `Mesa N` (se quita el `<span class="cola-meta">#N</span>`).
+- `public/js/modules/cocina.js` — `renderCocinaTicket()`: mismo cambio.
+- Sin mesa (para llevar/delivery) no cambia nada — ahí el `#orden` sigue siendo el único dato
+  que identifica el pedido. Alcance acotado a Cola y Cocina; Órdenes/Reservas/Historial no se
+  tocaron (nadie reportó confusión ahí, y el número puede seguir sirviendo para búsquedas
+  administrativas).
+
+**Verificación:** 469/469 jest (1 falla intermitente de `login-rate-limit.test.js` en la corrida
+completa, sensible a la carga del sistema — pasó 4/4 al aislarla, no relacionada con este
+cambio). Verificado a mano con una orden real con mesa en Cola del día y en Cocina: queda
+"Mesa 7" solo, sin número al lado, en ambas pantallas.
+
+**Docs:** `issues/ISS-074-...md` (sección de seguimiento), `issues/ISSUES.md`, `pilotos.md`, este
+archivo.
+**Pendiente:** deploy (el usuario decide cuándo).
+
+---
+
 ## 🎯 Sesión 2026-08-28 — ISS-081: pago en 1 paso + aviso temporal + encuesta de producto
 
 **Prompt del usuario:** un día después del deploy de ISS-080, feedback de uso real: letra chica

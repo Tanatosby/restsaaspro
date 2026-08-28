@@ -236,12 +236,14 @@ function renderKanbanCard(item, zona) {
 
 function renderKanbanOrden(o, zona) {
   const minutos    = Math.floor((Date.now() - new Date(toUTC(o.created_at)).getTime()) / 60000);
-  // Mesa grande / #orden chico (día 11 del piloto) — el cocinero/mozo actúa
-  // por mesa, no por número de orden. Para llevar/delivery no tienen mesa:
-  // ahí el #orden vuelve a ser lo único que identifica el pedido.
+  // Mesa grande, #orden afuera (día 11 y seguimiento día 12 del piloto): el
+  // cocinero/mozo actúa por mesa, no por número de orden — achicar el #orden
+  // (ISS-074) no alcanzó, seguía confundiendo al lado de la mesa. Con mesa,
+  // se saca directo de la vista. Para llevar/delivery no tienen mesa: ahí el
+  // #orden sigue siendo lo único que identifica el pedido, no se toca.
   const numTag     = `#${o.numero_dia ?? o.id}`;
   const tituloHtml = o.mesa
-    ? `🧾 <strong>Mesa ${o.mesa}</strong> <span class="cola-meta">${numTag}</span>`
+    ? `🧾 <strong>Mesa ${o.mesa}</strong>`
     : `🧾 <strong>${numTag}</strong>`;
   const items      = renderItemLines(o.carta_items, o.menu_items, o.modalidad);
   const btnAccion  = btnOrden(o, zona);
