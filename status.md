@@ -29,13 +29,18 @@ por el usuario:
 | 2026-08-27 | `0eb1f56..1085807` | Doc del Día 12 del piloto (7 hallazgos, sin implementar). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-08-27 (2) | `1085807..bc4109e` | **"⬇ Descargar carta"** — foto de los platos a la carta con precio (`carta-export.js`), pedido real de la dueña, día 13 del piloto. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-08-27 (3) | `bc4109e..4947e23` | **ISS-078** — la pantalla de pago no cobraba el tapper en un carrito mixto (para llevar + en local), el comensal pagaba de menos por Yape/Plin. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
+| 2026-08-28 | `4947e23..3e1d922` | **ISS-079** (homologar "Cobrar" para llevar/delivery) + **ISS-080** (Pedir: cantidad primero, configurar después + editar unidad puntual) — los 2 commits juntos en un solo deploy. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 
-**Sin pendientes de deploy** — producción está al día con `main` (`4947e23`). ISS-059 y ISS-060
+**Sin pendientes de deploy** — producción está al día con `main` (`3e1d922`). ISS-059 y ISS-060
 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
 hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, tap en foto, control de
 compatibilidad, cobro en 1 clic, Cocina sin parpadeo, mesa grande, Agregar manual sola, modal de
 novedades con las 2 entradas, y el campo de nombre en Configuración).
+
+**Sin verificar todavía en uso real, la más importante:** ISS-080 (Pedir: cantidad primero,
+configurar después) — es el cambio más grande al flujo del comensal hasta ahora. Falta que la
+dueña lo vea funcionar en un servicio real antes de darlo por cerrado del todo.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
