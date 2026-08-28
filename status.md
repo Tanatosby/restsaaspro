@@ -32,8 +32,9 @@ por el usuario:
 | 2026-08-28 | `4947e23..3e1d922` | **ISS-079** (homologar "Cobrar" para llevar/delivery) + **ISS-080** (Pedir: cantidad primero, configurar después + editar unidad puntual) — los 2 commits juntos en un solo deploy. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-08-28 (2) | `3e1d922..f3ff74a` | **ISS-081** — pago en 1 sola pantalla (se elimina "Revisa tu pedido") + aviso temporal + encuesta de producto (solo panel admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 
-**Sin pendientes de deploy** — producción está al día con `main` (`f3ff74a`). ISS-059 y ISS-060
-siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
+**Pendiente de deploy (2026-08-28):** `2151403` (ISS-074 seguimiento) y el commit de **ISS-082**
+(aceptación de Términos de uso — cierra Gap 22). Último deploy confirmado: `f3ff74a` (ISS-081).
+ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
 hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, tap en foto, control de
 compatibilidad, cobro en 1 clic, Cocina sin parpadeo, mesa grande, Agregar manual sola, modal de
@@ -70,6 +71,42 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-28 (3) — ISS-082: aceptación de Términos de uso (cierra Gap 22)
+
+**Prompt del usuario:** *"tengo una duda sobre datos y términos de uso, puedes hacer que den
+marcar en términos de uso que validen que nos dan el permiso de sus datos de venta y que usamos
+esto para métricas de uso y que son estrictamente para ello y que son confidenciales?"* — y
+aclaró que va **al ingreso**, no en el registro. Decisiones tomadas en la conversación: solo el
+owner acepta; un solo texto con consentimiento de datos **+** aviso de IA; re-aceptación por
+versión.
+
+**Implementado:**
+- `config/database.js` — migración idempotente: `terminos_aceptados_at` / `terminos_version` /
+  `terminos_aceptado_por` en `restaurantes` (el consentimiento es del negocio, lo da el owner).
+- `utils/terminos.js` (nuevo) — `TERMINOS_VERSION = '2026-08-28'`. Subir la fecha fuerza
+  re-aceptación a todos los owners.
+- `routes/auth.js` — `GET /api/auth/terminos` (`{ version, pendiente, aceptados_at }`;
+  `pendiente` solo para owner con versión desactualizada) + `POST /api/auth/terminos/aceptar`
+  (`authorize('owner')`, guarda timestamp ISO + versión + id de usuario).
+- `public/owner.html` — overlay bloqueante `#modal-terminos` (mobile-first, sin ✕ ni cierre por
+  fondo). En el arranque, si `session.role === 'owner'`, consulta el endpoint y lo muestra si
+  hay algo pendiente. Sin red → no bloquea, se reintenta al próximo ingreso (criterio ISS-027).
+- `public/terminos.html` (nuevo) — texto completo, 8 secciones, incluye Ley N.° 29733 para los
+  datos personales de los clientes. La sirve `express.static`.
+- `routes/admin.js` + `public/admin/dashboard.html` — columna "T&C" en la tabla de restaurantes
+  (fecha de aceptación + versión en tooltip, o "pendiente").
+
+**Verificación:** migración aplicada y columnas verificadas contra la BD real; `app.js` arranca
+sin errores; `tests/terminos-aceptacion.test.js` (9 casos) + suite completa **478/478 jest verde**
+(36 suites).
+
+**Docs:** `issues/ISS-082-aceptacion-terminos.md` (nuevo), `issues/ISSUES.md`, `vision_negocio.md`
+(Gap 22 → resuelto), `features.md`, `backlog.md`, `public/js/modules/novedades.js` (entrada 6),
+este archivo.
+**Pendiente:** deploy (lo hace el usuario).
 
 ---
 

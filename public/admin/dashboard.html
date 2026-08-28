@@ -704,11 +704,11 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>#</th><th>Nombre</th><th>Owner</th><th>Usuarios</th><th>Órdenes</th><th>Revenue</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>#</th><th>Nombre</th><th>Owner</th><th>Usuarios</th><th>Órdenes</th><th>Revenue</th><th>Estado</th><th>T&amp;C</th><th>Acciones</th></tr></thead>
             <tbody id="tbody-restaurantes">
-              <tr class="skel-row"><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-80"></div></td><td><div class="skel skel-line w-60"></div></td><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-50"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-60"></div></td></tr>
-              <tr class="skel-row"><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-60"></div></td><td><div class="skel skel-line w-80"></div></td><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-50"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-60"></div></td></tr>
-              <tr class="skel-row"><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-50"></div></td><td><div class="skel skel-line w-60"></div></td><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-50"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-60"></div></td></tr>
+              <tr class="skel-row"><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-80"></div></td><td><div class="skel skel-line w-60"></div></td><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-50"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-60"></div></td></tr>
+              <tr class="skel-row"><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-60"></div></td><td><div class="skel skel-line w-80"></div></td><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-50"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-60"></div></td></tr>
+              <tr class="skel-row"><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-50"></div></td><td><div class="skel skel-line w-60"></div></td><td><div class="skel skel-line w-30"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-50"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-40"></div></td><td><div class="skel skel-line w-60"></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1123,11 +1123,11 @@
   // ── Restaurantes ──
   async function loadRestaurantes() {
     const tbody = document.getElementById('tbody-restaurantes');
-    tbody.innerHTML = '<tr><td colspan="8" class="state-msg">Cargando…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="state-msg">Cargando…</td></tr>';
     try {
       const list = await api('GET', '/restaurantes');
       restaurantesCache = list;
-      if (!list.length) { tbody.innerHTML = '<tr><td colspan="8" class="state-msg">Sin restaurantes registrados</td></tr>'; return; }
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="9" class="state-msg">Sin restaurantes registrados</td></tr>'; return; }
       tbody.innerHTML = list.map(r => `<tr>
         <td style="color:var(--muted)">${r.id}</td>
         <td><strong>${r.nombre}</strong></td>
@@ -1136,6 +1136,9 @@
         <td>${r.total_ordenes}</td>
         <td style="color:var(--accent);font-weight:500">S/ ${n2(r.revenue)}</td>
         <td><span class="badge ${r.activo ? 'badge-on' : 'badge-off'}">${r.activo ? 'activo' : 'inactivo'}</span></td>
+        <td>${r.terminos_aceptados_at
+          ? `<span class="badge badge-on" title="Versión ${r.terminos_version || '—'} · ${fDate(r.terminos_aceptados_at)}">✓ ${fDate(r.terminos_aceptados_at)}</span>`
+          : '<span class="badge badge-off" title="El owner todavía no aceptó los Términos y Condiciones">pendiente</span>'}</td>
         <td><div class="actions">
           <button class="btn btn-ghost btn-sm" onclick="abrirStatsDrawer(${r.id}, '${esc(r.nombre)}')">📊 Stats</button>
           <button class="btn btn-ghost btn-sm" onclick="verQR(${r.id}, '${esc(r.nombre)}')">QR</button>
@@ -1144,7 +1147,7 @@
           <button class="btn btn-danger-ghost" onclick="eliminarRestaurante(${r.id}, '${esc(r.nombre)}')">Eliminar</button>
         </div></td>
       </tr>`).join('');
-    } catch (e) { tbody.innerHTML = `<tr><td colspan="8" class="state-msg">⚠ ${e.message}</td></tr>`; }
+    } catch (e) { tbody.innerHTML = `<tr><td colspan="9" class="state-msg">⚠ ${e.message}</td></tr>`; }
   }
 
   async function toggleRestaurante(id) {

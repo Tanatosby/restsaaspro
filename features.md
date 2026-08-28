@@ -518,16 +518,26 @@ Inteligencia Artificial, pero diseñada y monitoreada por una persona. Ver princ
 `vision_negocio.md` sección 11. Copy concreto y ubicación (¿footer? ¿sección "Quién lo hace"?) pendientes
 de definir.
 
-### Aceptación de Términos y Condiciones (consentimiento de datos + disclosure de IA)
-*Anotado 2026-07-16, pendiente de implementar. Ver Gap 22 en `vision_negocio.md`.*
+### Aceptación de Términos de uso (consentimiento de datos + disclosure de IA)
+*Anotado 2026-07-16. **Implementado 2026-08-28 (ISS-082).** Ver Gap 22 en `vision_negocio.md`.*
 
-Distinto del punto anterior (que es copy pasivo en la landing pública): acá el owner debe **aceptar
-activamente** unos Términos y Condiciones antes de operar, que cubran (1) consentimiento para la
-recopilación de datos del restaurante y (2) aviso de que la app fue desarrollada con Inteligencia
-Artificial, con ayuda funcional de una persona en el diseño y la ingeniería de prompts. Quedan sin
-definir: dónde vive el checkbox (registro vs. primer login), si aplica también a mozo/cocinero, si se
-requiere re-aceptación ante cambios de los términos, y el texto legal completo — ver detalle en
-`vision_negocio.md`.
+Distinto de la disclosure pasiva de la landing: el **owner** acepta activamente, en una pantalla
+bloqueante en su primer ingreso a `owner.html`, unos Términos de uso que cubren (1) consentimiento
+para registrar y usar los **datos de venta** con fines de **métricas de uso**, estrictamente para
+eso y de forma confidencial; (2) tratamiento de los datos personales de los clientes conforme a la
+**Ley N.° 29733**; (3) aviso de que la app fue desarrollada con IA supervisada por una persona.
+
+- **Solo el owner** pasa por esto — mozo/cocinero/admin no ven nada.
+- **Versionado**: `utils/terminos.js::TERMINOS_VERSION`. Subir esa fecha fuerza re-aceptación a
+  todos los owners en su próximo ingreso.
+- BD: `terminos_aceptados_at` / `terminos_version` / `terminos_aceptado_por` en `restaurantes`.
+- Endpoints: `GET /api/auth/terminos` (`{ version, pendiente, aceptados_at }`) y
+  `POST /api/auth/terminos/aceptar` (`authorize('owner')`).
+- Texto completo en `public/terminos.html` (8 secciones). Columna "T&C" en el panel admin con la
+  fecha/versión de aceptación por restaurante.
+- Tests: `tests/terminos-aceptacion.test.js` (9 casos). **478/478 jest verde.**
+- Pendiente: revisión legal formal del texto (borrador) y el copy pasivo en la landing (entrada
+  anterior, sin implementar).
 
 ### Módulo Pensionistas — lo que falta tras las Fases 1 y 2
 *Anotado 2026-07-15, decisiones cerradas el 2026-08-10. **El núcleo ya está implementado** — ver

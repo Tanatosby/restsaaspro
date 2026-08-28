@@ -57,6 +57,9 @@ router.get('/restaurantes', (req, res) => {
       r.nombre,
       r.activo,
       r.created_at,
+      -- Aceptación de Términos y Condiciones (Gap 22 / ISS-082)
+      r.terminos_aceptados_at,
+      r.terminos_version,
       -- Owner info
       u.nombre AS owner_nombre,
       u.email  AS owner_email,

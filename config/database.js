@@ -687,6 +687,19 @@ db.exec(`
 `);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_feedback_producto_tipo ON feedback_producto(tipo)`);
 
+// Aceptación de Términos y Condiciones por el owner (Gap 22 / ISS-082).
+// Consentimiento explícito del uso de los datos de venta para métricas +
+// aviso de que la app fue desarrollada con IA supervisada por una persona.
+// Vive en `restaurantes` porque el consentimiento es sobre los datos del
+// NEGOCIO, no de cada usuario — lo da el owner como representante. Solo el
+// owner acepta; mozo/cocinero no pasan por esto.
+// `terminos_version` permite forzar re-aceptación si el texto cambia:
+// utils/terminos.js::TERMINOS_VERSION es la versión vigente.
+// `terminos_aceptado_por` deja rastro de qué usuario owner tocó "Acepto".
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN terminos_aceptados_at TEXT    DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN terminos_version      TEXT    DEFAULT NULL`); } catch (_) {}
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN terminos_aceptado_por INTEGER DEFAULT NULL`); } catch (_) {}
+
 console.log('✅ Database ready');
 
 module.exports = db;

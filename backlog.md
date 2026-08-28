@@ -8,7 +8,7 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 > (`conversacion_*.md`) y por lo tanto **no viajaba entre las 2 laptops del usuario**. Este archivo sí
 > está en git: es la copia viva del backlog. Actualizarlo al cerrar cada sesión.
 
-**Última actualización:** 2026-08-24
+**Última actualización:** 2026-08-28
 
 ---
 
@@ -437,6 +437,10 @@ cambiar** — no es un ajuste de tamaño, es un rediseño de qué se muestra y p
 
 ## P1 — Antes de cobrarle al primer restaurante
 
+- [x] ~~**Términos de uso — consentimiento de datos de venta para métricas + aviso de IA**~~ —
+      ✅ **hecho 2026-08-28 (ISS-082).** Overlay bloqueante en el primer ingreso a `owner.html`,
+      solo para el owner; versionado (`utils/terminos.js`); texto completo en `public/terminos.html`
+      (incluye Ley N.° 29733). Cierra el Gap 22. Pendiente: deploy y revisión legal formal del texto.
 - [ ] **Backup diario automático con restauración probada.** No basta con generarlo: hay que probar el
       restore completo.
 - [ ] **Cobro recurrente** resuelto, para no perseguir pagos uno por uno.

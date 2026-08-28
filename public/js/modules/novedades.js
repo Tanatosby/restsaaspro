@@ -55,6 +55,13 @@ const NOVEDADES = [
       'Tus clientes van a ver por unos días un aviso arriba del menú explicando el cambio de cómo se pide, y una encuesta cortita al terminar su pedido (esto es solo para nosotros, para saber si el cambio les gustó — vos no necesitas hacer nada).',
     ],
   },
+  {
+    id: 6,
+    fecha: '2026-08-28',
+    items: [
+      'La primera vez que entres vas a ver una pantalla de "Términos de uso" para aceptar. Confirma que nos das permiso de usar los datos de tus ventas solo para medir el uso del sistema y mejorar tus reportes, que son confidenciales, y avisa que la app está hecha con ayuda de Inteligencia Artificial supervisada por una persona. Se acepta una sola vez.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

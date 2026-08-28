@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Términos de uso — Menú Pro</title>
+  <script>
+    // Mismo criterio de tema que owner.html: aplicar antes del paint.
+    (function () {
+      try {
+        var t = localStorage.getItem('mp-theme');
+        if (t !== 'light' && t !== 'dark') {
+          t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #faf7f2; --card: #ffffff; --text: #2b2620; --text-2: #4a453d; --muted: #7a7268;
+      --border: #e7e0d6; --accent: #c8692a;
+    }
+    :root[data-theme="dark"] {
+      --bg: #1b1712; --card: #241f19; --text: #ede7dd; --text-2: #c7bfb2; --muted: #9a9083;
+      --border: #3a332a; --accent: #e0894f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 16px; line-height: 1.6;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 1.5rem 1.15rem 4rem; }
+    header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.5rem; margin: 0 0 0.35rem; }
+    .sub { color: var(--muted); font-size: 0.95rem; }
+    h2 { font-size: 1.15rem; margin: 2rem 0 0.6rem; }
+    p { margin: 0 0 0.9rem; color: var(--text-2); }
+    strong { color: var(--text); }
+    ul { margin: 0 0 0.9rem; padding-left: 1.3rem; color: var(--text-2); }
+    li { margin-bottom: 0.4rem; }
+    a { color: var(--accent); }
+    .back {
+      display: inline-block; margin-top: 2.5rem; min-height: 44px; line-height: 44px;
+      padding: 0 1.1rem; border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); text-decoration: none; font-weight: 600;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1rem 1.15rem; margin-bottom: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Términos de uso de Menú Pro</h1>
+      <div class="sub">Vigente desde el 28 de agosto de 2026</div>
+    </header>
+
+    <div class="card">
+      <p>Este documento resume las condiciones bajo las cuales un restaurante usa Menú Pro.
+      Al aceptar los términos desde el panel, el propietario del restaurante confirma que
+      leyó y está de acuerdo con lo siguiente.</p>
+    </div>
+
+    <h2>1. Qué datos guarda el sistema</h2>
+    <p>Para funcionar, Menú Pro registra y almacena los datos propios de la operación del
+    restaurante:</p>
+    <ul>
+      <li>Menús, secciones, platos, precios y fotos.</li>
+      <li>Órdenes y reservas: ítems pedidos, montos, modalidad, fecha y hora, mesa, estado.</li>
+      <li>Pagos: método elegido, comprobante adjunto y su confirmación.</li>
+      <li>Configuración del restaurante, mesas, usuarios del equipo y, si se usa, saldos de pensionistas.</li>
+      <li>Nombre y teléfono que el comensal deja voluntariamente al hacer un pedido o una reserva.</li>
+    </ul>
+
+    <h2>2. Consentimiento sobre los datos de venta</h2>
+    <p>El propietario autoriza a Menú Pro a registrar y conservar los datos de venta de su
+    restaurante (pedidos, montos, platos vendidos, horarios y reservas) y a usarlos para
+    generar <strong>métricas de uso del sistema</strong>.</p>
+
+    <h2>3. Para qué se usan esos datos</h2>
+    <p>Los datos de venta se usan <strong>únicamente</strong> para:</p>
+    <ul>
+      <li>Medir cómo se usa la aplicación.</li>
+      <li>Mejorar el producto y los reportes que el propietario ve en su panel.</li>
+      <li>Dar soporte al restaurante cuando lo pide.</li>
+    </ul>
+    <p>No se usan para ningún otro fin. No se venden.</p>
+
+    <h2>4. Confidencialidad</h2>
+    <p>La información de cada restaurante es confidencial. No se comparte con otros
+    restaurantes ni con terceros de una forma que identifique al restaurante o a sus
+    clientes. Si en el futuro se publican métricas agregadas del conjunto de restaurantes,
+    será siempre de forma <strong>anónima y agregada</strong>, sin datos que permitan
+    reconocer a un restaurante en particular.</p>
+
+    <h2>5. Datos personales de los clientes</h2>
+    <p>El nombre y el teléfono que un comensal deja al pedir o reservar son datos personales
+    y se tratan conforme a la <strong>Ley N.° 29733, Ley de Protección de Datos Personales
+    del Perú</strong>, y su reglamento. Se usan solo para gestionar ese pedido o esa reserva
+    (identificar al cliente, coordinar la entrega, avisar el estado) y para el historial del
+    restaurante. El restaurante es responsable del trato que da a esa información dentro de
+    su propia operación.</p>
+
+    <h2>6. Cómo está desarrollada la aplicación</h2>
+    <p>Menú Pro fue desarrollada con ayuda de <strong>Inteligencia Artificial</strong>. El
+    diseño del producto, la supervisión del desarrollo y las decisiones sobre qué se
+    construye y cómo están a cargo de una persona. La IA es una herramienta de trabajo, no
+    reemplaza esa supervisión humana.</p>
+
+    <h2>7. Cambios en estos términos</h2>
+    <p>Si el texto de estos términos cambia de forma relevante, se le pedirá al propietario
+    que vuelva a aceptarlos en su siguiente ingreso al panel. La fecha de vigencia arriba
+    indica qué versión está activa.</p>
+
+    <h2>8. Contacto</h2>
+    <p>Para consultas sobre estos términos o sobre el trato de los datos, escribir a
+    <a href="mailto:soporte@menupro.tech">soporte@menupro.tech</a>.</p>
+
+    <a class="back" href="/owner.html">← Volver al panel</a>
+  </div>
+</body>
+</html>

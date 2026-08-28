@@ -342,7 +342,7 @@ En orden de impacto:
 | 19 | ~~Cola del día: cancelar pedido + mostrar todos los datos (modalidad)~~ | ~~**Alto**~~ | ~~Baja~~ | ✅ Completado 2026-07-14 — ver detalle abajo |
 | 20 | Módulo Pensionistas (saldo prepagado + login propio) | Medio | Alta | Anotado 2026-07-15 — ver detalle abajo y `pensionistas.md` |
 | 21 | ~~Notificaciones push ampliadas (más allá de "hora de preparar")~~ | ~~**Alto**~~ | ~~Media~~ | ✅ Completado 2026-07-16 — push de orden/reserva nueva + recordatorio de menú cada 8h — ver detalle abajo |
-| 22 | Aceptación de Términos y Condiciones (consentimiento de datos + disclosure de IA) | Medio | Baja-Media | Anotado 2026-07-16 — ver detalle abajo |
+| 22 | ~~Aceptación de Términos y Condiciones (consentimiento de datos + disclosure de IA)~~ | ~~Medio~~ | ~~Baja-Media~~ | ✅ Completado 2026-08-28 (ISS-082) — ver detalle abajo |
 
 > **Nota flujo Caso B reservas (sin pago anticipado):** el cliente llega sin haber pagado → mozo marca `es_cliente_llego` y asigna mesa → envía a cocina manualmente → flujo normal → cobra al final → `es_full`. La UI mostrará badge "⚠️ Sin pago" en la tarjeta para que el mozo lo identifique.
 
@@ -488,19 +488,22 @@ Ambas siempre condicionadas a que el dispositivo haya dado permiso de notificaci
 Pendiente (relacionado pero separado): agregar feedback visible en Configuración sobre el estado de la
 suscripción push (activa/denegada/sin configurar), hoy 100% silenciosa (ver `ISS-025`).
 
-**Gap 22 — Aceptación de Términos y Condiciones (consentimiento de datos + disclosure de IA)** *(anotado 2026-07-16, sin implementar)*
+**Gap 22 — Aceptación de Términos de uso (consentimiento de datos + disclosure de IA)** ✅ *Completado 2026-08-28 (ISS-082)*
 
-Antes de operar, el owner debe aceptar explícitamente unos Términos y Condiciones que cubran dos cosas:
-1. **Consentimiento de datos**: autorización para recopilar y almacenar los datos del restaurante (menú, precios, platos, pedidos, clientes, etc. — lo que el sistema ya guarda hoy).
-2. **Disclosure de IA**: aviso de que la aplicación fue desarrollada con Inteligencia Artificial, con ayuda funcional de una persona en el diseño y la ingeniería de prompts.
+Antes de operar, el **owner** acepta explícitamente unos Términos de uso que cubren:
+1. **Consentimiento de datos de venta**: autorización para registrar y guardar los datos de la operación (pedidos, montos, platos vendidos, horarios, reservas) y usarlos para **métricas de uso del sistema**, estrictamente para eso, de forma confidencial (no se comparte identificando al restaurante ni a sus clientes).
+2. **Datos personales de los clientes**: los nombres/teléfonos que deja el comensal se tratan conforme a la **Ley N.° 29733** del Perú.
+3. **Disclosure de IA**: aviso de que la app fue desarrollada con Inteligencia Artificial, con el diseño, la supervisión y las decisiones a cargo de una persona.
 
-Es un punto de contacto distinto (y activo) del principio 9 de la sección 11 — ese es copy pasivo en la landing pública; este gap es un **checkbox/pantalla de aceptación real** que el owner debe confirmar, probablemente en el alta del restaurante o en el primer login.
+Es un punto de contacto distinto (y activo) del principio 9 de la sección 11 — ese es copy pasivo en la landing pública (todavía pendiente); este es una **pantalla de aceptación real**.
 
-**Decisiones pendientes de validar antes de implementar:**
-- ¿Dónde vive el checkbox — registro inicial del restaurante, primer login del owner, o ambos?
-- ¿Se requiere re-aceptación si el texto de los T&C cambia más adelante (versión de T&C)?
-- ¿Aplica solo al owner, o también a mozo/cocinero al crear su usuario?
-- Texto legal completo — a redactar.
+**Decisiones tomadas (con el usuario, 2026-08-28):**
+- **Dónde**: pantalla bloqueante en el **primer ingreso a `owner.html`**, no en el registro — no hay registro self-service, los restaurantes los crea el admin.
+- **Re-aceptación**: sí, por versión — `utils/terminos.js::TERMINOS_VERSION`. Cambiar el texto y subir esa fecha vuelve a pedir la aceptación a todos los owners.
+- **A quién aplica**: solo al owner. mozo/cocinero/admin no ven nada — el consentimiento es sobre los datos del negocio y lo da el owner como representante.
+- Texto legal: borrador redactado en `public/terminos.html` (pendiente de revisión legal formal por el usuario).
+
+**Implementación:** columnas `terminos_*` en `restaurantes`; `GET`/`POST /api/auth/terminos[/aceptar]`; overlay `#modal-terminos` en `owner.html`; `public/terminos.html` con el texto completo; columna "T&C" en el panel admin. 9 tests en `tests/terminos-aceptacion.test.js`.
 
 ---
 

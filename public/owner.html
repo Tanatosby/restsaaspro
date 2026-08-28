@@ -1241,6 +1241,38 @@
   <img class="comprobante-modal-img" id="comprobante-modal-img" src="" alt="Comprobante de pago">
 </div>
 
+<!-- ── Términos de uso — aceptación obligatoria del owner (Gap 22 / ISS-082) ──
+     Bloqueante: sin aceptar, el owner no puede usar el panel. Solo aparece
+     para el owner y solo si no aceptó la versión vigente (utils/terminos.js).
+     No tiene ✕ ni cierre por fondo a propósito. mozo/cocinero no lo ven. -->
+<div id="modal-terminos" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:400;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;width:100%;max-width:480px;max-height:92vh;display:flex;flex-direction:column;box-shadow:var(--shadow)">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)">
+      <span style="font-size:1.142857rem;font-weight:700;color:var(--text)">Términos de uso</span>
+    </div>
+    <div style="padding:1.25rem 1.5rem;overflow-y:auto;flex:1;font-size:1rem;line-height:1.55;color:var(--text-2);display:flex;flex-direction:column;gap:0.85rem">
+      <p>Para usar Menú Pro necesitamos tu confirmación de lo siguiente:</p>
+      <p><strong>Uso de tus datos de venta.</strong> Autorizás a Menú Pro a registrar y guardar los datos de tu operación (pedidos, montos, platos vendidos, horarios, reservas) para generar métricas de uso del sistema.</p>
+      <p><strong>Para qué se usan.</strong> Esos datos se usan únicamente para medir el uso de la aplicación y mejorar el producto y tus reportes. No se usan para ningún otro fin.</p>
+      <p><strong>Confidencialidad.</strong> Tu información es confidencial. No se comparte con otros restaurantes ni con terceros de forma que te identifique.</p>
+      <p><strong>Datos de tus clientes.</strong> Los nombres y teléfonos que los comensales dejan al pedir o reservar se tratan conforme a la Ley N.° 29733 de Protección de Datos Personales del Perú, con el mismo criterio de confidencialidad.</p>
+      <p><strong>Cómo está hecha la app.</strong> Menú Pro fue desarrollada con ayuda de Inteligencia Artificial; el diseño, la supervisión y las decisiones están a cargo de una persona.</p>
+      <p style="font-size:0.928571rem"><a href="/terminos.html" target="_blank" rel="noopener" style="color:var(--accent)">Ver términos completos</a></p>
+    </div>
+    <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:0.85rem">
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:1rem;color:var(--text)">
+        <input type="checkbox" id="terminos-check" onchange="onTerminosCheck()" style="width:22px;height:22px;margin-top:1px;accent-color:var(--accent);flex-shrink:0">
+        <span>Acepto los términos de uso y autorizo el uso de mis datos de venta para métricas, de forma confidencial.</span>
+      </label>
+      <div id="terminos-error" style="display:none;font-size:0.928571rem;color:var(--danger)"></div>
+      <button id="terminos-btn" onclick="aceptarTerminos()" disabled
+        style="min-height:48px;padding:0 18px;border-radius:8px;font-size:1rem;font-weight:700;font-family:inherit;background:var(--accent);color:#fff;border:none;cursor:pointer;opacity:0.5">
+        Acepto y continúo
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- ── Bottom nav móvil (Fase 2) ── -->
@@ -1298,6 +1330,25 @@ if (!session || (!['owner','admin','cocinero'].includes(session.role) && !Array.
 document.getElementById('owner-name').textContent    = session.name || '—';
 document.getElementById('owner-initials').textContent = (session.name || 'O').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
 document.getElementById('topbar-date').textContent   = new Date().toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+// ── Términos de uso: aceptación obligatoria del owner (Gap 22 / ISS-082) ──
+// Solo el owner consiente sobre los datos del negocio. Si todavía no aceptó
+// la versión vigente, se muestra el overlay bloqueante. Si no hay red o el
+// endpoint falla, no se bloquea nada: se vuelve a chequear en el próximo
+// ingreso (mismo criterio que el resto de la sesión offline, ISS-027).
+if (session.role === 'owner') {
+  (async function chequearTerminos() {
+    let data;
+    try {
+      const res = await fetch('/api/auth/terminos', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      data = await res.json();
+    } catch (_) { return; }
+    if (data && data.pendiente) {
+      document.getElementById('modal-terminos').style.display = 'flex';
+    }
+  })();
+}
 
 // ── Sidebar ─────────────────────────────────────────────
 function toggleSidebar() {
@@ -2506,6 +2557,35 @@ setInterval(() => {
   }
   if (activePanel === 'reservas') loadReservasActivas();
 }, 20000);
+
+// ── Términos de uso: overlay bloqueante (Gap 22 / ISS-082) ──────────
+function onTerminosCheck() {
+  const check = document.getElementById('terminos-check');
+  const btn   = document.getElementById('terminos-btn');
+  btn.disabled = !check.checked;
+  btn.style.opacity = check.checked ? '1' : '0.5';
+}
+
+async function aceptarTerminos() {
+  const check = document.getElementById('terminos-check');
+  const btn   = document.getElementById('terminos-btn');
+  const err   = document.getElementById('terminos-error');
+  if (!check.checked) return;
+  btn.disabled = true; btn.style.opacity = '0.5';
+  err.style.display = 'none';
+  try {
+    const res = await fetch('/api/auth/terminos/aceptar', { method:'POST', credentials:'same-origin' });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.error || 'No se pudo registrar tu aceptación');
+    }
+    document.getElementById('modal-terminos').style.display = 'none';
+  } catch (e) {
+    err.textContent = e.message + '. Revisá tu conexión e intentá de nuevo.';
+    err.style.display = 'block';
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
 
 // ── Logout ───────────────────────────────────────────────
 async function logout() {

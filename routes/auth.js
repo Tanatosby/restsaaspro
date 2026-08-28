@@ -6,6 +6,7 @@ const jwt       = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const db        = require('../config/database');
 const { authenticate, authorize } = require('../middleware/authenticate');
+const { TERMINOS_VERSION } = require('../utils/terminos');
 
 // Vida de la sesión — el dueño abre el ícono de la PWA y ya está adentro, como
 // WhatsApp. Reingresar en plena atención era la barrera de adopción más cara del
@@ -227,6 +228,51 @@ router.patch('/me/password', authenticate, (req, res) => {
   db.prepare(`UPDATE usuarios SET password_hash = ? WHERE id = ?`).run(hash, user.id);
 
   res.json({ message: 'Contraseña actualizada correctamente' });
+});
+
+// ─────────────────────────────────────────
+// GET /api/auth/terminos
+// Estado de aceptación de los Términos y Condiciones — Gap 22 / ISS-082.
+// `pendiente` es true solo para el OWNER que todavía no aceptó la versión
+// vigente (utils/terminos.js). mozo/cocinero/admin nunca tienen nada
+// pendiente: el consentimiento de datos lo da el owner por el restaurante.
+// ─────────────────────────────────────────
+router.get('/terminos', authenticate, (req, res) => {
+  if (req.user.role !== 'owner' || !req.user.restaurant_id) {
+    return res.json({ version: TERMINOS_VERSION, pendiente: false, aceptados_at: null });
+  }
+
+  const rest = db.prepare(`
+    SELECT terminos_aceptados_at, terminos_version
+    FROM restaurantes WHERE id = ?
+  `).get(req.user.restaurant_id);
+
+  const pendiente = !rest || rest.terminos_version !== TERMINOS_VERSION;
+
+  res.json({
+    version:      TERMINOS_VERSION,
+    pendiente,
+    aceptados_at: pendiente ? null : rest.terminos_aceptados_at,
+  });
+});
+
+// ─────────────────────────────────────────
+// POST /api/auth/terminos/aceptar
+// El owner acepta la versión vigente. Guarda timestamp + versión + su id.
+// ─────────────────────────────────────────
+router.post('/terminos/aceptar', authenticate, authorize('owner'), (req, res) => {
+  if (!req.user.restaurant_id) {
+    return res.status(400).json({ error: 'Tu usuario no está asociado a un restaurante' });
+  }
+
+  const ahora = new Date().toISOString();
+  db.prepare(`
+    UPDATE restaurantes
+    SET terminos_aceptados_at = ?, terminos_version = ?, terminos_aceptado_por = ?
+    WHERE id = ?
+  `).run(ahora, TERMINOS_VERSION, req.user.id, req.user.restaurant_id);
+
+  res.json({ ok: true, version: TERMINOS_VERSION, aceptados_at: ahora });
 });
 
 // ─────────────────────────────────────────
