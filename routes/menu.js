@@ -957,7 +957,10 @@ const uploadStorage = multer.diskStorage({
 
 const upload = multer({
   storage: uploadStorage,
-  limits: { fileSize: 2 * 1024 * 1024 },
+  // 8 MB: el cliente ya reduce la foto a ~1600px antes de subir (ISS-083);
+  // este tope es la red de seguridad para cuando esa reducción falla en un
+  // navegador viejo y llega el archivo original de la cámara.
+  limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter(req, file, cb) {
     if (file.mimetype.startsWith('image/')) return cb(null, true);
     cb(new Error('Solo se permiten imágenes jpg, png o webp'));
@@ -1201,7 +1204,10 @@ function makeUploadPlato(subcarpeta) {
         cb(null, `plato_${req.params.id}_${Date.now()}${ext}`);
       }
     }),
-    limits: { fileSize: 2 * 1024 * 1024 },
+    // 8 MB — red de seguridad: el cliente ya recorta/reduce a 800×800 antes de
+    // subir (PhotoEditor + downscaleImage, ISS-083); solo llega el original si
+    // esa reducción falló en un navegador viejo.
+    limits: { fileSize: 8 * 1024 * 1024 },
     fileFilter(req, file, cb) {
       if (file.mimetype.startsWith('image/')) return cb(null, true);
       cb(new Error('Solo se permiten imágenes'));

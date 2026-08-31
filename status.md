@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-24
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-31
 
 **Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
@@ -32,8 +32,9 @@ por el usuario:
 | 2026-08-28 | `4947e23..3e1d922` | **ISS-079** (homologar "Cobrar" para llevar/delivery) + **ISS-080** (Pedir: cantidad primero, configurar después + editar unidad puntual) — los 2 commits juntos en un solo deploy. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-08-28 (2) | `3e1d922..f3ff74a` | **ISS-081** — pago en 1 sola pantalla (se elimina "Revisa tu pedido") + aviso temporal + encuesta de producto (solo panel admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 
-**Pendiente de deploy (2026-08-28):** `2151403` (ISS-074 seguimiento) y el commit de **ISS-082**
-(aceptación de Términos de uso — cierra Gap 22). Último deploy confirmado: `f3ff74a` (ISS-081).
+**Pendiente de deploy (2026-08-31):** `2151403` (ISS-074 seguimiento), `79f2412` (**ISS-082** —
+Términos de uso, cierra Gap 22) y el commit de **ISS-083** (reducción de fotos en el cliente —
+subir fotos colgaba celulares de gama baja). Último deploy confirmado: `f3ff74a` (ISS-081).
 ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
 hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, tap en foto, control de
@@ -71,6 +72,49 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-08-31 — ISS-083: subir fotos cuelga celulares de gama baja
+
+**Prompt del usuario:** *"me puedes decir el status?"* → luego *"celulares antiguos no aceptan
+subir foto al sistema no? o sea el sistema se vuelve muy lento"* → *"al subir la foto del
+comprobante también se da"* → *"dale arranca"*.
+
+**Diagnóstico:** ningún camino de subida reducía la imagen en el cliente. Una foto de cámara de
+~12 MP ocupa ~48 MB al descomprimir en RAM → decodificarla para recortarla o previsualizarla
+congela o mata la pestaña en celulares de gama baja. Además, la foto de portada y el comprobante
+se subían **crudos** (portada: choca con el límite de 2 MB del servidor; comprobante: además
+hacía `readAsDataURL` full-res para una miniatura de 80 px, y se pasaba del timeout de 30 s al
+subir). 4 puntos afectados, una sola causa.
+
+**Implementado:**
+- `public/js/widgets/image-downscale.js` (nuevo, 6º widget — es una utilidad global
+  `window.downscaleImage`, no un componente): `createImageBitmap` con opciones de resize →
+  fallback a `<canvas>` → fallback a `<img>`+canvas. Devuelve un `File` JPEG de máx. 1600 px;
+  ante cualquier error / GIF / imagen ya chica / resultado más pesado, devuelve el original.
+  Nunca bloquea la subida. Sin dependencias (no toca el CSP).
+- `public/js/widgets/photo-editor.js` — `startCrop()` reduce la fuente `Blob` antes de
+  decodificarla, con estado nuevo **"Procesando foto…"** (`.pe-busy` + spinner).
+- `public/menu.html` — el listener de `#pago-foto` reduce la foto, la previsualiza con
+  `URL.createObjectURL` (ya no `readAsDataURL`) y guarda el `File` reducido en `comprobanteFile`;
+  `enviarPago()` sube **ese**, no `#pago-foto.files[0]` crudo. (Bug de paso: `URL` dentro de un
+  `onload` inline resuelve a `document.URL` —string—; se pasó el listener a JS.)
+- `public/js/modules/config.js` — `subirFotoRestaurante()` reduce la portada antes del `FormData`.
+- `routes/menu.js` (×2) + `routes/public.js` — límite de `multer` subido de 2/5 MB a **8 MB**
+  como red de seguridad para cuando la reducción falla en un navegador viejo.
+- `public/sw.js` — `image-downscale.js` agregado al precache/versionado; `<script>` en
+  `owner.html` y `menu.html`.
+
+**Verificación:** `scripts/test-fotos-downscale.js` (nuevo, Playwright, **14/14 verde**): foto
+3200×2400 → JPEG 1600×1200 más liviana; imagen chica / no-imagen se devuelven sin tocar;
+`PhotoEditor.crop` abre el recortador con "Procesando…" y guarda un JPEG; el comprobante en
+`menu.html` se previsualiza y queda reducido antes de enviar. `npx jest` → **478/478** (36
+suites), sin regresiones por el cambio de límite de multer.
+
+**Docs:** `issues/ISS-083-fotos-celulares-antiguos.md` (nuevo), `issues/ISSUES.md`, `features.md`,
+`widgets.md` (catálogo + sección), `public/js/modules/novedades.js` (entrada 7), este archivo.
+**Pendiente:** deploy (lo hace el usuario).
 
 ---
 

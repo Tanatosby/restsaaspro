@@ -62,6 +62,13 @@ const NOVEDADES = [
       'La primera vez que entres vas a ver una pantalla de "Términos de uso" para aceptar. Confirma que nos das permiso de usar los datos de tus ventas solo para medir el uso del sistema y mejorar tus reportes, que son confidenciales, y avisa que la app está hecha con ayuda de Inteligencia Artificial supervisada por una persona. Se acepta una sola vez.',
     ],
   },
+  {
+    id: 7,
+    fecha: '2026-08-31',
+    items: [
+      'Subir fotos ahora funciona bien en celulares más antiguos o lentos: antes, con fotos grandes de la cámara, la pantalla se congelaba o se cerraba sola. Ahora la foto se achica sola antes de subirse (vas a ver un cartelito "Procesando foto…"). Aplica a las fotos de los platos, la foto de portada del restaurante y la foto del comprobante de pago del cliente.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

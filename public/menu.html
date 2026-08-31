@@ -439,6 +439,10 @@
   // entrada y el pago quedaba como paso posterior, sin bloquear nada.
   let pagoPendiente        = null; // { tipo, payload, nombre, items, total, metodo, foto }
   let pagoMetodo           = null;
+  // Foto del comprobante YA reducida (ISS-083) — lo que se sube. No leemos
+  // #pago-foto.files[0] crudo al enviar: una foto de cámara de 5-8 MB colgaba
+  // el celular al generar el preview y se pasaba del timeout al subirla.
+  let comprobanteFile      = null;
   let codigoReservaActual  = null; // código pre-llenado en la pantalla de estado
   let estadoPollInterval   = null; // polling de la pantalla de estado
 
@@ -1690,6 +1694,7 @@ async function renderReservarContent() {
     btnPague.disabled = false;
     document.getElementById('pago-foto-preview').innerHTML = '';
     document.getElementById('pago-foto').value = '';
+    comprobanteFile = null;
 
     const wrap = document.getElementById('pago-metodos');
     wrap.innerHTML = '';
@@ -1805,15 +1810,30 @@ async function renderReservarContent() {
     }
   }
 
-  document.getElementById('pago-foto').addEventListener('change', function() {
-    const file = this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('pago-foto-preview').innerHTML =
-        `<img src="${e.target.result}" style="max-height:80px;border-radius:8px;margin-top:8px;border:1px solid var(--border)">`;
-    };
-    reader.readAsDataURL(file);
+  document.getElementById('pago-foto').addEventListener('change', async function() {
+    const original = this.files[0];
+    const preview  = document.getElementById('pago-foto-preview');
+    if (!original) { comprobanteFile = null; preview.innerHTML = ''; return; }
+
+    // Reducir antes de previsualizar y de subir (ISS-083). En celulares de
+    // gama baja, meter una foto de 5-8 MB en un FileReader/objectURL crudo
+    // congela la pestaña; subirla cruda se pasa del timeout de 30s.
+    preview.innerHTML = '<span style="font-size:13px;color:var(--muted,#6b7280)">Procesando foto…</span>';
+    try {
+      comprobanteFile = typeof window.downscaleImage === 'function'
+        ? await window.downscaleImage(original, { maxDim: 1600, quality: 0.85 })
+        : original;
+    } catch (_) {
+      comprobanteFile = original;
+    }
+
+    const url = URL.createObjectURL(comprobanteFile);
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'max-height:80px;border-radius:8px;margin-top:8px;border:1px solid var(--border)';
+    img.onload = () => URL.revokeObjectURL(url); // en JS, URL es window.URL (en un onload inline sería document.URL)
+    preview.innerHTML = '';
+    preview.appendChild(img);
   });
 
   // "Ya pagué" — valida (foto adjunta si aplica) y de una crea la orden/
@@ -1834,7 +1854,8 @@ async function renderReservarContent() {
   // a crear el pedido. Sin esto, reintentar duplicaba el pedido en cocina.
   async function enviarPago() {
     if (!pagoMetodo || !pagoPendiente) return;
-    const foto = document.getElementById('pago-foto').files[0] || null;
+    // Se sube la versión ya reducida (ISS-083), no #pago-foto.files[0] crudo.
+    const foto = comprobanteFile || null;
     if (['yape', 'plin'].includes(pagoMetodo) && !foto)
       return showMsg('Adjunta la foto del comprobante para continuar', true);
 
@@ -1881,6 +1902,7 @@ async function renderReservarContent() {
       document.getElementById('pago-screen').classList.remove('show');
       showConfirm(tipo === 'reserva' ? 'reservar' : 'pedir', id, codigo, numeroDia);
       pagoPendiente = null;
+      comprobanteFile = null;
       limpiarPagoPendienteLocal();
     } catch(e) {
       alert(e.message);
@@ -2176,6 +2198,7 @@ async function renderReservarContent() {
     navigator.serviceWorker.register('/sw.js');
   }
 </script>
+<script src="/js/widgets/image-downscale.js?v=__BUILD__"></script>
 <script src="/js/widgets/menu-modal.js?v=__BUILD__"></script>
 </body>
 </html>

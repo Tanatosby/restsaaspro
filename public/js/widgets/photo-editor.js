@@ -53,6 +53,15 @@
 }
 .pe-view, .pe-crop { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
 .pe-view[hidden], .pe-crop[hidden] { display: none; }
+/* Estado "procesando" — mientras se reduce una foto grande antes de recortar (ISS-083) */
+.pe-busy { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; color: #fff; font-size:1rem; }
+.pe-busy[hidden] { display: none; }
+.pe-spinner {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.25); border-top-color: #fff;
+  animation: pe-spin .8s linear infinite;
+}
+@keyframes pe-spin { to { transform: rotate(360deg); } }
 .pe-img {
   max-width: 100%; max-height: 62vh; object-fit: contain;
   border-radius: var(--r, 12px); box-shadow: var(--shadow-xl, 0 20px 50px rgba(0,0,0,.45));
@@ -106,6 +115,7 @@
 @media (prefers-reduced-motion: reduce) {
   .pe-modal, .pe-inner { animation: none; }
   .pe-btn:active, .pe-close:active { transform: none; }
+  .pe-spinner { animation-duration: 2s; }
 }`;
 
   function injectStyles() {
@@ -129,6 +139,10 @@
     root.innerHTML = `
       <button class="pe-close" type="button" aria-label="Cerrar">✕</button>
       <div class="pe-inner">
+        <div class="pe-busy" hidden>
+          <div class="pe-spinner"></div>
+          <div>Procesando foto…</div>
+        </div>
         <div class="pe-view">
           <img class="pe-img" alt="">
           <div class="pe-name"></div>
@@ -154,6 +168,7 @@
     document.body.appendChild(root);
 
     els = {
+      busy:        root.querySelector('.pe-busy'),
       view:        root.querySelector('.pe-view'),
       img:         root.querySelector('.pe-img'),
       name:        root.querySelector('.pe-name'),
@@ -206,12 +221,32 @@
     els.cropStage.addEventListener('pointercancel', onDragEnd);
   }
 
-  function showView() { els.view.hidden = false; els.crop.hidden = true; }
-  function showCrop() { els.view.hidden = true;  els.crop.hidden = false; }
+  function showView() { els.busy.hidden = true; els.view.hidden = false; els.crop.hidden = true; }
+  function showCrop() { els.busy.hidden = true; els.view.hidden = true;  els.crop.hidden = false; }
+  function setBusy(on) {
+    els.busy.hidden = !on;
+    if (on) { els.view.hidden = true; els.crop.hidden = true; }
+  }
 
   // ── Recortador ───────────────────────────────────────────
+  // Foto recién elegida (Blob): reducirla antes de decodificarla en el
+  // recortador. En celulares de gama baja/antiguos una foto de 12 MP de la
+  // cámara ocupa ~48 MB al descomprimir y cuelga o mata la pestaña (ISS-083).
+  // Una URL string ya apunta a una imagen servida por nosotros (ya chica),
+  // no pasa por la reducción.
   function startCrop(source, onSaveCb, fromView) {
     build();
+    if (source instanceof Blob && typeof window.downscaleImage === 'function') {
+      setBusy(true);
+      window.downscaleImage(source, { maxDim: 1600, quality: 0.85 })
+        .then((reduced) => startCropWith(reduced || source, onSaveCb, fromView))
+        .catch(() => startCropWith(source, onSaveCb, fromView));
+      return;
+    }
+    startCropWith(source, onSaveCb, fromView);
+  }
+
+  function startCropWith(source, onSaveCb, fromView) {
     const img = els.cropImg;
     const ready = () => {
       showCrop(); // mostrar antes de medir el stage (si está oculto mide 0)
@@ -332,6 +367,7 @@
     if (!root) return;
     root.classList.remove('open');
     document.body.style.overflow = '';
+    if (els.busy) els.busy.hidden = true;
     current = null;
     cropS = null;
     if (els.cropImg && els.cropImg._peUrl) { URL.revokeObjectURL(els.cropImg._peUrl); els.cropImg._peUrl = null; }

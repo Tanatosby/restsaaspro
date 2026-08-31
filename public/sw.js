@@ -49,6 +49,7 @@ const ASSETS = [
   v('/js/modules/reportes.js'),
   v('/js/modules/pedidos.js'),
   v('/js/modules/novedades.js'),
+  v('/js/widgets/image-downscale.js'),
   v('/js/widgets/photo-editor.js'),
   v('/js/widgets/form-modal.js'),
   v('/js/widgets/plato-picker.js'),

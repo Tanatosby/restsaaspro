@@ -62,6 +62,7 @@ Los widgets eliminan el portado: se escribe una vez, se usa en todas partes.
 | **FormModal** | `public/js/widgets/form-modal.js` | ✅ Activo (2026-05-30) | `owner.html` (editar platos) | Modal de **formulario genérico** por esquema de campos (text/number/textarea/select) con submit async. |
 | **PwaInstall** | `public/js/widgets/pwa-install.js` | ✅ Activo (2026-05-30) | `owner.html`, `login.html` | Botón **"Instalar app"** (captura `beforeinstallprompt`) + instructivo para iOS. Se oculta si ya está instalada. |
 | **MenuWizard** | `public/js/widgets/menu-wizard.js` | ✅ Activo (2026-06-04) | `owner.html` (Menús del día) | 3 vistas inline: **galería** (cards retrato + fecha ◀▶), **wizard de 3 pasos** (título → precio → ¿fijo o cliente elige?) y **configuración** (secciones/platos, reemplaza al modal). |
+| **downscaleImage** | `public/js/widgets/image-downscale.js` | ✅ Activo (2026-08-31) | `owner.html` (PhotoEditor, config), `menu.html` (comprobante) | **Utilidad**, no componente: reduce una imagen (File/Blob) a un lado máximo antes de recortarla o subirla. Evita que una foto de 12 MP cuelgue celulares de gama baja (ISS-083). |
 | **PhotoViewer** | `public/js/widgets/photo-viewer.js` | 🔜 Planeado | `menu.html` (migración) | Ver imagen en grande, **solo lectura**. Para el comensal. |
 
 ---
@@ -249,6 +250,43 @@ y borrar la línea de delegación en `loadMenusDia()`.
 `esc`, `fDate` y los handlers de menú). Es aceptable porque su dominio (menús del día) **vive solo en
 `owner.html`**; se construyó como widget —y no inline— para poder probarlo y revertirlo de forma aislada,
 no por reuso multipantalla.
+
+---
+
+### downscaleImage ✅
+
+Sexto "widget", pero es una **utilidad** (una función global), no un componente con DOM — sigue
+el estilo de `utils.js` (`api`, `toast`, `esc`). Reduce una imagen antes de recortarla o subirla.
+
+**API**
+
+```js
+const chico = await downscaleImage(file);                        // maxDim 1600, quality 0.85
+const chico = await downscaleImage(file, { maxDim: 1600, quality: 0.85 });
+// Devuelve un File JPEG reducido, o el File original si:
+//   - no es imagen, o es un GIF (aplanarlo perdería la animación)
+//   - ya mide <= maxDim en ambos lados (nada que reducir)
+//   - el navegador no pudo procesarla (nunca bloquea la subida)
+//   - el "reducido" pesó igual o más que el original
+```
+
+**Por qué existe (ISS-083):** una foto de cámara de ~12 MP ocupa ~48 MB al descomprimir en RAM.
+En celulares de gama baja, decodificarla para recortarla (`PhotoEditor`) o previsualizarla
+(`FileReader`) congela la pestaña o la mata; subirla cruda se pasa del timeout. El coste depende
+de los **píxeles**, no del peso en disco.
+
+**Estrategia** (de más liviana a más universal):
+1. `createImageBitmap(file, { resizeWidth, resizeHeight, resizeQuality })` → decodifica **ya
+   reducido**, sin explotar la RAM. Ideal en Chrome/Android.
+2. `createImageBitmap(file)` a tamaño completo + `<canvas>` → si el navegador ignora el resize.
+3. `<img>` + `<canvas>` → fallback universal (iOS Safari viejo, WebView antiguo).
+4. Cualquier error en toda la cadena → se devuelve el `File` original.
+
+**Usos:** `photo-editor.js` (`startCrop` reduce la fuente `Blob` antes de decodificarla, con
+estado "Procesando foto…"); `menu.html` (comprobante Yape/Plin: reduce, previsualiza con
+`createObjectURL` y sube el `File` reducido); `config.js` (foto de portada del restaurante).
+Compatibilidad: si falta el constructor `File`, devuelve un `Blob` con `.name` (multer lo lee
+igual). No toca el CSP (sin dependencias).
 
 ---
 

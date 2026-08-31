@@ -31,7 +31,10 @@ const uploadComprobante = multer({
       cb(null, `comp-${req.params.id}-${Date.now()}${ext}`);
     }
   }),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  // 8 MB — el cliente reduce la foto a ~1600px antes de subir (ISS-083);
+  // este tope solo aplica si esa reducción falla en un navegador viejo y
+  // llega la captura/foto original del celular.
+  limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
     else cb(new Error('Solo se aceptan imágenes'));

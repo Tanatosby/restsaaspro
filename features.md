@@ -1,5 +1,33 @@
 # Features — Menú Pro
 
+## Reducción de fotos en el cliente ✅ Completado 2026-08-31 · ISS-083
+*El piloto reportó que subir fotos "cuelga" o "no deja" en celulares de gama baja — primero
+las fotos de plato, después la del comprobante Yape/Plin.*
+
+Ningún camino de subida reducía la imagen en el navegador. Una foto de cámara de ~12 MP ocupa
+**~48 MB** al descomprimir en RAM: decodificarla para recortarla o previsualizarla congela la
+pestaña o la mata. La portada del restaurante y el comprobante además se subían **crudos** (la
+portada chocaba con el límite de 2 MB del servidor; el comprobante se pasaba del timeout).
+
+**Qué hace:** nueva utilidad global `window.downscaleImage(file, { maxDim, quality })` —
+`createImageBitmap` con opciones de resize (decodifica ya reducido, sin explotar la RAM), con
+fallback a `<canvas>` y a `<img>`+canvas para navegadores viejos. Devuelve un `File` JPEG de
+máx. 1600 px; ante cualquier error, GIF, o imagen ya chica, devuelve el original — nunca bloquea
+la subida. Integrada en los 3 flujos: recortador de platos (`PhotoEditor`, con estado
+"Procesando foto…"), comprobante en `menu.html` (preview con `createObjectURL`, no
+`readAsDataURL`) y portada en Configuración. Límite de `multer` subido a 8 MB en los 3 endpoints
+como red de seguridad para cuando la reducción falla en un navegador antiguo.
+
+**ARCH:** `public/js/widgets/image-downscale.js` (nuevo, 6º widget — es una utilidad, no un
+componente con DOM), `public/js/widgets/photo-editor.js`, `public/menu.html`,
+`public/js/modules/config.js`, `routes/menu.js` (×2), `routes/public.js`, `public/sw.js`
+(precache), `public/owner.html` + `public/menu.html` (`<script>`).
+
+**Verificación:** `scripts/test-fotos-downscale.js` (nuevo, Playwright, 14 checks) + 478/478 jest
+(36 suites), sin regresiones por el cambio de límite.
+
+---
+
 ## Cambio de nombre del restaurante ✅ Completado 2026-08-26
 *Pedido directo de la dueña el mismo día — quiso renombrar su restaurante y no había forma.*
 

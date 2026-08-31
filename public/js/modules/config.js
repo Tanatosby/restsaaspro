@@ -168,8 +168,18 @@ async function guardarConfigColores() {
 
 async function subirFotoRestaurante(input) {
   if (!input.files.length) return;
+  // Reducir antes de subir (ISS-083): la foto de portada se subía cruda y una
+  // foto de cámara de 3-8 MB o excede el límite del servidor o cuelga celulares
+  // de gama baja. El resto de fotos del sistema ya pasan por el recortador.
+  let foto = input.files[0];
+  try {
+    if (typeof window.downscaleImage === 'function') {
+      toast('Procesando foto…');
+      foto = await window.downscaleImage(foto, { maxDim: 1600, quality: 0.85 });
+    }
+  } catch (_) { /* se sube el original */ }
   const formData = new FormData();
-  formData.append('foto', input.files[0]);
+  formData.append('foto', foto);
   try {
     const res = await fetch('/api/menu/restaurante/foto', {
       method: 'POST',
