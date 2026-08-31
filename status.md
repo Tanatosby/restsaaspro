@@ -33,8 +33,10 @@ por el usuario:
 | 2026-08-28 (2) | `3e1d922..f3ff74a` | **ISS-081** — pago en 1 sola pantalla (se elimina "Revisa tu pedido") + aviso temporal + encuesta de producto (solo panel admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 
 **Pendiente de deploy (2026-08-31):** `2151403` (ISS-074 seguimiento), `79f2412` (**ISS-082** —
-Términos de uso, cierra Gap 22) y el commit de **ISS-083** (reducción de fotos en el cliente —
-subir fotos colgaba celulares de gama baja). Último deploy confirmado: `f3ff74a` (ISS-081).
+Términos de uso, cierra Gap 22) y `99fb729` (**ISS-083** — reducción de fotos en el cliente,
+subir fotos colgaba celulares de gama baja). **Confirmado por el usuario el 2026-08-31: ninguno
+de los 3 está desplegado todavía, los sube él después.** Último deploy confirmado: `f3ff74a`
+(ISS-081).
 ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
 hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, tap en foto, control de
