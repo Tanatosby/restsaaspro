@@ -56,9 +56,15 @@
     };
     window.pintarBotonFontScale = function (btn, valor) {
       var scales = window.MP_FONT_SCALES_MENU;
+      var idx = scales.indexOf(valor);
       var nivel = valor === 1 ? 'Normal' : valor === 1.2 ? 'Grande' : 'Muy grande';
-      btn.style.fontSize = (14 + scales.indexOf(valor) * 4) + 'px';
-      btn.setAttribute('aria-label', 'Tamaño de letra: ' + nivel + '. Toca para cambiar');
+      // Día 15 del piloto: la "A" sola no se entendía. El botón ahora dice qué
+      // hace; en el nivel máximo el próximo toque vuelve a Normal, así que lo
+      // anuncia.
+      var enMaximo = idx >= scales.length - 1;
+      btn.textContent = enMaximo ? '🔤 Volver a normal' : '🔤 Aumentar letra';
+      btn.setAttribute('aria-label',
+        'Tamaño de letra: ' + nivel + (enMaximo ? '. Toca para volver a Normal' : '. Toca para agrandar'));
     };
     document.addEventListener('DOMContentLoaded', function () {
       var btn = document.getElementById('btn-font-scale');
@@ -92,8 +98,8 @@
       <button type="button" onclick="cerrarAvisoFlujoPedir()" aria-label="Cerrar aviso" style="background:none;border:none;color:inherit;opacity:0.7;font-size:16px;cursor:pointer;line-height:1;padding:0;flex-shrink:0">✕</button>
     </div>
     <!-- Consultar reserva + tamaño de letra (siempre visibles) -->
-    <div style="display:flex;align-items:center;justify-content:flex-end;gap:0.5rem;margin-bottom:0.5rem">
-      <button class="btn-font-scale" id="btn-font-scale" onclick="cyclarFontScale()" aria-label="Tamaño de letra: Normal. Toca para cambiar" title="Cambiar tamaño de letra">A</button>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:0.5rem;margin-bottom:0.5rem">
+      <button class="btn-font-scale" id="btn-font-scale" onclick="cyclarFontScale()" aria-label="Tamaño de letra: Normal. Toca para agrandar" title="Cambiar tamaño de letra">🔤 Aumentar letra</button>
       <button class="btn-consultar" onclick="showEstadoReserva(null)">
         📋 Consultar mi reserva
       </button>
@@ -723,16 +729,24 @@ async function renderReservarContent() {
     const configurados = configuradosDeMenu(m.id);
     const target = targetDeMenu(m.id);
     const faltan = target - configurados;
+    // Día 15 del piloto: los comensales tocaban la foto del menú esperando que
+    // agregara — antes no hacía nada. Ahora la foto suma 1 (igual que "+"), y
+    // el primer +1 hace latir "Elegir opciones" para empujar al siguiente paso.
     const estadoHtml = target === 0
-      ? `<div class="menu-dia-estado">Elige cuántos quieres</div>`
+      ? `<div class="menu-dia-estado">Toca la foto o + para agregar</div>`
       : (faltan > 0
-          ? `<button class="btn-add-menu" onclick="elegirOpcionesPedir(${m.id})">Elegir opciones (${faltan})</button>`
+          ? `<button class="btn-add-menu${configurados === 0 ? ' btn-add-menu--pulse' : ''}" onclick="elegirOpcionesPedir(${m.id})">Elegir opciones (${faltan})</button>`
           : `<div class="menu-dia-estado"><b>${target}</b> en tu pedido</div>`);
 
     return `<div class="menu-dia-card">
-      <div class="menu-dia-photo">
+      <div class="menu-dia-photo menu-dia-photo--add" role="button" tabindex="0"
+           aria-label="Agregar un ${esc(m.nombre)} a tu pedido"
+           onclick="agregarMenuDesdeFoto(${m.id}, this)"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();agregarMenuDesdeFoto(${m.id}, this)}">
         ${foto}
         <span class="menu-dia-price-badge">S/ ${Number(m.precio).toFixed(2)}</span>
+        ${fotoUrl ? `<button type="button" class="menu-dia-zoom" aria-label="Ver la foto en grande" onclick="event.stopPropagation();openPhotoModal('${esc(fotoUrl)}','${esc(m.nombre)}','')">🔍</button>` : ''}
+        ${target === 0 ? `<span class="menu-dia-add-hint" aria-hidden="true">Toca para agregar</span>` : ''}
       </div>
       <div class="menu-dia-body">
         <div class="menu-dia-name">${esc(m.nombre)}</div>
@@ -935,6 +949,29 @@ async function renderReservarContent() {
     while (configuradosDeMenu(menuId) > target) quitarUltimaUnidadMenu(menuId);
     menuPending[menuId] = target;
     renderPedirContent();
+  }
+
+  // Día 15 del piloto: tocar la foto del menú suma 1 (igual que "+"). NO abre
+  // el picker — eso reacoplaría lo que ISS-080 separó a propósito (la señora
+  // perdía pedidos cuando el picker se abría solo). El "+1" flotante se ancla
+  // a `position:fixed` porque renderPedirContent() destruye la card enseguida.
+  window.agregarMenuDesdeFoto = function (menuId, fotoEl) {
+    if (fotoEl) mostrarMasUnoMenu(fotoEl);
+    cambiarCantidadMenuPedir(menuId, 1);
+  };
+
+  function mostrarMasUnoMenu(fotoEl) {
+    try {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    } catch (e) { return; }
+    const r = fotoEl.getBoundingClientRect();
+    const f = document.createElement('span');
+    f.className = 'menu-dia-plusone';
+    f.textContent = '+1';
+    f.style.left = (r.left + r.width / 2) + 'px';
+    f.style.top  = (r.top + r.height / 2) + 'px';
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 700);
   }
 
   function quitarUltimaUnidadMenu(menuId) {
