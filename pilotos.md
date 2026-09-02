@@ -883,6 +883,19 @@ que vio las respuestas de la encuesta en `menupro.tech/admin` y *"fueron muy pos
 dueña y a los comensales *"les gustó el nuevo feedback"*. El "gap anterior" que mencionó de paso
 era justamente el del punto 1 (foto del menú), ya encaminado — no hay un hallazgo aparte.
 
+**Números de la encuesta (2026-09-02, el usuario pasó el volcado del panel):** 24 respuestas
+entre el 2026-08-28 y el 08-30, **todas de comensales reales del piloto 1** (el usuario descartó
+expresamente que fuera el equipo probando — cada respuesta es de alguien que pidió y pagó dentro
+de la app). Valoración: 14 🤩 Excelente, 6 🙂 Buena, 1 😐 Regular, 0 😞 Mala → **95% positivas**
+(3 sin responder esa pregunta). Preferencia: 17 ✅ Nueva vs. 1 ↩️ Anterior → **94% por el flujo
+nuevo** (6 sin responder). 5 comentarios de texto, todos favorables ("Bien", "conforme", "La veo
+cool", "W", "Muy bien seguir mejorando"). El único voto por volver atrás y la única "Regular"
+son de una misma persona el 30/08 (dos envíos con 20 min de diferencia). **Lectura:** ISS-080 +
+ISS-081 quedan **validados en servicio real** — ISS-080 lleva en producción desde el 27/08 y la
+dueña lo ha visto funcionar con sus comensales durante todo el piloto (de hecho el hallazgo del
+punto 1 salió de observarlos con el flujo nuevo puesto). El rediseño de "Pedir" y el pago en 1
+pantalla no generan rechazo, al contrario. Detalle en `issues/ISS-081-...md` §Resultados.
+
 **3. Botón de tamaño de letra en `menu.html` (ISS-057) — la "A" sola no se entiende.** Cita:
 *"la A para cambiar letra no se entendía, que mejor se pusiera (Aumentar letra) en vez de solo
 A"*. Hoy el botón es una `A` que solo crece de tamaño, sin texto. **Implementado el 2026-09-02

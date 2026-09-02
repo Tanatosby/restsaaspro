@@ -85,6 +85,48 @@ El propio `vision_negocio.md` ya dejaba anotado esto como replanteable sin urgen
 **Sin cambios:** `test-fixes-pago-comprobante.js` sigue roto por una causa previa a esta sesión
 (nunca llena `#nombre-cliente`), sin relación con este cambio — visto y documentado en ISS-080.
 
+## Resultados de la encuesta (2026-08-28 → 2026-08-30)
+
+24 respuestas, **todas de comensales reales del piloto 1** (restaurante "Karina menú pruebas"),
+cada uno tras completar el pedido y el pago dentro de la app. El banner + encuesta estuvieron
+activos desde el deploy (2026-08-28, `f3ff74a`) hasta el 2026-08-31.
+
+**Valoración — "¿Qué tal esta forma nueva de pedir?"**
+
+| | n |
+|---|---|
+| 🤩 Excelente | 14 |
+| 🙂 Buena | 6 |
+| 😐 Regular | 1 |
+| 😞 Mala | 0 |
+| (en blanco) | 3 |
+
+→ 20 de 21 con respuesta son positivas (95%).
+
+**Preferencia — "¿Nueva o la de antes?"**
+
+| | n |
+|---|---|
+| ✅ Nueva | 17 |
+| ↩️ Anterior | 1 |
+| (en blanco) | 6 |
+
+→ 17 de 18 con respuesta prefieren la nueva (94%).
+
+**Comentarios de texto (5), todos favorables:** "Bien", "conforme", "La veo cool", "W",
+"Muy bien seguir mejorando".
+
+**Único caso tibio:** 2026-08-30, dos envíos con 20 min de diferencia (18:17 "Regular" /
+18:37 "Anterior") — casi con seguridad la misma persona. Es el único voto por volver atrás y la
+única "Regular" de toda la muestra.
+
+**Conclusión:** el rediseño de "Pedir" (ISS-080) + el pago en una sola pantalla (ISS-081) quedan
+**validados en servicio real**. ISS-080 lleva en producción desde el 2026-08-27 y la dueña lo ha
+visto funcionar con sus comensales durante todo el piloto (fue observándolos como salió el
+feedback del Día 15 — tocaban la foto del menú esperando que agregara). La encuesta lo confirma
+del lado del comensal: casi nadie quiere volver al flujo anterior. Salvedad menor: un solo
+restaurante y volumen bajo (24 en 3 días), pero es data de comensales netos.
+
 ## Relacionado
 
 Gap 17 (`vision_negocio.md`, pago obligatorio antes de crear) — la garantía se mantiene, solo se

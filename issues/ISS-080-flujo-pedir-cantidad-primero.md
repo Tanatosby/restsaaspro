@@ -95,6 +95,20 @@ tomada con el usuario antes de empezar, por riesgo de cambiar 2 flujos a la vez 
   Se restauró a mano (`yape_activo`/`plin_activo`/`efectivo_activo` = 1) — no es un problema del
   código, es que los scripts no son buenos vecinos entre sí en la BD local compartida.
 
+## Validación en producción
+
+Desplegado el 2026-08-28 (`3e1d922`, junto con ISS-079). En servicio real desde entonces en el
+piloto 1; la dueña lo ha visto funcionar con sus comensales a lo largo del piloto. La encuesta de
+producto de [ISS-081](ISS-081-pago-en-un-paso-mas-banner-y-encuesta.md) (banner + 2 preguntas al
+terminar el pedido, activa del 28 al 30 de agosto) recogió **24 respuestas de comensales reales**:
+**95% valoración positiva** (14 Excelente / 6 Buena / 1 Regular / 0 Mala) y **94% prefiere el
+flujo nuevo** frente al anterior (17 vs. 1). El único voto en contra fue de una persona el 30/08.
+El rediseño de "Pedir" queda **validado del lado del comensal** — ver ISS-081 §Resultados.
+
+Ajuste posterior a partir de la observación en servicio real: los comensales tocaban la foto del
+menú esperando que agregara → [ISS-084](ISS-084-foto-menu-suma-boton-letra.md) (tap en la foto =
++1), sin reabrir el picker para no reacoplar lo que este rediseño separó.
+
 ## Relacionado
 
 Prototipo interactivo aprobado el mismo día (artifact "Pedido Directo") — el usuario probó el

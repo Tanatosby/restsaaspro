@@ -53,11 +53,14 @@ hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, ta
 compatibilidad, cobro en 1 clic, Cocina sin parpadeo, mesa grande, Agregar manual sola, modal de
 novedades con las 2 entradas, y el campo de nombre en Configuración).
 
-**Sin verificar todavía en uso real, la más importante:** ISS-080 (Pedir: cantidad primero,
-configurar después) — es el cambio más grande al flujo del comensal hasta ahora. Falta que la
-dueña lo vea funcionar en un servicio real antes de darlo por cerrado del todo. **ISS-081**
-(pago en 1 pantalla + banner + encuesta) recién se desplegó — falta ver las primeras respuestas
-de la encuesta llegar al panel admin (`menupro.tech/admin` → Feedback) con uso real.
+**ISS-080 + ISS-081 — validados por la encuesta al comensal (2026-08-28 → 08-30).** 24 respuestas
+de **comensales reales del piloto 1**, cada uno tras completar pedido + pago dentro de la app:
+**95% valoración positiva** (14 Excelente / 6 Buena / 1 Regular / 0 Mala) y **94% prefiere el
+flujo nuevo** (17 Nueva / 1 Anterior). 5 comentarios, todos favorables. Único voto por volver
+atrás: una persona el 30/08. Detalle en `issues/ISS-081-...md` §Resultados. **ISS-080 lleva en
+servicio real desde el 2026-08-27** — la dueña lo ha visto funcionar con sus comensales (de ahí
+salió el feedback del Día 15: los observó tocando la foto del menú). El flujo nuevo de "Pedir" +
+pago en 1 pantalla queda cerrado.
 
 **Nota aparte, no accionar:** el droplet avisó `New release '24.04.4 LTS' available` y `*** System
 restart required ***` al loguearse por SSH. Es una actualización de Ubuntu, no del proyecto —
@@ -104,7 +107,7 @@ conversación antes de codear.
   (`mostrarMasUnoMenu`, `position:fixed` porque el re-render destruye la card). Zoom movido a un
   botón `🔍`. Rama `'reservar'` intacta. El primer +1 hace latir "Elegir opciones (n)"
   (`.btn-add-menu--pulse`, 2 iteraciones). **No abre el picker** — eso reacoplaría lo que ISS-080
-  separó, y ISS-080 aún no está validado.
+  separó a propósito (la causa de perder pedidos a mitad de armar).
 - `pintarBotonFontScale()`: el botón muestra `🔤 Aumentar letra`, y `🔤 Volver a normal` en el
   nivel máximo. `.btn-font-scale` pasó de círculo 44×44 a pill de ancho auto (alto mín. 44).
 
@@ -133,6 +136,14 @@ visible para la dueña), este archivo.
 **Pendiente:** commit + deploy (lo hace el usuario). Toca "Listos" — verificar con la dueña antes
 y después. Sin verificar en uso real si "✅ Ya pagó" alcanza para que la cola de cobros no se
 acumule (si no, seguiría un "Cobrar todos los verificados" en bloque).
+
+**Resultados de la encuesta de ISS-081** (el usuario pasó el volcado del panel el 2026-09-02):
+24 respuestas del 28 al 30 de agosto, **todas de comensales reales del piloto 1** (confirmado por
+el usuario — no es el equipo probando). Valoración **95% positiva** (14 🤩 / 6 🙂 / 1 😐 / 0 😞;
+3 en blanco). Preferencia **94% por el flujo nuevo** (17 ✅ Nueva / 1 ↩️ Anterior; 6 en blanco).
+5 comentarios de texto, todos favorables. El único voto en contra (y la única "Regular") son de
+una misma persona el 30/08. **ISS-080 + ISS-081 quedan validados del lado del comensal.** Detalle
+en `issues/ISS-081-...md` §Resultados; anotado también en `pilotos.md` (Día 15, punto 2).
 
 ---
 
