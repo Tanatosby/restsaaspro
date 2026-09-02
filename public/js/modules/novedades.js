@@ -69,6 +69,14 @@ const NOVEDADES = [
       'Subir fotos ahora funciona bien en celulares más antiguos o lentos: antes, con fotos grandes de la cámara, la pantalla se congelaba o se cerraba sola. Ahora la foto se achica sola antes de subirse (vas a ver un cartelito "Procesando foto…"). Aplica a las fotos de los platos, la foto de portada del restaurante y la foto del comprobante de pago del cliente.',
     ],
   },
+  {
+    id: 8,
+    fecha: '2026-09-02',
+    items: [
+      'En la Cola del día, zona "Listos": si el cliente pagó por Yape o Plin y ya revisaste su comprobante, tenés un botón nuevo "✅ Ya pagó" que cierra el pedido de una vez, sin que tenga que pasar por "Por cobrar". Los pagos en efectivo siguen igual (por "Por cobrar", para contar el vuelto).',
+      'La pestaña "Por cobrar" ahora tiene un buscador arriba: escribí un número de mesa o un nombre y te filtra la lista, para no perderte cuando hay muchos pedidos juntos.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

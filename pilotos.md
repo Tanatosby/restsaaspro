@@ -860,6 +860,74 @@ desde julio.
 
 ---
 
+### Día 15 (2026-09-02, miércoles) — recopila lunes 31/08 y martes 01/09: foto del menú, botón de letra, cola de cobros
+
+Empezó la 3ª semana de la retoma. El usuario resume que "las cosas van masomenos bien" y trae
+feedback acumulado de dos días en que no pudo reportar. **Deploy:** el mismo 2026-09-02 subió
+`9af4255` (ISS-074 seguimiento, ISS-082 Términos, ISS-083 fotos) — quedaba pendiente desde el
+31/08.
+
+**1. ISS-080 (Pedir: cantidad primero) — tocan la foto del menú esperando que haga algo.** El
+usuario observó que los comensales **presionan la foto del menú varias veces** antes de
+descubrir el botón `+`. Pidió probar que tocar la foto **sume 1** (igual que `+`). Se armó un
+prototipo interactivo (artifact "Foto +1 y cola de cobros") con un switch para comparar con el
+comportamiento de hoy. **Decisión tomada en la conversación: tocar la foto = +1, NO abrir el
+picker.** Razón: abrir el picker en el tap reacopla lo que ISS-080 separó a propósito (era la
+causa de perder pedidos a mitad de armar), e ISS-080 todavía no está validado en servicio real.
+Mitigación acordada: mantener el `🔍` visible y resaltar "Elegir opciones (1)" tras el primer +1.
+**Implementado el 2026-09-02 como [`ISS-084`](issues/ISS-084-foto-menu-suma-boton-letra.md) —
+pendiente de deploy.**
+
+**2. ISS-081 (pago en 1 pantalla + encuesta) — respuestas muy positivas.** El usuario confirmó
+que vio las respuestas de la encuesta en `menupro.tech/admin` y *"fueron muy positivas"*; a la
+dueña y a los comensales *"les gustó el nuevo feedback"*. El "gap anterior" que mencionó de paso
+era justamente el del punto 1 (foto del menú), ya encaminado — no hay un hallazgo aparte.
+
+**3. Botón de tamaño de letra en `menu.html` (ISS-057) — la "A" sola no se entiende.** Cita:
+*"la A para cambiar letra no se entendía, que mejor se pusiera (Aumentar letra) en vez de solo
+A"*. Hoy el botón es una `A` que solo crece de tamaño, sin texto. **Implementado el 2026-09-02
+junto con el punto 1 ([`ISS-084`](issues/ISS-084-foto-menu-suma-boton-letra.md)):** el botón
+dice "🔤 Aumentar letra", y "🔤 Volver a normal" en el nivel máximo. Pendiente de deploy.
+
+**4. Cobro en la Cola del día — la dueña acumula ~39 pedidos en "Cobrar" sin cerrarlos.** Lo que
+hace: mira el Yape en "Listos", pasa el pedido a "Cobrar", pero **no le da "Cobrar"**. Cuando son
+muchos y quiere revisar una mesa puntual, se pierde. El usuario ya le insistió de palabra ("si
+ya verificó el Yape en Listos, páselo a cobrar y libere la cola") sin efecto.
+
+El modelo mental de la dueña, en sus palabras (vía el usuario): *"se va a la mesa, veo sus
+rostros y verifico que me pagaron entrando a la app y a Yape al mismo tiempo"* — quiere hacer la
+verificación **cuando el comensal se va, viéndole la cara**. Pero *"lo que en verdad sucede es
+que tiene que entregar pedidos, la mesa se fue, no vio ningún rostro y luego tiene una cola
+inmensa en cobrar que nunca verificó"*. Su propia lectura: *"su lógica se aplicaría en pocas
+mesas, pero durante atención no puede"*.
+
+**Reencuadre:** los 39 en "Cobrar" no son pedidos sin revisar — ya revisó el comprobante en
+Listos. Son la **intención de un segundo chequeo en la despedida que en servicio real nunca
+llega a hacer**. Distinto de la hipótesis previa (Día 11: conciliación contra el cuaderno) —
+acá el bloqueo es que su ritual de verificación depende de estar en la mesa cuando el comensal
+se va, y con volumen eso no pasa.
+
+Idea del usuario: un **buscador por mesa** dentro de "Cobrar". Diagnóstico revisado con él: el
+buscador es curita (ataca "me pierdo entre 39", no el 39). El fix de fondo propuesto —
+**mover la verificación a Listos y cerrar ahí**: botón "✅ Ya pagó" en Listos para Yape/Plin
+(1 toque = confirma pago + cierra, reusa `cobrarColaOrden` de ISS-072); "Cobrar" queda solo para
+efectivo y Yape sin chequear; válvula opcional "Cobrar todos los verificados" en bloque.
+Prototipo hecho (opción A + buscador, artifact "Foto +1 y cola de cobros").
+
+**Confirmado por el usuario:** la dueña **sí abre el comprobante** (desde "Pendientes" incluso).
+Ella misma no entiende por qué no cierra el pago (*"así lo debería hacer, ¿pero por qué no lo
+hago?"*). Como lo abre siempre, "armar" el botón solo tras abrirlo no filtraba nada — se decidió
+**mostrar "✅ Ya pagó" siempre para Yape/Plin en Listos**, sin condición.
+
+**Implementado el 2026-09-02 como [`ISS-085`](issues/ISS-085-ya-pago-listos-buscador-cobrar.md)
+— pendiente de deploy:** botón "✅ Ya pagó" en Listos (Yape/Plin; efectivo sigue por "Cobrar";
+reservas solo sin mesa, para no saltarse el auto-merge) + buscador por mesa/nombre/#orden en
+"Por cobrar". Toca el flujo de Listos, que ISS-080 y cambios recientes también tocaron —
+verificar con ella antes y después. Sin verificar en uso real si el atajo alcanza para que la
+cola no se acumule; si no, seguiría el "Cobrar todos" en bloque.
+
+---
+
 ## Plantilla para el próximo piloto
 
 ```

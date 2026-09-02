@@ -1,5 +1,59 @@
 # Features — Menú Pro
 
+## Cobrar desde "Listos" + buscador en "Por cobrar" ✅ Completado 2026-09-02 · ISS-085
+*Día 15 del piloto: la dueña acumulaba ~39 pedidos en "Por cobrar" sin cerrarlos — verifica el
+Yape en "Listos" pero deja el cobro "para cuando el cliente se va", y en hora pico nunca llega.*
+
+**Qué hace:**
+- **"✅ Ya pagó" en la zona "Listos"** de la Cola del día, para órdenes con `metodo_pago` Yape o
+  Plin — un toque cierra el pago (reusa `cobrarColaOrden()` de ISS-072: `confirmar-pago` +
+  `es_pagado`) sin que el pedido tenga que pasar por "Por cobrar". Efectivo NO lo muestra: sigue
+  por "Por cobrar", que necesita a la dueña presente para el vuelto. En **reservas** solo aparece
+  sin mesa (para llevar/delivery) — con mesa, saltar `es_cliente_llego` se saltaría
+  `autoMergeReservaEnOrden()`.
+- **Buscador en "Por cobrar"** (`#cobrar-buscador`, solo visible en esa pestaña) — filtra la
+  lista por número de mesa, "mesa N", nombre del cliente o `#orden`, sin tocar el servidor. El
+  badge de la pestaña sigue mostrando el total real de la cola.
+
+**ARCH:** `pedidos.js` — `btnOrden()`/`btnReserva()` (zona `listos`), `filtrarColaCobrar()` +
+`coincideFiltroCobrar()` nuevas, `renderColaDesdeCache()` filtra los ítems de `cobrar`,
+`renderZona()` mete el filtro en la firma anti-parpadeo (ISS-067) y usa un empty-state propio,
+`switchZona()` togglea el buscador. `owner.html` — `<div class="field" id="cobrar-buscador">`.
+Sin backend (el salto `es_listo → es_pagado`/`es_full` ya lo permitían `routes/orders.js` /
+`routes/reservations.js`).
+
+**Verificación:** `scripts/test-ya-pago-foto-buscador.js` (nuevo, Playwright, 25 checks — partes
+A y B). `scripts/test-cobrar-homologado.js` 14/14, `test-menus-agrupados.js` 26/26,
+`test-numero-dia-pedido.js` 10/10 sin regresiones. 478/478 jest.
+
+---
+
+## Tocar la foto del menú suma 1 + botón "🔤 Aumentar letra" ✅ Completado 2026-09-02 · ISS-084
+*Día 15 del piloto: los comensales tocan la foto del menú esperando que agregue (no hacía nada);
+y la "A" del botón de tamaño de letra no se entendía.*
+
+**Qué hace:**
+- En **"Pedir"** (flujo de cantidad primero, ISS-080), tocar la foto del menú **suma 1** —
+  igual que el botón `+` (`agregarMenuDesdeFoto()` → `cambiarCantidadMenuPedir(+1)`), con un
+  "+1" flotante. El zoom de la foto pasa a un botón `🔍`. El primer `+1` (sin nada configurado
+  aún) hace latir el botón "Elegir opciones (n)". **No abre el picker** — eso reacoplaría lo que
+  ISS-080 separó, y ISS-080 aún no está validado en servicio real. Rama "Reservar" sin cambios.
+- El botón de tamaño de letra de `menu.html` ahora dice **"🔤 Aumentar letra"**, y **"🔤 Volver a
+  normal"** en el nivel máximo (antes era una `A` muda que solo crecía).
+
+**ARCH:** `menu.html` — `renderMenuDiaCard()` rama `'pedir'`, `agregarMenuDesdeFoto()` +
+`mostrarMasUnoMenu()` nuevas (el "+1" es `position:fixed` porque `renderPedirContent()` destruye
+la card), `pintarBotonFontScale()`. `menu.css` — `.btn-font-scale` pasa a pill de ancho auto
+(alto mín. 44); `.menu-dia-photo--add`, `.menu-dia-zoom`, `.menu-dia-add-hint`,
+`.menu-dia-plusone`, `.btn-add-menu--pulse` nuevas, todas con bloque `prefers-reduced-motion`.
+Sin backend; el versionado por hash (T0) recoge los 2 archivos.
+
+**Verificación:** `scripts/test-ya-pago-foto-buscador.js` (25 checks — partes C y D). 478/478
+jest. `test-pedir-cantidad-primero.js` no corre en la BD local (sin menú del día "usable" para
+hoy) — cubierto por el test nuevo.
+
+---
+
 ## Reducción de fotos en el cliente ✅ Completado 2026-08-31 · ISS-083
 *El piloto reportó que subir fotos "cuelga" o "no deja" en celulares de gama baja — primero
 las fotos de plato, después la del comprobante Yape/Plin.*

@@ -8,7 +8,7 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 > (`conversacion_*.md`) y por lo tanto **no viajaba entre las 2 laptops del usuario**. Este archivo sí
 > está en git: es la copia viva del backlog. Actualizarlo al cerrar cada sesión.
 
-**Última actualización:** 2026-08-28
+**Última actualización:** 2026-09-02
 
 ---
 
@@ -58,7 +58,9 @@ ISS-046, commit `a47d132` — ver `status.md`).
 | ~~ISS-080~~ | ~~Stock agotado a mitad de un pedido con varios menús obliga a rehacer todo desde cero; no se puede editar un menú puntual en el carrito~~ | ✅ **Hecho 2026-08-27** — rediseño completo del flujo de Pedir: cantidad primero (stepper), configurar después (picker encadenado), "✏️ Editar" por unidad. Prototipo interactivo aprobado antes de codear. 24/24 E2E nuevo (`test-pedir-cantidad-primero.js`) + 469/469 jest sin regresiones. |
 | ~~ISS-081~~ | ~~Pago en 1 sola pantalla (sacar "Revisa tu pedido") + aviso temporal + encuesta de producto~~ | ✅ **Hecho 2026-08-28** — `enviarPago()` absorbe el repaso sin perder la garantía de Gap 17. Banner + encuesta (3 días) nuevos, respuestas solo visibles en `menupro.tech/admin` (nunca la dueña). 16/16 E2E nuevo (`test-feedback-flujo.js`) + 469/469 jest. Pendiente de deploy — ver `ISS-081` |
 | — | Reservas sin hora no activan el auto-avance a cocina (`utils/autoPreparacion.js` exige `hora_llegada`) → quedan atascadas en "confirmada" | 🟡 Diagnosticado, día 13. Sin implementar |
-| ~~ISS-083~~ | ~~Subir fotos cuelga / falla en celulares de gama baja (foto de plato, portada, comprobante Yape/Plin)~~ | ✅ **Hecho 2026-08-31** — nueva utilidad `image-downscale.js` (`window.downscaleImage`) reduce la imagen a máx 1600px en el cliente antes de recortar/subir, integrada en `photo-editor.js`, `menu.html` (comprobante) y `config.js` (portada). Límite de multer subido a 8 MB como red de seguridad. 14/14 E2E nuevo (`test-fotos-downscale.js`) + 478/478 jest. Pendiente de deploy — ver `ISS-083` |
+| ~~ISS-083~~ | ~~Subir fotos cuelga / falla en celulares de gama baja (foto de plato, portada, comprobante Yape/Plin)~~ | ✅ **Hecho 2026-08-31, desplegado 2026-09-02** (`9af4255`) — nueva utilidad `image-downscale.js` (`window.downscaleImage`) reduce la imagen a máx 1600px en el cliente antes de recortar/subir, integrada en `photo-editor.js`, `menu.html` (comprobante) y `config.js` (portada). Límite de multer subido a 8 MB como red de seguridad. 14/14 E2E nuevo (`test-fotos-downscale.js`) + 478/478 jest. Ver `ISS-083` |
+| ~~ISS-084~~ | ~~Tocar la foto del menú no agregaba nada + botón de letra "A" poco claro~~ | ✅ **Hecho 2026-09-02** (día 15 del piloto) — en "Pedir", `.menu-dia-photo` = `+1` (`agregarMenuDesdeFoto` → `cambiarCantidadMenuPedir`, "+1" flotante), zoom a botón `🔍`, primer +1 hace latir "Elegir opciones"; **no** abre el picker (reacoplaría ISS-080). Botón de letra: "🔤 Aumentar letra" / "🔤 Volver a normal". 25/25 E2E nuevo (`test-ya-pago-foto-buscador.js`) + 478/478 jest. Pendiente de deploy — ver `ISS-084` |
+| ~~ISS-085~~ | ~~"Por cobrar" se acumula (~39): la dueña verifica en "Listos" pero no cierra el pago~~ | ✅ **Hecho 2026-09-02** (día 15 del piloto) — botón "✅ Ya pagó" en "Listos" para Yape/Plin (`btnOrden`/`btnReserva` → `cobrarColaOrden`/`cobrarColaReserva`, ISS-072; efectivo sigue por "Por cobrar", reservas solo sin mesa por el auto-merge) + buscador por mesa/nombre/#orden en "Por cobrar" (`filtrarColaCobrar`/`coincideFiltroCobrar`, sin backend). 25/25 E2E + `test-cobrar-homologado` 14/14 + 478/478 jest. Pendiente de deploy + verificar con la dueña antes/después (toca "Listos"). Si no alcanza, seguiría "Cobrar todos los verificados" en bloque — ver `ISS-085` |
 
 **Decisión del usuario pendiente, sin bloquear nada:** el ícono de calendario con la fecha real
 (reemplazo del emoji 📅, que dibuja "17 de julio" fijo). Están las 3 variantes renderizadas y

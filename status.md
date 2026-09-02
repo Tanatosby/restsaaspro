@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-08-31
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-02
 
 **Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
@@ -31,12 +31,20 @@ por el usuario:
 | 2026-08-27 (3) | `bc4109e..4947e23` | **ISS-078** — la pantalla de pago no cobraba el tapper en un carrito mixto (para llevar + en local), el comensal pagaba de menos por Yape/Plin. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-08-28 | `4947e23..3e1d922` | **ISS-079** (homologar "Cobrar" para llevar/delivery) + **ISS-080** (Pedir: cantidad primero, configurar después + editar unidad puntual) — los 2 commits juntos en un solo deploy. `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-08-28 (2) | `3e1d922..f3ff74a` | **ISS-081** — pago en 1 sola pantalla (se elimina "Revisa tu pedido") + aviso temporal + encuesta de producto (solo panel admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
+| 2026-09-02 | `f3ff74a..9af4255` | **ISS-074 seguimiento** (sacar el `#orden` cuando hay mesa, en Cola y Cocina), **ISS-082** (aceptación de Términos de uso — cierra Gap 22) e **ISS-083** (reducción de fotos en el cliente antes de subir — celulares de gama baja se colgaban). `git pull` fast-forward, `pm2 restart` → online (↺ 62), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). |
 
-**Pendiente de deploy (2026-08-31):** `2151403` (ISS-074 seguimiento), `79f2412` (**ISS-082** —
-Términos de uso, cierra Gap 22) y `99fb729` (**ISS-083** — reducción de fotos en el cliente,
-subir fotos colgaba celulares de gama baja). **Confirmado por el usuario el 2026-08-31: ninguno
-de los 3 está desplegado todavía, los sube él después.** Último deploy confirmado: `f3ff74a`
-(ISS-081).
+**Deploy `9af4255` confirmado el 2026-09-02.** Sin verificar en uso real: ISS-082 (overlay de
+Términos en el primer ingreso del owner) e ISS-083 (subida de fotos en un celular de gama baja
+real).
+
+**Pendiente de deploy (2026-09-02) — ISS-084 e ISS-085** (día 15 del piloto, sin commit
+todavía al momento de escribir esto):
+- **ISS-084** — en "Pedir", tocar la foto del menú suma 1 (`menu.html`); el botón de letra dice
+  "🔤 Aumentar letra" en vez de "A".
+- **ISS-085** — botón "✅ Ya pagó" en la zona "Listos" para Yape/Plin (cierra el pago sin pasar
+  por "Por cobrar"; efectivo y reservas con mesa siguen igual) + buscador por mesa/nombre en
+  "Por cobrar" (`pedidos.js`, `owner.html`).
+
 ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
 hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, tap en foto, control de
@@ -74,6 +82,55 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-09-02 — Día 15 del piloto: ISS-084 (foto = +1, botón de letra) + ISS-085 (cobro desde Listos, buscador en Cobrar)
+
+**Prompt del usuario:** status + deploy de `9af4255` por SSH (confirmado en consola). Feedback
+acumulado de lunes 31/08 y martes 01/09 (3ª semana de la retoma, "las cosas van masomenos
+bien"): (1) los comensales tocan la foto del menú esperando que agregue; (2) la encuesta de
+ISS-081 dio respuestas muy positivas; (3) la "A" del botón de letra no se entiende, mejor
+"Aumentar letra"; (4) la dueña acumula ~39 pedidos en "Por cobrar" sin cerrarlos —verifica el
+Yape en "Listos" pero deja el cobro "para cuando se van" y en hora pico nunca llega. Prototipo
+interactivo (artifact "Foto +1 y cola de cobros") para (1) y (4); decisiones cerradas en la
+conversación antes de codear.
+
+**Implementado — ISS-084** (`menu.html`, `menu.css`; detalle en `issues/ISS-084-...md`):
+- `renderMenuDiaCard(m,'pedir')`: `.menu-dia-photo` pasa a `role="button"` + `onclick`/`onkeydown`
+  → `agregarMenuDesdeFoto(m.id, this)` = `cambiarCantidadMenuPedir(+1)` + "+1" flotante
+  (`mostrarMasUnoMenu`, `position:fixed` porque el re-render destruye la card). Zoom movido a un
+  botón `🔍`. Rama `'reservar'` intacta. El primer +1 hace latir "Elegir opciones (n)"
+  (`.btn-add-menu--pulse`, 2 iteraciones). **No abre el picker** — eso reacoplaría lo que ISS-080
+  separó, y ISS-080 aún no está validado.
+- `pintarBotonFontScale()`: el botón muestra `🔤 Aumentar letra`, y `🔤 Volver a normal` en el
+  nivel máximo. `.btn-font-scale` pasó de círculo 44×44 a pill de ancho auto (alto mín. 44).
+
+**Implementado — ISS-085** (`pedidos.js`, `owner.html`; detalle en `issues/ISS-085-...md`):
+- `btnOrden()`/`btnReserva()` zona "Listos": botón **"✅ Ya pagó"** para `metodo_pago` ∈
+  {yape,plin} → `cobrarColaOrden`/`cobrarColaReserva` (ISS-072; el backend permite el salto
+  `es_listo→es_pagado`/`es_full`). Efectivo NO lo muestra. Reservas: solo sin mesa (con mesa,
+  saltar `es_cliente_llego` se saltaría `autoMergeReservaEnOrden`).
+- Buscador `#cobrar-buscador` en `owner.html` (type=search, solo visible en la zona "cobrar",
+  lo togglea `switchZona`). `filtrarColaCobrar()` → `_filtroCobrar` + repinta desde cache;
+  `renderColaDesdeCache()` filtra los ítems de "cobrar" con `coincideFiltroCobrar()` (mesa /
+  "mesa N" / `nombre_cliente` / `#numero_dia`); el badge de la pestaña sigue mostrando el total
+  real. `renderZona()`: filtro en la firma anti-parpadeo + empty-state propio.
+
+**Verificación:** `scripts/test-ya-pago-foto-buscador.js` nuevo (**25/25**, 4 partes: botón "Ya
+pagó" por función, `coincideFiltroCobrar`, `renderMenuDiaCard('pedir'/'reservar')`, botón de
+letra en `menu.html`). Regresión: `test-cobrar-homologado` 14/14, `test-menus-agrupados` 26/26,
+`test-numero-dia-pedido` 10/10. **478/478 jest.** `test-pedir-cantidad-primero.js` no corre en
+la BD local (no hay un menú del día "usable" para hoy) — cubierto por el test nuevo.
+Pre-existente, no de este cambio: `test-agregar-manual` 3/4; `test-cola-carrera` /
+`test-escala-tipografica` piden `TEST_EMAIL`/`TEST_PASS`.
+
+**Docs:** `issues/ISS-084-...md` + `issues/ISS-085-...md` (nuevos), `issues/ISSUES.md`,
+`pilotos.md` (Día 15), `backlog.md`, `features.md`, `public/js/modules/novedades.js` (ISS-085 es
+visible para la dueña), este archivo.
+**Pendiente:** commit + deploy (lo hace el usuario). Toca "Listos" — verificar con la dueña antes
+y después. Sin verificar en uso real si "✅ Ya pagó" alcanza para que la cola de cobros no se
+acumule (si no, seguiría un "Cobrar todos los verificados" en bloque).
 
 ---
 

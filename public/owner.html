@@ -786,6 +786,15 @@
             Por cobrar <span class="kanban-badge" id="kb-cobrar">0</span>
           </button>
         </div>
+        <!-- Buscador de "Por cobrar" — Día 15 del piloto: la cola de cobros se
+             acumula y la dueña se pierde al ubicar una mesa puntual. Solo visible
+             en esa zona (lo togglea switchZona en pedidos.js). -->
+        <div class="field" id="cobrar-buscador" style="display:none;margin-top:0.5rem;margin-bottom:0.5rem">
+          <input type="search" inputmode="search" autocomplete="off"
+                 aria-label="Buscar en Por cobrar por mesa o nombre"
+                 placeholder="🔍 Buscar por mesa o nombre…"
+                 oninput="filtrarColaCobrar(this.value)">
+        </div>
         <!-- Contenedores por zona -->
         <div id="zona-pendientes" class="zona-pedidos"><div class="loading-text">Cargando…</div></div>
         <div id="zona-cocina"     class="zona-pedidos" style="display:none"></div>

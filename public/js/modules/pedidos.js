@@ -36,6 +36,11 @@ let _cache = { ordenes: [], reservas: [] };
 // paso del tiempo sin que eso amerite un repintado).
 let _ultimaFirmaZona = {};
 
+// Día 15 del piloto: la cola de "Por cobrar" se acumula (~39 pedidos) y la
+// dueña se pierde cuando quiere ubicar una mesa puntual. Filtro de texto por
+// mesa / nombre / #orden, solo sobre esa zona. Vacío = sin filtro.
+let _filtroCobrar = '';
+
 // Flags de estatus, en orden. Aplicar uno implica apagar los demás — es como
 // el backend modela el estatus (una fila de estatus_orden/estatus_reserva).
 const FLAGS_ORDEN   = ['es_inicial', 'es_en_cocina', 'es_listo', 'es_entregado', 'es_pagado', 'es_cancelado'];
@@ -83,6 +88,26 @@ function switchZona(zona) {
     const el = document.getElementById(`zona-${z}`);
     if (el) el.style.display = z === zona ? '' : 'none';
   });
+  // El buscador solo tiene sentido en "Por cobrar" (Día 15 del piloto)
+  const buscador = document.getElementById('cobrar-buscador');
+  if (buscador) buscador.style.display = zona === 'cobrar' ? '' : 'none';
+}
+
+// Filtra la zona "Por cobrar" por mesa / nombre / #orden. Repinta al instante
+// desde el cache — no toca el servidor.
+function filtrarColaCobrar(valor) {
+  _filtroCobrar = (valor || '').trim().toLowerCase();
+  renderColaDesdeCache();
+}
+
+function coincideFiltroCobrar(item, filtro) {
+  const d = item.datos;
+  const campos = [
+    d.mesa != null ? 'mesa ' + d.mesa : '',
+    d.nombre_cliente || '',
+    d.numero_dia != null ? '#' + d.numero_dia : '',
+  ];
+  return campos.some(c => c.toLowerCase().includes(filtro));
 }
 
 // ── Carga principal ──────────────────────────────────────
@@ -139,14 +164,18 @@ function renderColaDesdeCache() {
     badgeNav.classList.toggle('show', total > 0);
   }
 
-  // Actualizar badges de tabs y contenido
+  // Actualizar badges de tabs y contenido. El badge de "Por cobrar" sigue
+  // mostrando el total real de la cola, aunque el buscador filtre la lista.
   ['pendientes', 'cocina', 'listos', 'cobrar'].forEach(z => {
     const badge = document.getElementById(`kb-${z}`);
     if (badge) {
       badge.textContent = zonas[z].length;
       badge.classList.toggle('kb-badge-active', zonas[z].length > 0);
     }
-    renderZona(z, zonas[z]);
+    const items = (z === 'cobrar' && _filtroCobrar)
+      ? zonas[z].filter(it => coincideFiltroCobrar(it, _filtroCobrar))
+      : zonas[z];
+    renderZona(z, items);
   });
 
   if (content) content.scrollTop = scrollPrevio;
@@ -192,13 +221,17 @@ function renderZona(zona, items) {
   if (!el) return;
 
   // Si los datos son idénticos a lo último pintado, no tocar el DOM — evita
-  // el parpadeo de destruir y recrear todas las cards en cada poll.
-  const firma = JSON.stringify(items.map(i => i.datos));
+  // el parpadeo de destruir y recrear todas las cards en cada poll. El filtro
+  // de "Por cobrar" entra en la firma para que repinte al escribir.
+  const filtrando = zona === 'cobrar' && !!_filtroCobrar;
+  const firma = JSON.stringify([items.map(i => i.datos), filtrando ? _filtroCobrar : 0]);
   if (_ultimaFirmaZona[zona] === firma) return;
   _ultimaFirmaZona[zona] = firma;
 
   if (!items.length) {
-    el.innerHTML = emptyState('✅', 'Sin pedidos en esta etapa');
+    el.innerHTML = filtrando
+      ? emptyState('🔍', `Ninguna mesa coincide con « ${esc(_filtroCobrar)} »`)
+      : emptyState('✅', 'Sin pedidos en esta etapa');
     return;
   }
   el.innerHTML = items
@@ -336,8 +369,20 @@ function btnOrden(o, zona) {
   // ningún lugar donde confirmar si pagó o no. Ahora ambas modalidades hacen
   // la misma parada intermedia (marcar es_entregado) antes de "Cobrar";
   // homologa el flujo con el de mesa y con reservas — ver btnReserva().
-  if (zona === 'listos' && o.es_listo)
-    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">${paraLlevar ? '📦 Recogido' : '🍽 Entregar'}</button>${btnRegresarACocinaOrden(o)}`;
+  //
+  // Día 15 del piloto: la dueña acumulaba ~39 pedidos en "Cobrar" sin cerrarlos.
+  // Ya verifica el comprobante Yape acá, en "Listos", pero deja el cobro "para
+  // cuando el cliente se va" y en hora pico nunca llega. "✅ Ya pagó" cierra el
+  // pedido de un toque desde acá (reusa cobrarColaOrden — ISS-072 — que hace
+  // confirmar-pago + es_pagado, y el backend permite el salto es_listo→pagado).
+  // Solo Yape/Plin; efectivo sigue por "Cobrar", que sí necesita a la dueña
+  // presente para contar el vuelto.
+  if (zona === 'listos' && o.es_listo) {
+    const yaPago = ['yape', 'plin'].includes(o.metodo_pago)
+      ? `<button class="btn btn-success btn-sm" onclick="cobrarColaOrden(${o.id})">✅ Ya pagó</button>`
+      : '';
+    return `${yaPago}<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">${paraLlevar ? '📦 Recogido' : '🍽 Entregar'}</button>${btnRegresarACocinaOrden(o)}`;
+  }
   if (zona === 'cobrar' && o.es_entregado)
     return btnCobrar;
   return '';
@@ -357,8 +402,18 @@ function btnReserva(r, zona) {
   // pasar por "Cobrar" — igual que btnOrden(), ahora hace la misma parada
   // intermedia (marcar es_cliente_llego) para que siempre haya un lugar donde
   // confirmar el pago antes de cerrar.
-  if (zona === 'listos' && r.es_listo)
-    return `<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_cliente_llego')">${sinMesa ? '📦 Recogido' : '🍽 Entregado'}</button>${btnRegresarACocinaReserva(r)}`;
+  //
+  // Día 15 del piloto: mismo atajo "✅ Ya pagó" que btnOrden(), pero SOLO para
+  // reservas sin mesa (para llevar/delivery). En una reserva con mesa, marcar
+  // "cliente llegó" dispara autoMergeReservaEnOrden() — fusiona los ítems en la
+  // orden abierta de esa mesa; saltarlo dejaría esos ítems fuera de la cuenta.
+  // Sin mesa no hay orden que fusionar, así que el salto es seguro.
+  if (zona === 'listos' && r.es_listo) {
+    const yaPago = (sinMesa && ['yape', 'plin'].includes(r.metodo_pago))
+      ? `<button class="btn btn-success btn-sm" onclick="cobrarColaReserva(${r.id})">✅ Ya pagó</button>`
+      : '';
+    return `${yaPago}<button class="btn btn-primary btn-sm" onclick="accionRapidaReserva(${r.id},'es_cliente_llego')">${sinMesa ? '📦 Recogido' : '🍽 Entregado'}</button>${btnRegresarACocinaReserva(r)}`;
+  }
   if (zona === 'cobrar' && r.es_cliente_llego)
     return btnCompletar;
   return '';
