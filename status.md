@@ -37,8 +37,10 @@ por el usuario:
 Términos en el primer ingreso del owner) e ISS-083 (subida de fotos en un celular de gama baja
 real).
 
-**Pendiente de deploy (2026-09-02) — ISS-084 e ISS-085** (día 15 del piloto, sin commit
-todavía al momento de escribir esto):
+**Pendiente de deploy (2026-09-02) — ISS-084 e ISS-085** (día 15 del piloto). **Commiteados y
+pusheados a `main`:** `9a0cbed` (ISS-084) y `011c984` (ISS-085). **El usuario decidió NO
+desplegar hoy** — lo sube más adelante, en un momento tranquilo, para poder verificar ISS-085
+con la dueña presente (toca la zona "Listos").
 - **ISS-084** — en "Pedir", tocar la foto del menú suma 1 (`menu.html`); el botón de letra dice
   "🔤 Aumentar letra" en vez de "A".
 - **ISS-085** — botón "✅ Ya pagó" en la zona "Listos" para Yape/Plin (cierra el pago sin pasar
