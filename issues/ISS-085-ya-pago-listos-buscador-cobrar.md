@@ -90,10 +90,12 @@ cambios) y `scripts/test-cola-carrera.js` / `test-escala-tipografica.js` piden `
 
 ## Pendiente
 
-- Deploy (lo hace el usuario). Toca el flujo de "Listos", que ISS-080 y cambios recientes también
-  tocaron — verificar con la dueña **antes y después**.
-- Sin verificar en uso real: si "✅ Ya pagó" en "Listos" alcanza para que la cola de cobros no se
-  acumule. Si no, la siguiente pieza sería un "Cobrar todos los verificados" en bloque.
+- **Desplegado 2026-09-02** (`9af4255..81358e0`, `pm2 restart` → online ↺ 63). Confirmado por el
+  usuario (log SSH).
+- Sin verificar en uso real: toca el flujo de "Listos" (que ISS-080 y cambios recientes también
+  tocaron) — falta verlo con la dueña **con ella presente**. Y si "✅ Ya pagó" en "Listos" alcanza
+  para que la cola de cobros no se acumule; si no, la siguiente pieza sería un "Cobrar todos los
+  verificados" en bloque.
 
 ## Relacionado
 

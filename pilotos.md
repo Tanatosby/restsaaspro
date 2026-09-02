@@ -875,8 +875,8 @@ comportamiento de hoy. **Decisión tomada en la conversación: tocar la foto = +
 picker.** Razón: abrir el picker en el tap reacopla lo que ISS-080 separó a propósito (era la
 causa de perder pedidos a mitad de armar), e ISS-080 todavía no está validado en servicio real.
 Mitigación acordada: mantener el `🔍` visible y resaltar "Elegir opciones (1)" tras el primer +1.
-**Implementado el 2026-09-02 como [`ISS-084`](issues/ISS-084-foto-menu-suma-boton-letra.md) —
-pendiente de deploy.**
+**Implementado y desplegado el 2026-09-02 como
+[`ISS-084`](issues/ISS-084-foto-menu-suma-boton-letra.md)** (`81358e0`).
 
 **2. ISS-081 (pago en 1 pantalla + encuesta) — respuestas muy positivas.** El usuario confirmó
 que vio las respuestas de la encuesta en `menupro.tech/admin` y *"fueron muy positivas"*; a la
@@ -900,7 +900,8 @@ pantalla no generan rechazo, al contrario. Detalle en `issues/ISS-081-...md` §R
 *"la A para cambiar letra no se entendía, que mejor se pusiera (Aumentar letra) en vez de solo
 A"*. Hoy el botón es una `A` que solo crece de tamaño, sin texto. **Implementado el 2026-09-02
 junto con el punto 1 ([`ISS-084`](issues/ISS-084-foto-menu-suma-boton-letra.md)):** el botón
-dice "🔤 Aumentar letra", y "🔤 Volver a normal" en el nivel máximo. Pendiente de deploy.
+dice "🔤 Aumentar letra", y "🔤 Volver a normal" en el nivel máximo. Desplegado el 2026-09-02
+(`81358e0`).
 
 **4. Cobro en la Cola del día — la dueña acumula ~39 pedidos en "Cobrar" sin cerrarlos.** Lo que
 hace: mira el Yape en "Listos", pasa el pedido a "Cobrar", pero **no le da "Cobrar"**. Cuando son
@@ -932,12 +933,13 @@ Ella misma no entiende por qué no cierra el pago (*"así lo debería hacer, ¿p
 hago?"*). Como lo abre siempre, "armar" el botón solo tras abrirlo no filtraba nada — se decidió
 **mostrar "✅ Ya pagó" siempre para Yape/Plin en Listos**, sin condición.
 
-**Implementado el 2026-09-02 como [`ISS-085`](issues/ISS-085-ya-pago-listos-buscador-cobrar.md)
-— pendiente de deploy:** botón "✅ Ya pagó" en Listos (Yape/Plin; efectivo sigue por "Cobrar";
-reservas solo sin mesa, para no saltarse el auto-merge) + buscador por mesa/nombre/#orden en
-"Por cobrar". Toca el flujo de Listos, que ISS-080 y cambios recientes también tocaron —
-verificar con ella antes y después. Sin verificar en uso real si el atajo alcanza para que la
-cola no se acumule; si no, seguiría el "Cobrar todos" en bloque.
+**Implementado y desplegado el 2026-09-02 como
+[`ISS-085`](issues/ISS-085-ya-pago-listos-buscador-cobrar.md)** (`81358e0`): botón "✅ Ya pagó" en
+Listos (Yape/Plin; efectivo sigue por "Cobrar"; reservas solo sin mesa, para no saltarse el
+auto-merge) + buscador por mesa/nombre/#orden en "Por cobrar". Toca el flujo de Listos, que
+ISS-080 y cambios recientes también tocaron — falta verlo con la dueña presente. Sin verificar en
+uso real si el atajo alcanza para que la cola no se acumule; si no, seguiría el "Cobrar todos" en
+bloque.
 
 ---
 

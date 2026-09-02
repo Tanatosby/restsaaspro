@@ -64,6 +64,12 @@ Sin cambios de backend. El versionado de assets (BUILD por hash, T0) recoge `men
   día "usable" —secciones obligatorias con platos— para hoy); el comportamiento de
   `renderMenuDiaCard` queda cubierto por el test nuevo.
 
+## Deploy
+
+**Desplegado 2026-09-02** (`9af4255..81358e0`, `pm2 restart` → online ↺ 63). Confirmado por el
+usuario (log SSH). Sin verificar en uso real: falta ver a un comensal tocar la foto y que el "+1"
+flotante se entienda.
+
 ## Relacionado
 
 Ajuste sobre ISS-080 (flujo de Pedir) e ISS-057 (letra ajustable en la carta del cliente).
