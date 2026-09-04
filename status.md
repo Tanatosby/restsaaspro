@@ -34,6 +34,7 @@ por el usuario:
 | 2026-09-02 | `f3ff74a..9af4255` | **ISS-074 seguimiento** (sacar el `#orden` cuando hay mesa, en Cola y Cocina), **ISS-082** (aceptación de Términos de uso — cierra Gap 22) e **ISS-083** (reducción de fotos en el cliente antes de subir — celulares de gama baja se colgaban). `git pull` fast-forward, `pm2 restart` → online (↺ 62), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-02 (2) | `9af4255..81358e0` | **ISS-084** (tocar la foto del menú suma 1 + botón "🔤 Aumentar letra") e **ISS-085** ("✅ Ya pagó" en "Listos" para Yape/Plin + buscador en "Por cobrar"). `git pull` fast-forward, `pm2 restart` → online (↺ 63, mem 63.9 MB). El `curl http://localhost:3000/health` no imprimió salida en el pegado — el proceso quedó online igual. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-04 | `81358e0..4ac2a5b` | Solo documentación — encuesta de ISS-081 (`23457c0`) + registro del deploy anterior (`4ac2a5b`), ningún cambio de código. `git pull` fast-forward, `pm2 restart` → online (↺ 64, mem 60.7 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). **Ojo:** este deploy es anterior al commit de ISS-086 de esta misma sesión — no lo incluye, ver fila siguiente. |
+| 2026-09-04 (2) | `4ac2a5b..805fdd9` | **ISS-086** (plegar Yape/Plin al volver: total + tarjeta + 3 pasos en una línea, comprobante como único acento) e **ISS-087** (Reservar pasa al flujo "cantidad primero" de Pedir — stepper en la card, tap-foto suma 1, wizard encadenado; se retiró el atajo "+1 mismo menú" que solo le quedaba a Reservar). `git pull` fast-forward, `pm2 restart` → online (↺ 65, mem 62.3 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). |
 
 **Deploy `9af4255` confirmado el 2026-09-02.** Sin verificar en uso real: ISS-082 (overlay de
 Términos en el primer ingreso del owner) e ISS-083 (subida de fotos en un celular de gama baja
@@ -49,9 +50,14 @@ ISS-085 el mismo día (no lo pospuso). Sin verificar en uso real:
 
 **Deploy `4ac2a5b` confirmado el 2026-09-04.** Solo documentación, sin cambios de código.
 
-**Sin desplegar:** **ISS-086** (plegar Yape/Plin al volver, `562a849`) + **ISS-087** (Reservar
-pasa al flujo "cantidad primero" de Pedir), los dos de la sesión de hoy — ver más abajo. Es lo
-único que `main` tiene por delante de producción ahora mismo.
+**Deploy `805fdd9` confirmado el 2026-09-04 (2).** **ISS-086** + **ISS-087**, los dos de la
+sesión de hoy, en el mismo deploy — el usuario no esperó a acumular más. Sin verificar en uso
+real:
+- **ISS-086** — al volver de Yape/Plin tras copiar el número, el total + la tarjeta + los 3 pasos
+  se pliegan en una línea; el comprobante queda como único acento visual. Falta probarlo saliendo
+  de verdad a Yape/Plin en un celular real.
+- **ISS-087** — Reservar pasa al flujo "cantidad primero" de Pedir (mismo stepper en la card,
+  tap-foto suma 1, wizard encadenado). Falta un comensal reservando con 2+ menús para confirmarlo.
 
 ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
@@ -82,12 +88,6 @@ completo en `deploy.md` §7. **El usuario decidió dejar para el fin de semana:*
 real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 **Pendiente, no bloqueante:**
-- **ISS-086 — sin desplegar, sin verificar en uso real.** Al volver de Yape/Plin tras copiar el
-  número, el total + la tarjeta + los 3 pasos se pliegan en una línea; el comprobante queda como
-  único acento visual. Ver sesión 2026-09-04 abajo y `issues/ISS-086-...md`.
-- **ISS-087 — sin desplegar, sin verificar en uso real.** Reservar pasa al flujo "cantidad
-  primero" de Pedir (mismo stepper en la card, tap-foto suma 1, wizard encadenado). Ver sesión
-  2026-09-04 abajo y `issues/ISS-087-...md`.
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
   bloqueado por el clasificador de permisos, lo borra el usuario.
 - Fiados — ver `backlog.md`.
