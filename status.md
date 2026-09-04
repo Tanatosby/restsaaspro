@@ -33,6 +33,7 @@ por el usuario:
 | 2026-08-28 (2) | `3e1d922..f3ff74a` | **ISS-081** — pago en 1 sola pantalla (se elimina "Revisa tu pedido") + aviso temporal + encuesta de producto (solo panel admin). `git pull` fast-forward, `pm2 restart`, `pm2 status` → online, `curl /health` → `{"status":"ok"}`. Confirmado por el usuario. |
 | 2026-09-02 | `f3ff74a..9af4255` | **ISS-074 seguimiento** (sacar el `#orden` cuando hay mesa, en Cola y Cocina), **ISS-082** (aceptación de Términos de uso — cierra Gap 22) e **ISS-083** (reducción de fotos en el cliente antes de subir — celulares de gama baja se colgaban). `git pull` fast-forward, `pm2 restart` → online (↺ 62), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-02 (2) | `9af4255..81358e0` | **ISS-084** (tocar la foto del menú suma 1 + botón "🔤 Aumentar letra") e **ISS-085** ("✅ Ya pagó" en "Listos" para Yape/Plin + buscador en "Por cobrar"). `git pull` fast-forward, `pm2 restart` → online (↺ 63, mem 63.9 MB). El `curl http://localhost:3000/health` no imprimió salida en el pegado — el proceso quedó online igual. Confirmado por el usuario (log de consola SSH). |
+| 2026-09-04 | `81358e0..4ac2a5b` | Solo documentación — encuesta de ISS-081 (`23457c0`) + registro del deploy anterior (`4ac2a5b`), ningún cambio de código. `git pull` fast-forward, `pm2 restart` → online (↺ 64, mem 60.7 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). **Ojo:** este deploy es anterior al commit de ISS-086 de esta misma sesión — no lo incluye, ver fila siguiente. |
 
 **Deploy `9af4255` confirmado el 2026-09-02.** Sin verificar en uso real: ISS-082 (overlay de
 Términos en el primer ingreso del owner) e ISS-083 (subida de fotos en un celular de gama baja
@@ -46,8 +47,10 @@ ISS-085 el mismo día (no lo pospuso). Sin verificar en uso real:
   por "Por cobrar"; efectivo y reservas con mesa siguen igual) + buscador por mesa/nombre en
   "Por cobrar" (`pedidos.js`, `owner.html`). Toca "Listos" — falta verlo con la dueña presente.
 
-**Sin desplegar (docs, no bloquea producción):** `23457c0` — resultados de la encuesta de ISS-081
-en la documentación. Es lo único que `main` tiene por delante de producción y no toca código.
+**Deploy `4ac2a5b` confirmado el 2026-09-04.** Solo documentación, sin cambios de código.
+
+**Sin desplegar:** `562a849` — **ISS-086** (plegar Yape/Plin al volver). Commiteado y pusheado a
+`main` el 2026-09-04, es lo único que `main` tiene por delante de producción ahora mismo.
 
 ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
