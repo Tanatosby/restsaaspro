@@ -34,10 +34,11 @@ y la "A" del botón de tamaño de letra no se entendía.*
 
 **Qué hace:**
 - En **"Pedir"** (flujo de cantidad primero, ISS-080), tocar la foto del menú **suma 1** —
-  igual que el botón `+` (`agregarMenuDesdeFoto()` → `cambiarCantidadMenuPedir(+1)`), con un
+  igual que el botón `+` (`agregarMenuDesdeFoto()` → `cambiarCantidadMenu(+1)`), con un
   "+1" flotante. El zoom de la foto pasa a un botón `🔍`. El primer `+1` (sin nada configurado
   aún) hace latir el botón "Elegir opciones (n)". **No abre el picker** — eso reacoplaría lo que
-  ISS-080 separó, y ISS-080 aún no está validado en servicio real. Rama "Reservar" sin cambios.
+  ISS-080 separó. Desde **ISS-087** (2026-09-04) esto también aplica a **"Reservar"** — dejó de
+  tener su propio camino, ver más abajo.
 - El botón de tamaño de letra de `menu.html` ahora dice **"🔤 Aumentar letra"**, y **"🔤 Volver a
   normal"** en el nivel máximo (antes era una `A` muda que solo crecía).
 
@@ -407,6 +408,16 @@ recortado a solo Reservar (el atajo de Pedir que probaba ya no existe), 11/11. S
 `test-modalidad-mixta.js`, `test-pago-mixto.js`, `test-iss048-volver-pago.js`,
 `test-iss049-recuperar-pago.js`, `test-gate-pago.js`, `test-comprobante-duplicado.js`,
 `test-numero-dia-pedido.js`, `test-pensionista-cliente.js`. 469/469 jest.
+
+**Actualización 2026-09-04 (ISS-087):** ya evaluados los comentarios reales de Pedir (encuesta de
+ISS-081, 95% de valoración positiva), el mismo flujo se portó a Reservar — dejó de tener su
+propio camino. Las funciones del wizard se generalizaron para aceptar `mode` en vez de duplicarse
+(`elegirOpciones`/`continuarWizard`/`abrirCarritoConWizard`, ya no `...Pedir`).
+`renderMenuDiaCard()` dejó de bifurcar por modo. El atajo "+1 mismo menú" (ISS-064), que hasta
+acá seguía existiendo solo para Reservar, quedó retirado del todo — redundante en los dos modos.
+Sin tocar a propósito: el carrito de Reservar sigue agrupando menús idénticos con su propio
+stepper (eso es la vista del carrito ya armado, no el armado en sí — decisión de ISS-080 de que
+Pedir no agrupe fue aparte, y no se reabrió acá). Ver `issues/ISS-087-...md`.
 
 ## ~~Pago en un solo paso + banner + encuesta de producto~~ ✅ Completado 2026-08-28
 

@@ -49,8 +49,9 @@ ISS-085 el mismo día (no lo pospuso). Sin verificar en uso real:
 
 **Deploy `4ac2a5b` confirmado el 2026-09-04.** Solo documentación, sin cambios de código.
 
-**Sin desplegar:** `562a849` — **ISS-086** (plegar Yape/Plin al volver). Commiteado y pusheado a
-`main` el 2026-09-04, es lo único que `main` tiene por delante de producción ahora mismo.
+**Sin desplegar:** **ISS-086** (plegar Yape/Plin al volver, `562a849`) + **ISS-087** (Reservar
+pasa al flujo "cantidad primero" de Pedir), los dos de la sesión de hoy — ver más abajo. Es lo
+único que `main` tiene por delante de producción ahora mismo.
 
 ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
@@ -84,6 +85,9 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 - **ISS-086 — sin desplegar, sin verificar en uso real.** Al volver de Yape/Plin tras copiar el
   número, el total + la tarjeta + los 3 pasos se pliegan en una línea; el comprobante queda como
   único acento visual. Ver sesión 2026-09-04 abajo y `issues/ISS-086-...md`.
+- **ISS-087 — sin desplegar, sin verificar en uso real.** Reservar pasa al flujo "cantidad
+  primero" de Pedir (mismo stepper en la card, tap-foto suma 1, wizard encadenado). Ver sesión
+  2026-09-04 abajo y `issues/ISS-087-...md`.
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
   bloqueado por el clasificador de permisos, lo borra el usuario.
 - Fiados — ver `backlog.md`.
@@ -98,7 +102,7 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
-## 🎯 Sesión 2026-09-04 — ISS-086: plegar Yape/Plin al volver (3 prototipos probados antes de codear)
+## 🎯 Sesión 2026-09-04 — ISS-086 (plegar Yape/Plin al volver) + ISS-087 (Reservar homologado a Pedir)
 
 **Prompt del usuario:** pidió el status del proyecto (no había entrado el 03/09). Conversación
 sobre la situación general a una semana de cumplirse el mes de piloto: los dos puntos más
@@ -136,8 +140,39 @@ código, según el flujo del proyecto.
 **No implementado, descartado con feedback del usuario:** copiar número + monto en un solo texto
 al portapapeles (prototipo 1).
 
-**Pendiente:** deploy (lo hace el usuario) + verificar en un celular real saliendo de verdad a
-Yape/Plin. La cobranza (ISS-085) sigue sin probarse in situ — el usuario dijo que la prueba hoy.
+**Pendiente ISS-086:** deploy (lo hace el usuario) + verificar en un celular real saliendo de
+verdad a Yape/Plin.
+
+---
+
+**Segunda parte de la sesión — ISS-087.** El usuario preguntó si Reservar estaba en la versión
+vieja del conteo de menús — confirmado: sí (comentario explícito en el código: "Reservar no
+cambia... este rediseño es solo para Pedir"). Motivo: ya se había acordado evaluar los
+comentarios de Pedir (ISS-080/081) antes de portarlo, y la encuesta salió muy positiva (95%), así
+que tocaba homogeneizar.
+
+**Implementado — ISS-087** (`menu.html`, `menu.css`; detalle en `issues/ISS-087-...md`):
+- Generalizadas las ~9 funciones del wizard de ISS-080 (`configuradosDeMenu`, `targetDeMenu`,
+  `cambiarCantidadMenu`, `elegirOpciones`, `abrirUnidadWizard`, `continuarWizard`,
+  `proximoMenuPendiente`, `abrirCarritoConWizard`) para aceptar `mode` en vez de duplicarlas —
+  mismo criterio ternario que ya usaba el resto del archivo.
+- `renderMenuDiaCard` unificada (sin branch de Reservar); `renderReservarContent()` (fetch+reset
+  por fecha) dividida de `renderReservarCards()` (repintado puro, nueva, para el wizard — evita
+  disparar un fetch de red en cada tap del stepper).
+- **Bug latente corregido de paso:** `menu-qty-${m.id}` sin namespace por modo podía duplicar ids
+  en el DOM (Reservar arranca en "hoy", igual que Pedir) — pasa a `menu-qty-${mode}-${m.id}`.
+- Retirado el atajo "+1 mismo menú" (ISS-064) — redundante en los dos modos con la cantidad
+  decidida de antemano en el stepper. El agrupado del carrito de Reservar (`agruparMenusCarrito`)
+  **no se tocó**, sigue igual.
+- Verificación: 478/478 jest + **94/94 E2E** (5 scripts Playwright, 1 nuevo —
+  `test-reservar-cantidad-primero.js` —, 2 actualizados por el cambio de comportamiento
+  esperado). `test-gate-pago.js` no corrió limpio por un dato preexistente de esta BD de
+  desarrollo (Yape/Plin desactivados en el restaurante #1), no relacionado a este cambio.
+
+**Pendiente ISS-087:** deploy + verificar en uso real (un comensal reservando con 2+ menús).
+
+La cobranza (ISS-085) sigue sin probarse in situ — el usuario dijo que la prueba hoy, sin
+novedades todavía en esta sesión.
 
 ---
 

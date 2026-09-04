@@ -525,27 +525,10 @@ body {
 .menu-stepper-btn.add:hover { background: var(--accent-dark); }
 .menu-stepper-num { font-size: 1rem; font-weight: 800; min-width: 20px; text-align: center; color: var(--text); }
 
-/* Atajo "+1 mismo menú" al agregar — a diferencia de #msg-toast (mudo),
-   este tiene un botón tocable, así que necesita pointer-events propios. */
-.atajo-repetir {
-  position: fixed; bottom: 110px; left: 50%;
-  transform: translateX(-50%) translateY(8px);
-  display: flex; align-items: center; gap: 10px;
-  background: var(--green-bg); color: var(--green);
-  border: 1px solid var(--green); border-radius: 14px;
-  padding: 8px 10px 8px 16px; font-size: 13px; font-weight: 600;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-  z-index: 200; opacity: 0; pointer-events: none;
-  transition: opacity 0.25s, transform 0.25s;
-  max-width: calc(100vw - 32px);
-}
-.atajo-repetir.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-.atajo-repetir button {
-  background: var(--green); color: white; border: none; border-radius: 22px;
-  padding: 12px 16px; min-height: 44px; font-size: 12.5px; font-weight: 700;
-  cursor: pointer; white-space: nowrap; font-family: var(--font);
-}
-.atajo-repetir button:active { transform: scale(0.96); }
+/* .atajo-repetir ("+1 mismo menú" al agregar, ISS-064) retirado en ISS-087
+   (2026-09-04) — Reservar pasó al flujo de "cantidad primero" y ya no queda
+   ningún camino que necesite este atajo. El stepper agrupado del carrito
+   (.menu-stepper-btn, arriba) es un mecanismo aparte y sigue intacto. */
 
 /* ──────────────────────────────────────────────────────────────
    STICKY RES BAR (reservar mode)

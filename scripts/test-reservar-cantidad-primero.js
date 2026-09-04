@@ -1,20 +1,24 @@
 /**
- * E2E del flujo "cantidad primero" de Pedir (menu.html) — día 13 del piloto.
+ * E2E del flujo "cantidad primero" portado a Reservar (menu.html) — ISS-087,
+ * 2026-09-04.
  *
- * Reemplaza el viejo patrón de "tocar la card abre el picker, agregar de a
- * uno" por: elegir cuántos con el stepper de la card (sin que se abra nada),
- * tocar "Elegir opciones" y ahí sí configurar cada unidad en secuencia
- * ("1/n", "2/n"...), encadenando incluso entre distintos tipos de menú, y
- * aterrizando directo en el carrito al terminar — nunca de vuelta a la
- * carta. El carrito tampoco se abre con menús a medio pedir: si el stepper
- * marca cantidad sin configurar, tocar el carrito arranca el wizard primero.
- * ISS-087 (2026-09-04) portó el mismo flujo a Reservar — ver
- * scripts/test-reservar-cantidad-primero.js. Los ids del stepper de la card
- * llevan namespace por modo desde entonces (`menu-qty-pedir-N` /
- * `menu-qty-reservar-N`) para que los dos modos puedan mostrar el mismo
- * menú el mismo día sin duplicar ids en el DOM.
+ * Antes de este cambio, Reservar tenía su propio camino: tocar la card abría
+ * el picker directo (`abrirMenuModal()`), agregando de a uno, con un atajo
+ * "+1 mismo menú" (ISS-064) para repetir sin reabrir. Pedir ya había dejado
+ * ese patrón atrás con ISS-080/081 (validado con 95% de valoración positiva,
+ * encuesta de ISS-081) — este test cubre que Reservar ahora usa exactamente
+ * el mismo mecanismo: elegir cuántos con el stepper de la card (sin abrir
+ * nada), tocar "Elegir opciones" y configurar cada unidad en secuencia
+ * ("1/n", "2/n"...), encadenando entre menús distintos, aterrizando en
+ * #res-drawer al terminar. El carrito de reserva tampoco se abre con menús a
+ * medio configurar.
  *
- * Uso: PORT=3399 node scripts/test-pedir-cantidad-primero.js
+ * Distinto de Pedir a propósito, sin tocar en este cambio: el drawer de
+ * Reservar sigue AGRUPANDO menús idénticos con su propio stepper "+"/"−"
+ * (`agruparMenusCarrito` / ISS-064) en vez de una fila por unidad — ver
+ * scripts/test-repetir-menu.js para esa cobertura.
+ *
+ * Uso: PORT=3399 node scripts/test-reservar-cantidad-primero.js
  */
 const { chromium } = require('playwright');
 
@@ -57,12 +61,9 @@ function check(cond, msg) {
       };
       const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
       const menus = (await api('GET', `/api/menu/menus-dia?dia=${hoy}`)).filter(usable);
-      if (menus.length < 2) {
-        // Si solo hay 1 usable hoy, clonarlo para tener 2 tipos distintos
-        // y probar el encadenado entre menús.
-        if (menus.length === 1) {
-          await api('POST', `/api/menu/menus-dia/${menus[0].id}/copiar`, { dia: hoy });
-        }
+      if (menus.length === 1) {
+        // Clonarlo para tener 2 tipos distintos y probar el encadenado entre menús.
+        await api('POST', `/api/menu/menus-dia/${menus[0].id}/copiar`, { dia: hoy });
       }
       const todosHoy = (await api('GET', `/api/menu/menus-dia?dia=${hoy}`)).filter(usable);
       if (todosHoy.length < 2) return { error: 'No se pudo armar 2 menús usables para hoy' };
@@ -72,23 +73,24 @@ function check(cond, msg) {
     if (setup.error) throw new Error(setup.error);
     console.log(`Setup OK — menú A #${setup.menuIdA}, menú B #${setup.menuIdB}`);
 
-    await page.goto(`${BASE}/menu?restaurante=${setup.restauranteId}&mesa=11`, { waitUntil: 'networkidle' });
+    // Sin `&mesa=` → activeMode arranca en 'reservar' (ver switchMode() en menu.html)
+    await page.goto(`${BASE}/menu?restaurante=${setup.restauranteId}`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(800);
 
     console.log('\n── El stepper de la card no abre nada ──');
-    const cardA = page.locator(`.menu-dia-card:has(#menu-qty-pedir-${setup.menuIdA})`);
+    const cardA = page.locator(`.menu-dia-card:has(#menu-qty-reservar-${setup.menuIdA})`);
     await cardA.locator('.qty-btn.add').click();
     await page.waitForTimeout(150);
     check(await page.locator('.mm-overlay.open').count() === 0, 'Tocar "+" en el stepper NO abre el picker');
-    check((await page.locator(`#menu-qty-pedir-${setup.menuIdA}`).textContent()).trim() === '1', 'El stepper marca 1');
+    check((await page.locator(`#menu-qty-reservar-${setup.menuIdA}`).textContent()).trim() === '1', 'El stepper marca 1');
 
     await cardA.locator('.qty-btn.add').click();
     await page.waitForTimeout(150);
-    check((await page.locator(`#menu-qty-pedir-${setup.menuIdA}`).textContent()).trim() === '2', 'Subir a 2 tampoco abre nada');
+    check((await page.locator(`#menu-qty-reservar-${setup.menuIdA}`).textContent()).trim() === '2', 'Subir a 2 tampoco abre nada');
     check(await page.locator('.mm-overlay.open').count() === 0, 'Sigue sin abrirse el picker');
 
     // Menú B: 1 unidad
-    const cardB = page.locator(`.menu-dia-card:has(#menu-qty-pedir-${setup.menuIdB})`);
+    const cardB = page.locator(`.menu-dia-card:has(#menu-qty-reservar-${setup.menuIdB})`);
     await cardB.locator('.qty-btn.add').click();
     await page.waitForTimeout(150);
 
@@ -98,12 +100,7 @@ function check(cond, msg) {
     check(await page.locator('.mm-overlay.open').count() === 1, 'El picker se abre al tocar "Elegir opciones"');
     check((await page.locator('.mm-progreso').innerText()).includes('1/2'), 'Aviso "1/2" de la primera unidad del menú A');
 
-    // Elegir la primera opción de cada sección requerida y guardar
     async function elegirYGuardar(etiquetaEsperada) {
-      // Re-consulta el DOM en cada click en vez de iterar un NodeList
-      // capturado una sola vez — cada selección dispara MenuModal.refresh()
-      // (ISS-066 en vivo), que reemplaza TODO el cuerpo del modal, así que
-      // un NodeList viejo apunta a nodos ya desprendidos del documento.
       await page.evaluate(() => {
         let siguio = true, guard = 0;
         while (siguio && guard++ < 20) {
@@ -131,38 +128,38 @@ function check(cond, msg) {
     check((await page.locator('.mm-progreso').innerText()).includes('1/1'), 'Terminado el menú A, sigue solo con el menú B (1/1)');
     await elegirYGuardar();
 
-    console.log('\n── Termina toda la tanda: cierra y aterriza en el carrito ──');
+    console.log('\n── Termina toda la tanda: cierra y aterriza en #res-drawer ──');
     check(await page.locator('.mm-overlay.open').count() === 0, 'El picker se cierra solo al terminar todo');
-    check(await page.locator('#cart-drawer.open').count() === 1, 'El carrito se abre solo, sin volver a la carta');
+    check(await page.locator('#res-drawer.open').count() === 1, 'El drawer de reserva se abre solo, sin volver a la lista');
 
-    const filas = await page.locator('#drawer-items .cart-item').count();
-    check(filas === 3, `3 filas en el carrito, sin agrupar (2 del menú A + 1 del B) (${filas})`);
-    check((await page.evaluate(() => cart.length)) === 3, 'cart[] tiene 3 unidades reales');
+    check((await page.evaluate(() => resCart.length)) === 3, 'resCart[] tiene 3 unidades reales');
+    // A diferencia de Pedir (filas sin agrupar), Reservar sigue agrupando por
+    // contenido (`agruparMenusCarrito`, sin tocar en ISS-087) — ver docstring
+    // arriba. Cuántas filas salgan depende de si el menú de prueba B terminó
+    // con la misma selección que A (ambos "primera opción disponible"), así
+    // que se verifica la suma mostrada, no un número de filas fijo.
+    const stepperNums = await page.locator('#res-cart-items .menu-stepper-num').allTextContents();
+    const totalMostrado = stepperNums.reduce((s, n) => s + Number(n.trim()), 0);
+    check(totalMostrado === 3, `El drawer muestra 3 unidades en total, agrupadas o no (${totalMostrado})`);
 
-    console.log('\n── El carrito no se abre con menús a medio pedir ──');
-    await page.click('.drawer-close');
+    console.log('\n── El drawer no se abre con menús a medio configurar ──');
+    await page.click('#res-drawer .drawer-close');
     await page.waitForTimeout(200);
     await cardA.locator('.qty-btn.add').click(); // menú A vuelve a quedar con 1 pendiente sin configurar
     await page.waitForTimeout(150);
-    await page.click('.cart-btn');
+    await page.click('.res-bar-btn');
     await page.waitForTimeout(250);
-    check(await page.locator('#cart-drawer.open').count() === 0, 'El carrito NO se abre con un menú pendiente sin configurar');
+    check(await page.locator('#res-drawer.open').count() === 0, 'El drawer NO se abre con un menú pendiente sin configurar');
     check(await page.locator('.mm-overlay.open').count() === 1, 'En vez de eso, arranca el picker del menú pendiente');
     check((await page.locator('.mm-progreso').innerText()).includes('3/3'), 'La posición sigue la cuenta real (3ra unidad del menú A)');
     await elegirYGuardar();
-    check(await page.locator('#cart-drawer.open').count() === 1, 'Al terminar esa unidad sí abre el carrito');
+    check(await page.locator('#res-drawer.open').count() === 1, 'Al terminar esa unidad sí abre el drawer');
 
-    console.log('\n── Editar una unidad ya en el carrito ──');
-    const primeraFila = page.locator('#drawer-items .cart-item').first();
-    await primeraFila.locator('.cart-edit').click();
-    await page.waitForTimeout(200);
-    check(await page.locator('.mm-overlay.open').count() === 1, 'Editar reabre el picker');
-    check((await page.locator('.mm-progreso').innerText()).includes('Estás editando'), 'El aviso dice "Estás editando", no "eligiendo"');
-    check((await page.locator('.mm-btn-agregar').textContent()).includes('Guardar cambios'), 'El botón dice "Guardar cambios"');
-    await page.click('.mm-btn-agregar');
-    await page.waitForTimeout(250);
-    check(await page.locator('.mm-overlay.open').count() === 0, 'Guardar cambios cierra el picker (no encadena a otra unidad)');
-    check((await page.evaluate(() => cart.length)) === 4, 'Editar NO agrega una fila nueva — sigue habiendo 4 en total');
+    console.log('\n── El payload arma grupos completos (ISS-041) ──');
+    const gruposPayload = await page.evaluate(() => numerarGrupos(resCart));
+    const gruposDistintos = new Set(gruposPayload.map(i => i.grupo));
+    check(gruposDistintos.size === 4, `4 grupos distintos (4 unidades totales), no mezclados (${gruposDistintos.size})`);
+    check(gruposPayload.every(i => i.grupo != null), 'Ninguna línea del payload quedó con grupo sin definir');
 
     console.log('\n── Sin overflow horizontal a 360px ──');
     check(!(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)), 'Sin scroll horizontal');

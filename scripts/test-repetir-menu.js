@@ -1,14 +1,18 @@
 /**
- * E2E del atajo "+1 mismo menú" — Día 9 del piloto #1: la dueña reportó que
- * pedir 2 menús idénticos exigía reabrir el picker y volver a elegir cada
- * sección desde cero.
+ * E2E del carrito agrupado de Reservar — stepper "+"/"−" por contenido
+ * (`agruparMenusCarrito`, Día 9 del piloto #1: la dueña reportó que pedir 2
+ * menús idénticos exigía reabrir el picker y volver a elegir cada sección
+ * desde cero).
  *
- * Desde la sesión del día 13 (flujo "cantidad primero" de Pedir), este
- * atajo **solo aplica a Reservar** — Pedir ya no lo necesita: la cantidad
- * se decide antes con el stepper de la card, y el flujo encadena solo con
- * la próxima unidad pendiente (ver scripts/test-pedir-cantidad-primero.js
- * para la cobertura del flujo nuevo). Reservar sigue exactamente igual que
- * antes: agregar de a uno + atajo para repetir.
+ * Hasta ISS-087 (2026-09-04) esto se probaba agregando el menú vía el atajo
+ * flotante "+1 mismo menú" (ISS-064) que aparecía tras cada `agregarMenu()`
+ * en modo reservar — ese atajo quedó retirado: Reservar ahora decide la
+ * cantidad antes con el stepper de la card, igual que Pedir desde ISS-080
+ * (ver scripts/test-reservar-cantidad-primero.js para esa cobertura). Lo que
+ * este test sigue verificando, sin cambios de fondo, es el AGRUPADO del
+ * drawer en sí — 2 filas de carrito con igual menú + selección + modalidad
+ * se muestran como una sola fila con contador — que es un mecanismo aparte
+ * de `agruparMenusCarrito` y no se tocó en ISS-087.
  *
  * Uso: PORT=3399 node scripts/test-repetir-menu.js
  */
@@ -61,27 +65,25 @@ function check(cond, msg) {
     if (setup.error) throw new Error(setup.error);
     console.log(`Setup OK — menú #${setup.menuId}`);
 
-    // ── Reservar: agregar 1 menú y usar el atajo "+1 mismo menú" ──
-    console.log('\n── Reservar: atajo "+1 mismo menú" ──');
+    // ── Reservar: agregar el mismo menú 2 veces con igual selección ──
+    console.log('\n── Reservar: el drawer agrupa 2 unidades idénticas ──');
     await page.goto(`${BASE}/menu?restaurante=${setup.restauranteId}`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(800);
 
     await page.evaluate((menuId) => {
       const menu = resMenusDia.find(m => m.id === menuId);
-      for (const s of menu.secciones) {
-        const p = s.platos[0];
-        if (p) selectMenuPlato('reservar', menu.id, s.id_seccion, p.id_componente, p.nombre, s.nombre_seccion, menu.precio, menu.id);
-      }
-      agregarMenu('reservar', menu.id, !!menu.elegible, menu.precio, menu.nombre);
+      const agregarUnaVez = () => {
+        for (const s of menu.secciones) {
+          const p = s.platos[0];
+          if (p) selectMenuPlato('reservar', menu.id, s.id_seccion, p.id_componente, p.nombre, s.nombre_seccion, menu.precio, menu.id);
+        }
+        agregarMenu('reservar', menu.id, !!menu.elegible, menu.precio, menu.nombre);
+      };
+      agregarUnaVez();
+      agregarUnaVez();
     }, setup.menuId);
     await page.waitForTimeout(200);
-
-    check(await page.locator('#atajo-repetir-menu.show').count() === 1, 'Aparece el atajo tras agregar el menú');
-    check((await page.locator('#atajo-repetir-menu button').textContent()).includes('+1 mismo menú'), 'El atajo tiene el botón "+1 mismo menú"');
-
-    await page.click('#atajo-repetir-menu button');
-    await page.waitForTimeout(200);
-    check((await page.evaluate(() => resCart.length)) === 2, 'resCart[] queda con 2 filas tras el atajo');
+    check((await page.evaluate(() => resCart.length)) === 2, 'resCart[] queda con 2 filas (2 agregados directos, sin atajo)');
 
     await page.click('.res-bar-btn');
     await page.waitForTimeout(300);
@@ -90,7 +92,7 @@ function check(cond, msg) {
     const stepperResNum = await page.locator('#res-cart-items .menu-stepper-num').textContent();
     check(stepperResNum.trim() === '2', `Stepper de reserva marca ×2 (${stepperResNum.trim()})`);
 
-    // Stepper "+"/"−" del grupo (sigue igual que siempre en Reservar)
+    // Stepper "+"/"−" del grupo
     await page.click('#res-cart-items .menu-stepper-btn.add');
     await page.waitForTimeout(150);
     check((await page.locator('#res-cart-items .menu-stepper-num').textContent()).trim() === '3', 'El botón + suma otra unidad (×3)');

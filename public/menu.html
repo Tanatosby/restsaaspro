@@ -145,7 +145,7 @@
 
   <!-- ── Sticky res bar (reservar mode) — abre #res-drawer, ya no confirma directo ── -->
   <div class="res-bar" id="res-bar">
-    <button class="res-bar-btn" onclick="openResDrawer()">
+    <button class="res-bar-btn" onclick="abrirCarritoReservar()">
       <div class="res-bar-left">
         <span class="res-bar-count" id="res-bar-count">0</span>
         <span>ítems seleccionados</span>
@@ -436,8 +436,8 @@
   let cartaQty       = {};
   let menuSelections = {};
   // Cantidad deseada por menú (stepper de la card) — puede ir por delante de
-  // lo que ya está configurado en `cart`. Solo existe para Pedir: Reservar
-  // sigue con el flujo de "tocar la card abre el picker" de siempre.
+  // lo que ya está configurado en `cart`. Reservar tiene su propio espejo,
+  // `resMenuPending` (ver abajo) — ISS-087.
   let menuPending = {};
 
   // Reservar state
@@ -445,6 +445,9 @@
   let resCartaQty       = {};
   let resMenuSelections = {};
   let resMenusDia       = []; // menús cargados para la fecha de reserva seleccionada
+  // ISS-087: mismo flujo "cantidad primero" que ya validó Pedir (ISS-080/081,
+  // 95% valoración positiva) — Reservar deja de tener su propio camino.
+  let resMenuPending = {};
 
   // Pago state
   let modalidades          = { para_llevar: true, delivery: false }; // activas del restaurante
@@ -659,8 +662,12 @@ async function renderReservarContent() {
     return;
   }
 
-  // Limpiar selecciones de menú al cambiar de fecha (los ítems de carta se mantienen)
+  // Limpiar selecciones de menú al cambiar de fecha (los ítems de carta se
+  // mantienen). ISS-087: `resMenuPending` también se limpia acá — los ids de
+  // `menuPending` son de la fecha vieja, no tienen sentido contra el menú
+  // nuevo que se va a cargar.
   resMenuSelections = {};
+  resMenuPending = {};
   resCart = resCart.filter(i => i.type !== 'menu');
   updateResCartSummary();
 
@@ -674,6 +681,17 @@ async function renderReservarContent() {
     return;
   }
 
+  renderReservarCards();
+}
+
+// ISS-087 — repintado puro desde el estado ya cargado (`resMenusDia`,
+// `resCart`, `resMenuPending`), sin fetch ni reset. Es el equivalente de
+// `renderPedirContent()` para Reservar: lo llama el wizard de "cantidad
+// primero" después de cada tap en el stepper o al cerrar el picker, para no
+// disparar un fetch de red (y el reset de `renderReservarContent()`) en cada
+// interacción.
+function renderReservarCards() {
+  const el = document.getElementById('res-menu-content');
   const hasMenus = resMenusDia.length > 0;
   const hasCarta = cartaCats.some(c => c.platos?.length > 0);
 
@@ -721,46 +739,30 @@ async function renderReservarContent() {
       ? `<img src="${fotoUrl}" alt="${esc(m.nombre)}">`
       : `<div class="menu-dia-photo-ph">🍽️</div>`;
 
-    // Reservar no cambia — sigue igual que siempre (tocar la card abre el
-    // picker directo, un menú a la vez). Este rediseño es solo para Pedir.
-    if (mode === 'reservar') {
-      return `<div class="menu-dia-card" onclick="abrirMenuModal(${m.id},'reservar')">
-        <div class="menu-dia-photo">
-          ${foto}
-          <span class="menu-dia-price-badge">S/ ${Number(m.precio).toFixed(2)}</span>
-        </div>
-        <div class="menu-dia-body">
-          <div class="menu-dia-name">${esc(m.nombre)}</div>
-          <div class="menu-tipo">${m.elegible ? 'Elige tus platos' : 'Menú fijo'}</div>
-          <div class="menu-dia-pills">${secPills}</div>
-          <button class="btn-add-menu" onclick="event.stopPropagation();abrirMenuModal(${m.id},'reservar')">
-            Ver opciones →
-          </button>
-        </div>
-      </div>`;
-    }
-
-    // Pedir: cantidad primero con el stepper (igual que ya hace la carta),
-    // configurar recién al tocar "Elegir opciones" — feedback real del
-    // piloto, día 13: agregar de a uno con el picker abriéndose solo perdía
-    // pedidos a mitad de armar cuando la señora se equivocaba con el stepper.
-    const configurados = configuradosDeMenu(m.id);
-    const target = targetDeMenu(m.id);
+    // Cantidad primero con el stepper (igual que ya hace la carta), configurar
+    // recién al tocar "Elegir opciones" — feedback real del piloto, día 13:
+    // agregar de a uno con el picker abriéndose solo perdía pedidos a mitad de
+    // armar. ISS-087 (2026-09-04): Reservar deja su propio camino viejo
+    // (tocar la card abría el picker directo) y pasa a este mismo flujo, ya
+    // validado en Pedir con 95% de valoración positiva (encuesta de ISS-081).
+    const configurados = configuradosDeMenu(m.id, mode);
+    const target = targetDeMenu(m.id, mode);
     const faltan = target - configurados;
+    const destino = mode === 'pedir' ? 'pedido' : 'reserva';
     // Día 15 del piloto: los comensales tocaban la foto del menú esperando que
     // agregara — antes no hacía nada. Ahora la foto suma 1 (igual que "+"), y
     // el primer +1 hace latir "Elegir opciones" para empujar al siguiente paso.
     const estadoHtml = target === 0
       ? `<div class="menu-dia-estado">Toca la foto o + para agregar</div>`
       : (faltan > 0
-          ? `<button class="btn-add-menu${configurados === 0 ? ' btn-add-menu--pulse' : ''}" onclick="elegirOpcionesPedir(${m.id})">Elegir opciones (${faltan})</button>`
-          : `<div class="menu-dia-estado"><b>${target}</b> en tu pedido</div>`);
+          ? `<button class="btn-add-menu${configurados === 0 ? ' btn-add-menu--pulse' : ''}" onclick="elegirOpciones(${m.id},'${mode}')">Elegir opciones (${faltan})</button>`
+          : `<div class="menu-dia-estado"><b>${target}</b> en tu ${destino}</div>`);
 
     return `<div class="menu-dia-card">
       <div class="menu-dia-photo menu-dia-photo--add" role="button" tabindex="0"
-           aria-label="Agregar un ${esc(m.nombre)} a tu pedido"
-           onclick="agregarMenuDesdeFoto(${m.id}, this)"
-           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();agregarMenuDesdeFoto(${m.id}, this)}">
+           aria-label="Agregar un ${esc(m.nombre)} a tu ${destino}"
+           onclick="agregarMenuDesdeFoto(${m.id}, this, '${mode}')"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();agregarMenuDesdeFoto(${m.id}, this, '${mode}')}">
         ${foto}
         <span class="menu-dia-price-badge">S/ ${Number(m.precio).toFixed(2)}</span>
         ${fotoUrl ? `<button type="button" class="menu-dia-zoom" aria-label="Ver la foto en grande" onclick="event.stopPropagation();openPhotoModal('${esc(fotoUrl)}','${esc(m.nombre)}','')">🔍</button>` : ''}
@@ -773,9 +775,9 @@ async function renderReservarContent() {
         <div class="menu-dia-footer">
           ${estadoHtml}
           <div class="qty-control">
-            <button class="qty-btn" onclick="cambiarCantidadMenuPedir(${m.id},-1)" aria-label="Quitar uno">−</button>
-            <span class="qty-num" id="menu-qty-${m.id}">${target}</span>
-            <button class="qty-btn add" onclick="cambiarCantidadMenuPedir(${m.id},1)" aria-label="Agregar uno">+</button>
+            <button class="qty-btn" onclick="cambiarCantidadMenu(${m.id},-1,'${mode}')" aria-label="Quitar uno">−</button>
+            <span class="qty-num" id="menu-qty-${mode}-${m.id}">${target}</span>
+            <button class="qty-btn add" onclick="cambiarCantidadMenu(${m.id},1,'${mode}')" aria-label="Agregar uno">+</button>
           </div>
         </div>
       </div>
@@ -932,50 +934,41 @@ async function renderReservarContent() {
     document.querySelectorAll(`input[name^="${prefix}-sec-${menuId}-"]`).forEach(r => r.checked = false);
 
     if (mode === 'pedir') updateCart(); else updateResCartSummary();
-    // Día 9 del piloto: atajo para repetir el mismo menú sin reabrir el
-    // picker. Ahora solo aplica a Reservar (que sigue agregando de a uno) —
-    // Pedir ya no lo necesita: la cantidad se decide antes con el stepper de
-    // la card, y el flujo de "cantidad primero" encadena solo con la
-    // próxima unidad pendiente (ver continuarWizardPedir).
-    if (mode === 'reservar') mostrarAtajoRepetirMenu(mode, nuevoItem);
     return true;
   }
 
-  function abrirMenuModal(menuId, mode) {
-    const source = mode === 'pedir' ? menusDia : resMenusDia;
-    const menu = source.find(m => m.id === menuId);
-    if (!menu) return;
-    // Limpiar selecciones previas para este menú
-    if (mode === 'pedir') menuSelections[menuId] = {};
-    else resMenuSelections[menuId] = {};
-    const getSel = () => (mode === 'pedir' ? menuSelections : resMenuSelections)[menuId] || {};
-    MenuModal.open({ menu, mode, getSel });
+  // ── Cantidad primero, configurar después ──────────────────────
+  // Compartido por Pedir y Reservar desde ISS-087 (2026-09-04) — antes solo
+  // existía para Pedir (ISS-080/081) y Reservar seguía con `abrirMenuModal()`
+  // (tocar la card abría el picker directo, un menú a la vez; retirado junto
+  // con el atajo "+1 mismo menú" — ISS-064 —, redundante ahora que la
+  // cantidad se decide antes con el stepper de la card en los dos modos).
+
+  function configuradosDeMenu(menuId, mode) {
+    const cartArr = mode === 'pedir' ? cart : resCart;
+    return cartArr.filter(i => i.type === 'menu' && i.payload.menuItems[0]?.id_menu_dia === menuId).length;
+  }
+  function targetDeMenu(menuId, mode) {
+    const pending = mode === 'pedir' ? menuPending : resMenuPending;
+    return pending[menuId] ?? configuradosDeMenu(menuId, mode);
   }
 
-  // ── Pedir: cantidad primero, configurar después ──────────────
-  // Reservar NO usa nada de esto — sigue con abrirMenuModal() de siempre.
-
-  function configuradosDeMenu(menuId) {
-    return cart.filter(i => i.type === 'menu' && i.payload.menuItems[0]?.id_menu_dia === menuId).length;
-  }
-  function targetDeMenu(menuId) {
-    return menuPending[menuId] ?? configuradosDeMenu(menuId);
-  }
-
-  function cambiarCantidadMenuPedir(menuId, delta) {
-    const target = Math.max(0, targetDeMenu(menuId) + delta);
-    while (configuradosDeMenu(menuId) > target) quitarUltimaUnidadMenu(menuId);
-    menuPending[menuId] = target;
-    renderPedirContent();
+  function cambiarCantidadMenu(menuId, delta, mode) {
+    const target = Math.max(0, targetDeMenu(menuId, mode) + delta);
+    while (configuradosDeMenu(menuId, mode) > target) quitarUltimaUnidadMenu(menuId, mode);
+    const pending = mode === 'pedir' ? menuPending : resMenuPending;
+    pending[menuId] = target;
+    if (mode === 'pedir') renderPedirContent(); else renderReservarCards();
   }
 
   // Día 15 del piloto: tocar la foto del menú suma 1 (igual que "+"). NO abre
   // el picker — eso reacoplaría lo que ISS-080 separó a propósito (la señora
   // perdía pedidos cuando el picker se abría solo). El "+1" flotante se ancla
-  // a `position:fixed` porque renderPedirContent() destruye la card enseguida.
-  window.agregarMenuDesdeFoto = function (menuId, fotoEl) {
+  // a `position:fixed` porque el repintado destruye la card enseguida. ISS-087:
+  // mismo comportamiento en Reservar (antes solo existía en Pedir).
+  window.agregarMenuDesdeFoto = function (menuId, fotoEl, mode) {
     if (fotoEl) mostrarMasUnoMenu(fotoEl);
-    cambiarCantidadMenuPedir(menuId, 1);
+    cambiarCantidadMenu(menuId, 1, mode || 'pedir');
   };
 
   function mostrarMasUnoMenu(fotoEl) {
@@ -992,10 +985,11 @@ async function renderReservarContent() {
     setTimeout(() => f.remove(), 700);
   }
 
-  function quitarUltimaUnidadMenu(menuId) {
-    for (let i = cart.length - 1; i >= 0; i--) {
-      if (cart[i].type === 'menu' && cart[i].payload.menuItems[0]?.id_menu_dia === menuId) {
-        cart.splice(i, 1);
+  function quitarUltimaUnidadMenu(menuId, mode) {
+    const cartArr = mode === 'pedir' ? cart : resCart;
+    for (let i = cartArr.length - 1; i >= 0; i--) {
+      if (cartArr[i].type === 'menu' && cartArr[i].payload.menuItems[0]?.id_menu_dia === menuId) {
+        cartArr.splice(i, 1);
         return;
       }
     }
@@ -1003,63 +997,72 @@ async function renderReservarContent() {
 
   // Arranca (o retoma) el trámite de configurar las unidades que faltan de
   // este menú — siempre la próxima sin configurar, nunca reabre las ya
-  // hechas (para eso está "✏️ Editar" en el carrito).
-  function elegirOpcionesPedir(menuId) {
-    abrirUnidadPedir(menuId, configuradosDeMenu(menuId) + 1, targetDeMenu(menuId));
+  // hechas (para eso está "✏️ Editar" en el carrito de Pedir). ISS-087:
+  // compartido por Pedir y Reservar (antes `elegirOpcionesPedir`, solo Pedir).
+  function elegirOpciones(menuId, mode) {
+    abrirUnidadWizard(menuId, configuradosDeMenu(menuId, mode) + 1, targetDeMenu(menuId, mode), mode);
   }
 
-  function abrirUnidadPedir(menuId, posicion, total) {
-    const menu = menusDia.find(m => m.id === menuId);
+  function abrirUnidadWizard(menuId, posicion, total, mode) {
+    const source = mode === 'pedir' ? menusDia : resMenusDia;
+    const menu = source.find(m => m.id === menuId);
     if (!menu) return;
-    menuSelections[menuId] = {};
-    const getSel = () => menuSelections[menuId] || {};
+    const sel = mode === 'pedir' ? menuSelections : resMenuSelections;
+    sel[menuId] = {};
+    const getSel = () => sel[menuId] || {};
     MenuModal.open({
-      menu, mode: 'pedir', getSel, posicion, total,
-      onAdded: () => continuarWizardPedir(menuId, posicion, total),
-      onClose: () => renderPedirContent(),
+      menu, mode, getSel, posicion, total,
+      onAdded: () => continuarWizard(menuId, posicion, total, mode),
+      onClose: () => (mode === 'pedir' ? renderPedirContent() : renderReservarCards()),
     });
   }
 
-  // Con 2+ tipos de menú pedidos a la vez (ej. 3 Criollo + 2 Marino), al
-  // terminar uno no tiene sentido volver a la lista si el otro todavía
-  // tiene pendientes — sigue directo ahí, sin que haga falta volver a tocar
-  // "Elegir opciones" a mano.
-  function proximoMenuPendientePedir(excluirMenuId) {
-    return menusDia.find(m => m.id !== excluirMenuId && targetDeMenu(m.id) > configuradosDeMenu(m.id));
+  // Con 2+ tipos de menú a la vez (ej. 3 Criollo + 2 Marino), al terminar uno
+  // no tiene sentido volver a la lista si el otro todavía tiene pendientes —
+  // sigue directo ahí, sin que haga falta volver a tocar "Elegir opciones" a
+  // mano.
+  function proximoMenuPendiente(excluirMenuId, mode) {
+    const source = mode === 'pedir' ? menusDia : resMenusDia;
+    return source.find(m => m.id !== excluirMenuId && targetDeMenu(m.id, mode) > configuradosDeMenu(m.id, mode));
   }
 
-  function continuarWizardPedir(menuId, posicionRecien, total) {
+  function continuarWizard(menuId, posicionRecien, total, mode) {
     const siguiente = posicionRecien + 1;
     if (siguiente <= total) {
-      abrirUnidadPedir(menuId, siguiente, total);
+      abrirUnidadWizard(menuId, siguiente, total, mode);
       return;
     }
-    const proximo = proximoMenuPendientePedir(menuId);
+    const proximo = proximoMenuPendiente(menuId, mode);
     if (proximo) {
-      abrirUnidadPedir(proximo.id, configuradosDeMenu(proximo.id) + 1, targetDeMenu(proximo.id));
+      abrirUnidadWizard(proximo.id, configuradosDeMenu(proximo.id, mode) + 1, targetDeMenu(proximo.id, mode), mode);
       return;
     }
-    // Ya no queda ningún menú pendiente: lo básico es pedir menús, así que
-    // en vez de volver a la carta, cierra y aterriza directo en el carrito.
+    // Ya no queda ningún menú pendiente: lo básico es pedir/reservar menús,
+    // así que en vez de volver a la lista, cierra y aterriza directo en el
+    // carrito correspondiente.
     MenuModal.close();
-    openDrawer();
+    if (mode === 'pedir') openDrawer(); else openResDrawer();
   }
 
   // El carrito NO se abre con menús "a medio pedir" — si el stepper dice 2
   // Criollo pero todavía no se configuró ninguno, esos 2 no existen en
   // ningún lado más que en ese número; el comensal los buscaría en el
   // carrito y no estarían ahí. Se intercepta acá y se manda a terminarlos
-  // primero — al acabar la tanda, continuarWizardPedir() ya abre el
-  // carrito solo, así que desde acá es un solo toque, no dos pantallas.
-  function abrirCarritoPedir() {
-    const pendiente = menusDia.find(m => targetDeMenu(m.id) > configuradosDeMenu(m.id));
+  // primero — al acabar la tanda, continuarWizard() ya abre el carrito solo,
+  // así que desde acá es un solo toque, no dos pantallas. ISS-087: mismo
+  // criterio para Reservar (antes solo `abrirCarritoPedir`).
+  function abrirCarritoConWizard(mode) {
+    const source = mode === 'pedir' ? menusDia : resMenusDia;
+    const pendiente = source.find(m => targetDeMenu(m.id, mode) > configuradosDeMenu(m.id, mode));
     if (pendiente) {
       showMsg(`Antes, elige las opciones de tu ${pendiente.nombre}`);
-      elegirOpcionesPedir(pendiente.id);
+      elegirOpciones(pendiente.id, mode);
       return;
     }
-    openDrawer();
+    if (mode === 'pedir') openDrawer(); else openResDrawer();
   }
+  function abrirCarritoPedir() { abrirCarritoConWizard('pedir'); }
+  function abrirCarritoReservar() { abrirCarritoConWizard('reservar'); }
 
   // Reabre el picker precargado con lo que ya eligió esa unidad puntual del
   // carrito, para poder cambiar solo esa (ej. la proteína de un solo menú
@@ -1218,43 +1221,14 @@ async function renderReservarContent() {
     if (mode === 'pedir') updateCart(); else updateResCartSummary();
   }
 
-  // Atajo mostrado justo al agregar un menú — a diferencia de showMsg()
-  // (toast mudo, sin botón), este queda unos segundos con un botón
-  // interactivo para repetir la misma selección con un solo toque. Guarda
-  // la referencia al ítem (no el índice) porque el carrito puede cambiar
-  // de orden mientras el atajo sigue visible.
-  let _ultimoMenuAgregado = null; // { mode, item }
-  let _atajoRepetirTimer  = null;
-
-  function mostrarAtajoRepetirMenu(mode, item) {
-    _ultimoMenuAgregado = { mode, item };
-    let el = document.getElementById('atajo-repetir-menu');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'atajo-repetir-menu';
-      el.className = 'atajo-repetir';
-      document.body.appendChild(el);
-    }
-    el.innerHTML = `¡Menú agregado! <button type="button" onclick="duplicarUltimoMenu()">+1 mismo menú</button>`;
-    el.classList.add('show');
-    clearTimeout(_atajoRepetirTimer);
-    _atajoRepetirTimer = setTimeout(ocultarAtajoRepetirMenu, 4500);
-  }
-
-  function ocultarAtajoRepetirMenu() {
-    const el = document.getElementById('atajo-repetir-menu');
-    if (el) el.classList.remove('show');
-  }
-
-  function duplicarUltimoMenu() {
-    if (!_ultimoMenuAgregado) return;
-    const { mode, item } = _ultimoMenuAgregado;
-    const cartArr = mode === 'pedir' ? cart : resCart;
-    const idx = cartArr.indexOf(item);
-    if (idx === -1) { ocultarAtajoRepetirMenu(); return; } // se borró mientras tanto
-    duplicarMenuEnIdx(mode, idx);
-    ocultarAtajoRepetirMenu();
-  }
+  // ISS-087 (2026-09-04): el atajo "+1 mismo menú" que aparecía tras agregar
+  // un menú (ISS-064, Día 9 del piloto) queda retirado — Reservar era el
+  // último modo que lo necesitaba (Pedir ya lo había dejado atrás con
+  // ISS-080). Con la cantidad decidida antes en el stepper de la card, en
+  // los dos modos, no queda ningún camino donde agregar un menú deje
+  // pendiente repetirlo a mano. El stepper de "+"/"−" agrupado del carrito
+  // de Reservar (`agruparMenusCarrito`, más abajo) es un mecanismo aparte y
+  // sigue intacto.
 
   // Estado del toggle de arriba: marcado si TODO el carrito coincide; si está
   // mezclado no se marca ninguno y el hint dice cuántos se llevan.
@@ -2256,10 +2230,8 @@ async function renderReservarContent() {
   // ── Reset ────────────────────────────────────────
   function resetTodo() {
     cart = []; cartaQty = {}; menuSelections = {}; menuPending = {};
-    resCart = []; resCartaQty = {}; resMenuSelections = {};
+    resCart = []; resCartaQty = {}; resMenuSelections = {}; resMenuPending = {};
     pagoPendiente = null; pagoMetodo = null;
-    _ultimoMenuAgregado = null;
-    ocultarAtajoRepetirMenu();
     limpiarPagoPendienteLocal();
     document.getElementById('btn-ver-estado').style.display = 'none';
     document.getElementById('estado-screen').classList.remove('show');

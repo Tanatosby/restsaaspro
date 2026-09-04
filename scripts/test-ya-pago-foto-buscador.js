@@ -118,14 +118,18 @@ function check(cond, msg) {
         tieneFn: typeof agregarMenuDesdeFoto === 'function',
       };
     });
-    check(C.pedir.includes('menu-dia-photo--add') && C.pedir.includes('agregarMenuDesdeFoto(99'),
-      'Pedir: la foto es un botón que llama agregarMenuDesdeFoto(99, this)');
+    check(C.pedir.includes('menu-dia-photo--add') && C.pedir.includes("agregarMenuDesdeFoto(99, this, 'pedir')"),
+      'Pedir: la foto es un botón que llama agregarMenuDesdeFoto(99, this, "pedir")');
     check(C.pedir.includes('role="button"') && C.pedir.includes('menu-dia-zoom'),
       'Pedir: la foto tiene role=button y un botón 🔍 para el zoom');
-    check(C.pedir.includes('cambiarCantidadMenuPedir(99,1)') && C.pedir.includes('cambiarCantidadMenuPedir(99,-1)'),
+    check(C.pedir.includes("cambiarCantidadMenu(99,1,'pedir')") && C.pedir.includes("cambiarCantidadMenu(99,-1,'pedir')"),
       'Pedir: el stepper +/− sigue presente (no se reemplazó)');
-    check(!C.reservar.includes('agregarMenuDesdeFoto') && C.reservar.includes("abrirMenuModal(99,'reservar')"),
-      'Reservar: NO cambia (sigue abriendo el picker al tocar la card)');
+    // ISS-087 (2026-09-04): Reservar dejó de tener su propio camino
+    // (abrirMenuModal) — ahora usa el mismo flujo que Pedir, tocar la foto
+    // incluido. Este check era antes lo opuesto (confirmaba que Reservar NO
+    // cambiaba); se invierte a propósito.
+    check(!C.reservar.includes('abrirMenuModal') && C.reservar.includes("agregarMenuDesdeFoto(99, this, 'reservar')"),
+      'Reservar: mismo flujo que Pedir desde ISS-087 (la foto también suma 1)');
     check(C.tieneFn, 'agregarMenuDesdeFoto está definida globalmente');
 
     // ── D. botón de tamaño de letra ──
