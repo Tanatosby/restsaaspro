@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-02
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-04
 
 **Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
@@ -78,6 +78,9 @@ completo en `deploy.md` §7. **El usuario decidió dejar para el fin de semana:*
 real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 **Pendiente, no bloqueante:**
+- **ISS-086 — sin desplegar, sin verificar en uso real.** Al volver de Yape/Plin tras copiar el
+  número, el total + la tarjeta + los 3 pasos se pliegan en una línea; el comprobante queda como
+  único acento visual. Ver sesión 2026-09-04 abajo y `issues/ISS-086-...md`.
 - Borrar el git worktree abandonado `.claude/worktrees/foamy-moseying-nebula` — el comando fue
   bloqueado por el clasificador de permisos, lo borra el usuario.
 - Fiados — ver `backlog.md`.
@@ -89,6 +92,49 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   funciona en un celular de gama media.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-09-04 — ISS-086: plegar Yape/Plin al volver (3 prototipos probados antes de codear)
+
+**Prompt del usuario:** pidió el status del proyecto (no había entrado el 03/09). Conversación
+sobre la situación general a una semana de cumplirse el mes de piloto: los dos puntos más
+incómodos siguen siendo (1) el ir-y-venir a Yape/Plin para pagar y (2) la cobranza (ISS-085, sin
+probar in situ todavía). Se decidió explorar (1) con prototipos interactivos antes de tocar
+código, según el flujo del proyecto.
+
+**Iteración de diseño (3 artifacts publicados y probados por el usuario en su celular):**
+1. *Copiar número + monto juntos* — probado y **descartado**: "va a confundir, incluso si
+   copiamos ambos por separado".
+2. *Colapsar la tarjeta de Yape al volver* — idea propuesta por el usuario a partir del bonus del
+   prototipo 1. Primera versión: bien recibida pero "se siente muy denso... 45 soles abajo
+   también dice 45.50" (el monto se repetía, 3 colores compitiendo).
+3. *v2, sin repetir el monto y sin cajas de color* — aceptado ("me gusta"). El usuario notó que
+   la app real también tiene un bloque de 3 pasos (ISS-056) que el prototipo no incluía; se
+   agregó y se confirmó que también se pliega (queda redundante apenas la persona vuelve).
+
+**Implementado — ISS-086** (`menu.html`, `menu.css`; detalle en `issues/ISS-086-...md`):
+- `copiarNumeroPago(tel, btn)` reemplaza el `onclick` inline de "Copiar número" — marca
+  `copiadoParaPago` + `pagoCopiadoTel`.
+- `visibilitychange` (real, no simulado) dispara `colapsarPagoAlVolver()` si la pestaña se oculta
+  y se vuelve a mostrar con el número ya copiado y `#pago-screen` abierta.
+- Pliega `#pago-total-wrap` (banner "Total a pagar") + `#pago-metodo-detalle` (tarjeta Yape/Plin +
+  los 3 pasos) en `#pago-resumen-vuelta`: una línea sin caja de color, "✓ Pagaste S/ X a NÚMERO" +
+  link "Ver de nuevo" (`expandirPagoDetalle()` — no se pierde nada).
+- `#pago-comprobante-wrap.pago-comprobante-en-turno` (`menu.css`) queda como único acento visual:
+  borde/fondo accent + pulso 2x (mismo patrón que `.btn-add-menu--pulse`, respeta
+  `prefers-reduced-motion`) + scroll automático.
+- `resetPagoResumenVuelta()` en `showPagoStep()` y al cambiar de método — el plegado no sobrevive
+  a un método distinto.
+- Efectivo no participa (no hay salto de app).
+- Verificación: los 3 `<script>` de `menu.html` parsean sin error de sintaxis; 478/478 jest, sin
+  regresiones (cambio frontend puro).
+
+**No implementado, descartado con feedback del usuario:** copiar número + monto en un solo texto
+al portapapeles (prototipo 1).
+
+**Pendiente:** deploy (lo hace el usuario) + verificar en un celular real saliendo de verdad a
+Yape/Plin. La cobranza (ISS-085) sigue sin probarse in situ — el usuario dijo que la prueba hoy.
 
 ---
 

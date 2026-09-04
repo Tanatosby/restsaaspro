@@ -608,3 +608,10 @@ comprobante en sí. Sin diseño aún — anotado para evaluar, no urgente.
 fue "2 pantallas" sino "no crear la orden/reserva hasta tener método + comprobante ya resueltos"
 — esa validación se conservó igual, solo se acortó a una sola pantalla (`#pago-screen` absorbió
 el resumen que antes solo vivía en `#repaso-screen`, que se eliminó). Ver `issues/ISS-081-...md`.
+
+**Actualización 2026-09-04 (ISS-086):** otra pieza replanteable sin pasarela, distinta de "menos
+pantallas": qué pasa al **volver** de Yape/Plin. El comensal ya cumplió el total, la tarjeta y los
+3 pasos (ISS-056) — mostrárselos de nuevo es puro ruido. Ahora, al detectar el regreso
+(`visibilitychange` tras copiar el número), esos 3 bloques se pliegan en una línea y el
+comprobante queda como único foco. El salto de app en sí sigue sin poder eliminarse (Gap 16 sigue
+cerrado). Ver `issues/ISS-086-...md`.

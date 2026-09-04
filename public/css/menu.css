@@ -359,6 +359,28 @@ body {
   .btn-add-menu--pulse { animation: none; }
 }
 
+/* ISS-086: al volver de Yape/Plin (visibilitychange tras copiar el número),
+   el total, la tarjeta del método y los 3 pasos se pliegan en una línea
+   (#pago-resumen-vuelta, inline en menu.html) y el comprobante pasa a ser
+   lo único con acento visual — ver colapsarPagoAlVolver() en menu.html. */
+#pago-comprobante-wrap.pago-comprobante-en-turno {
+  border: 1.5px solid var(--accent);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 14px 14px 10px;
+  animation: pagoComprobantePulse 1s ease-in-out 2;
+}
+#pago-comprobante-wrap.pago-comprobante-en-turno > label:first-child {
+  font-size: 15px;
+}
+@keyframes pagoComprobantePulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50%      { box-shadow: 0 0 0 7px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #pago-comprobante-wrap.pago-comprobante-en-turno { animation: none; }
+}
+
 .menu-secciones { padding: 1.1rem 1.25rem; }
 .seccion-block { margin-bottom: 1.1rem; }
 .seccion-block:last-child { margin-bottom: 0; }

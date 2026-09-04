@@ -330,8 +330,9 @@
 
       <!-- Monto a pagar — ISS-040. Va sticky porque el comensal lo necesita a
            la vista mientras abre Yape/Plin y mientras sube el comprobante, no
-           solo al entrar a la pantalla. -->
-      <div style="position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:0.75rem;background:var(--accent-light);border:1px solid var(--accent);border-radius:12px;padding:0.85rem 1rem;margin-bottom:1.25rem">
+           solo al entrar a la pantalla. Se oculta al volver de Yape/Plin
+           (ISS-086) — el monto queda dicho una sola vez, en el resumen. -->
+      <div id="pago-total-wrap" style="position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:0.75rem;background:var(--accent-light);border:1px solid var(--accent);border-radius:12px;padding:0.85rem 1rem;margin-bottom:1.25rem">
         <span style="font-size:14px;font-weight:700;color:var(--text)">Total a pagar</span>
         <span id="pago-total" style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--accent);white-space:nowrap">S/ 0.00</span>
       </div>
@@ -339,8 +340,18 @@
       <!-- Botones de método -->
       <div id="pago-metodos" style="display:flex;flex-direction:column;gap:0.6rem"></div>
 
-      <!-- Detalle del método seleccionado -->
+      <!-- Detalle del método seleccionado (tarjeta Yape/Plin + los 3 pasos) -->
       <div id="pago-metodo-detalle"></div>
+
+      <!-- ISS-086: al volver de Yape/Plin ya con el número copiado, todo lo
+           de arriba (total, tarjeta, 3 pasos) se pliega acá — una sola línea,
+           sin repetir el monto ni las instrucciones que ya se cumplieron.
+           Ver colapsarPagoAlVolver(). -->
+      <div id="pago-resumen-vuelta" style="display:none;align-items:baseline;gap:6px;flex-wrap:wrap;padding:2px 2px 14px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:14px">
+        <span style="color:#0a6b3f;font-weight:700">✓</span>
+        <span id="pago-resumen-texto"></span>
+        <button type="button" onclick="expandirPagoDetalle()" style="margin-left:auto;background:none;border:none;padding:4px 0;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:underline;cursor:pointer">Ver de nuevo</button>
+      </div>
 
       <!-- Upload comprobante -->
       <div id="pago-comprobante-wrap" style="display:none;margin-top:1rem;text-align:left">
@@ -451,6 +462,13 @@
   let comprobanteFile      = null;
   let codigoReservaActual  = null; // código pre-llenado en la pantalla de estado
   let estadoPollInterval   = null; // polling de la pantalla de estado
+
+  // ISS-086: si copió el número de Yape/Plin y salió de la pestaña, al volver
+  // se pliega el total + la tarjeta + los 3 pasos (ya cumplidos) y el
+  // comprobante pasa a ser lo único destacado. `pagoCopiadoTel` es el número
+  // que se mostró copiado, para el resumen de una línea.
+  let copiadoParaPago      = false;
+  let pagoCopiadoTel       = '';
 
   // ── Modal de foto del plato ─────────────────────────
   function openPhotoModal(url, nombre, descripcion) {
@@ -1732,6 +1750,7 @@ async function renderReservarContent() {
     document.getElementById('pago-foto-preview').innerHTML = '';
     document.getElementById('pago-foto').value = '';
     comprobanteFile = null;
+    resetPagoResumenVuelta(); // ISS-086 — pantalla nueva, nada que plegar todavía
 
     const wrap = document.getElementById('pago-metodos');
     wrap.innerHTML = '';
@@ -1796,6 +1815,7 @@ async function renderReservarContent() {
   function seleccionarMetodoPago(metodo) {
     pagoMetodo = metodo;
     guardarPagoPendienteLocal(); // ISS-049 — a partir de acá puede salir a pagar
+    resetPagoResumenVuelta(); // ISS-086 — cambió de método, el plegado anterior ya no aplica
     ['yape','plin','efectivo'].forEach(m => {
       const b = document.getElementById(`btn-met-${m}`);
       if (b) b.style.opacity = m === metodo ? '1' : '0.35';
@@ -1808,7 +1828,7 @@ async function renderReservarContent() {
         <div style="text-align:center;padding:1rem;background:#f0fdf4;border-radius:12px;margin-top:0.75rem">
           <div style="font-size:12px;color:#065f46;margin-bottom:4px">Yapea a este número:</div>
           <div style="font-size:1.6rem;font-weight:800;letter-spacing:3px;color:#065f46">${tel}</div>
-          <button onclick="navigator.clipboard.writeText('${tel}').then(()=>this.textContent='¡Copiado!')"
+          <button onclick="copiarNumeroPago('${tel}', this)"
              style="margin-top:0.75rem;padding:10px 22px;background:#00c46a;color:#fff;border-radius:10px;font-weight:700;border:none;cursor:pointer;font-size:14px">
             Copiar número 📋
           </button>
@@ -1824,7 +1844,7 @@ async function renderReservarContent() {
         <div style="text-align:center;padding:1rem;background:#eff6ff;border-radius:12px;margin-top:0.75rem">
           <div style="font-size:12px;color:#1e40af;margin-bottom:4px">Plínea a este número:</div>
           <div style="font-size:1.6rem;font-weight:800;letter-spacing:3px;color:#1e40af">${tel}</div>
-          <button onclick="navigator.clipboard.writeText('${tel}').then(()=>this.textContent='¡Copiado!')"
+          <button onclick="copiarNumeroPago('${tel}', this)"
              style="margin-top:0.75rem;padding:10px 22px;background:#2563eb;color:#fff;border-radius:10px;font-weight:700;border:none;cursor:pointer;font-size:14px">
             Copiar número 📋
           </button>
@@ -1846,6 +1866,65 @@ async function renderReservarContent() {
       btnEfectivo.textContent = '✓ Confirmar — pagaré en efectivo';
     }
   }
+
+  // ISS-086 — "copiaste el número y saliste a pagar": desde acá arranca el
+  // plegado al volver. `copiarNumeroPago` reemplaza el onclick inline que
+  // solo copiaba al portapapeles; ahora además guarda el número copiado y
+  // arma el disparador de colapsarPagoAlVolver() (ver visibilitychange más
+  // abajo).
+  function copiarNumeroPago(tel, btn) {
+    navigator.clipboard.writeText(tel).then(() => { btn.textContent = '¡Copiado!'; }).catch(() => {});
+    copiadoParaPago = true;
+    pagoCopiadoTel = tel;
+  }
+
+  // Al volver de Yape/Plin (la pestaña se oculta y se vuelve a mostrar
+  // después de copiar el número), pliega el total + la tarjeta + los 3
+  // pasos — ya se cumplieron — en un resumen de una línea, y resalta el
+  // comprobante como lo único que falta.
+  function colapsarPagoAlVolver() {
+    const detalle = document.getElementById('pago-metodo-detalle');
+    if (!copiadoParaPago || !detalle || detalle.style.display === 'none') return;
+
+    document.getElementById('pago-total-wrap').style.display = 'none';
+    detalle.style.display = 'none';
+    const total = document.getElementById('pago-total').textContent;
+    document.getElementById('pago-resumen-texto').innerHTML =
+      `Pagaste <b>${esc(total)}</b> a <b>${esc(pagoCopiadoTel)}</b>`;
+    document.getElementById('pago-resumen-vuelta').style.display = 'flex';
+
+    const comprobante = document.getElementById('pago-comprobante-wrap');
+    if (comprobante.style.display !== 'none') {
+      comprobante.classList.remove('pago-comprobante-en-turno');
+      void comprobante.offsetWidth; // reinicia la animación si ya estaba puesta
+      comprobante.classList.add('pago-comprobante-en-turno');
+      comprobante.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  // "Ver de nuevo" — por si copió mal, pagó a otro número, o simplemente
+  // quiere revisar. No pierde nada: el número y los 3 pasos siguen ahí.
+  function expandirPagoDetalle() {
+    document.getElementById('pago-total-wrap').style.display = '';
+    document.getElementById('pago-metodo-detalle').style.display = '';
+    document.getElementById('pago-resumen-vuelta').style.display = 'none';
+  }
+
+  function resetPagoResumenVuelta() {
+    copiadoParaPago = false;
+    pagoCopiadoTel = '';
+    document.getElementById('pago-total-wrap').style.display = '';
+    document.getElementById('pago-metodo-detalle').style.display = '';
+    document.getElementById('pago-resumen-vuelta').style.display = 'none';
+    document.getElementById('pago-comprobante-wrap').classList.remove('pago-comprobante-en-turno');
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' &&
+        document.getElementById('pago-screen').classList.contains('show')) {
+      colapsarPagoAlVolver();
+    }
+  });
 
   document.getElementById('pago-foto').addEventListener('change', async function() {
     const original = this.files[0];
