@@ -65,10 +65,12 @@ function reservasDeHoy() {
   check(true, 'con nombre → avanza a la pantalla de pago');
   check(ordenesDeHoy().length === antes1, 'la orden AÚN no existe en la BD al mostrar la pantalla de pago (antes se creaba acá)');
 
-  // ISS-081: el resumen de solo lectura ya se ve en esta misma pantalla —
-  // antes solo aparecía en el repaso, ahora eliminado.
+  // ISS-081: el resumen de solo lectura vive en esta misma pantalla — antes
+  // solo aparecía en el repaso, ahora eliminado. Colapsado detrás de un link
+  // desde el día 16 del piloto (feedback probando Reservar) — sigue en el
+  // DOM, solo oculto hasta tocar "Ver mi pedido".
   const itemsResumen = await page.locator('#pago-items .cart-item').count();
-  check(itemsResumen > 0, `el resumen del pedido ya se ve en la pantalla de pago (${itemsResumen} ítem(s))`);
+  check(itemsResumen > 0, `el resumen del pedido está armado en la pantalla de pago (${itemsResumen} ítem(s))`);
 
   await page.click('#btn-met-plin');
   await page.waitForTimeout(200);

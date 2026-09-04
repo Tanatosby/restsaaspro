@@ -364,11 +364,20 @@
       </div>
 
       <!-- Resumen de solo lectura — antes solo se veía en el repaso, ahora
-           queda visible acá mismo antes de enviar. Sin botones de editar:
-           para eso ya está el carrito, un paso atrás. -->
+           queda disponible acá mismo antes de enviar. Sin botones de editar:
+           para eso ya está el carrito, un paso atrás. Colapsado detrás de un
+           link (ISS-088 — el usuario, probando ISS-087, no quería texto
+           suelto justo debajo de adjuntar el comprobante — solo la acción
+           de subir la foto). -->
       <div id="pago-items-wrap" style="margin-top:1.25rem;text-align:left">
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px">Tu pedido</div>
-        <div id="pago-items"></div>
+        <button type="button" onclick="togglePagoItems()" id="btn-toggle-pedido"
+          style="background:none;border:none;padding:0;min-height:44px;display:inline-flex;align-items:center;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:underline;cursor:pointer">
+          Ver mi pedido
+        </button>
+        <div id="pago-items-collapse" style="display:none;margin-top:4px">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px">Tu pedido</div>
+          <div id="pago-items"></div>
+        </div>
       </div>
 
       <!-- Acciones -->
@@ -1725,6 +1734,8 @@ function renderReservarCards() {
     document.getElementById('pago-foto').value = '';
     comprobanteFile = null;
     resetPagoResumenVuelta(); // ISS-086 — pantalla nueva, nada que plegar todavía
+    document.getElementById('pago-items-collapse').style.display = 'none';
+    document.getElementById('btn-toggle-pedido').textContent = 'Ver mi pedido';
 
     const wrap = document.getElementById('pago-metodos');
     wrap.innerHTML = '';
@@ -1891,6 +1902,17 @@ function renderReservarCards() {
     document.getElementById('pago-metodo-detalle').style.display = '';
     document.getElementById('pago-resumen-vuelta').style.display = 'none';
     document.getElementById('pago-comprobante-wrap').classList.remove('pago-comprobante-en-turno');
+  }
+
+  // ISS-088: probando ISS-087 (Reservar), sobraba texto justo debajo de
+  // adjuntar el comprobante — el resumen "Tu pedido" (ISS-081) quedaba ahí
+  // siempre visible. Se colapsa detrás de este link: nada de texto por
+  // defecto, sigue disponible con un toque.
+  function togglePagoItems() {
+    const box = document.getElementById('pago-items-collapse');
+    const abierto = box.style.display !== 'none';
+    box.style.display = abierto ? 'none' : 'block';
+    document.getElementById('btn-toggle-pedido').textContent = abierto ? 'Ver mi pedido' : 'Ocultar mi pedido';
   }
 
   document.addEventListener('visibilitychange', () => {

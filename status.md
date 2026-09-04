@@ -51,13 +51,17 @@ ISS-085 el mismo día (no lo pospuso). Sin verificar en uso real:
 **Deploy `4ac2a5b` confirmado el 2026-09-04.** Solo documentación, sin cambios de código.
 
 **Deploy `805fdd9` confirmado el 2026-09-04 (2).** **ISS-086** + **ISS-087**, los dos de la
-sesión de hoy, en el mismo deploy — el usuario no esperó a acumular más. Sin verificar en uso
-real:
+sesión de hoy, en el mismo deploy — el usuario no esperó a acumular más.
 - **ISS-086** — al volver de Yape/Plin tras copiar el número, el total + la tarjeta + los 3 pasos
-  se pliegan en una línea; el comprobante queda como único acento visual. Falta probarlo saliendo
-  de verdad a Yape/Plin en un celular real.
+  se pliegan en una línea; el comprobante queda como único acento visual. **Sin verificar en uso
+  real** — falta probarlo saliendo de verdad a Yape/Plin en un celular real.
 - **ISS-087** — Reservar pasa al flujo "cantidad primero" de Pedir (mismo stepper en la card,
-  tap-foto suma 1, wizard encadenado). Falta un comensal reservando con 2+ menús para confirmarlo.
+  tap-foto suma 1, wizard encadenado). **El usuario ya lo probó él mismo** (de ahí salió ISS-088,
+  abajo) — falta todavía un comensal real del piloto reservando con 2+ menús.
+
+**Sin desplegar:** **ISS-088** — el resumen "Tu pedido" en la pantalla de pago se colapsa detrás
+de un link "Ver mi pedido" (antes quedaba siempre visible justo debajo de adjuntar el
+comprobante). Ver sesión de hoy más abajo y `issues/ISS-088-...md`.
 
 ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
@@ -102,7 +106,7 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
-## 🎯 Sesión 2026-09-04 — ISS-086 (plegar Yape/Plin al volver) + ISS-087 (Reservar homologado a Pedir)
+## 🎯 Sesión 2026-09-04 — ISS-086 (plegar Yape/Plin al volver) + ISS-087 (Reservar homologado a Pedir) + ISS-088 (colapsar resumen del pedido)
 
 **Prompt del usuario:** pidió el status del proyecto (no había entrado el 03/09). Conversación
 sobre la situación general a una semana de cumplirse el mes de piloto: los dos puntos más
@@ -140,8 +144,8 @@ código, según el flujo del proyecto.
 **No implementado, descartado con feedback del usuario:** copiar número + monto en un solo texto
 al portapapeles (prototipo 1).
 
-**Pendiente ISS-086:** deploy (lo hace el usuario) + verificar en un celular real saliendo de
-verdad a Yape/Plin.
+**Pendiente ISS-086:** verificar en un celular real saliendo de verdad a Yape/Plin (ya
+desplegado, ver deploy `805fdd9` más arriba).
 
 ---
 
@@ -169,10 +173,31 @@ que tocaba homogeneizar.
   esperado). `test-gate-pago.js` no corrió limpio por un dato preexistente de esta BD de
   desarrollo (Yape/Plin desactivados en el restaurante #1), no relacionado a este cambio.
 
-**Pendiente ISS-087:** deploy + verificar en uso real (un comensal reservando con 2+ menús).
+**Pendiente ISS-087:** verificar en uso real (un comensal reservando con 2+ menús) — ya
+desplegado.
 
 La cobranza (ISS-085) sigue sin probarse in situ — el usuario dijo que la prueba hoy, sin
 novedades todavía en esta sesión.
+
+---
+
+**Tercera parte de la sesión — ISS-088.** El usuario probó ISS-087 (Reservar) y dio feedback: en
+la pantalla de pago, justo debajo de "Adjuntar comprobante" aparecía siempre el resumen "Tu
+pedido" (ISS-081) — pedía que no hubiera texto ahí, solo la acción de subir la foto. Se preguntó
+entre 3 opciones (eliminarlo del todo / colapsarlo detrás de un link / moverlo más arriba) —
+eligió **colapsarlo detrás de un link**.
+
+**Implementado — ISS-088** (`menu.html`; detalle en `issues/ISS-088-...md`):
+- `#pago-items-wrap` pasa de mostrar siempre "Tu pedido" + la lista, a un botón **"Ver mi
+  pedido"** (`togglePagoItems()`, 44px de alto) que despliega `#pago-items-collapse` y cambia a
+  "Ocultar mi pedido". `showPagoStep()` reinicia el colapso a cerrado en cada apertura.
+- Verificación: 478/478 jest + sin regresión en `test-iss048-volver-pago` (15/15),
+  `test-pedir-cantidad-primero` (24/24), `test-reservar-cantidad-primero` (21/21).
+  `test-gate-pago.js`: el check del resumen del pedido sigue en verde (ajustado el texto — el
+  ítem sigue armado en el DOM, solo colapsado); el resto sigue con la falla preexistente de
+  Yape/Plin desactivados en el restaurante #1 de esta BD de desarrollo.
+
+**Pendiente ISS-088:** deploy + verificar en uso real.
 
 ---
 
