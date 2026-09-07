@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-04
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-07
 
 **Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
@@ -35,6 +35,7 @@ por el usuario:
 | 2026-09-02 (2) | `9af4255..81358e0` | **ISS-084** (tocar la foto del menú suma 1 + botón "🔤 Aumentar letra") e **ISS-085** ("✅ Ya pagó" en "Listos" para Yape/Plin + buscador en "Por cobrar"). `git pull` fast-forward, `pm2 restart` → online (↺ 63, mem 63.9 MB). El `curl http://localhost:3000/health` no imprimió salida en el pegado — el proceso quedó online igual. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-04 | `81358e0..4ac2a5b` | Solo documentación — encuesta de ISS-081 (`23457c0`) + registro del deploy anterior (`4ac2a5b`), ningún cambio de código. `git pull` fast-forward, `pm2 restart` → online (↺ 64, mem 60.7 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). **Ojo:** este deploy es anterior al commit de ISS-086 de esta misma sesión — no lo incluye, ver fila siguiente. |
 | 2026-09-04 (2) | `4ac2a5b..805fdd9` | **ISS-086** (plegar Yape/Plin al volver: total + tarjeta + 3 pasos en una línea, comprobante como único acento) e **ISS-087** (Reservar pasa al flujo "cantidad primero" de Pedir — stepper en la card, tap-foto suma 1, wizard encadenado; se retiró el atajo "+1 mismo menú" que solo le quedaba a Reservar). `git pull` fast-forward, `pm2 restart` → online (↺ 65, mem 62.3 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). |
+| 2026-09-07 | `805fdd9..bda3610` | **ISS-088** — el resumen "Tu pedido" en la pantalla de pago se colapsa detrás de un link "Ver mi pedido" (antes quedaba siempre visible bajo el adjuntar-comprobante). `git pull` fast-forward, `pm2 restart` → online (↺ 66, mem 61.9 MB), `curl /health` → `{"status":"ok","uptime":2.9}`. Confirmado por el usuario (log de consola SSH). |
 
 **Deploy `9af4255` confirmado el 2026-09-02.** Sin verificar en uso real: ISS-082 (overlay de
 Términos en el primer ingreso del owner) e ISS-083 (subida de fotos en un celular de gama baja
@@ -59,9 +60,10 @@ sesión de hoy, en el mismo deploy — el usuario no esperó a acumular más.
   tap-foto suma 1, wizard encadenado). **El usuario ya lo probó él mismo** (de ahí salió ISS-088,
   abajo) — falta todavía un comensal real del piloto reservando con 2+ menús.
 
-**Sin desplegar:** **ISS-088** — el resumen "Tu pedido" en la pantalla de pago se colapsa detrás
-de un link "Ver mi pedido" (antes quedaba siempre visible justo debajo de adjuntar el
-comprobante). Ver sesión de hoy más abajo y `issues/ISS-088-...md`.
+**Deploy `bda3610` confirmado el 2026-09-07.** **ISS-088** — el resumen "Tu pedido" en la pantalla
+de pago se colapsa detrás de un link "Ver mi pedido" (antes quedaba siempre visible justo debajo
+de adjuntar el comprobante). Ver sesión del 2026-09-04 más abajo y `issues/ISS-088-...md`. **Sin
+verificar en uso real** — falta un comensal del piloto pagando con el resumen ya colapsado.
 
 ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
