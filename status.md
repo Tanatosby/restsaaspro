@@ -102,9 +102,46 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   `menupro.tech/<slug>` con el slug real.
 - **Pensionistas recién desplegado, sin usar todavía:** falta que la dueña dé de alta al
   primer pensionista real y le pase credenciales; confirmar en uso real que `pensionista.html`
-  funciona en un celular de gama media.
+  funciona en un celular de gama media. **ISS-060 (acceso) ya implementado 2026-09-07, sin
+  desplegar** — link "¿Eres pensionista?" en `menu.html` + botón de instalar PWA en
+  `pensionista.html`.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-09-07 — ISS-060 (acceso del pensionista a su pantalla)
+
+**Prompt del usuario:** pidió el status; se registró el deploy `bda3610` (ISS-088, confirmado
+por consola SSH). Luego pidió "¿qué sigue en el backlog?" y eligió empezar por **ISS-060**
+("el ISS-059 no ha sido solicitado, pero el ISS-060 sí me gustaría añadirlo").
+
+**Contexto:** ISS-060 estaba diagnosticado y decidido desde el 2026-08-21 (Día 8 del piloto, la
+dueña preguntó cómo bajan la app sus pensionistas). Opción C ya elegida: link visible en
+`menu.html` en vez de una segunda URL que el dueño tenga que dictar.
+
+**Implementado (frontend puro, sin backend):**
+- **`menu.html`** — pill `<a class="btn-consultar" href="/login.html">🧾 ¿Eres pensionista?</a>`
+  en la fila del header, junto a "📋 Consultar mi reserva" y "🔤 Aumentar letra". `login.html`
+  ya redirige el rol `pensionista` a `/pensionista.html` (`ROLE_REDIRECT`) — no hizo falta
+  tocar nada más de ese lado. `menu.html` **no** carga `pwa-install.js` (login.html ya trae su
+  botón de instalar).
+- **`pensionista.html`** — `<script src="/js/widgets/pwa-install.js?v=__BUILD__">` en `<head>`
+  (captura `beforeinstallprompt` temprano) + botón `#btn-instalar-app` ("📲 Instalar app en mi
+  celular") en fila propia bajo `.pen-brand-row`, oculto salvo que la PWA sea instalable (lo
+  maneja el widget; en iOS abre el instructivo manual). `PwaInstall.attach()` al final del
+  script inline. Con la sesión de 30 días, instalar una vez evita reingresar seguido.
+- **CSS** — `.btn-consultar` (`menu.css`) subió de `min-height:34px` a `44px` (touch target
+  obligatorio, mobile-first) + `text-decoration:none` porque ahora la comparte un `<a>`. Nueva
+  clase `.pen-install-btn` en `pensionista.css` (pill accent full-width, 44px).
+
+**Infra:** sin bump manual — `pwa-install.js` y `pensionista.html` ya estaban en el precache del
+SW y en el hash de `BUILD` (cubre `js/` y los HTML).
+
+**Verificación:**
+- `scripts/test-iss060-acceso-pensionista.js` (nuevo) — 13/13.
+- Sin regresión: `test-pwa-install.js` 9/9, `test-pensionista-cliente.js` 29/29, jest 478/478.
+- **Pendiente:** deploy + verlo usado por un pensionista real del piloto.
 
 ---
 

@@ -8,7 +8,7 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 > (`conversacion_*.md`) y por lo tanto **no viajaba entre las 2 laptops del usuario**. Este archivo sí
 > está en git: es la copia viva del backlog. Actualizarlo al cerrar cada sesión.
 
-**Última actualización:** 2026-09-02
+**Última actualización:** 2026-09-07
 
 ---
 
@@ -41,7 +41,7 @@ ISS-046, commit `a47d132` — ver `status.md`).
 | ~~ISS-049~~ | ~~El pedido se pierde si la pestaña se recarga sola al salir a pagar~~ | ✅ **Hecho y desplegado 2026-08-19** (`e7fc697`). Prioridad alta a pedido explícito del usuario. Reportado por la dueña, Día 5 del piloto: *"si se les reinicia cada vez que pagan van a aburrirse de usar la app"* — ver `ISS-049` |
 | ~~ISS-050~~ | ~~El número de pedido que ve el comensal no coincide con el de la dueña~~ | ✅ **Hecho y desplegado 2026-08-19** (`e7fc697`). Reportado por una clienta ("mi orden me sale 96"), Día 5 — ver `ISS-050` |
 | **ISS-059** | Sin forma de revertir un pedido cancelado por error — la dueña quiere que vuelva a contar como venta | 🔴 Alta. Diagnosticado 2026-08-21 (Día 8): a diferencia de ISS-055, el backend bloquea explícitamente cualquier cambio desde `es_cancelado` y cancelar devuelve stock. Sin implementar — ver `ISS-059` |
-| **ISS-060** | Pensionistas sin camino claro a `pensionista.html` (pregunta de la dueña sobre Play Store) | 🟡 Media. Se descartó Play Store; decidido con el usuario un enlace "¿Eres pensionista?" en `menu.html` + botón de instalar PWA en `pensionista.html`. Sin implementar — ver `ISS-060` |
+| ~~ISS-060~~ | ~~Pensionistas sin camino claro a `pensionista.html`~~ | ✅ **Hecho 2026-09-07** (opción C) — link "🧾 ¿Eres pensionista?" en el header de `menu.html` → `/login` + botón de instalar PWA en `pensionista.html`. Frontend puro, 13/13 E2E nuevo + sin regresión. Pendiente de deploy y de verlo usado por un pensionista real — ver `ISS-060` |
 | ~~ISS-061~~ | ~~Status "En preparación" poco claro para el cliente~~ | ✅ **Hecho y desplegado 2026-08-24**. Día 9 del piloto — ver `ISS-061` |
 | ~~ISS-062~~ | ~~Zona Cocina de la Cola del día sin botón "Listo"~~ | ✅ **Hecho y desplegado 2026-08-24**. Día 9 del piloto, simétrico con ISS-055 — ver `ISS-062` |
 | ~~ISS-063~~ | ~~Reservas: la carta debía mostrarse antes que el formulario de datos~~ | ✅ **Hecho y desplegado 2026-08-24**. Día 9 del piloto, mockup aprobado antes de codear — ver `ISS-063` |
@@ -531,7 +531,7 @@ La dueña preguntó cómo bajan la app sus pensionistas / si convenía Play Stor
 no hay QR ni link ni ruta con el nombre del restaurante — el único camino es que el dueño
 dicte de palabra `menupro.tech/login`. Se descartó Play Store; decisión tomada con el usuario:
 enlace "¿Eres pensionista?" en `menu.html` + botón `PwaInstall` en `pensionista.html`.
-Diagnosticado y decidido, sin implementar — ver `ISS-060`.
+✅ **Implementado 2026-09-07** — ver `ISS-060`. Pendiente de deploy y de uso real.
 
 ---
 

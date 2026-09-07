@@ -21,6 +21,20 @@
 .pen-logout:hover { color: var(--danger); }
 .pen-pwd-btn:hover { color: var(--accent); }
 
+/* Botón "Instalar app" (ISS-060) — el widget PwaInstall lo muestra solo si la
+   PWA es instalable y no está ya instalada, así que casi siempre está oculto.
+   Va en su propia fila (no cabe en .pen-actions a 360px). */
+.pen-install-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; min-height: 44px; margin-bottom: 0.65rem;
+  background: var(--accent-light); color: var(--accent);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--r-pill); font-family: var(--font);
+  font-size: 13.5px; font-weight: 800; cursor: pointer;
+  transition: all var(--t-fast);
+}
+.pen-install-btn:active { transform: scale(0.985); background: var(--accent); color: #fff; }
+
 /* ── Barra de saldo — el dato que el pensionista viene a mirar ── */
 .pen-saldo-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;

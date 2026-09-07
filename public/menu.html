@@ -97,12 +97,18 @@
       <span style="flex:1">🔔 Mejoramos la forma de elegir tu menú: primero elegís cuántos vas a pedir, y después los vas configurando uno por uno.</span>
       <button type="button" onclick="cerrarAvisoFlujoPedir()" aria-label="Cerrar aviso" style="background:none;border:none;color:inherit;opacity:0.7;font-size:16px;cursor:pointer;line-height:1;padding:0;flex-shrink:0">✕</button>
     </div>
-    <!-- Consultar reserva + tamaño de letra (siempre visibles) -->
+    <!-- Consultar reserva + tamaño de letra + acceso pensionista (siempre visibles) -->
     <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:0.5rem;margin-bottom:0.5rem">
       <button class="btn-font-scale" id="btn-font-scale" onclick="cyclarFontScale()" aria-label="Tamaño de letra: Normal. Toca para agrandar" title="Cambiar tamaño de letra">🔤 Aumentar letra</button>
       <button class="btn-consultar" onclick="showEstadoReserva(null)">
         📋 Consultar mi reserva
       </button>
+      <!-- ISS-060: el pensionista no tenía cómo llegar a su pantalla — solo
+           que el dueño le dictara la URL de /login. Este link le da el camino
+           desde el mismo enlace del restaurante que ya usa. -->
+      <a class="btn-consultar" href="/login.html">
+        🧾 ¿Eres pensionista?
+      </a>
     </div>
     <!-- Category pills (only in pedir mode) -->
     <div class="cat-nav" id="cat-nav"></div>

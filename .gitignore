@@ -28,3 +28,7 @@ conversacion_*.md
 .idea/
 Thumbs.db
 
+
+# Screenshots de salida de los tests E2E
+scripts/_pwa-test-shots/
+scripts/_*-shots/

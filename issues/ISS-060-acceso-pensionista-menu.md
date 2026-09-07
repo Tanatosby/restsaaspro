@@ -1,6 +1,7 @@
 # ISS-060 — Pensionistas sin un camino claro para llegar a `pensionista.html`
 
-**Estado:** 🔍 **Diagnosticado y decidido 2026-08-21, sin implementar.**
+**Estado:** ✅ **Resuelto 2026-09-07** (opción C). Pendiente de deploy y de verlo usado por un
+pensionista real.
 **Módulo:** `public/menu.html`, `public/pensionista.html`.
 **Prioridad:** 🟡 Media — el módulo funciona una vez adentro; el problema es llegar ahí.
 **Origen:** piloto #1, Día 8 (2026-08-21). La dueña preguntó cómo bajan la app sus pensionistas
@@ -46,16 +47,33 @@ Se plantearon 3 opciones al usuario:
 
 **Elegida: C.**
 
-## Solución propuesta (sin implementar)
+## Solución implementada (2026-09-07)
 
-1. Botón "🧾 ¿Eres pensionista? Inicia sesión" en el header de `menu.html`, junto a "📋
-   Consultar mi reserva" (misma fila, mismo patrón visual) → enlaza a `/login`.
-2. Agregar el widget `PwaInstall` a `pensionista.html` — hoy solo tiene el `<link
-   rel="manifest">`, sin botón de instalar. Con la sesión de 30 días, instalar una vez alcanza
-   para no repetir el login seguido.
-3. Verificar mobile-first (touch target 44px, sin overflow a 360px) en el botón nuevo.
+1. **`menu.html`** — pill `<a class="btn-consultar" href="/login.html">🧾 ¿Eres pensionista?</a>`
+   en la misma fila que "📋 Consultar mi reserva" y "🔤 Aumentar letra" (header, siempre
+   visible). Reusa la clase `.btn-consultar` — mismo patrón visual. No carga `pwa-install.js`:
+   `login.html` ya redirige el rol `pensionista` a `/pensionista.html` (`ROLE_REDIRECT`) y ya
+   trae su propio botón de instalar.
+2. **`pensionista.html`** — `<script src="/js/widgets/pwa-install.js?v=__BUILD__">` en `<head>`
+   (captura `beforeinstallprompt` temprano) + botón `#btn-instalar-app` ("📲 Instalar app en mi
+   celular") en su propia fila bajo `.pen-brand-row`, oculto salvo que la PWA sea instalable
+   (lo maneja el widget; en iOS abre el instructivo manual). `PwaInstall.attach()` al final del
+   script inline.
+3. **CSS** — `.btn-consultar` subió de `min-height:34px` a `44px` (touch target obligatorio) +
+   `text-decoration:none` (por el `<a>`). Nueva clase `.pen-install-btn` en `pensionista.css`
+   (pill accent full-width, 44px).
 
-## Verificación pendiente
+**Infra:** `pwa-install.js` y `pensionista.html` ya estaban en el precache del SW y en el hash
+de `BUILD` (cubre `js/` y los HTML) → sin bump manual. **Sin cambios de backend.**
 
-Sin implementar todavía — queda para una próxima sesión. Sin impacto en `pensionista.md` (las
-decisiones de negocio del módulo siguen cerradas, esto es puramente de descubribilidad).
+## Verificación
+
+- `scripts/test-iss060-acceso-pensionista.js` (nuevo) — 13/13: el link existe/es táctil/navega
+  a login; el botón de instalar está oculto hasta `beforeinstallprompt`, luego aparece (≥44px)
+  y al click dispara el prompt.
+- Sin regresión: `test-pwa-install.js` 9/9, `test-pensionista-cliente.js` 29/29, jest 478/478.
+- **Pendiente:** deploy + verlo usado por un pensionista real del piloto (dar de alta + pasar
+  credenciales + confirmar que instala la PWA en un celular de gama media).
+
+Sin impacto en `pensionista.md` (las decisiones de negocio del módulo siguen cerradas, esto es
+puramente de descubribilidad).

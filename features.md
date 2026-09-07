@@ -142,6 +142,17 @@ insuficiente bloquea con mensaje claro; cuenta dada de baja muestra la pantalla 
 sesión redirige a login; sin overflow a 360px; touch targets ≥44px) + 449/449 jest +
 `test-panel-pensionistas` 30/30 y `test-modalidad-mixta` 19/19 sin regresiones.
 
+### Acceso a la pantalla — ISS-060 ✅ 2026-09-07
+
+El pensionista no tenía cómo llegar: no hay QR ni URL con el nombre del restaurante, solo que el
+dueño dictara `menupro.tech/login`. Opción C (decidida el 2026-08-21): link **"🧾 ¿Eres
+pensionista?"** en el header de `menu.html` (el mismo enlace del restaurante que el comensal ya
+usa) → `/login.html`, que ya redirige el rol a `/pensionista.html`. Además, `pensionista.html`
+suma el widget `PwaInstall` (botón "📲 Instalar app", oculto salvo que la PWA sea instalable; en
+iOS abre el instructivo) — con la sesión de 30 días, instalar una vez evita reingresar seguido.
+`.btn-consultar` subió a 44px de paso. Frontend puro, sin backend.
+`scripts/test-iss060-acceso-pensionista.js` 13/13 + sin regresión. Pendiente: deploy y uso real.
+
 ---
 
 ## Pensionistas — Fase 1: panel del owner ✅ Completado 2026-08-19

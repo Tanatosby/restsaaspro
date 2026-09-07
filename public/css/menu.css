@@ -177,14 +177,16 @@ body {
   white-space: nowrap;
 }
 
-/* Botón "Consultar mi reserva" */
+/* Botón "Consultar mi reserva" y "¿Eres pensionista?" (ISS-060) — mismo pill.
+   min-height 44px: touch target mínimo obligatorio (mobile-first). El <a> del
+   acceso pensionista comparte esta clase, de ahí el text-decoration:none. */
 .btn-consultar {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   background: color-mix(in srgb, var(--accent-light) 85%, transparent);
   border: 1.5px solid var(--accent); border-radius: var(--r-pill);
   padding: 6px 14px; font-size: 0.75rem; font-weight: 700; color: var(--accent);
   cursor: pointer; font-family: var(--font); transition: all var(--t-fast);
-  min-height: 34px;
+  min-height: 44px; text-decoration: none;
 }
 .btn-consultar:active { transform: scale(0.96); background: var(--accent); color: #fff; }
 

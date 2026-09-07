@@ -18,6 +18,10 @@
   <link rel="stylesheet" href="/css/menu.css?v=__BUILD__">
   <link rel="stylesheet" href="/css/pensionista.css?v=__BUILD__">
   <script src="/js/session.js?v=__BUILD__"></script>
+  <!-- PwaInstall va en <head> para capturar `beforeinstallprompt` apenas carga
+       (ISS-060: el pensionista llega acá desde /login y le conviene instalar
+       la app una vez — con la sesión de 30 días no reingresa seguido). -->
+  <script src="/js/widgets/pwa-install.js?v=__BUILD__"></script>
 
   <!-- ── Dark mode auto (sin flash) — igual que menu.html ── -->
   <script>
@@ -42,6 +46,9 @@
         <button class="pen-logout" onclick="logout()">Salir ⏻</button>
       </div>
     </div>
+    <!-- ISS-060: instalar la PWA. Oculto salvo que sea instalable y no esté
+         ya instalada — lo maneja el widget PwaInstall. -->
+    <button class="pen-install-btn" id="btn-instalar-app" hidden>📲 Instalar app en mi celular</button>
     <div class="pen-saldo-bar" id="pen-saldo-bar">
       <div class="pen-saldo-who"><span class="hi">Pensionista</span><span class="name" id="pen-nombre">—</span></div>
       <div class="pen-saldo-amt"><span class="lbl">Tu saldo</span><br><span class="num" id="pen-saldo-num">S/ 0.00</span></div>
@@ -717,6 +724,11 @@
       mostrarError(e.message);
     }
   }
+
+  // ── Botón "Instalar app" (widget PwaInstall, ISS-060) ──
+  // Aparece solo si la PWA es instalable y no está ya instalada. En iOS abre
+  // el instructivo manual ("Añadir a pantalla de inicio").
+  if (window.PwaInstall) PwaInstall.attach(document.getElementById('btn-instalar-app'));
 
   // ── Start ────────────────────────────────────────────
   init();
