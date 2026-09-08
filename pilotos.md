@@ -943,6 +943,40 @@ bloque.
 
 ---
 
+### Día 16 (2026-09-07, lunes) — servicio sin quejas + pagos Yape/Plin "cada vez mejor manejados"
+
+Contado por el usuario el 2026-09-08, sin visita en persona: **"ayer no hubo ninguna molestia por
+parte de los comensales"**, y **hubo pagos por Yape y Plin, "cada vez mejor manejados"**. Servicio
+normal de lunes (el local no abre domingos, así que el 06/09 no tuvo operación).
+
+**Por qué importa:** casi toda la tanda de septiembre toca el lado del comensal y estaba sin
+validar en servicio real —
+[ISS-084](issues/ISS-084-foto-menu-suma-boton-letra.md) (tap en la foto del menú = +1),
+[ISS-086](issues/ISS-086-plegar-yape-al-volver.md) (plegar la tarjeta de Yape/Plin al volver),
+[ISS-087](issues/ISS-087-reservar-cantidad-primero.md) (Reservar con el flujo "cantidad primero") e
+[ISS-088](issues/ISS-088-colapsar-resumen-pedido-pago.md) (resumen "Tu pedido" colapsado en pago).
+
+- **Pagos por transferencia validados del lado comensal (sin quejas):** hubo Yape y Plin reales
+  con el plegado de ISS-086 y el resumen colapsado de ISS-088 ya en producción. El usuario los
+  describe **"cada vez mejor manejados"** — la curva de todo el trabajo acumulado sobre la pantalla
+  de pago (ISS-040, ISS-049, ISS-056, ISS-086, ISS-088) está subiendo, no es un cambio aislado.
+- Un servicio sin quejas del lado cliente es la primera señal de que ISS-084/087 tampoco rompieron
+  ni generaron fricción visible.
+
+**Lo que esta señal NO confirma todavía:**
+- Que la dueña haya cerrado bien los cobros — [ISS-085](issues/ISS-085-ya-pago-listos-buscador-cobrar.md)
+  ("✅ Ya pagó" en Listos) sigue sin probarse con ella presente (la acumulación de ~39 en "Por
+  cobrar" era del lado dueña, no comensal).
+- Nada del lado de pensionistas — [ISS-060](issues/ISS-060-acceso-pensionista-menu.md) recién se
+  desplegó el 2026-09-08 (el día después de este servicio).
+
+**Contexto de calendario:** el 2026-09-07 cae en el checkpoint de 3-4 semanas que se fijó el
+2026-08-12 para sacar conclusiones sobre el cuaderno.
+
+**Sin cambios de código.**
+
+---
+
 ## Plantilla para el próximo piloto
 
 ```

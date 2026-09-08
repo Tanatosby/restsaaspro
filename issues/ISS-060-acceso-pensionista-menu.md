@@ -1,7 +1,7 @@
 # ISS-060 — Pensionistas sin un camino claro para llegar a `pensionista.html`
 
-**Estado:** ✅ **Resuelto 2026-09-07** (opción C). Pendiente de deploy y de verlo usado por un
-pensionista real.
+**Estado:** ✅ **Resuelto 2026-09-07** (opción C). **Desplegado 2026-09-08** (`fdc9877`). Falta
+verlo usado por un pensionista real.
 **Módulo:** `public/menu.html`, `public/pensionista.html`.
 **Prioridad:** 🟡 Media — el módulo funciona una vez adentro; el problema es llegar ahí.
 **Origen:** piloto #1, Día 8 (2026-08-21). La dueña preguntó cómo bajan la app sus pensionistas
@@ -72,7 +72,7 @@ de `BUILD` (cubre `js/` y los HTML) → sin bump manual. **Sin cambios de backen
   a login; el botón de instalar está oculto hasta `beforeinstallprompt`, luego aparece (≥44px)
   y al click dispara el prompt.
 - Sin regresión: `test-pwa-install.js` 9/9, `test-pensionista-cliente.js` 29/29, jest 478/478.
-- **Pendiente:** deploy + verlo usado por un pensionista real del piloto (dar de alta + pasar
+- **Desplegado 2026-09-08** (`fdc9877`). **Pendiente:** verlo usado por un pensionista real del piloto (dar de alta + pasar
   credenciales + confirmar que instala la PWA en un celular de gama media).
 
 Sin impacto en `pensionista.md` (las decisiones de negocio del módulo siguen cerradas, esto es

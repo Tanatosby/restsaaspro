@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-07
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-08
 
 **Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
@@ -36,6 +36,7 @@ por el usuario:
 | 2026-09-04 | `81358e0..4ac2a5b` | Solo documentación — encuesta de ISS-081 (`23457c0`) + registro del deploy anterior (`4ac2a5b`), ningún cambio de código. `git pull` fast-forward, `pm2 restart` → online (↺ 64, mem 60.7 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). **Ojo:** este deploy es anterior al commit de ISS-086 de esta misma sesión — no lo incluye, ver fila siguiente. |
 | 2026-09-04 (2) | `4ac2a5b..805fdd9` | **ISS-086** (plegar Yape/Plin al volver: total + tarjeta + 3 pasos en una línea, comprobante como único acento) e **ISS-087** (Reservar pasa al flujo "cantidad primero" de Pedir — stepper en la card, tap-foto suma 1, wizard encadenado; se retiró el atajo "+1 mismo menú" que solo le quedaba a Reservar). `git pull` fast-forward, `pm2 restart` → online (↺ 65, mem 62.3 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-07 | `805fdd9..bda3610` | **ISS-088** — el resumen "Tu pedido" en la pantalla de pago se colapsa detrás de un link "Ver mi pedido" (antes quedaba siempre visible bajo el adjuntar-comprobante). `git pull` fast-forward, `pm2 restart` → online (↺ 66, mem 61.9 MB), `curl /health` → `{"status":"ok","uptime":2.9}`. Confirmado por el usuario (log de consola SSH). |
+| 2026-09-08 | `bda3610..fdc9877` | **ISS-060** — acceso del pensionista a su pantalla: link "🧾 ¿Eres pensionista?" en el header de `menu.html` → `/login.html` (que ya redirige el rol a `/pensionista.html`) + botón "📲 Instalar app" en `pensionista.html` (oculto salvo que la PWA sea instalable). Frontend puro. `git pull` fast-forward, `pm2 restart` → online (↺ 67, mem 60.8 MB), `curl /health` → `{"status":"ok","uptime":2.8}`. Confirmado por el usuario (log de consola SSH). |
 
 **Deploy `9af4255` confirmado el 2026-09-02.** Sin verificar en uso real: ISS-082 (overlay de
 Términos en el primer ingreso del owner) e ISS-083 (subida de fotos en un celular de gama baja
@@ -54,18 +55,22 @@ ISS-085 el mismo día (no lo pospuso). Sin verificar en uso real:
 **Deploy `805fdd9` confirmado el 2026-09-04 (2).** **ISS-086** + **ISS-087**, los dos de la
 sesión de hoy, en el mismo deploy — el usuario no esperó a acumular más.
 - **ISS-086** — al volver de Yape/Plin tras copiar el número, el total + la tarjeta + los 3 pasos
-  se pliegan en una línea; el comprobante queda como único acento visual. **Sin verificar en uso
-  real** — falta probarlo saliendo de verdad a Yape/Plin en un celular real.
+  se pliegan en una línea; el comprobante queda como único acento visual. **Primera pasada en
+  servicio real el 2026-09-07 (Día 16): pagos Yape/Plin sin quejas del comensal.** Falta
+  observación directa de alguien saliendo a pagar con el plegado puesto.
 - **ISS-087** — Reservar pasa al flujo "cantidad primero" de Pedir (mismo stepper en la card,
   tap-foto suma 1, wizard encadenado). **El usuario ya lo probó él mismo** (de ahí salió ISS-088,
   abajo) — falta todavía un comensal real del piloto reservando con 2+ menús.
 
 **Deploy `bda3610` confirmado el 2026-09-07.** **ISS-088** — el resumen "Tu pedido" en la pantalla
 de pago se colapsa detrás de un link "Ver mi pedido" (antes quedaba siempre visible justo debajo
-de adjuntar el comprobante). Ver sesión del 2026-09-04 más abajo y `issues/ISS-088-...md`. **Sin
-verificar en uso real** — falta un comensal del piloto pagando con el resumen ya colapsado.
+de adjuntar el comprobante). Ver sesión del 2026-09-04 más abajo y `issues/ISS-088-...md`.
+**Primera pasada en servicio real el 2026-09-07 (Día 16): pagos Yape/Plin sin quejas del comensal.**
+Falta observación directa de un comensal pagando con el resumen ya colapsado.
 
-ISS-059 y ISS-060 siguen **diagnosticados, sin implementar** (Día 8 del piloto). **Sin verificar todavía en uso
+**ISS-059** sigue **diagnosticado, sin implementar** (Día 8 del piloto; no solicitado por el
+usuario). **ISS-060 desplegado el 2026-09-08** (`fdc9877`) — falta verlo usado por un pensionista
+real. **Sin verificar todavía en uso
 real:** ISS-069 a ISS-076 (desplegados 2026-08-25) e ISS-077 más el cambio de nombre (desplegados
 hoy) — falta confirmar con la dueña y con un comensal nuevo (deselección, tap en foto, control de
 compatibilidad, cobro en 1 clic, Cocina sin parpadeo, mesa grande, Agregar manual sola, modal de
@@ -102,11 +107,34 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   `menupro.tech/<slug>` con el slug real.
 - **Pensionistas recién desplegado, sin usar todavía:** falta que la dueña dé de alta al
   primer pensionista real y le pase credenciales; confirmar en uso real que `pensionista.html`
-  funciona en un celular de gama media. **ISS-060 (acceso) ya implementado 2026-09-07, sin
-  desplegar** — link "¿Eres pensionista?" en `menu.html` + botón de instalar PWA en
-  `pensionista.html`.
+  funciona en un celular de gama media. **ISS-060 (acceso) desplegado el 2026-09-08** (`fdc9877`)
+  — link "¿Eres pensionista?" en `menu.html` + botón de instalar PWA en `pensionista.html`. Falta
+  verlo usado por un pensionista real.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-09-08 — deploy de ISS-060 + reporte del piloto (Día 16)
+
+**Prompt del usuario:** pidió el status y contó que **el 2026-09-07 (lunes) no hubo ninguna
+molestia por parte de los comensales**. Luego pegó el log de consola SSH del deploy de ISS-060.
+
+**Deploy `fdc9877` confirmado el 2026-09-08.** **ISS-060** (acceso del pensionista a su pantalla)
+en producción — `git pull` fast-forward `bda3610..fdc9877`, `pm2 restart` → online (↺ 67, mem
+60.8 MB), `curl /health` → `{"status":"ok","uptime":2.8}`. Ver fila en la tabla de deploys y la
+sesión del 2026-09-07 más abajo. **Sin verificar en uso real** — falta un pensionista real del
+piloto entrando por el link nuevo.
+
+**Reporte del piloto — Día 16 (2026-09-07, lunes), sin visita en persona.** Servicio sin quejas
+del lado comensal, **con pagos Yape y Plin reales "cada vez mejor manejados"** (el usuario, textual).
+Es la primera señal de campo de la tanda de septiembre (ISS-084/086/087/088), toda del lado del
+cliente y hasta ahora sin validar — y en particular los pagos por transferencia salieron con el
+plegado de ISS-086 y el resumen colapsado de ISS-088 ya en producción, sin fricción reportada.
+Sigue **sin** confirmar: ISS-085 (cierre de cobros) con la dueña presente. Detalle en
+`pilotos.md` → Día 16.
+
+**Sin cambios de código en esta sesión.**
 
 ---
 
