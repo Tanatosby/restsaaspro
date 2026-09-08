@@ -115,6 +115,40 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-09-08 (2) — discusión de planes Pro/Premium + landing (sin código)
+
+**Prompt del usuario:** trajo dos skills de diseño de GitHub para evaluar si servían para la
+landing de Menú Pro (`taste-skill` y `scroll-craft`). La conversación derivó a modelo de negocio
+(planes Pro/Premium, plan Free, publicidad en `menu.html`) y a ideas para una landing premium.
+Pidió explícitamente **anotarlo como una discusión del día, para retomar** — sin implementar nada.
+
+**Qué se hizo:** solo documentación. Ningún cambio de código.
+
+- **Skills evaluadas:** ninguna aplica. `taste-skill` y `scroll-craft` están atadas a
+  React/Next/Tailwind + (scroll-craft) ffmpeg/Playwright, y su alcance son landings premium,
+  no apps de producto. Menú Pro es HTML/CSS/JS vanilla. **No se descargó nada.** Sí se
+  rescataron conceptos anti-slop para la futura landing (anotados en `vision_negocio.md` §16).
+- **Modelo de planes (discutido, no decidido):** dos planes de pago, Pro y Premium, diferenciados
+  por features + soporte. Se mapeó feature por feature dónde cortaría el gating (`reportes.js`,
+  `config.js`, módulo Pensionistas). Tabla completa + puntos de corte + preguntas abiertas en
+  `vision_negocio.md` §16 (sección nueva; la vieja §16 "Feedback de campo" pasó a §17).
+- **Verificado en código:** **no hay multi-sucursal** (un usuario = un `id_restaurante`, sin
+  selector de sucursal ni reportes consolidados) — se sacó de la lista de features Premium. La
+  BD sí es multi-tenant a nivel de datos (`id_restaurante` en todas las tablas). **Marca propia
+  sí existe** (`config.js`): nombre vía `PATCH /api/menu/config/nombre`, foto de portada vía
+  `POST/DELETE /api/menu/restaurante/foto`, colores vía `PATCH /api/menu/restaurante/config`.
+  Acuerdo: nombre en ambos planes, foto + colores solo Premium.
+- **Plan Free y landing premium:** ideas aparcadas para después del primer cliente. Detalle en
+  `vision_negocio.md` §16 y `backlog.md` §Comercial.
+
+**Docs actualizados:** `vision_negocio.md` (§16 nueva + fecha), `backlog.md` (§Comercial),
+`status.md` (esta entrada).
+
+**Pendiente:** nada inmediato. El primer cliente podría entrar el viernes 2026-09-11; para eso
+alcanza con el discurso comercial de qué vende cada plan. El gating en código es P1 posterior.
+
+---
+
 ## 🎯 Sesión 2026-09-08 — deploy de ISS-060 + reporte del piloto (Día 16)
 
 **Prompt del usuario:** pidió el status y contó que **el 2026-09-07 (lunes) no hubo ninguna

@@ -591,3 +591,34 @@ enlace "¿Eres pensionista?" en `menu.html` + botón `PwaInstall` en `pensionist
 ### Perfil de cliente a buscar
 Dueño de 25–45 años, ya usa Yape y WhatsApp Business, quizá vende por delivery, 1–2 mozos, carta que
 cambia seguido.
+
+### Discusión 2026-09-08 — planes Pro / Premium + landing (sin cerrar, para retomar)
+
+Conversación con el usuario: empezó evaluando skills de diseño para la landing (`taste-skill`,
+`scroll-craft` — ninguna aplica, atadas a React/Next; no se descargó nada) y derivó a modelo de
+planes. **Nada de esto es tarea inmediata.** Detalle completo en `vision_negocio.md` §16.
+
+Lo acordado a nivel de discurso comercial (para el posible primer cliente del viernes 2026-09-11
+alcanza con esto):
+
+- **Dos planes: Pro y Premium.** Se diferencian por features + soporte, no por límites de volumen.
+- **Pro:** menú QR, órdenes, cocina, mesas, cola del día, **reservas**, gestión de usuarios,
+  nombre propio del restaurante, reportería básica (KPIs + ganancias del día).
+- **Premium** agrega: reportería avanzada + export a Excel, marca visual (foto de portada +
+  colores del menú del cliente), módulo **Pensionistas**.
+
+Pendientes (post primer cliente, P1 en adelante):
+
+- [ ] **P1 — Gating Pro/Premium en código.** Columna `plan` en `restaurantes` → JWT → helper de
+      bloqueo backend + flags frontend. Puntos de corte ya mapeados feature por feature en
+      `vision_negocio.md` §16. El nombre del restaurante queda en ambos planes; solo la foto de
+      portada y los colores son Premium.
+- [ ] **Fijar los dos precios.** Hoy solo hay S/250/mes tentativo. Con dos planes, ese sería el
+      piso (Pro) y Premium por encima. Se cierra con el primer cliente que pague.
+- [ ] **Plan Free / demo** — idea aparcada. Menú de solo lectura con autopromoción en el pie como
+      canal de captación (no de ingreso). Monetizarlo con AdSense se descartó (números no dan +
+      degrada el menú). Retomar más adelante.
+- [ ] **Landing premium** — rehacer `public/landing.html` como pieza propia con acabado más
+      cuidado. NO antes del viernes (prioridad = cerrar y onboardear al primer cliente). Hacerla
+      la semana siguiente con testimonio real + capturas del piloto. Fijar pricing antes (la tabla
+      manda la estructura). Conceptos y referencias en `vision_negocio.md` §16.

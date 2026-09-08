@@ -2,7 +2,7 @@
 
 > Este documento es la brújula del proyecto. Debe leerse al inicio de cada sesión de desarrollo
 > para garantizar que cada decisión técnica va en la dirección correcta.
-> Última actualización: 2026-08-19
+> Última actualización: 2026-09-08
 
 ---
 
@@ -536,7 +536,85 @@ Es un punto de contacto distinto (y activo) del principio 9 de la sección 11 �
 
 ---
 
-## 16. Feedback de campo — visitas a restaurantes piloto
+## 16. Planes: Pro / Premium — discusión 2026-09-08 (sin cerrar)
+
+> **Estado: discutido, no decidido, sin implementar.** Salió de una conversación con el usuario
+> el 2026-09-08 (empezó evaluando skills de diseño para la landing y derivó a modelo de planes).
+> Se anota para retomar — no hay ninguna tarea inmediata acá. Para el primer cliente (posible
+> viernes 2026-09-11) alcanza con tener claro el discurso comercial de qué vende cada plan.
+
+**Dos planes de pago, Pro y Premium.** El eje de diferenciación acordado es **features + soporte**,
+no límites de volumen (a un restaurante de menú chico "si vendes más te cobro más" lo asusta; ver
+`backlog.md` §Comercial y la corrección de target en §1). Pro = todo lo operativo del día a día;
+Premium = lo que ayuda a analizar y hacer crecer el negocio.
+
+### Qué incluiría cada plan (borrador)
+
+| Feature | Pro | Premium |
+|---|---|---|
+| Menú QR (menú del día + carta), órdenes, cola de cocina, plano de mesas, cola del día | ✅ | ✅ |
+| Reservas | ✅ | ✅ |
+| Gestión de usuarios / roles (mozo, cocinero, admin) | ✅ | ✅ |
+| Nombre propio del restaurante (menú del cliente + panel) | ✅ | ✅ |
+| Reportería básica: KPIs del día + Ganancias del día | ✅ | ✅ |
+| **Reportería avanzada**: rangos semana/mes, Análisis de pedidos, Curva de clientes, Hora pico, export a Excel | — | ✅ |
+| **Marca propia visual**: foto de portada + colores primario/secundario del menú del cliente | — | ✅ |
+| **Pensionistas** (panel del owner + `pensionista.html` + saldos/movimientos) | — | ✅ |
+
+### Dónde cortaría el gating, feature por feature (para cuando se implemente)
+
+- **Reportes** (`reportes.js` / `#panel-reportes` en `owner.html`):
+  - *Pro:* tarjetas de stats del día (`#stats-reportes`) + card "💰 Ganancias" solo intervalo "Día".
+  - *Premium:* botones Semana/Mes (Ganancias y Curva de clientes), card "📊 Análisis de pedidos",
+    card "📈 Curva de clientes", card "🕐 Hora pico de demanda", y **todos** los botones "⬇ Excel"
+    (`descargarFormatoGanancias`, `descargarFormatoPedidos`, `descargarFormatoDemanda`).
+- **Marca visual** (`config.js`):
+  - *Siempre (Pro + Premium):* `PATCH /api/menu/config/nombre` — el nombre del restaurante.
+  - *Premium:* subir/quitar foto de portada (`POST`/`DELETE /api/menu/restaurante/foto`) y
+    `PATCH /api/menu/restaurante/config` con `color_primario` / `color_secundario`.
+- **Pensionistas:** ocultar el panel "Pensionistas" de `owner.html` y bloquear `/api/pensionistas*`
+  y `/api/pensionista*` si el restaurante no es Premium; no se ofrece el rol `pensionista` ni
+  `pensionista.html`.
+
+### Preguntas abiertas (sin responder a propósito)
+
+- **Cómo se marca el plan de un restaurante.** Candidato: columna `plan` (`'pro'` | `'premium'`)
+  en la tabla `restaurantes`, leída en login y puesta en el JWT junto a `restaurant_id`, más un
+  helper de gating en backend y flags en el frontend. Sin diseñar.
+- **Los dos precios.** Hoy solo hay S/250/mes tentativo de referencia (`backlog.md` §Comercial).
+  Con dos planes ese número sería el de uno (probablemente Pro) y Premium queda por encima.
+  Números concretos: se acuerdan con el primer cliente que pague.
+- **Plan Free / demo.** Idea del usuario: menú de **solo lectura** (sin pedidos, sin cocina, sin
+  reportes) con autopromoción discreta "Hecho con Menú Pro" en el pie, como canal de captación —
+  no de ingreso. Variante que se evaluó: Free = solo órdenes + cola del día. **Aparcada** para
+  después del primer cliente. Nota: monetizar el Free con publicidad de terceros de AdSense se
+  descartó en la discusión — los números no dan (≈500 visitas/día entre 10 locales ≈ US$7-30/mes
+  total) y degrada el menú, que es la cara del restaurante ante su comensal. Si algo se muestra
+  en el menú del Free, que sea del propio restaurante (plato destacado, promo del día). Ver §15
+  para el modelo de publicidad agregada a escala, que es otra cosa.
+
+### Ideas de landing que salieron en la misma conversación (para retomar)
+
+- Rehacer `public/landing.html` como **landing premium** propia, separada del resto del sistema
+  (ahí sí tiene sentido un acabado más vanguardista; el panel operativo no).
+- Conceptos rescatables de las skills de diseño revisadas (`taste-skill`, `scroll-craft` — ninguna
+  se descargó, ver discusión): una sola "curva de sentimiento" con un pico memorable (el flujo real
+  QR → menú → pedido → cocina en ~20-30s), un solo movimiento de firma, máx 2 familias tipográficas,
+  un acento de color, un sistema de radios; evitar clichés de IA (hero centrado genérico, 3
+  columnas iguales, gradientes morados, contadores `01/06`, stats inventadas, "trusted by" falso),
+  usar screenshots reales del piloto, no `<div>` que fingen pantallas.
+- Estructura sugerida: hero claro (qué es + para quién + CTA a WhatsApp) · problema→solución en 3
+  pasos · demo/video corto del flujo real · testimonio real de Karina (con nombre y foto del local)
+  · tabla de precios Pro/Premium · FAQ (hardware, wifi caído, tiempo de montaje) · CTA + WhatsApp.
+- Referencias más cercanas al producto: sundayapp.com, meandu.com, menutiger.com. Acabado premium
+  minimal: linear.app, vercel.com, cal.com (tabla de precios), framer.com.
+- **Secuencia acordada:** no rehacer la landing antes del viernes; prioridad = cerrar y onboardear
+  al primer cliente. Landing premium = semana siguiente, ya con testimonio real y capturas del
+  piloto en uso. Antes de diseñarla hay que fijar el pricing (la tabla manda la estructura).
+
+---
+
+## 17. Feedback de campo — visitas a restaurantes piloto
 
 ### Visita del 2026-08-12 — dueña del piloto #1
 
