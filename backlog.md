@@ -8,7 +8,7 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 > (`conversacion_*.md`) y por lo tanto **no viajaba entre las 2 laptops del usuario**. Este archivo sí
 > está en git: es la copia viva del backlog. Actualizarlo al cerrar cada sesión.
 
-**Última actualización:** 2026-09-08
+**Última actualización:** 2026-09-09
 
 ---
 
@@ -32,6 +32,12 @@ premium **primero en el artifact**, antes de tocar `public/landing.html`.
   Reemplazar las maquetas dibujadas por capturas reales del piloto cuando estén.
 - **No es para el viernes** (primer cliente): la prioridad de esa fecha sigue siendo cerrar y
   onboardear. La landing se trabaja con calma en paralelo.
+
+**Avance 2026-09-09** (detalle en `status.md`): secciones nuevas ("¿Qué es menupro.tech?",
+diagrama de flujo de 7 pasos), se quitó "Lleva tu restaurante a otro nivel", hero más bajo en
+móvil, frase del hero rotativa. Se probaron **fondos del hero**: la **aurora** (`hero-bg-a`) es la
+que gustó; queda un experimento de **ilustración SVG de un restaurante** (`hero--scene`, estático
+en móvil). Snapshot previo al experimento en `landing/landing-concepto--mancha-centrada.html`.
 
 ---
 
@@ -614,6 +620,25 @@ enlace "¿Eres pensionista?" en `menu.html` + botón `PwaInstall` en `pensionist
 ### Perfil de cliente a buscar
 Dueño de 25–45 años, ya usa Yape y WhatsApp Business, quizá vende por delivery, 1–2 mozos, carta que
 cambia seguido.
+
+### Modelo VAN + pitch (2026-09-09)
+
+- **Modelo financiero:** `finanzas/van-menupro.html` (calculadora interactiva de flujo de caja y
+  VAN a 10 años). Artifact: https://claude.ai/code/artifact/5c90b322-55f3-4e15-809d-64df906b6b42.
+  Supuestos y resultado en la memoria `van-modelo-financiero.md` y en `status.md` (sesión 2026-09-09).
+  Resumen: VAN del negocio ≈ S/2.0 M (US$0.6 M) a tasa 20%; el negocio supera los S/3,000/mes de
+  Pedro en el año 3, su reparto del 30% en el año 5. Actualizar el modelo con datos reales del año.
+- **2026 = año de validación.** Antes de que Pedro deje su empleo: 5–10 clientes pagando cerca de
+  precio de lista, churn mensual observado < 3–4%, y medidas las horas de onboarding + soporte
+  diario por restaurante y las horas de venta por cierre (CAC en horas).
+- [ ] **Preparar material de pitch** (para inversionista / aceleradora), a construir "poco a poco":
+  - Análisis de **competencia** — el usuario cita **restaurant.pe** (también carta web). Falta
+    relevar qué ofrecen, a qué precio y qué les falta.
+  - **Diferenciadores** de Menupro: no es "carta web", es el flujo **cocina → cola → cobranza →
+    reportes**.
+  - Dejar explícito el **enfoque**: restaurantes de **menú del día** (no restaurantes elegantes,
+    ver `vision_negocio.md` §1) y el **dolor central = la hora pico** (que todos los comensales se
+    sientan atendidos en un tiempo justo).
 
 ### Discusión 2026-09-08 — planes Pro / Premium + landing (sin cerrar, para retomar)
 

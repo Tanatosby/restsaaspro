@@ -600,6 +600,17 @@ Premium = lo que ayuda a analizar y hacer crecer el negocio.
 > §PRÓXIMO). Artifact: https://claude.ai/code/artifact/bb16c4fd-e0c6-4c4c-a8b7-7e411a43885e
 > La tarea inmediata de la próxima sesión es seguir construyendo la landing sobre esa base,
 > primero en el artifact.
+>
+> **Avance 2026-09-09:** se sumaron secciones ("¿Qué es menupro.tech?" + diagrama de flujo de 7
+> pasos QR→…→Estadísticas), se quitó "Lleva tu restaurante a otro nivel", hero más bajo en móvil
+> y frase del hero rotativa. Fondo del hero: la **aurora** (`hero-bg-a`) es la elegida; queda un
+> experimento de ilustración SVG de un restaurante (`hero--scene`). Detalle en `status.md`.
+>
+> **Modelo VAN (2026-09-09):** `finanzas/van-menupro.html` + artifact
+> https://claude.ai/code/artifact/5c90b322-55f3-4e15-809d-64df906b6b42 — flujo de caja y VAN a 10
+> años, base para un futuro pitch a inversionista/aceleradora. Pendiente: análisis de competencia
+> (el usuario cita restaurant.pe), diferenciadores y dejar explícito el enfoque (restaurantes de
+> menú, dolor = hora pico). Ver `backlog.md` §Comercial y la memoria `van-modelo-financiero.md`.
 
 - Rehacer `public/landing.html` como **landing premium** propia, separada del resto del sistema
   (ahí sí tiene sentido un acabado más vanguardista; el panel operativo no).

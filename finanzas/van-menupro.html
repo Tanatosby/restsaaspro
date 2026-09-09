@@ -1,0 +1,806 @@
+<title>VAN de Menupro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground:   #f4f2ec;
+    --panel:    #fbfaf7;
+    --panel-2:  #eeeade;
+    --ink:      #23211c;
+    --muted:    #6c675d;
+    --hairline: #e2ddd0;
+    --accent:   #1c6b51;
+    --accent-soft: rgba(28,107,81,.12);
+    --pos:      #1c6b51;
+    --neg:      #b23b2e;
+    --focus:    #1c6b51;
+    --shadow:   0 1px 2px rgba(40,30,15,.06), 0 8px 24px -16px rgba(40,30,15,.24);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #131611;
+      --panel:    #1b1e17;
+      --panel-2:  #24281f;
+      --ink:      #ecebe0;
+      --muted:    #9a978b;
+      --hairline: #2c2f26;
+      --accent:   #57b78d;
+      --accent-soft: rgba(87,183,141,.16);
+      --pos:      #57b78d;
+      --neg:      #e0806f;
+      --focus:    #57b78d;
+      --shadow:   0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:   #131611;
+    --panel:    #1b1e17;
+    --panel-2:  #24281f;
+    --ink:      #ecebe0;
+    --muted:    #9a978b;
+    --hairline: #2c2f26;
+    --accent:   #57b78d;
+    --accent-soft: rgba(87,183,141,.16);
+    --pos:      #57b78d;
+    --neg:      #e0806f;
+    --focus:    #57b78d;
+    --shadow:   0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.7);
+  }
+
+  * , *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 940px;
+    margin-inline: auto;
+    padding: clamp(1rem, 4vw, 2.4rem) clamp(1rem, 4vw, 2rem) 4rem;
+  }
+
+  /* ---------- header ---------- */
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--hairline);
+    padding-bottom: 1.1rem;
+  }
+  h1 {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.6rem, 5vw, 2.3rem);
+    line-height: 1.1;
+    margin: 0;
+    letter-spacing: -.01em;
+  }
+  .sub {
+    margin: .35rem 0 0;
+    color: var(--muted);
+    font-size: .92rem;
+    max-width: 60ch;
+  }
+  .cur-toggle {
+    display: inline-flex;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--panel);
+  }
+  .cur-toggle button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: 600 14px/1 "IBM Plex Sans", sans-serif;
+    padding: .6rem 1rem;
+    min-height: 44px;
+    cursor: pointer;
+  }
+  .cur-toggle button[aria-pressed="true"] {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* ---------- headline tiles ---------- */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .8rem;
+    margin: 1.4rem 0 1.8rem;
+  }
+  @media (min-width: 720px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
+  .tile {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: .95rem 1rem 1.05rem;
+    box-shadow: var(--shadow);
+  }
+  .tile .k {
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin: 0 0 .45rem;
+  }
+  .tile .v {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.7rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile .v.small { font-size: 1.25rem; }
+  .tile .note {
+    margin: .4rem 0 0;
+    font-size: .78rem;
+    color: var(--muted);
+  }
+  .tile.hero { border-color: color-mix(in srgb, var(--accent) 40%, var(--hairline)); }
+  .tile.hero .v { color: var(--accent); }
+  .pos { color: var(--pos); }
+  .neg { color: var(--neg); }
+
+  /* ---------- panels ---------- */
+  details.card {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    margin-bottom: 1.4rem;
+    box-shadow: var(--shadow);
+  }
+  details.card > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 1rem 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+  }
+  details.card > summary::-webkit-details-marker { display: none; }
+  details.card > summary::before {
+    content: "";
+    width: 8px; height: 8px;
+    border-right: 2px solid var(--muted);
+    border-bottom: 2px solid var(--muted);
+    transform: rotate(-45deg);
+    transition: transform .18s ease;
+  }
+  details.card[open] > summary::before { transform: rotate(45deg); }
+  .card-body { padding: 0 1.1rem 1.2rem; }
+
+  .grp { margin-top: 1.1rem; }
+  .grp h3 {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
+    margin: 0 0 .7rem;
+    padding-bottom: .35rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: .8rem 1rem;
+  }
+  .field { display: flex; flex-direction: column; gap: .3rem; }
+  .field label {
+    font-size: .8rem;
+    color: var(--muted);
+  }
+  .field input, .field select {
+    font: 500 16px/1.2 "IBM Plex Mono", ui-monospace, monospace;
+    color: var(--ink);
+    background: var(--ground);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: .55rem .6rem;
+    min-height: 44px;
+    width: 100%;
+  }
+  .field.check {
+    flex-direction: row;
+    align-items: center;
+    gap: .5rem;
+  }
+  .field.check input { width: 20px; height: 20px; min-height: 0; accent-color: var(--accent); }
+  .field.check label { font-size: .85rem; color: var(--ink); }
+  input:focus-visible, select:focus-visible, summary:focus-visible, button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .yeargrid-wrap { overflow-x: auto; margin-top: .4rem; }
+  table.yeargrid, table.model {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .82rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  table.yeargrid th, table.yeargrid td,
+  table.model th, table.model td {
+    padding: .5rem .55rem;
+    text-align: right;
+    border-bottom: 1px solid var(--hairline);
+  }
+  table.yeargrid th:first-child,
+  table.model th:first-child,
+  table.model td:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: var(--panel);
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+  }
+  table.yeargrid thead th, table.model thead th {
+    color: var(--muted);
+    font-weight: 600;
+    font-family: "IBM Plex Sans", sans-serif;
+    border-bottom: 1px solid var(--hairline);
+  }
+  table.yeargrid td input {
+    font: 500 15px/1 "IBM Plex Mono", monospace;
+    width: 68px;
+    text-align: right;
+    background: var(--ground);
+    color: var(--ink);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: .4rem .35rem;
+    min-height: 40px;
+  }
+  table.model tbody tr.strong td { font-weight: 600; }
+  table.model tbody tr.strong td:first-child { color: var(--ink); }
+  table.model tr.rule td { border-bottom: 2px solid var(--hairline); }
+
+  .section-title {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.15rem;
+    margin: 0 0 .2rem;
+  }
+  .section-note { margin: 0 0 .9rem; color: var(--muted); font-size: .85rem; }
+
+  .model-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+  .model-wrap table.model th:first-child,
+  .model-wrap table.model td:first-child { background: var(--panel); }
+
+  figure.chart {
+    margin: 1.8rem 0 0;
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 1.1rem 1rem .8rem;
+    box-shadow: var(--shadow);
+  }
+  figure.chart figcaption {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: .5rem;
+  }
+  .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart .axis { fill: var(--muted); font: 400 11px "IBM Plex Mono", monospace; }
+  .chart .grid { stroke: var(--hairline); stroke-width: 1; }
+  .chart .area { fill: var(--accent-soft); }
+  .chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+  .chart .dot  { fill: var(--panel); stroke: var(--accent); stroke-width: 2; }
+  .chart .dot.end { fill: var(--accent); }
+  .chart .hit { fill: transparent; }
+  .chart .cursor { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+  .tip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--ink);
+    color: var(--ground);
+    font: 500 12px/1.35 "IBM Plex Mono", monospace;
+    padding: .4rem .55rem;
+    border-radius: 7px;
+    transform: translate(-50%, -120%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity .12s;
+  }
+  .chart-holder { position: relative; }
+
+  .sens {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: .7rem;
+    margin-top: 1rem;
+  }
+  .sens .cell {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: .7rem .8rem;
+    text-align: center;
+  }
+  .sens .cell.here { border-color: var(--accent); background: var(--accent-soft); }
+  .sens .cell .r { font-size: .78rem; color: var(--muted); }
+  .sens .cell .n {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .foot {
+    margin-top: 2.4rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: .8rem;
+  }
+  .foot p { margin: .35rem 0; }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div>
+      <h1>VAN de Menupro</h1>
+      <p class="sub">Flujo de caja y Valor Actual Neto a 10 años. Todos los supuestos son
+      editables; el modelo recalcula al instante. Cifras estimadas — no reemplazan a un contador.</p>
+    </div>
+    <div class="cur-toggle" role="group" aria-label="Moneda">
+      <button type="button" data-cur="PEN" aria-pressed="true">S/ soles</button>
+      <button type="button" data-cur="USD" aria-pressed="false">US$ dólares</button>
+    </div>
+  </header>
+
+  <section class="tiles" id="tiles" aria-live="polite"></section>
+
+  <details class="card" open>
+    <summary>Supuestos</summary>
+    <div class="card-body">
+
+      <div class="grp">
+        <h3>Precios y mezcla</h3>
+        <div class="fields">
+          <div class="field"><label for="pPro">Precio Pro (S/ / mes)</label><input type="number" id="pPro" value="250" step="10"></div>
+          <div class="field"><label for="pPrem">Precio Premium (S/ / mes)</label><input type="number" id="pPrem" value="300" step="10"></div>
+          <div class="field"><label for="mixPro">% clientes Pro</label><input type="number" id="mixPro" value="80" step="5" min="0" max="100"></div>
+          <div class="field"><label for="churn">Churn anual % (informativo)</label><input type="number" id="churn" value="5" step="1"></div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h3>Clientes activos a fin de año · Practicantes (medio tiempo) · Infra (US$/mes)</h3>
+        <div class="yeargrid-wrap">
+          <table class="yeargrid">
+            <thead><tr><th>Año</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr></thead>
+            <tbody>
+              <tr id="rowClients"><td>Clientes</td></tr>
+              <tr id="rowInterns"><td>Practicantes</td></tr>
+              <tr id="rowInfra"><td>Infra US$/mes</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h3>Equipo y costos operativos</h3>
+        <div class="fields">
+          <div class="field"><label for="internCost">Costo practicante ½ tiempo (S/ / mes)</label><input type="number" id="internCost" value="700" step="50"></div>
+          <div class="field"><label for="devBase">Herramientas / Claude Code (S/ / mes)</label><input type="number" id="devBase" value="337" step="20"></div>
+          <div class="field"><label for="devPT">Dev medio tiempo desde año 4 (S/ / mes)</label><input type="number" id="devPT" value="4000" step="250"></div>
+          <div class="field"><label for="devPTfrom">Dev entra en el año</label><input type="number" id="devPTfrom" value="4" step="1" min="1" max="10"></div>
+          <div class="field"><label for="otros">Otros fijos año 1 (S/ / mes)</label><input type="number" id="otros" value="455" step="25"></div>
+          <div class="field"><label for="otrosG">Crecimiento otros fijos %/año</label><input type="number" id="otrosG" value="15" step="1"></div>
+          <div class="field"><label for="pasa">Pasarela de cobro % ingresos</label><input type="number" id="pasa" value="4.1" step="0.1"></div>
+          <div class="field"><label for="pasaFrom">Pasarela desde el año</label><input type="number" id="pasaFrom" value="2" step="1" min="1" max="10"></div>
+          <div class="field"><label for="mkt">Marketing % ingresos</label><input type="number" id="mkt" value="10" step="1"></div>
+          <div class="field check"><input type="checkbox" id="mktOn" checked><label for="mktOn">Aplicar marketing (desde año 2)</label></div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h3>Impuestos (Régimen MYPE Tributario)</h3>
+        <div class="fields">
+          <div class="field"><label for="uit">UIT (S/)</label><input type="number" id="uit" value="5500" step="50"></div>
+          <div class="field"><label for="t1">Tasa tramo 1 (hasta 15 UIT) %</label><input type="number" id="t1" value="10" step="0.5"></div>
+          <div class="field"><label for="t2">Tasa tramo 2 (exceso) %</label><input type="number" id="t2" value="29.5" step="0.5"></div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h3>Finanzas</h3>
+        <div class="fields">
+          <div class="field"><label for="fx">Tipo de cambio S/ por US$</label><input type="number" id="fx" value="3.37" step="0.01"></div>
+          <div class="field"><label for="inv0">Inversión inicial — setup (S/)</label><input type="number" id="inv0" value="3500" step="250"></div>
+          <div class="field"><label for="invTime">Inversión inicial — tu tiempo ya puesto (S/)</label><input type="number" id="invTime" value="22000" step="1000"></div>
+          <div class="field"><label for="disc">Tasa de descuento %</label><input type="number" id="disc" value="20" step="1"></div>
+          <div class="field"><label for="g">Crecimiento perpetuo (valor terminal) %</label><input type="number" id="g" value="3" step="0.5"></div>
+          <div class="field"><label for="altSal">Tu sueldo alternativo hoy (S/ / mes)</label><input type="number" id="altSal" value="3000" step="250"></div>
+          <div class="field"><label for="altG">Crecimiento sueldo alternativo %/año</label><input type="number" id="altG" value="5" step="1"></div>
+          <div class="field"><label for="drawPct">Tu reparto de la utilidad %</label><input type="number" id="drawPct" value="30" step="5"></div>
+          <div class="field"><label for="drawFrom">Reparto desde el año</label><input type="number" id="drawFrom" value="5" step="1" min="1" max="10"></div>
+        </div>
+      </div>
+
+    </div>
+  </details>
+
+  <h2 class="section-title">Flujo de caja a 10 años</h2>
+  <p class="section-note" id="modelNote">En <span class="cur-label">soles</span>. FCF = utilidad neta (capex y capital de trabajo ≈ 0 en SaaS con cobro adelantado).</p>
+  <div class="model-wrap">
+    <table class="model" id="model">
+      <thead><tr id="modelHead"></tr></thead>
+      <tbody id="modelBody"></tbody>
+    </table>
+  </div>
+
+  <figure class="chart">
+    <figcaption>Utilidad neta del negocio por año</figcaption>
+    <div class="chart-holder">
+      <svg id="chart" viewBox="0 0 720 300" role="img" aria-label="Utilidad neta anual de Menupro durante 10 años"></svg>
+      <div class="tip" id="tip"></div>
+    </div>
+  </figure>
+
+  <h2 class="section-title" style="margin-top:1.8rem">VAN del negocio según la tasa de descuento</h2>
+  <p class="section-note">Cuanto mayor la tasa (más riesgo o más costo de oportunidad exiges), menor el VAN.</p>
+  <div class="sens" id="sens"></div>
+
+  <div class="foot">
+    <p><strong>Cómo leerlo.</strong> El <em>VAN del negocio</em> trae a hoy toda la caja que genera Menupro
+    (es tuya, seas o no reparto) más un valor terminal por perpetuidad, menos tu inversión inicial.
+    El <em>VAN de tu decisión</em> además resta el sueldo que resignas por dedicarte a esto — responde
+    "¿me conviene más que seguir empleado?".</p>
+    <p><strong>Supuestos frágiles:</strong> la rampa de clientes y el valor terminal (≈ mitad del VAN).
+    Bajá la rampa o subí la tasa para ver el escenario conservador.</p>
+    <p>Impuesto a la renta: RMT — tasa tramo 1 sobre las primeras 15 UIT de utilidad, tramo 2 sobre el
+    exceso. IGV tratado como neutro (se traslada). Validar con contador.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var YEARS = 10;
+  var cur = "PEN";
+
+  var defClients = [12, 24, 60, 120, 200, 290, 390, 500, 615, 735];
+  var defInterns = [0, 1, 3, 4, 6, 8, 10, 12, 14, 16];
+  var defInfra   = [30, 60, 120, 220, 350, 500, 650, 800, 950, 1100];
+
+  // build the editable year-grid inputs
+  function fillRow(id, values, step) {
+    var tr = document.getElementById(id);
+    values.forEach(function (v, i) {
+      var td = document.createElement("td");
+      var inp = document.createElement("input");
+      inp.type = "number";
+      inp.value = v;
+      inp.step = step || 1;
+      inp.setAttribute("aria-label", id + " año " + (i + 1));
+      inp.addEventListener("input", recompute);
+      td.appendChild(inp);
+      tr.appendChild(td);
+    });
+  }
+  fillRow("rowClients", defClients, 1);
+  fillRow("rowInterns", defInterns, 1);
+  fillRow("rowInfra", defInfra, 10);
+
+  function rowVals(id) {
+    return Array.prototype.map.call(
+      document.querySelectorAll("#" + id + " input"),
+      function (i) { return num(i.value); }
+    );
+  }
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
+  function val(id) { return num(document.getElementById(id).value); }
+
+  // number formatting in the active currency
+  function money(pen, opts) {
+    opts = opts || {};
+    var v = cur === "USD" ? pen / val("fx") : pen;
+    var sym = cur === "USD" ? "$ " : "S/ ";
+    if (opts.mill) return sym + (v / 1e6).toFixed(2) + " M";
+    if (opts.k)    return sym + Math.round(v / 1000).toLocaleString("es-PE") + " k";
+    return sym + Math.round(v).toLocaleString("es-PE");
+  }
+
+  function compute() {
+    var clients = rowVals("rowClients");
+    var interns = rowVals("rowInterns");
+    var infra   = rowVals("rowInfra");
+
+    var fx = val("fx");
+    var mixPro = val("mixPro") / 100;
+    var arpu = mixPro * val("pPro") + (1 - mixPro) * val("pPrem"); // S/ por cliente/mes
+    var internCost = val("internCost") * 12;
+    var devBase = val("devBase") * 12;
+    var devPT = val("devPT") * 12, devPTfrom = val("devPTfrom");
+    var otros0 = val("otros") * 12, otrosG = val("otrosG") / 100;
+    var pasa = val("pasa") / 100, pasaFrom = val("pasaFrom");
+    var mkt = val("mkt") / 100, mktOn = document.getElementById("mktOn").checked;
+    var uit = val("uit"), t1 = val("t1") / 100, t2 = val("t2") / 100;
+    var band1 = 15 * uit;
+    var disc = val("disc") / 100, g = val("g") / 100;
+    var inv0 = val("inv0") + val("invTime");
+    var altSal0 = val("altSal") * 12, altG = val("altG") / 100;
+    var drawPct = val("drawPct") / 100, drawFrom = val("drawFrom");
+
+    var rows = [];
+    var prevClients = 1; // primer cliente antes del año 1
+    for (var y = 1; y <= YEARS; y++) {
+      var endC = clients[y - 1];
+      var avgC = (prevClients + endC) / 2;
+      prevClients = endC;
+
+      var revenue = avgC * arpu * 12;
+
+      var cInterns = interns[y - 1] * internCost;
+      var cInfra   = infra[y - 1] * 12 * fx;
+      var cOtros   = otros0 * Math.pow(1 + otrosG, y - 1);
+      var cPasa    = (y >= pasaFrom) ? revenue * pasa : 0;
+      var cMkt     = (mktOn && y >= 2) ? revenue * mkt : 0;
+      var cDev     = devBase + (y >= devPTfrom ? devPT * Math.pow(1.05, y - devPTfrom) : 0);
+      var costs    = cInterns + cInfra + cOtros + cPasa + cMkt + cDev;
+
+      var ebt = revenue - costs;
+      var tax = ebt <= 0 ? 0 : (ebt <= band1 ? ebt * t1 : band1 * t1 + (ebt - band1) * t2);
+      var netProfit = ebt - tax;
+      var fcf = netProfit;
+
+      var pv = fcf / Math.pow(1 + disc, y);
+      var altSal = altSal0 * Math.pow(1 + altG, y - 1);
+      var adjFcf = netProfit - altSal;
+      var adjPv = adjFcf / Math.pow(1 + disc, y);
+      var draw = (y >= drawFrom) ? netProfit * drawPct : 0;
+
+      rows.push({
+        y: y, avgC: avgC, endC: endC, revenue: revenue, costs: costs,
+        ebt: ebt, tax: tax, netProfit: netProfit, fcf: fcf, pv: pv,
+        altSal: altSal, adjFcf: adjFcf, adjPv: adjPv, draw: draw
+      });
+    }
+
+    function vanAt(rate) {
+      var s = 0, last = rows[YEARS - 1];
+      for (var i = 0; i < YEARS; i++) s += rows[i].fcf / Math.pow(1 + rate, i + 1);
+      var tv = last.fcf * (1 + g) / (rate - g);
+      s += tv / Math.pow(1 + rate, YEARS);
+      return s - inv0;
+    }
+    function vanDecisionAt(rate) {
+      var s = 0, last = rows[YEARS - 1];
+      for (var i = 0; i < YEARS; i++) s += rows[i].adjFcf / Math.pow(1 + rate, i + 1);
+      var tv = last.adjFcf * (1 + g) / (rate - g);
+      s += tv / Math.pow(1 + rate, YEARS);
+      return s - inv0;
+    }
+
+    var tvBase = rows[YEARS - 1].fcf * (1 + g) / (disc - g);
+    var pvTV = tvBase / Math.pow(1 + disc, YEARS);
+    var sumPV = rows.reduce(function (a, r) { return a + r.pv; }, 0);
+    var van = sumPV + pvTV - inv0;
+    var vanDec = vanDecisionAt(disc);
+
+    // payback (FCF sin descontar vs inversión)
+    var cum = 0, payback = null;
+    for (var p = 0; p < YEARS; p++) {
+      var before = cum; cum += rows[p].fcf;
+      if (cum >= inv0 && payback === null) {
+        payback = p + (inv0 - before) / rows[p].fcf;
+      }
+    }
+
+    // TIR con valor terminal incluido en el año 10
+    var flows = [-inv0];
+    for (var f = 0; f < YEARS; f++) flows.push(rows[f].fcf);
+    function npvFlows(rate) {
+      var s = 0;
+      for (var i = 0; i < flows.length; i++) s += flows[i] / Math.pow(1 + rate, i);
+      var last = rows[YEARS - 1].fcf;
+      var tv = last * (1 + g) / (rate - g);
+      s += tv / Math.pow(1 + rate, YEARS);
+      return s;
+    }
+    var lo = 0.0001, hi = 8, tir = null;
+    if (npvFlows(lo) > 0) {
+      for (var it = 0; it < 200; it++) {
+        var mid = (lo + hi) / 2, v = npvFlows(mid);
+        if (v > 0) lo = mid; else hi = mid;
+      }
+      tir = lo;
+    }
+
+    // año en que el negocio (o el reparto) supera el sueldo alternativo
+    var yearBeatBiz = null, yearBeatDraw = null;
+    rows.forEach(function (r) {
+      if (yearBeatBiz === null && r.netProfit >= r.altSal) yearBeatBiz = r.y;
+      if (yearBeatDraw === null && r.draw >= r.altSal) yearBeatDraw = r.y;
+    });
+
+    return {
+      rows: rows, van: van, vanDec: vanDec, sumPV: sumPV, pvTV: pvTV, tvBase: tvBase,
+      inv0: inv0, disc: disc, payback: payback, tir: tir,
+      yearBeatBiz: yearBeatBiz, yearBeatDraw: yearBeatDraw, drawPct: drawPct, drawFrom: drawFrom,
+      vanAt: vanAt
+    };
+  }
+
+  function renderTiles(m) {
+    var t = document.getElementById("tiles");
+    var beat = m.yearBeatDraw ? ("Año " + m.yearBeatDraw) : "—";
+    var beatNote = m.yearBeatBiz
+      ? ("el negocio ya lo genera en el Año " + m.yearBeatBiz)
+      : "aún no en 10 años";
+    var tirTxt = m.tir === null ? "muy alta"
+      : (m.tir > 3 ? "> 300 %" : Math.round(m.tir * 100) + " %");
+    t.innerHTML =
+      tile("VAN del negocio", money(m.van, { mill: true }), "tasa " + Math.round(m.disc * 100) + "% · con valor terminal", true, m.van >= 0) +
+      tile("VAN de tu decisión", money(m.vanDec, { mill: true }), "descontando tu sueldo resignado", false, m.vanDec >= 0) +
+      tile("Payback / TIR", (m.payback ? m.payback.toFixed(1) + " años" : "—"), "TIR aprox " + tirTxt, false, true, true) +
+      tile("Tu " + Math.round(m.drawPct * 100) + "% supera tu sueldo", beat, beatNote, false, !!m.yearBeatDraw, true);
+  }
+  function tile(k, v, note, hero, positive, small) {
+    return '<div class="tile' + (hero ? ' hero' : '') + '">' +
+      '<p class="k">' + k + '</p>' +
+      '<div class="v' + (small ? ' small' : '') + (hero ? '' : (positive ? ' pos' : ' neg')) + '">' + v + '</div>' +
+      '<p class="note">' + note + '</p></div>';
+  }
+
+  function renderModel(m) {
+    var head = "<th>Concepto</th>";
+    for (var y = 1; y <= YEARS; y++) head += "<th>Año " + y + "</th>";
+    document.getElementById("modelHead").innerHTML = head;
+
+    var defs = [
+      ["Clientes (prom.)", function (r) { return Math.round(r.avgC).toLocaleString("es-PE"); }, false],
+      ["Ingresos", function (r) { return money(r.revenue); }, false],
+      ["Costos totales", function (r) { return "(" + money(r.costs) + ")"; }, false],
+      ["Utilidad antes de imp.", function (r) { return money(r.ebt); }, false],
+      ["Impuesto a la renta", function (r) { return "(" + money(r.tax) + ")"; }, false],
+      ["Utilidad neta = FCF", function (r) { return money(r.netProfit); }, true],
+      ["Flujo descontado (VP)", function (r) { return money(r.pv); }, false]
+    ];
+    var body = "";
+    defs.forEach(function (d) {
+      body += "<tr" + (d[2] ? ' class="strong"' : "") + "><td>" + d[0] + "</td>";
+      m.rows.forEach(function (r) { body += "<td>" + d[1](r) + "</td>"; });
+      body += "</tr>";
+    });
+    document.getElementById("modelBody").innerHTML = body;
+  }
+
+  var chartData = [];
+  function renderChart(m) {
+    var svg = document.getElementById("chart");
+    var W = 720, H = 300, padL = 68, padR = 14, padT = 14, padB = 30;
+    var vals = m.rows.map(function (r) { return r.netProfit; });
+    chartData = m.rows.map(function (r) { return { y: r.y, v: r.netProfit }; });
+    var maxV = Math.max.apply(null, vals.concat([1]));
+    var minV = Math.min.apply(null, vals.concat([0]));
+    if (minV > 0) minV = 0;
+    var niceMax = niceNum(maxV);
+    var x = function (i) { return padL + (W - padL - padR) * i / (YEARS - 1); };
+    var yv = function (v) { return padT + (H - padT - padB) * (1 - (v - minV) / (niceMax - minV)); };
+
+    var s = "";
+    // grid + y labels
+    var ticks = 4;
+    for (var t = 0; t <= ticks; t++) {
+      var gv = minV + (niceMax - minV) * t / ticks;
+      var gy = yv(gv);
+      s += '<line class="grid" x1="' + padL + '" y1="' + gy.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + gy.toFixed(1) + '"/>';
+      s += '<text class="axis" x="' + (padL - 8) + '" y="' + (gy + 3.5).toFixed(1) + '" text-anchor="end">' + money(gv, { k: true }) + '</text>';
+    }
+    // area + line
+    var dLine = "", dArea = "";
+    m.rows.forEach(function (r, i) {
+      var px = x(i).toFixed(1), py = yv(r.netProfit).toFixed(1);
+      dLine += (i ? "L" : "M") + px + " " + py + " ";
+      dArea += (i ? "L" : "M") + px + " " + py + " ";
+    });
+    dArea += "L" + x(YEARS - 1).toFixed(1) + " " + yv(minV).toFixed(1) + " L" + x(0).toFixed(1) + " " + yv(minV).toFixed(1) + " Z";
+    s += '<path class="area" d="' + dArea + '"/>';
+    s += '<path class="line" d="' + dLine + '"/>';
+    // dots + x labels
+    m.rows.forEach(function (r, i) {
+      s += '<circle class="dot' + (i === YEARS - 1 ? " end" : "") + '" cx="' + x(i).toFixed(1) + '" cy="' + yv(r.netProfit).toFixed(1) + '" r="' + (i === YEARS - 1 ? 5 : 3.5) + '"/>';
+      s += '<text class="axis" x="' + x(i).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle">' + (i + 1) + '</text>';
+    });
+    s += '<line class="cursor" id="cursor" x1="0" y1="' + padT + '" x2="0" y2="' + (H - padB) + '"/>';
+    s += '<rect class="hit" id="hit" x="' + padL + '" y="' + padT + '" width="' + (W - padL - padR) + '" height="' + (H - padT - padB) + '"/>';
+    svg.innerHTML = s;
+
+    // hover
+    var hit = document.getElementById("hit");
+    var cursor = document.getElementById("cursor");
+    var tip = document.getElementById("tip");
+    var holder = svg.parentNode;
+    function place(evt) {
+      var rect = svg.getBoundingClientRect();
+      var relX = (evt.clientX - rect.left) / rect.width * W;
+      var i = Math.round((relX - padL) / ((W - padL - padR) / (YEARS - 1)));
+      i = Math.max(0, Math.min(YEARS - 1, i));
+      var d = chartData[i];
+      var cx = x(i), cyv = yv(d.v);
+      cursor.setAttribute("x1", cx); cursor.setAttribute("x2", cx);
+      cursor.style.opacity = 1;
+      tip.style.opacity = 1;
+      tip.textContent = "Año " + d.y + " · " + money(d.v);
+      tip.style.left = (cx / W * rect.width) + "px";
+      tip.style.top = (cyv / H * rect.height) + "px";
+    }
+    hit.addEventListener("mousemove", place);
+    hit.addEventListener("touchstart", function (e) { if (e.touches[0]) place(e.touches[0]); }, { passive: true });
+    hit.addEventListener("touchmove", function (e) { if (e.touches[0]) place(e.touches[0]); }, { passive: true });
+    holder.addEventListener("mouseleave", function () { cursor.style.opacity = 0; tip.style.opacity = 0; });
+  }
+  function niceNum(v) {
+    var pow = Math.pow(10, Math.floor(Math.log10(v)));
+    var n = v / pow;
+    var step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    return step * pow;
+  }
+
+  function renderSens(m) {
+    var el = document.getElementById("sens");
+    var rates = [0.12, 0.15, 0.20, 0.25, 0.30];
+    el.innerHTML = rates.map(function (r) {
+      var here = Math.abs(r - m.disc) < 0.001;
+      var van = m.vanAt(r);
+      return '<div class="cell' + (here ? " here" : "") + '">' +
+        '<div class="r">' + Math.round(r * 100) + ' %</div>' +
+        '<div class="n ' + (van >= 0 ? "pos" : "neg") + '">' + money(van, { mill: true }) + '</div></div>';
+    }).join("");
+  }
+
+  function recompute() {
+    var m = compute();
+    renderTiles(m);
+    renderModel(m);
+    renderChart(m);
+    renderSens(m);
+  }
+
+  // currency toggle
+  Array.prototype.forEach.call(document.querySelectorAll(".cur-toggle button"), function (b) {
+    b.addEventListener("click", function () {
+      cur = b.dataset.cur;
+      Array.prototype.forEach.call(document.querySelectorAll(".cur-toggle button"), function (x) {
+        x.setAttribute("aria-pressed", x === b ? "true" : "false");
+      });
+      Array.prototype.forEach.call(document.querySelectorAll(".cur-label"), function (x) {
+        x.textContent = cur === "USD" ? "dólares" : "soles";
+      });
+      recompute();
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".card-body input, .card-body select"), function (i) {
+    i.addEventListener("input", recompute);
+  });
+
+  recompute();
+})();
+</script>

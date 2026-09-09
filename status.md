@@ -115,6 +115,65 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-09-09 — landing (más secciones + fondo del hero) + modelo VAN
+
+**Prompt del usuario:** continuar la landing sobre la base del 2026-09-08 y, aparte, armar un
+**VAN (Valor Actual Neto)** del negocio a 10 años. Todo diseño/documento autónomo — no toca la app.
+
+### 1. Landing — `landing/landing-concepto.html` (mismo artifact `bb16c4fd-…`)
+
+- **Sección "¿Qué es menupro.tech?"** — título grande centrado + párrafo (redacción propuesta por
+  Claude, sin voseo, 3 frases): *"Menupro es una app móvil para restaurantes que venden menús…"*.
+  Texto justificado y agrandado a pedido del usuario.
+- **Diagrama de flujo** (sección nueva "Cómo funciona"): 7 pasos en línea vertical con íconos SVG
+  dibujados y chevrons de dirección — QR → Ir a la web → Cola de pendientes → Cocina → **Listos**
+  (badge verde) → Cobranza → Estadísticas. Vertical siempre (entra en 360px).
+- Se **quitó** "Lleva tu restaurante a otro nivel" de la sección de producto.
+- **Hero más bajo en celular** (`min-height` 82svh → 38svh, banda rectangular) — en web queda igual.
+- **Frase del hero rotativa**: 8 frases en un array editable en el `<script>`; sale una al azar al
+  cargar y cambia cada 9 s con desenfoque + fundido. La onda del wordmark ahora corre sola cada 6 s
+  (antes solo en hover — clave para móvil). Ambas respetan `reduce motion` y se pausan fuera de vista.
+- **Fondo del hero (PRUEBA, con toggle de clase en el `<section>`):**
+  - `hero-bg-a` = **aurora** suave de color de marca, muy desenfocada, deriva lenta (19 s). Ajuste
+    aparte para móvil. **Es la que le gustó al usuario** ("esta me gusta").
+  - `hero-bg-b` = **mancha luminosa** (hotspot cálido + halo) — quedó centrada tras el texto, con
+    algo menos de brillo.
+  - **Experimento en curso `hero--scene`:** ilustración SVG animada de un **restaurante** que
+    aparece desde la derecha (toldo a rayas, ventanas con luz, chimenea con vapor, pizarra
+    "MENÚ DEL DÍA", planta y **dos mesitas con gente comiendo**). En web el título corre a la
+    izquierda; en móvil va **estático** (sin animación, a pedido del usuario). Se activa/desactiva
+    con la clase `hero--scene`. Idea alternativa no hecha: "una señora con un menú".
+- **Backup:** `landing/landing-concepto--mancha-centrada.html` — snapshot del estado que gustaba
+  antes del experimento del restaurante (por si hay que volver).
+
+### 2. Modelo VAN — `finanzas/van-menupro.html` (archivo nuevo)
+
+Calculadora interactiva de flujo de caja y VAN a 10 años. **Artifact:**
+https://claude.ai/code/artifact/5c90b322-55f3-4e15-809d-64df906b6b42
+
+- Supuestos definidos con el usuario: precio S/250 Pro / S/300 Premium (mezcla 80/20 → ARPU ≈
+  S/260), rampa de clientes 12·24·60·120·200·290·390·500·615·735, churn 5% anual, practicantes
+  **medio tiempo** (S/700/mes) 0·1·3·4·6·8·10·12·14·16, sin sueldo para Pedro pero **30% de reparto
+  desde el año 5**, RMT (10% hasta 15 UIT, 29.5% exceso), tasa de descuento 20%, valor terminal por
+  perpetuidad g=3%, inversión inicial ≈ S/26k. Marketing 10% de ingresos desde el año 2 (a revisar).
+- **Resultado:** VAN del negocio ≈ **S/2.0 M (US$0.6 M)** a 20% (positivo en todo el rango 12–30%).
+  El negocio supera los S/3,000/mes de Pedro en el **año 3**; su 30% de reparto, en el **año 5**.
+- **Lectura:** el VAN alto viene de que el capital en riesgo es mínimo y el producto ya está
+  hecho/probado — no de que sea seguro. El riesgo real es de ejecución (vender y **retener** a
+  precio de lista). **2026 = año de validación**; Pedro no deja su empleo hasta tener 5–10 clientes
+  pagando cerca de lista, churn mensual observado < 3–4% y medidas las horas de onboarding/soporte
+  y de venta por cierre. Detalle en la memoria `van-modelo-financiero.md`.
+- **Pendiente (para pitch a inversionista / aceleradora):** análisis de competencia (el usuario
+  cita **restaurant.pe**), diferenciadores, y dejar explícito el enfoque — **restaurantes de menú**,
+  dolor = **hora pico**. Ver `backlog.md` §Comercial.
+
+**Docs actualizados:** `status.md` (esta entrada), `backlog.md` (§PRÓXIMO + §Comercial),
+`vision_negocio.md` (§16). Archivos nuevos: `finanzas/van-menupro.html`,
+`landing/landing-concepto--mancha-centrada.html`. Memoria nueva: `van-modelo-financiero.md`.
+**Pendiente: deploy** — no aplica (nada de esto es código de la app; son diseño/documentos del repo).
+
+---
+
 ## 🎯 Sesión 2026-09-08 (3) — concepto de landing nueva (artifact + archivo base)
 
 **Prompt del usuario:** continuación de la sesión (2). Pidió una maqueta de landing estilo
