@@ -1,0 +1,459 @@
+<title>Menú Pro landing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  /* ============ TOKENS ============ */
+  :root {
+    --ground:    #F7F6F1;   /* papel cálido, no crema beige */
+    --panel:     #FDFCFA;   /* zona del producto, un punto más clara */
+    --ink:       #221E18;   /* casi negro cálido */
+    --muted:     #6C6860;   /* gris cálido para texto secundario */
+    --hairline:  #E4E0D6;
+    --accent:    #AC4C1B;   /* terracota Menú Pro, oscurecido para contraste */
+    --accent-br: #C8692A;   /* terracota de marca, para superficies grandes */
+    --green:     #2E7D4F;   /* verde Menú Pro, uso mínimo (el punto) */
+    --device-bg: #FFFFFF;
+    --device-ln: #ECE8DF;
+    --shadow:    38px 44px 90px -46px rgba(46,34,20,.34), 0 3px 10px rgba(46,34,20,.05);
+    --focus:     var(--accent);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #15120D;
+      --panel:     #1C1913;
+      --ink:       #F1EDE3;
+      --muted:     #A09A8C;
+      --hairline:  #2C271F;
+      --accent:    #EA8250;
+      --accent-br: #EA8250;
+      --green:     #5CAF7D;
+      --device-bg: #211D15;
+      --device-ln: #322C22;
+      --shadow:    38px 44px 100px -46px rgba(0,0,0,.66), 0 3px 10px rgba(0,0,0,.34);
+      --focus:     var(--accent);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:    #15120D;
+    --panel:     #1C1913;
+    --ink:       #F1EDE3;
+    --muted:     #A09A8C;
+    --hairline:  #2C271F;
+    --accent:    #EA8250;
+    --accent-br: #EA8250;
+    --green:     #5CAF7D;
+    --device-bg: #211D15;
+    --device-ln: #322C22;
+    --shadow:    38px 44px 100px -46px rgba(0,0,0,.66), 0 3px 10px rgba(0,0,0,.34);
+    --focus:     var(--accent);
+  }
+
+  /* ============ BASE ============ */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+  body {
+    margin: 0;
+    overflow-x: hidden;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 1120px;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 5vw, 3.5rem);
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+
+  /* ============ META BAR ============ */
+  .meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 1.4rem;
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .72rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .meta b { color: var(--ink); font-weight: 500; }
+
+  /* ============ HERO ============ */
+  .hero {
+    min-height: 82svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: clamp(1.1rem, 3vw, 1.9rem);
+    padding-block: clamp(2.5rem, 9vh, 6rem);
+  }
+
+  .wordmark {
+    font-family: "Manrope", "IBM Plex Sans", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 8vw, 5.5rem);
+    line-height: .95;
+    letter-spacing: -.03em;
+    color: var(--ink);
+    margin: 0;
+    white-space: nowrap;
+  }
+  .wordmark .dot { color: var(--green); }
+  .wordmark .tld { color: var(--accent); }
+
+  /* aparición de MENUPRO.TECH al cargar */
+  @media (prefers-reduced-motion: no-preference) {
+    .wordmark.in { animation: wordmarkIn 1s cubic-bezier(.2,.7,.2,1) both; }
+    @keyframes wordmarkIn {
+      from { opacity: 0; filter: blur(14px); letter-spacing: .1em; }
+      to   { opacity: 1; filter: blur(0);    letter-spacing: -.03em; }
+    }
+    .wordmark .ch { display: inline-block; }
+    /* al pasar el mouse: una onda de desenfoque cruza el título de izquierda a derecha */
+    @media (hover: hover) {
+      .wordmark:hover .ch {
+        animation: blurSweep .55s ease both;
+        animation-delay: calc(var(--i, 0) * 0.04s);
+      }
+      @keyframes blurSweep {
+        0%   { filter: blur(0);   }
+        50%  { filter: blur(5px); }
+        100% { filter: blur(0);   }
+      }
+    }
+  }
+
+  .tagline {
+    font-size: clamp(1rem, 3.3vw, 1.9rem);
+    font-weight: 400;
+    color: var(--muted);
+    margin: 0;
+    white-space: nowrap;
+    align-self: center;
+    text-align: center;
+  }
+
+  /* ============ SHOWCASE ============ */
+  .showcase {
+    background: var(--panel);
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    padding-block: clamp(3.5rem, 11vh, 8rem);
+  }
+  .showcase-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(2.5rem, 7vw, 4.5rem);
+  }
+
+  .devices {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: clamp(1rem, 4vw, 3rem);
+    width: 100%;
+  }
+
+  html.js .devices .dev { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .devices .dev {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1);
+    }
+    html.js .devices.is-visible .dev { opacity: 1; transform: none; }
+    html.js .devices.is-visible .dev:nth-child(2) { transition-delay: .08s; }
+  }
+
+  /* -- browser -- */
+  .browser {
+    width: min(560px, 100%);
+    border: 1px solid var(--device-ln);
+    border-radius: 16px;
+    background: var(--device-bg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .b-bar {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .7rem .9rem;
+    border-bottom: 1px solid var(--device-ln);
+  }
+  .b-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--hairline); }
+  .b-url {
+    margin-left: .6rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem;
+    color: var(--muted);
+  }
+  .b-body { padding: clamp(1rem, 3.5vw, 1.6rem); }
+  .b-title {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 1rem;
+  }
+  .b-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
+  .b-col { display: flex; flex-direction: column; gap: .5rem; }
+  .b-col-h {
+    font-size: .68rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .b-col-h b { color: var(--ink); font-weight: 600; }
+  .b-chip {
+    font-size: .78rem;
+    padding: .42rem .55rem;
+    border-radius: 8px;
+    background: var(--ground);
+    border: 1px solid var(--device-ln);
+    color: var(--ink);
+  }
+  .b-chip--ok {
+    color: var(--green);
+    border-color: color-mix(in srgb, var(--green) 35%, transparent);
+    background: color-mix(in srgb, var(--green) 10%, var(--ground));
+  }
+
+  /* -- phone -- */
+  .phone {
+    width: min(228px, 58%);
+    border: 1px solid var(--device-ln);
+    border-radius: 26px;
+    background: var(--device-bg);
+    box-shadow: var(--shadow);
+    padding: .5rem;
+  }
+  .phone-screen {
+    border: 1px solid var(--device-ln);
+    border-radius: 20px;
+    padding: 1.05rem .95rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+  }
+  .m-rest {
+    display: block;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  .m-day {
+    display: block;
+    font-size: .72rem;
+    color: var(--muted);
+    margin-top: .15rem;
+  }
+  .m-price {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: 1.7rem;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .m-price span {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 400;
+    font-size: .7rem;
+    color: var(--muted);
+    margin-left: .35rem;
+  }
+  .m-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+  .m-list li {
+    font-size: .8rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--device-ln);
+  }
+  .m-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .m-list em { color: var(--muted); font-style: normal; }
+  .m-tag {
+    display: inline-block;
+    min-width: 4.4rem;
+    font-size: .64rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .m-cta {
+    margin-top: .25rem;
+    border: 0;
+    border-radius: 11px;
+    background: var(--accent-br);
+    color: #fff;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: .92rem;
+    padding: .7rem 1rem;
+    cursor: pointer;
+  }
+
+  /* -- showcase copy (debajo, sin texto al costado del producto) -- */
+  .showcase-copy { text-align: center; }
+  .showcase-copy h2 {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.3rem, 4.6vw, 2.6rem);
+    line-height: 1.12;
+    letter-spacing: -.02em;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  /* ============ FOOT ============ */
+  .foot {
+    padding-block: 2.6rem 3.2rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .03em;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem 1.4rem;
+    justify-content: space-between;
+  }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 760px) {
+    .devices {
+      flex-direction: column-reverse;   /* el celular queda arriba */
+      align-items: center;
+    }
+    .phone { width: min(240px, 66%); }
+    .browser { width: 100%; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="meta">
+    <span><b>menupro.tech</b></span>
+    <span>Perú &nbsp;·&nbsp; Menú del día</span>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1 class="wordmark">MENUPRO<span class="dot">.</span><span class="tld">TECH</span></h1>
+      <p class="tagline">Para restaurantes que venden menús</p>
+    </section>
+  </main>
+</div>
+
+<section class="showcase" id="producto">
+  <div class="wrap showcase-inner">
+    <div class="devices" id="devices">
+
+      <div class="browser dev" aria-hidden="true">
+        <div class="b-bar">
+          <span class="b-dot"></span><span class="b-dot"></span><span class="b-dot"></span>
+          <span class="b-url">menupro.tech/owner</span>
+        </div>
+        <div class="b-body">
+          <div class="b-title">Cola del día</div>
+          <div class="b-cols">
+            <div class="b-col">
+              <span class="b-col-h">Pendientes <b>2</b></span>
+              <div class="b-chip">Mesa 4</div>
+              <div class="b-chip">Para llevar</div>
+            </div>
+            <div class="b-col">
+              <span class="b-col-h">En cocina <b>3</b></span>
+              <div class="b-chip">Mesa 7</div>
+              <div class="b-chip">Mesa 2</div>
+              <div class="b-chip">Mesa 9</div>
+            </div>
+            <div class="b-col">
+              <span class="b-col-h">Listos <b>1</b></span>
+              <div class="b-chip b-chip--ok">Mesa 1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone dev" aria-hidden="true">
+        <div class="phone-screen">
+          <div>
+            <span class="m-rest">El Rincón de Meche</span>
+            <span class="m-day">Martes 9 &nbsp;·&nbsp; Menú del día</span>
+          </div>
+          <div class="m-price">S/ 12<span>por menú</span></div>
+          <ul class="m-list">
+            <li><span class="m-tag">Entrada</span> Papa a la huancaína</li>
+            <li><span class="m-tag">Segundo</span> Lomo saltado <em>o</em> Ají de gallina</li>
+            <li><span class="m-tag">Postre</span> Mazamorra morada</li>
+            <li><span class="m-tag">Bebida</span> Chicha morada</li>
+          </ul>
+          <button class="m-cta" type="button" tabindex="-1">Pedir</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="showcase-copy">
+      <h2>Lleva tu restaurante a otro nivel</h2>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer class="foot">
+    <span>MENUPRO.TECH</span>
+    <span>Hecho con inteligencia artificial, diseñado y cuidado por una persona.</span>
+  </footer>
+</div>
+
+<script>
+  document.documentElement.classList.add("js");
+
+  /* MENUPRO.TECH: aparición al cargar + onda de desenfoque al pasar el mouse */
+  (function () {
+    var wm = document.querySelector(".wordmark");
+    if (!wm) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    /* se parte en letras para que el desenfoque del hover corra de izquierda a derecha */
+    var text = "MENUPRO.TECH";
+    var html = "";
+    for (var i = 0; i < text.length; i++) {
+      var c = text.charAt(i);
+      var cls = "ch" + (c === "." ? " dot" : i >= 8 ? " tld" : "");
+      html += '<span class="' + cls + '" style="--i:' + i + '">' + c + '</span>';
+    }
+    wm.innerHTML = html;
+
+    wm.addEventListener("animationend", function (e) {
+      if (e.animationName === "wordmarkIn") wm.classList.remove("in");
+    });
+    wm.classList.add("in");
+  })();
+
+  (function () {
+    var devices = document.getElementById("devices");
+    if (!devices || !("IntersectionObserver" in window)) {
+      if (devices) devices.classList.add("is-visible");
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { devices.classList.add("is-visible"); io.disconnect(); }
+      });
+    }, { threshold: 0.2 });
+    io.observe(devices);
+  })();
+</script>

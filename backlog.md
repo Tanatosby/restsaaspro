@@ -12,6 +12,29 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 
 ---
 
+## ▶️ PRÓXIMO — retomar el 2026-09-09: landing nueva (diseño en artifact)
+
+**Tarea inmediata acordada con el usuario (2026-09-08):** continuar el diseño de la landing
+premium **primero en el artifact**, antes de tocar `public/landing.html`.
+
+- **Base:** `landing/landing-concepto.html` — hero terminado y aprobado ("esta top"):
+  wordmark `MENUPRO.TECH` (Manrope 800, punto verde, "TECH" naranja) con aparición al cargar
+  (desenfoque + tracking que cierra) y, en hover, una onda de desenfoque que cruza de izquierda
+  a derecha letra por letra; debajo, centrado, "Para restaurantes que venden menús". Al bajar,
+  sección de producto: maquetas de celular (`menu.html`) + navegador (`owner.html`) con espacio
+  propio y, debajo, "Lleva tu restaurante a otro nivel". Paleta papel cálido / terracota / verde,
+  tipografía Manrope + IBM Plex, tema claro y oscuro.
+- **Artifact publicado:** https://claude.ai/code/artifact/bb16c4fd-e0c6-4c4c-a8b7-7e411a43885e
+  (el archivo del repo es la fuente; para editar, republicar a esa misma URL).
+- **Pendiente de construir sobre esta base** (ver también `vision_negocio.md` §16):
+  problema→solución en 3 pasos · demo/video corto del flujo real · testimonio real de Karina ·
+  tabla de precios Pro/Premium · FAQ (hardware, wifi caído, tiempo de montaje) · CTA + WhatsApp.
+  Reemplazar las maquetas dibujadas por capturas reales del piloto cuando estén.
+- **No es para el viernes** (primer cliente): la prioridad de esa fecha sigue siendo cerrar y
+  onboardear. La landing se trabaja con calma en paralelo.
+
+---
+
 ## ✅ Los 3 críticos del piloto #1: resueltos y desplegados (2026-08-16, `291c15b`)
 
 Salieron del uso real el 2026-08-14 (Día 3 de retoma, ver `pilotos.md`), se resolvieron y se

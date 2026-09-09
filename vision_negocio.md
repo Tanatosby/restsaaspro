@@ -595,6 +595,12 @@ Premium = lo que ayuda a analizar y hacer crecer el negocio.
 
 ### Ideas de landing que salieron en la misma conversación (para retomar)
 
+> **Avance 2026-09-08:** ya existe una base de diseño aprobada por el usuario ("esta top") en
+> `landing/landing-concepto.html` — hero + sección de producto (ver detalle en `backlog.md`
+> §PRÓXIMO). Artifact: https://claude.ai/code/artifact/bb16c4fd-e0c6-4c4c-a8b7-7e411a43885e
+> La tarea inmediata de la próxima sesión es seguir construyendo la landing sobre esa base,
+> primero en el artifact.
+
 - Rehacer `public/landing.html` como **landing premium** propia, separada del resto del sistema
   (ahí sí tiene sentido un acabado más vanguardista; el panel operativo no).
 - Conceptos rescatables de las skills de diseño revisadas (`taste-skill`, `scroll-craft` — ninguna

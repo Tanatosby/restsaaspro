@@ -115,6 +115,39 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎯 Sesión 2026-09-08 (3) — concepto de landing nueva (artifact + archivo base)
+
+**Prompt del usuario:** continuación de la sesión (2). Pidió una maqueta de landing estilo
+Linear — el nombre grande con color, una frase, y al bajar el producto (celular + web) con
+espacio propio, sin texto al costado. Luego varias iteraciones de ajuste sobre el hero.
+
+**Qué se hizo:** se construyó el concepto como artifact y se dejó guardado en el repo. Es solo
+diseño (HTML/CSS/JS autónomo), no toca nada de la app.
+
+- **Archivo:** `landing/landing-concepto.html` (fuente del artifact).
+- **Artifact:** https://claude.ai/code/artifact/bb16c4fd-e0c6-4c4c-a8b7-7e411a43885e
+- **Estado del hero (aprobado por el usuario, "esta top"):**
+  - Wordmark `MENUPRO.TECH` en Manrope 800 — "MENUPRO" tinta, punto verde, "TECH" naranja.
+  - Aparición al cargar: entra desde un desenfoque que se aclara y con el tracking cerrándose (~1 s).
+  - Hover: onda de desenfoque que cruza el título de izquierda a derecha, letra por letra
+    (spans `.ch` montados por JS con `--i` para el `animation-delay` escalonado).
+  - Debajo, centrado: "Para restaurantes que venden menús". Se quitó el "Baja para ver".
+  - Al bajar: sección de producto con maquetas de celular (`menu.html`) y navegador
+    (`owner.html`) — **dibujadas, no capturas reales** — y debajo "Lleva tu restaurante a otro
+    nivel". Pie honesto: "Hecho con inteligencia artificial, diseñado y cuidado por una persona"
+    (Principio de Diseño #9).
+  - Paleta papel cálido / terracota / verde; Manrope + IBM Plex; tema claro y oscuro.
+- **Descartado en el camino:** repetir la animación al hacer scroll hacia arriba — entraba en
+  bucle dentro del marco del artifact (IntersectionObserver y variantes). Se quitó; el efecto
+  corre una vez al cargar.
+- **Próximo (2026-09-09):** seguir la landing sobre esta base, primero en el artifact. Detalle
+  en `backlog.md` §PRÓXIMO y `vision_negocio.md` §16.
+
+**Docs actualizados:** `backlog.md` (§PRÓXIMO nueva + §Comercial), `vision_negocio.md` (§16),
+`status.md` (esta entrada). Archivo nuevo: `landing/landing-concepto.html`.
+
+---
+
 ## 🎯 Sesión 2026-09-08 (2) — discusión de planes Pro/Premium + landing (sin código)
 
 **Prompt del usuario:** trajo dos skills de diseño de GitHub para evaluar si servían para la
