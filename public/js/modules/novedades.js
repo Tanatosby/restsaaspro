@@ -98,6 +98,16 @@ const NOVEDADES = [
       'Corregido un cobro de más: cuando una mesa tenía una reserva Y además pedía algo en la mesa, el sistema podía contar esos platos dos veces (una mesa de S/ 56 llegaba a mostrar S/ 84). Ya no pasa. Si alguna vez usaste la opción "Auto-merge" en Configuración, quedó apagada — no la necesitás: la cuenta de la mesa ya junta la reserva con sus pedidos, y con el monto correcto.',
     ],
   },
+  {
+    id: 11,
+    fecha: '2026-09-13',
+    items: [
+      'Ya no hace falta tocar "🍽 Entregar": un pedido que lleva 3 minutos en "Listos" pasa solo a "Por cobrar". El plato lo seguís llevando a la mesa igual — lo que se ahorra es el toque en la pantalla, que en hora pico nunca llegaba y hacía que se acumularan los pedidos sin cerrar.',
+      'Podés cambiar esos 3 minutos, o apagarlo del todo poniendo 0, en Configuración → "Pasar solo de Listos a Por cobrar". Solo aplica a pedidos: las reservas siempre esperan que vos confirmes.',
+      'Si tocaste "Listo" por error, el botón "↩️ Regresar a cocina" ahora también está en "Por cobrar", no solo en "Listos" — así seguís pudiendo corregirlo aunque el pedido ya se haya movido solo.',
+      'La Cola del día ahora se actualiza cada 20 segundos en vez de cada minuto, para que veas los pedidos moverse casi al instante.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

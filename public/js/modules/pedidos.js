@@ -41,6 +41,15 @@ let _ultimaFirmaZona = {};
 // mesa / nombre / #orden, solo sobre esa zona. Vacío = sin filtro.
 let _filtroCobrar = '';
 
+// Cada cuánto se refresca la cola. Estuvo en 60 s desde el día 11 del piloto,
+// pero no por costo: el problema era el parpadeo de reconstruir todas las cards
+// en cada refresco ("no deja leer los pedidos bien"). Eso lo resolvió la firma
+// por zona (_ultimaFirmaZona): hoy el DOM solo se toca si los datos cambiaron.
+// Con eso resuelto vuelve a 20 s (ISS-091), que es lo que hace falta ahora que
+// los pedidos se mueven solos de Listos a Por cobrar y la dueña no toca nada
+// para verlos aparecer.
+const POLL_COLA_MS = 20000;
+
 // Flags de estatus, en orden. Aplicar uno implica apagar los demás — es como
 // el backend modela el estatus (una fila de estatus_orden/estatus_reserva).
 const FLAGS_ORDEN   = ['es_inicial', 'es_en_cocina', 'es_listo', 'es_entregado', 'es_pagado', 'es_cancelado'];
@@ -59,7 +68,7 @@ function initPedidosPoll() {
   // Los pedidos viejos no cambian solos: basta con mirarlos al abrir el panel,
   // no en cada poll.
   loadSinCerrar();
-  _pedidosPollTimer = setInterval(loadColaDia, 60000);
+  _pedidosPollTimer = setInterval(loadColaDia, POLL_COLA_MS);
 }
 
 function stopPedidosPoll() {
@@ -74,7 +83,7 @@ function stopPedidosPoll() {
 function reiniciarPoll() {
   if (!_pedidosPollTimer) return;   // el panel no está activo
   clearInterval(_pedidosPollTimer);
-  _pedidosPollTimer = setInterval(loadColaDia, 60000);
+  _pedidosPollTimer = setInterval(loadColaDia, POLL_COLA_MS);
 }
 
 // ── Cambio de tab ────────────────────────────────────────
@@ -628,8 +637,13 @@ function btnOrden(o, zona) {
       : '';
     return `${yaPago}<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_entregado')">${paraLlevar ? '📦 Recogido' : '🍽 Entregar'}</button>${btnRegresarACocinaOrden(o)}`;
   }
+  // ISS-091: "Regresar a cocina" (ISS-055) también acá. Antes vivía solo en
+  // "Listos", donde el pedido esperaba a que alguien tocara "Entregar". Ahora
+  // el auto-entregado lo puede mover solo a los 3 minutos, así que la ventana
+  // para deshacer un "Listo" tocado por error se cerraría sola: el botón tiene
+  // que seguir al pedido.
   if (zona === 'cobrar' && o.es_entregado)
-    return btnCobrar;
+    return `${btnCobrar}${btnRegresarACocinaOrden(o)}`;
   return '';
 }
 

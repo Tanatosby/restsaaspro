@@ -25,6 +25,7 @@ const pensionistasRoutes = require('./routes/pensionistas');
 const pensionistaRoutes  = require('./routes/pensionista');
 const { iniciarJob }              = require('./utils/autoPreparacion');
 const { iniciarJob: iniciarJobRecordatorioMenu } = require('./utils/recordatorioMenu');
+const { iniciarJob: iniciarJobAutoEntregado }    = require('./utils/autoEntregado');
 
 
 // Configurar Web Push con las VAPID keys del .env
@@ -220,6 +221,9 @@ iniciarJob(db, webpush);
 
 // Iniciar job de recordatorio de menú sin configurar, cada 8h (Gap 21)
 iniciarJobRecordatorioMenu(db, webpush);
+
+// Iniciar job de auto-entregado: "Listos" se vacía sola (ISS-091)
+iniciarJobAutoEntregado(db);
 
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running  → http://localhost:${PORT}`);

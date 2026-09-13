@@ -417,14 +417,14 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
   if (flag) {
     if (!VALID_ORDER_FLAGS.has(flag))
       return res.status(400).json({ error: `Flag inválido. Válidos: ${[...VALID_ORDER_FLAGS].join(', ')}` });
-    nuevoEstatus = db.prepare(`SELECT id, nombre, es_pagado, es_cancelado FROM estatus_orden WHERE ${flag} = 1`).get();
+    nuevoEstatus = db.prepare(`SELECT id, nombre, es_pagado, es_cancelado, es_listo FROM estatus_orden WHERE ${flag} = 1`).get();
     if (!nuevoEstatus)
       return res.status(400).json({ error: `No existe estatus con flag ${flag}` });
   } else {
     const estatusValidos = db.prepare(`SELECT nombre FROM estatus_orden`).all().map(e => e.nombre);
     if (!estatusValidos.includes(estatus))
       return res.status(400).json({ error: `Estatus inválido. Válidos: ${estatusValidos.join(', ')}` });
-    nuevoEstatus = db.prepare(`SELECT id, nombre, es_pagado, es_cancelado FROM estatus_orden WHERE nombre = ?`).get(estatus);
+    nuevoEstatus = db.prepare(`SELECT id, nombre, es_pagado, es_cancelado, es_listo FROM estatus_orden WHERE nombre = ?`).get(estatus);
   }
 
   const orden = db.prepare(`
@@ -453,6 +453,13 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
       db.prepare(`UPDATE ordenes SET id_estatus = ? WHERE id = ?`).run(nuevoEstatus.id, req.params.id);
       devolverStock(db, itemsMenuDeOrden(db, req.params.id));
     })();
+  } else if (nuevoEstatus.es_listo) {
+    // ISS-091: se anota CUÁNDO quedó listo para que el auto-entregado cuente
+    // desde acá y no desde que se creó el pedido. Se re-escribe en cada paso a
+    // listo: si volvió a cocina (ISS-055) y sale de nuevo, el reloj arranca
+    // otra vez desde cero.
+    db.prepare(`UPDATE ordenes SET id_estatus = ?, listo_at = CURRENT_TIMESTAMP WHERE id = ?`)
+      .run(nuevoEstatus.id, req.params.id);
   } else {
     db.prepare(`UPDATE ordenes SET id_estatus = ? WHERE id = ?`)
       .run(nuevoEstatus.id, req.params.id);
@@ -820,6 +827,12 @@ function actualizarOrdenKitchen(req, res) {
       db.prepare(`UPDATE ordenes SET id_estatus = ? WHERE id = ?`).run(nuevoEstatus.id, req.params.id);
       devolverStock(db, itemsMenuDeOrden(db, req.params.id));
     })();
+  } else if (flag === 'es_listo') {
+    // Mismo registro que en PATCH /:id/estatus — el pedido puede marcarse listo
+    // por cualquiera de los dos caminos y el auto-entregado (ISS-091) necesita
+    // la hora en los dos casos.
+    db.prepare(`UPDATE ordenes SET id_estatus = ?, listo_at = CURRENT_TIMESTAMP WHERE id = ?`)
+      .run(nuevoEstatus.id, req.params.id);
   } else {
     db.prepare(`UPDATE ordenes SET id_estatus = ? WHERE id = ?`)
       .run(nuevoEstatus.id, req.params.id);

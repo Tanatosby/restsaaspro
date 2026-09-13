@@ -972,7 +972,7 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
   const row = db.prepare(`
     SELECT nombre, foto_portada, color_primario, color_secundario,
            yape_activo, yape_telefono, plin_activo, plin_telefono, efectivo_activo,
-           minutos_preparacion, para_llevar_activo, delivery_activo,
+           minutos_preparacion, minutos_auto_entregado, para_llevar_activo, delivery_activo,
            costo_tapper, tarifa_delivery, auto_merge_activo, slug,
            minutos_cancelacion_reserva,
            horario_activo, hora_apertura, hora_cierre, dias_atencion,
@@ -991,6 +991,7 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
     plin_telefono:               row.plin_telefono                || '',
     efectivo_activo:             row.efectivo_activo              ?? 0,
     minutos_preparacion:         row.minutos_preparacion          ?? 20,
+    minutos_auto_entregado:      row.minutos_auto_entregado       ?? 3,   // ISS-091
     para_llevar_activo:          row.para_llevar_activo           ?? 1,
     delivery_activo:             row.delivery_activo              ?? 0,
     costo_tapper:                row.costo_tapper                 ?? 0,
@@ -1077,6 +1078,21 @@ router.patch('/config/minutos-preparacion', authorizePermiso(), (req, res) => {
     .run(minutos, req.user.restaurant_id);
 
   res.json({ minutos_preparacion: minutos });
+});
+
+// PATCH /api/menu/config/minutos-auto-entregado — ISS-091
+// Minutos que un pedido espera en "Listos" antes de pasar solo a "Por cobrar".
+// 0 = apagado: el pedido se queda ahí hasta que alguien toque "Entregar",
+// que es como funcionaba hasta ahora.
+router.patch('/config/minutos-auto-entregado', authorizePermiso(), (req, res) => {
+  const minutos = parseInt(req.body.minutos_auto_entregado, 10);
+  if (isNaN(minutos) || minutos < 0 || minutos > 180)
+    return res.status(400).json({ error: 'minutos_auto_entregado debe ser un número entre 0 y 180' });
+
+  db.prepare(`UPDATE restaurantes SET minutos_auto_entregado = ? WHERE id = ?`)
+    .run(minutos, req.user.restaurant_id);
+
+  res.json({ minutos_auto_entregado: minutos });
 });
 
 // PATCH /api/menu/config/minutos-cancelacion-reserva — ventana de tiempo para que el cliente cancele su reserva

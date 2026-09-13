@@ -292,8 +292,49 @@ auto-merge no se haya disparado nunca. Queda en ISS-093 la consulta SQL para con
 
 **Pendiente:** retirar el código del Gap 8 en su propia sesión (sin urgencia).
 
-**Pendiente general:** deploy de ISS-090 (`843fea7`), del paso 2+3 (`b7af6b7`) y de esto; y el paso 4
-(ISS-091: auto-entregado + poll a 20 s).
+### Paso 4 — ISS-091: "Listos" se vacía sola (2026-09-13)
+
+**Lo que faltaba y no estaba previsto:** la orden **no guardaba cuándo pasó a "Listo"**, sólo
+`created_at`. Contar desde ahí haría que un pedido que estuvo 40 min en cocina se marcara entregado
+en el mismo instante en que la cocinera lo pone listo. Se agregó `ordenes.listo_at`, escrito en los
+dos caminos por los que una orden llega a listo (`PATCH /:id/estatus` y el `PUT` de cocina).
+
+> **Bug que atrapó el E2E:** el `SELECT` de `PATCH /:id/estatus` traía sólo
+> `id, nombre, es_pagado, es_cancelado`, así que `nuevoEstatus.es_listo` era `undefined`, la rama
+> nueva nunca corría y `listo_at` quedaba NULL. Se agregó `es_listo` al SELECT.
+
+**El job** (`utils/autoEntregado.js`, calcado de `autoPreparacion.js`, arrancado en `app.js`): pasa a
+`es_entregado` las órdenes cuyo `listo_at` cumplió `minutos_auto_entregado` (default **3**).
+Solo órdenes —las reservas siguen esperando confirmación humana—, todas las modalidades, y las que
+no tienen `listo_at` (las que ya estaban en "Listos" antes del deploy) se ignoran a propósito.
+`0` apaga el automatismo.
+
+**Lo demás:** "↩️ Regresar a cocina" (ISS-055) ahora también en "Por cobrar" —el pedido llega solo,
+el botón lo sigue—; poll de la cola **60 s → 20 s** (`POLL_COLA_MS`) más el texto del panel; y
+tarjeta nueva en Configuración con `PATCH /api/menu/config/minutos-auto-entregado`.
+
+**Verificación:** `tests/auto-entregado.test.js` **10/10** (sobre todo de lo que el job NO debe
+tocar) · **jest 493/493** · `scripts/test-iss091-auto-entregado.js` **22/22** · y el job **corriendo
+dentro del servidor**, no sólo la función: pedido con 20 min en "Listos" y umbral de 2 → el servidor
+lo movió solo **a los ~30 s**. Sin regresión en `test-iss089` 31/31, `test-iss090` 17/17,
+`test-cobrar-homologado` 14/14 ni `test-ya-pago-foto-buscador` 25/25.
+
+**Al desplegar:** los pedidos que estén en "Listos" en ese momento tienen `listo_at` en NULL y el job
+no los va a mover — se cierran a mano esa primera vez.
+
+---
+
+## 📌 Los 4 pasos del rediseño de la Cola: completos
+
+| Paso | Qué | Commit |
+|---|---|---|
+| 1 | ISS-090 — los pedidos de la app entran directo a cocina | `843fea7` |
+| 2+3 | ISS-089 — el monto en la cola + "Por cobrar" por mesa con cobro en bloque | `b7af6b7` |
+| — | ISS-093 — auto-merge apagado (duplicaba la cuenta de la mesa) | `d485dcf` |
+| 4 | ISS-091 — auto-entregado + poll a 20 s | pendiente de commit |
+
+**Pendiente:** desplegar todo; y, sin urgencia, retirar el código del Gap 8 (ISS-093) y actualizar
+`test-agregar-manual.js` (ISS-092).
 
 ---
 ## 🎯 Sesión 2026-09-09 — landing (más secciones + fondo del hero) + modelo VAN

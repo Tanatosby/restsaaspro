@@ -53,6 +53,10 @@ async function loadConfiguracion() {
     const mpEl = document.getElementById('cfg-minutos-preparacion');
     if (mpEl) mpEl.value = cfg.minutos_preparacion ?? 20;
 
+    // Auto-entregado (ISS-091)
+    const maeEl = document.getElementById('cfg-minutos-auto-entregado');
+    if (maeEl) maeEl.value = cfg.minutos_auto_entregado ?? 3;
+
     // Ventana de cancelación de reservas (cliente)
     const mcEl = document.getElementById('cfg-minutos-cancelacion-reserva');
     if (mcEl) mcEl.value = cfg.minutos_cancelacion_reserva ?? 30;
@@ -352,6 +356,20 @@ async function guardarMinutosPreparacion() {
   try {
     await api('PATCH', '/api/menu/config/minutos-preparacion', { minutos_preparacion: minutos });
     toast('Tiempo de preparación guardado');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ISS-091 — cuánto espera un pedido en "Listos" antes de pasar solo a
+// "Por cobrar". 0 = apagado (se queda hasta que alguien toque "Entregar").
+async function guardarMinutosAutoEntregado() {
+  const minutos = parseInt(document.getElementById('cfg-minutos-auto-entregado').value, 10);
+  if (isNaN(minutos) || minutos < 0 || minutos > 180)
+    return toast('Ingresa un valor entre 0 y 180 minutos', 'err');
+  try {
+    await api('PATCH', '/api/menu/config/minutos-auto-entregado', { minutos_auto_entregado: minutos });
+    toast(minutos === 0
+      ? 'Apagado: los pedidos esperan en "Listos"'
+      : `Los pedidos pasarán solos a "Por cobrar" tras ${minutos} min`);
   } catch(e) { toast(e.message, 'err'); }
 }
 

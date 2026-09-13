@@ -1,6 +1,6 @@
 # ISS-091 — Auto-entregado: "Listos" se vacía sola
 
-**Estado:** 🟢 Decidido por el usuario (2026-09-12), **sin implementar**
+**Estado:** ✅ Implementado el 2026-09-13 — **sin desplegar**, sin verificar en uso real
 **Origen:** revisión del flujo de la cola durante ISS-089
 **Módulo:** `utils/` (job nuevo) · `config/database.js` · `routes/menu.js` (config) · `modules/config.js` · `modules/pedidos.js`
 **Prioridad:** 🟡 Media — ataca de frente la acumulación de ISS-085
@@ -38,10 +38,59 @@ que nadie la toque y aparece en la cuenta de su mesa (ISS-089). Es lo buscado, p
 **ningún humano confirma nada hasta el cobro**. Por eso "Regresar a cocina" en Por cobrar y el
 "Deshacer" del cobro (ISS-089) dejan de ser adornos: son la única red que queda.
 
-## A verificar al implementar
+## Qué se hizo (2026-09-13)
 
-- El job tiene que filtrar por restaurante y por fecha de hoy (mismo criterio que `colaDia.js`).
-- No tocar órdenes ya pagadas/canceladas.
-- `better-sqlite3` es síncrono: el tick debe ser una consulta acotada, no un barrido de todo el
-  historial (mismo cuidado que ISS-026).
-- Tests: replicar la estructura de los de `autoPreparacion`.
+### `listo_at` — lo que faltaba y no estaba previsto
+
+La orden **no guardaba cuándo había pasado a "Listo"**, solo `created_at`. Contar los minutos desde
+la creación haría que un pedido que estuvo 40 minutos en cocina se marcara entregado **en el mismo
+instante** en que la cocinera lo pone listo, sin que nadie lo lleve a la mesa. Se agregó
+`ordenes.listo_at`, que se escribe en los **dos** caminos por los que una orden llega a listo:
+`PATCH /:id/estatus` y el `PUT` de cocina.
+
+> **Bug que apareció al probarlo:** el `SELECT` de `PATCH /:id/estatus` traía sólo
+> `id, nombre, es_pagado, es_cancelado`, así que `nuevoEstatus.es_listo` era `undefined` y la rama
+> nueva nunca se ejecutaba — `listo_at` quedaba en NULL y el job no movía nada. Lo atrapó el E2E
+> (verificación A). Se agregó `es_listo` al SELECT.
+
+### El job — `utils/autoEntregado.js`
+
+Calcado de `utils/autoPreparacion.js`: tick cada 60 s, arrancado en `app.js`. Pasa a `es_entregado`
+las órdenes `es_listo` cuyo `listo_at` ya cumplió `minutos_auto_entregado`.
+
+| Decisión | Cómo quedó |
+|---|---|
+| **Solo órdenes** | Las reservas no se tocan: "cliente llegó" y "salió con el repartidor" son datos reales que alguien confirma, no un reloj. |
+| **Todas las modalidades** | Una orden "para llevar" es alguien que está en el local; y una orden nunca puede ser delivery (`MODALIDADES_ORDEN`). |
+| **Órdenes sin `listo_at`** | Se ignoran a propósito: son las que ya estaban en "Listos" antes del deploy. Vaciarlas de golpe marcaría como entregados platos que quizá siguen en la barra. Se cierran a mano, una sola vez. |
+| **Volver a cocina** | Al salir de nuevo a listo, `listo_at` se reescribe: el reloj arranca de cero. |
+| **Apagar** | `minutos_auto_entregado = 0` → el job no toca nada y todo funciona como antes. |
+
+### Lo demás
+
+- **"↩️ Regresar a cocina" también en "Por cobrar"** (`btnOrden`): antes vivía solo en "Listos", donde
+  el pedido esperaba indefinidamente. Ahora el pedido se mueve solo a los 3 min, así que la ventana
+  para deshacer un "Listo" tocado por error (ISS-055, pedido de la cocinera) se cerraría sola.
+- **Poll de la cola: 60 s → 20 s** (`POLL_COLA_MS`). El valor alto venía del parpadeo del día 11, ya
+  resuelto por la firma por zona (`_ultimaFirmaZona`). Ahora hace falta más frescura porque los
+  pedidos se mueven solos y la dueña no toca nada para verlos aparecer. El texto del panel lo dice.
+- **Configuración:** tarjeta nueva "🍽 Pasar solo de Listos a Por cobrar" +
+  `PATCH /api/menu/config/minutos-auto-entregado` (valida 0–180).
+
+### Verificación
+
+- `tests/auto-entregado.test.js` — **10/10**, sobre todo de lo que el job **no** debe tocar:
+  reservas, pedidos que no cumplieron el tiempo, sin `listo_at`, con el umbral en 0, ya cobrados o
+  cancelados, y el umbral propio de cada restaurante. **jest 493/493**.
+- `scripts/test-iss091-auto-entregado.js` — **22/22**: registro de `listo_at`, el job moviendo lo que
+  corresponde y dejando el resto, reservas intactas, los dos botones de "Regresar a cocina", el
+  reinicio del reloj, la validación del endpoint y el poll en 20 s.
+- **El job corriendo dentro del servidor**, no solo la función: pedido sembrado con 20 min en
+  "Listos" y umbral de 2 → el servidor lo movió solo **a los ~30 s**, sin que nadie tocara nada.
+- Sin regresión: `test-iss089-cobrar-por-mesa` 31/31, `test-iss090-pedido-directo-cocina` 17/17,
+  `test-cobrar-homologado` 14/14, `test-ya-pago-foto-buscador` 25/25.
+
+## Nota al desplegar
+
+Los pedidos que estén en "Listos" en ese momento tienen `listo_at` en NULL y **el job no los va a
+mover**: hay que cerrarlos a mano esa primera vez. Los nuevos ya nacen con la hora registrada.

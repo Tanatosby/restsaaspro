@@ -750,7 +750,7 @@
         <div class="sec-header">
           <div>
             <div class="sec-title">📋 Cola del día</div>
-            <div class="sec-sub">Órdenes y reservas activas por etapa — se actualiza cada 60 s</div>
+            <div class="sec-sub">Órdenes y reservas activas por etapa — se actualiza cada 20 s</div>
           </div>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
             <button class="btn btn-primary btn-sm" onclick="abrirModalAgregarManual()">+ Agregar manual</button>
@@ -1009,6 +1009,22 @@
               <span style="font-size:1rem">minutos de anticipación</span>
             </div>
             <button class="btn btn-primary btn-sm" onclick="guardarMinutosPreparacion()" style="align-self:flex-start">💾 Guardar</button>
+          </div>
+        </div>
+
+        <!-- Auto-entregado: "Listos" se vacía sola (ISS-091) -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><span class="card-title">🍽 Pasar solo de "Listos" a "Por cobrar"</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+            <p style="font-size:1rem;color:var(--muted)">Cuando un pedido lleva un rato en <strong>Listos</strong>, el sistema lo pasa solo a <strong>Por cobrar</strong>, sin que tengas que tocar "🍽 Entregar". El plato igual se lleva a la mesa: lo que se ahorra es el toque en la pantalla.</p>
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+              <label style="font-size:1rem;font-weight:600" for="cfg-minutos-auto-entregado">Esperar</label>
+              <input type="number" id="cfg-minutos-auto-entregado" min="0" max="180" value="3"
+                style="width:80px;font-size:1.142857rem;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+              <span style="font-size:1rem">minutos en "Listos"</span>
+            </div>
+            <p style="font-size:0.928571rem;color:var(--muted);margin:0">Poné <strong>0</strong> para apagarlo: los pedidos se quedan en "Listos" hasta que toques "🍽 Entregar". Solo aplica a pedidos — las reservas siempre esperan tu confirmación.</p>
+            <button class="btn btn-primary btn-sm" onclick="guardarMinutosAutoEntregado()" style="align-self:flex-start">💾 Guardar</button>
           </div>
         </div>
 

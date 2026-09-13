@@ -548,6 +548,19 @@ try {
   console.log('[ISS-093] Auto-merge apagado en los restaurantes existentes');
 } catch (_) { /* ya migrado */ }
 
+// ISS-091 — auto-entregado: "Listos" se vacía sola pasados X minutos.
+//
+// `minutos_auto_entregado` es el umbral por restaurante (default 3). El día 15
+// del piloto la dueña acumuló ~39 pedidos sin cerrar porque "Listos" solo se
+// vacía si alguien toca "Entregar", y en hora pico nadie lo toca (ISS-085).
+//
+// `listo_at` hacía falta sí o sí: hasta ahora la orden no guardaba CUÁNDO pasó
+// a listo, solo cuándo se creó. Contar los minutos desde `created_at` haría que
+// un pedido que estuvo 40 min en cocina se marcara entregado en el mismo
+// instante en que la cocinera lo pone listo, sin que nadie lo lleve a la mesa.
+try { db.exec(`ALTER TABLE restaurantes ADD COLUMN minutos_auto_entregado INTEGER DEFAULT 3`); } catch (_) {}
+try { db.exec(`ALTER TABLE ordenes      ADD COLUMN listo_at DATETIME DEFAULT NULL`); } catch (_) {}
+
 // Migración idempotente: slug único por restaurante (URL personalizada)
 // SQLite no admite UNIQUE en ALTER TABLE ADD COLUMN — se agrega la columna y luego el índice por separado
 try { db.exec(`ALTER TABLE restaurantes ADD COLUMN slug TEXT`); } catch (_) {}
