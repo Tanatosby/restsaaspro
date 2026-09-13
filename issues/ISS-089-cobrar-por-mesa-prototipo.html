@@ -1,0 +1,784 @@
+<title>Cobrar por mesa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&family=Lato:wght@400;700;900&family=Playfair+Display:wght@700&display=swap">
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   DOCUMENTO — misma paleta fría de la serie ISS-089: la app es
+   cálida (terracota sobre crema), el documento es acero sobre
+   papel gris, así el prototipo se lee siempre como "la pantalla".
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --paper:#eceeef; --surface:#fbfcfc; --surface-2:#f3f5f6;
+  --ink:#161a1d; --ink-2:#4a5157; --muted:#7c858c;
+  --line:#d6dbde; --line-2:#c2c9cd;
+  --steel:#1a6090; --steel-soft:#e5eef5;
+  --ok:#2a7a4a; --ok-soft:#e8f3ec;
+  --warn:#8f5f10; --warn-soft:#f6efdd;
+  --stop:#ab392c; --stop-soft:#f7e9e7;
+  --doc-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#111417; --surface:#181c20; --surface-2:#1e2328;
+    --ink:#e7eaec; --ink-2:#a8b0b6; --muted:#78828a;
+    --line:#282e34; --line-2:#39424a;
+    --steel:#69b0e2; --steel-soft:#15242f;
+    --ok:#5fb184; --ok-soft:#15241d;
+    --warn:#cc9a3f; --warn-soft:#251f12;
+    --stop:#d4776a; --stop-soft:#261715;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111417; --surface:#181c20; --surface-2:#1e2328;
+  --ink:#e7eaec; --ink-2:#a8b0b6; --muted:#78828a;
+  --line:#282e34; --line-2:#39424a;
+  --steel:#69b0e2; --steel-soft:#15242f;
+  --ok:#5fb184; --ok-soft:#15241d;
+  --warn:#cc9a3f; --warn-soft:#251f12;
+  --stop:#d4776a; --stop-soft:#261715;
+}
+
+body{ background:var(--paper); color:var(--ink); font-family:var(--doc-font);
+      font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+.wrap{ max-width:1060px; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
+@media (max-width:520px){ .wrap{ padding:1.75rem 1rem 4rem; } }
+
+h1,h2,h3{ text-wrap:balance; line-height:1.18; font-weight:600; letter-spacing:-.015em; }
+h1{ font-size:clamp(2rem,6vw,2.9rem); font-weight:700; letter-spacing:-.03em; }
+h2{ font-size:clamp(1.35rem,3.4vw,1.7rem); margin-bottom:.35rem; }
+h3{ font-size:1.05rem; }
+p{ max-width:68ch; }
+strong{ font-weight:600; color:var(--ink); }
+code{ font-family:var(--mono); font-size:.86em; background:var(--surface-2);
+      border:1px solid var(--line); border-radius:4px; padding:.08em .38em; color:var(--ink-2); }
+.eyebrow{ font-family:var(--mono); font-size:.7rem; font-weight:600; letter-spacing:.14em;
+          text-transform:uppercase; color:var(--muted); }
+
+.doc-head{ display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem;
+           border-bottom:1px solid var(--line); }
+section{ padding-top:2.75rem; display:flex; flex-direction:column; gap:1rem; }
+.sec-head{ display:flex; flex-direction:column; gap:.2rem; }
+
+.note{ display:grid; grid-template-columns:auto 1fr; gap:.9rem; background:var(--surface);
+       border:1px solid var(--line); border-left:3px solid var(--steel); border-radius:8px;
+       padding:1rem 1.1rem; max-width:72ch; }
+.note.key{ border-left-color:var(--warn); background:var(--warn-soft); }
+.note.stopnote{ border-left-color:var(--stop); background:var(--stop-soft); }
+.note.okn{ border-left-color:var(--ok); background:var(--ok-soft); }
+.note-mark{ font-family:var(--mono); font-size:.72rem; font-weight:600; letter-spacing:.1em;
+            text-transform:uppercase; color:var(--muted); padding-top:.2rem; }
+.note p{ margin:0; max-width:none; }
+.note p + p{ margin-top:.55rem; }
+
+.tag{ display:inline-flex; align-items:center; gap:.35rem; font-family:var(--mono);
+      font-size:.68rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+      padding:.2rem .5rem; border-radius:4px; margin-right:.35rem; }
+.tag.ok{ background:var(--ok-soft); color:var(--ok); }
+.tag.warn{ background:var(--warn-soft); color:var(--warn); }
+.tag.stop{ background:var(--stop-soft); color:var(--stop); }
+
+/* ── Zona del prototipo ── */
+.lab{ display:grid; grid-template-columns:minmax(0,392px) minmax(0,1fr); gap:1.75rem;
+      align-items:start; }
+@media (max-width:820px){ .lab{ grid-template-columns:1fr; } }
+
+.phone{
+  width:min(360px,100%); background:#f4f1ec; border:1px solid var(--line-2);
+  border-radius:18px; padding:14px 12px 16px; position:relative; overflow:hidden;
+  box-shadow:0 14px 34px -20px rgba(10,20,30,.55);
+}
+.phone-bar{ display:flex; align-items:center; justify-content:space-between;
+            font-family:var(--mono); font-size:.62rem; letter-spacing:.1em;
+            text-transform:uppercase; color:#9a9088; padding:0 2px 10px; }
+
+.probar{ display:flex; flex-direction:column; gap:1rem; }
+.probar ol{ margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:.55rem; }
+.probar li{ font-size:.95rem; color:var(--ink-2); max-width:58ch; }
+.probar li b{ color:var(--ink); font-weight:600; }
+.reset{
+  align-self:flex-start; font:inherit; font-size:.82rem; font-weight:600; font-family:var(--mono);
+  letter-spacing:.06em; text-transform:uppercase; color:var(--steel); background:var(--surface);
+  border:1px solid var(--line-2); border-radius:6px; padding:.5rem .8rem; cursor:pointer;
+  min-height:40px;
+}
+.reset:hover{ background:var(--steel-soft); }
+
+/* ══════════════════════════════════════════════════════════════
+   APP — tokens reales de public/css/owner.css (captura fija)
+   ══════════════════════════════════════════════════════════════ */
+.app{
+  --bg:#f4f1ec; --surface:#ffffff; --surface-2:#faf7f2;
+  --border:#e8e1d7; --border-2:#d8cfc2;
+  --text:#1c1813; --text-2:#5c5349; --muted:#9a9088;
+  --accent:#c8692a; --accent-strong:#b25a20; --accent-soft:#fdf0e8;
+  --info:#1a6090; --info-bg:#ecf3fb;
+  --success:#2a7a4a; --success-bg:#ebf6f0;
+  --danger:#c0392b; --danger-bg:#fdeeed;
+  --warn:#ab7113; --warn-bg:#fdf6e7;
+  --r:12px;
+  font-family:'Lato',system-ui,sans-serif; color:var(--text);
+  display:flex; flex-direction:column; gap:.7rem;
+}
+.app *{ box-sizing:border-box; }
+.app .tabs{ display:flex; gap:2px; border-bottom:1px solid var(--border); overflow-x:auto; }
+.app .tab{ appearance:none; background:none; border:none; border-bottom:2px solid transparent;
+           padding:10px 9px; font:inherit; font-size:.82rem; font-weight:600; color:var(--muted);
+           white-space:nowrap; cursor:pointer; }
+.app .tab.active{ color:var(--accent); border-bottom-color:var(--accent); font-weight:700; }
+.app .kanban-badge{ display:inline-flex; align-items:center; justify-content:center;
+  min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--border);
+  color:var(--muted); font-size:.7rem; font-weight:800; margin-left:4px; }
+.app .tab.active .kanban-badge{ background:var(--accent); color:#fff; }
+
+.app .buscador{ width:100%; min-height:44px; border:1px solid var(--border-2); border-radius:8px;
+  background:var(--surface); padding:0 12px; font:inherit; font-size:1rem; color:var(--text); }
+.app .buscador::placeholder{ color:var(--muted); }
+.app .buscador:focus{ outline:none; border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(200,105,42,.18); }
+
+.app .resumen{
+  display:flex; align-items:center; justify-content:space-between; gap:.5rem;
+  padding:.6rem .8rem; background:var(--accent-soft); border:1px solid rgba(200,105,42,.22);
+  border-radius:10px;
+}
+.app .resumen .lbl{ font-size:.78rem; font-weight:700; color:var(--text-2);
+  text-transform:uppercase; letter-spacing:.05em; }
+.app .resumen .val{ font-family:'Playfair Display',Georgia,serif; font-size:1.35rem;
+  font-weight:700; color:var(--accent-strong); font-variant-numeric:tabular-nums; }
+
+/* Fila de mesa plegable */
+.app .mesa{ border:1px solid var(--border); border-radius:var(--r); background:var(--surface);
+  overflow:hidden; box-shadow:0 1px 3px rgba(28,24,19,.06); }
+.app .mesa.abierta{ border-color:var(--border-2); box-shadow:0 6px 18px -8px rgba(28,24,19,.22); }
+.app .mesa-head{ display:flex; flex-direction:column; gap:.45rem; padding:.65rem .75rem; }
+.app .mesa-open{
+  display:flex; align-items:center; gap:.6rem; width:100%; background:none; border:none;
+  font:inherit; text-align:left; cursor:pointer; color:var(--text); padding:0; min-height:48px;
+}
+.app .mesa-open:focus-visible{ outline:2px solid var(--accent); outline-offset:3px;
+  border-radius:6px; }
+.app .mesa-num{
+  width:44px; height:44px; flex:none; border-radius:11px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; background:var(--accent-soft);
+  border:1px solid rgba(200,105,42,.25); color:var(--accent-strong);
+  font-weight:900; font-size:1.15rem; line-height:1;
+}
+.app .mesa-num .cap{ font-size:.5rem; font-weight:700; letter-spacing:.08em; opacity:.75;
+  text-transform:uppercase; margin-top:1px; }
+.app .mesa.sinmesa .mesa-num{ background:var(--info-bg); border-color:rgba(26,96,144,.22);
+  color:var(--info); font-size:1.2rem; }
+.app .mesa-mid{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.1rem; }
+.app .mesa-tit{ font-size:.97rem; font-weight:700; }
+.app .mesa-sub{ font-size:.78rem; color:var(--muted); }
+.app .mesa-der{ display:flex; align-items:center; gap:.4rem; flex:none; }
+.app .monto{ font-size:1.05rem; font-weight:900; color:var(--accent);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.app .monto.sm{ font-size:.93rem; font-weight:700; color:var(--text-2); }
+.app .chev{ font-size:.65rem; color:var(--muted); transition:transform .2s ease; }
+.app .mesa.abierta .chev{ transform:rotate(180deg); }
+
+/* Cuerpo desplegado */
+.app .mesa-body{ border-top:1px solid var(--border); background:var(--surface-2);
+  padding:.6rem; display:flex; flex-direction:column; gap:.5rem; }
+.app .mesa-body.anim{ animation:abrir .22s ease; }
+@keyframes abrir{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
+
+.app .ticket{ background:var(--surface); border:1px solid var(--border);
+  border-left:4px solid var(--accent); border-radius:10px; padding:.7rem .8rem;
+  display:flex; flex-direction:column; gap:.4rem; }
+.app .ticket.reserva{ border-left-color:var(--info); }
+.app .ticket-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:.5rem; }
+.app .ticket-tit{ font-size:.93rem; font-weight:700; display:flex; align-items:center;
+  gap:.35rem; flex-wrap:wrap; }
+.app .ticket-meta{ font-size:.78rem; color:var(--muted); font-weight:400; }
+.app .items{ display:flex; flex-direction:column; gap:.15rem; }
+.app .item{ font-size:.86rem; color:var(--text-2); }
+.app .item em{ font-style:normal; color:var(--muted); opacity:.75; }
+.app .ticket-pie{ display:flex; align-items:flex-end; justify-content:space-between;
+  gap:.6rem; margin-top:.1rem; }
+
+.app .badge{ display:inline-flex; align-items:center; gap:3px; font-size:.7rem; font-weight:700;
+  padding:2px 8px; border-radius:20px; }
+.app .badge-conf{ background:#d1fae5; color:#065f46; }
+.app .badge-pend{ background:#fef3c7; color:#92400e; }
+.app .badge-manual{ background:#ede9fe; color:#5b21b6; }
+.app .badge-rep{ background:#fee2e2; color:#991b1b; }
+.app .badge-mod{ background:var(--warn-bg); color:var(--warn); }
+
+.app .thumb{ width:54px; height:54px; flex:none; border-radius:6px; border:1px solid var(--border);
+  overflow:hidden; cursor:pointer; padding:0; background:none; display:block; }
+.app .thumb svg{ display:block; width:100%; height:100%; }
+.app .thumb:active{ transform:scale(.95); }
+
+.app .btn{ font:inherit; font-size:.88rem; font-weight:700; min-height:44px; padding:5px 12px;
+  border-radius:8px; border:1px solid transparent; cursor:pointer; display:inline-flex;
+  align-items:center; justify-content:center; gap:.3rem; }
+.app .btn-primary{ background:linear-gradient(135deg,#d9772f,#c8692a 55%,#b25a20); color:#fff;
+  box-shadow:0 6px 16px -4px rgba(200,105,42,.45); }
+.app .btn-success{ background:none; color:var(--success); border-color:rgba(42,122,74,.3); }
+.app .btn-success:hover{ background:var(--success-bg); }
+.app .btn-ghost{ background:var(--surface); color:var(--text-2); border-color:var(--border); }
+.app .btn-mini{ min-height:38px; font-size:.8rem; padding:4px 10px; }
+.app .btn-block{ width:100%; }
+
+.app .aviso-grupo{ font-size:.78rem; color:var(--muted); text-align:center; padding:.2rem .4rem; }
+
+.app .vacio{ text-align:center; padding:1.6rem .8rem; color:var(--muted); font-size:.9rem; }
+.app .vacio .ico{ font-size:1.8rem; display:block; margin-bottom:.35rem; }
+
+/* Toast con deshacer */
+.toast{
+  position:absolute; left:12px; right:12px; bottom:12px; z-index:5;
+  display:flex; align-items:center; justify-content:space-between; gap:.6rem;
+  background:#1c1813; color:#fff; border-radius:10px; padding:.7rem .85rem;
+  font-family:'Lato',sans-serif; font-size:.88rem; font-weight:700;
+  box-shadow:0 10px 24px -10px rgba(0,0,0,.6); animation:subir .2s ease;
+}
+@keyframes subir{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
+.toast button{ font:inherit; font-size:.82rem; font-weight:800; color:#f0b184; background:none;
+  border:1px solid rgba(240,177,132,.4); border-radius:6px; padding:.35rem .7rem; cursor:pointer;
+  min-height:36px; white-space:nowrap; }
+
+/* Visor de comprobante */
+.visor{ position:absolute; inset:0; z-index:9; background:rgba(28,24,19,.72);
+  display:flex; align-items:center; justify-content:center; padding:18px; animation:fade .16s ease; }
+@keyframes fade{ from{ opacity:0; } to{ opacity:1; } }
+.visor-card{ background:#fff; border-radius:12px; padding:10px; width:100%;
+  display:flex; flex-direction:column; gap:.55rem; }
+.visor-card svg{ display:block; width:100%; height:auto; border-radius:6px; }
+.visor-card button{ font-family:'Lato',sans-serif; font-size:.9rem; font-weight:700;
+  min-height:44px; border-radius:8px; border:1px solid #d8cfc2; background:#fff; cursor:pointer; }
+
+/* ── Tabla ── */
+.tabla-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:10px;
+             background:var(--surface); }
+table{ border-collapse:collapse; width:100%; min-width:560px; font-size:.92rem; }
+th,td{ text-align:left; padding:.7rem .9rem; border-bottom:1px solid var(--line);
+       vertical-align:top; }
+th{ font-family:var(--mono); font-size:.68rem; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); background:var(--surface-2); white-space:nowrap; }
+tbody tr:last-child td{ border-bottom:none; }
+td:first-child{ font-weight:600; white-space:nowrap; }
+
+.ask{ display:flex; flex-direction:column; gap:.9rem; }
+.ask-item{ background:var(--surface); border:1px solid var(--line); border-radius:10px;
+           padding:1rem 1.1rem; display:flex; flex-direction:column; gap:.35rem; }
+.ask-item .q{ font-weight:600; }
+.ask-item .a{ font-size:.93rem; color:var(--ink-2); max-width:66ch; }
+
+*:focus-visible{ outline:2px solid var(--steel); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="doc-head">
+  <span class="eyebrow">ISS-089 · prototipo 2 · revisión 2</span>
+  <h1>Cobrar por mesa</h1>
+  <p style="color:var(--ink-2)">
+    La zona "Por cobrar" deja de ser una lista de pedidos sueltos y pasa a ser una lista de
+    <strong>mesas</strong>, cada una con su cuenta y su botón de cobrar a la vista, sin abrir nada.
+    Se abre solo cuando hace falta ver los tickets. <strong>El prototipo funciona</strong>: tocá,
+    buscá, cobrá, deshacé. Abajo, las otras dos decisiones del flujo ya resueltas.
+  </p>
+</header>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Prototipo interactivo</span>
+    <h2>"Por cobrar", por mesa</h2>
+  </div>
+
+  <div class="lab">
+    <div class="phone" id="phone">
+      <div class="phone-bar"><span>Cola del día</span><span>Por cobrar</span></div>
+      <div class="app">
+        <div class="tabs">
+          <button class="tab" type="button">Pendientes <span class="kanban-badge">1</span></button>
+          <button class="tab" type="button">Cocina <span class="kanban-badge">3</span></button>
+          <button class="tab" type="button">Listos <span class="kanban-badge">2</span></button>
+          <button class="tab active" type="button">Por cobrar <span class="kanban-badge" id="kb">6</span></button>
+        </div>
+
+        <input class="buscador" id="q" type="search" inputmode="search" autocomplete="off"
+               placeholder="🔍 Buscar por mesa o nombre…" aria-label="Buscar por mesa o nombre">
+
+        <div class="resumen">
+          <span class="lbl">Por cobrar hoy</span>
+          <span class="val" id="total-dia">S/ 0.00</span>
+        </div>
+
+        <div id="lista"></div>
+      </div>
+    </div>
+
+    <div class="probar">
+      <h3>Qué probar</h3>
+      <ol>
+        <li><b>Cobrá la mesa 5 sin abrirla</b> — el botón está en la fila, el caso más común no
+          necesita ver nada. Después <b>deshacé</b> desde el aviso negro.</li>
+        <li><b>Ahora abrila</b>: el caso del viernes, los 2 menús, la jarra de chicha del hijo y el
+          plato a la carta, cada uno con su precio. El total ya está arriba, así que adentro no se
+          repite.</li>
+        <li><b>Tocá la captura</b> del Yape en la mesa 2 o la 8 — se abre el visor, igual que hoy
+          (<code>comprobanteThumb</code>). La mesa 8 tiene además el aviso de comprobante ya usado.</li>
+        <li><b>Cobrá un solo ticket</b> con "Cobrar solo este" — el hijo que paga lo suyo aparte. La
+          mesa queda abierta con el resto.</li>
+        <li><b>Abrí el último grupo</b> (para llevar, delivery y sin mesa): tiene tickets de clientes
+          distintos, así que <b>no tiene botón de cobro en bloque</b>. Se cobran de a uno.</li>
+        <li><b>Escribí "5" o "luis"</b>: el buscador de ISS-085 sigue funcionando, ahora sobre mesas.</li>
+      </ol>
+      <button class="reset" type="button" id="reset">↺ Reiniciar demo</button>
+
+      <div class="note">
+        <span class="note-mark">Decisión</span>
+        <div>
+          <p><strong>El grupo de abajo no se cobra junto.</strong> Una mesa es un grupo de gente que
+            comparte cuenta; "para llevar / sin mesa" es una bolsa de clientes que no tienen nada que
+            ver entre sí. Un botón de "cobrar todo el grupo" ahí cobraría pedidos de tres personas
+            distintas de un toque.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Decisión 1</span>
+    <h2>"Pendientes" desaparece para órdenes</h2>
+  </div>
+
+  <p>
+    La defensa de Pendientes era que ahí se verifica el Yape antes de cocinar. <strong>En el uso real
+    eso no pasa:</strong> en plena aglomeración la dueña pasa los pedidos a cocina sin mirar el
+    comprobante. La zona no está verificando nada — solo está cobrando un toque extra por cada pedido
+    de la app.
+  </p>
+  <p>
+    Y no se pierde nada, porque el aviso viaja con el pedido: <code>comprobanteThumb()</code> y el
+    cartel <em>"⚠️ Ya usado en el pedido #N"</em> se pintan en la tarjeta <strong>en todas las
+    zonas</strong>, no solo en Pendientes. Cuando llega a "Por cobrar" —que es donde ella sí está
+    mirando la plata— el aviso sigue ahí, y el backend además bloquea el cobro de un Yape sin
+    confirmar (<code>requiereConfirmarPagoAntes</code>). La verificación ya ocurre en el cobro; lo
+    único que sobraba era la parada previa.
+  </p>
+
+  <div class="note okn">
+    <span class="note-mark">Queda</span>
+    <div>
+      <p><strong>Las órdenes de la app entran directo a cocina</strong>, igual que ya hacen las
+        manuales (<code>routes/public.js:354</code> pasa de <code>es_inicial</code> a
+        <code>es_en_cocina</code>). La pestaña "Pendientes" sigue existiendo <strong>solo para
+        reservas</strong>, que sí la necesitan: confirmar, hora de llegada, cliente que todavía no
+        llegó.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Decisión 2</span>
+    <h2>Auto-entregado: "Listos" se vacía sola</h2>
+  </div>
+
+  <p>
+    Un job igual al que ya existe (<code>utils/autoPreparacion.js</code>, que mueve reservas a cocina
+    solo) pasa las órdenes de <strong>Listos → Por cobrar</strong> después de X minutos, con el umbral
+    configurable por restaurante. <strong>Default: 3 minutos.</strong>
+  </p>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr><th>Punto</th><th>Resuelto así</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Modalidad</td>
+          <td>Aplica a <strong>todas las órdenes</strong>, sin distinguir. Una orden para llevar es
+            alguien que está en el local y se lleva su plato: se lo dan ahí mismo. Y una orden nunca
+            puede ser delivery — el código ya lo impide
+            (<code>MODALIDADES_ORDEN = ['en_local','para_llevar','mixto']</code>,
+            <code>routes/public.js:295</code>). El delivery solo existe en reservas.</td>
+        </tr>
+        <tr>
+          <td>Reservas</td>
+          <td><strong>Fuera, enteras.</strong> Ni auto-entregado ni cambios en Pendientes: una reserva
+            sí necesita que alguien confirme que el cliente llegó, o que el pedido salió con el
+            repartidor. Esos son datos reales, no los puede poner un reloj.</td>
+        </tr>
+        <tr>
+          <td>El "deshacer" de la cocinera</td>
+          <td><strong>↩️ Regresar a cocina</strong> (ISS-055) pasa a estar también en "Por cobrar", no
+            solo en Listos. Si el pedido se va solo, el botón lo tiene que seguir.</td>
+        </tr>
+        <tr>
+          <td>Refresco de la cola</td>
+          <td>El poll de 60 s se puede <strong>bajar</strong>: el motivo por el que estaba en 60 s era
+            el parpadeo del día 11, y eso ya se arregló con la firma por zona
+            (<code>_ultimaFirmaZona</code> — solo repinta si cambiaron los datos). Con 3 minutos de
+            umbral, además, ningún pedido se escapa sin verse.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Resultado</span>
+    <h2>Cómo queda el flujo</h2>
+  </div>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr><th>Zona</th><th>Hoy</th><th>Con los tres cambios</th></tr></thead>
+      <tbody>
+        <tr><td>Pendientes</td><td>Todo pedido de la app + reservas por confirmar</td>
+            <td><strong>Solo reservas</strong></td></tr>
+        <tr><td>En cocina</td><td>Manuales + lo que ella pasó a mano</td>
+            <td>Todas las órdenes, entran solas</td></tr>
+        <tr><td>Listos</td><td>Se acumula hasta que alguien toca "Entregar"</td>
+            <td>Se vacía sola a los 3 min (órdenes; reservas no)</td></tr>
+        <tr><td>Por cobrar</td><td>Pedidos sueltos, sin montos, poll de 60 s</td>
+            <td>Mesas con su cuenta y su botón de cobrar, ordenadas por antigüedad, poll de 20 s</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note stopnote">
+    <span class="note-mark">Riesgo</span>
+    <div>
+      <p>Los tres cambios juntos hacen que <strong>una orden avance sola hasta la caja</strong>: nace
+        en cocina, sale de Listos sin que nadie la toque y aparece en la cuenta de una mesa. Es
+        justo lo que se busca, pero también significa que <strong>ningún humano confirma nada hasta
+        el cobro</strong>. Por eso el "deshacer" del prototipo y el "regresar a cocina" en Por cobrar
+        no son adornos: con menos toques obligatorios, la vuelta atrás pasa a ser la única red.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Cerrado</span>
+    <h2>Las tres últimas decisiones</h2>
+  </div>
+  <div class="ask">
+    <div class="ask-item">
+      <span class="q">Poll de la cola: <strong>20 segundos</strong></span>
+      <span class="a">Baja de 60 s. El motivo de ese valor era el parpadeo del día 11, resuelto con la
+        firma por zona (<code>_ultimaFirmaZona</code>): hoy el DOM solo se reconstruye si los datos
+        cambiaron, así que refrescar más seguido ya no molesta.</span>
+    </div>
+    <div class="ask-item">
+      <span class="q">Orden de las mesas: <strong>por antigüedad</strong></span>
+      <span class="a">La que llegó primero arriba, la última abajo. La antigüedad de una mesa es la de
+        su pedido más viejo. El grupo sin mesa queda siempre al final. Ya aplicado en el prototipo.</span>
+    </div>
+    <div class="ask-item">
+      <span class="q">Mesa sin cerrar de un cliente anterior: <strong>sin corte por tiempo, por ahora</strong></span>
+      <span class="a">Se evaluó separar cuentas por un hueco de 30 min entre pedidos, pero no es
+        concluyente —dos pedidos separados por media hora bien pueden ser la misma mesa—. Por ahora
+        "Cobrar solo este" lo cubre: se cobra primero lo que no corresponde y después el resto. Si
+        aparece seguido en uso real, se retoma con datos.</span>
+    </div>
+  </div>
+
+  <div class="note okn">
+    <span class="note-mark">Alcance</span>
+    <div>
+      <p><strong>No hace falta abrir la cuenta desde otras zonas.</strong> Aclaración del usuario: la
+        dueña pidió la cuenta <em>después</em> de que todos los platos estaban entregados, no con
+        pedidos en cocina. O sea que los tres pedidos siempre van a estar en "Por cobrar" — esta
+        vista sola resuelve el caso, y la opción A del primer artifact (tocar el chip de mesa en
+        cualquier zona) queda fuera de alcance.</p>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+// ── Datos del prototipo (el caso real del viernes + variantes que hoy conviven) ──
+const BASE = [
+  { id:'m5', mesa:5, nombre:'Ana', pedidos:[
+    { id:12, hora:'13:42', min:42, titulo:'2 menús del día', monto:34,
+      items:['📋 Arroz con pollo ×1 <em>Segundo</em>','📋 Caldo de gallina ×1 <em>Entrada</em>',
+             '📋 Seco de res ×1 <em>Segundo</em>'], pago:'manual' },
+    { id:15, hora:'14:06', min:18, titulo:'Jarra de chicha', monto:12,
+      items:['🍽 Jarra de chicha ×1'], pago:'manual' },
+    { id:17, hora:'14:18', min:6, titulo:'Ceviche mixto', monto:28,
+      items:['🍽 Ceviche mixto ×1'], pago:'manual' },
+  ]},
+  { id:'m8', mesa:8, nombre:'Luis', pedidos:[
+    { id:16, hora:'13:58', min:26, titulo:'2 menús del día', monto:24,
+      items:['📋 Ají de gallina ×2 <em>Segundo</em>','📋 Sopa criolla ×2 <em>Entrada</em>'],
+      pago:'yape-pend', comprobante:true, repetido:9 },
+    { id:18, hora:'14:11', min:13, titulo:'Gaseosa personal', monto:6,
+      items:['🍽 Gaseosa personal ×2'], pago:'manual' },
+  ]},
+  { id:'m2', mesa:2, nombre:'', pedidos:[
+    { id:14, hora:'13:51', min:33, titulo:'1 menú del día', monto:14,
+      items:['📋 Lomo saltado ×1 <em>Segundo</em>','📋 Crema de zapallo ×1 <em>Entrada</em>'],
+      pago:'yape-conf', comprobante:true },
+  ]},
+  { id:'m3', mesa:3, nombre:'Rosa', reserva:true, pedidos:[
+    { id:'R-4KQ2', hora:'13:30', min:54, titulo:'Reserva · 2 menús', monto:22, reserva:true,
+      items:['📋 Tallarín saltado ×2 <em>Segundo</em>'], pago:'plin-conf', comprobante:true },
+  ]},
+  { id:'sm', sinMesa:true, pedidos:[
+    { id:13, hora:'14:02', min:22, titulo:'1 menú', monto:13.5, mod:'🥡 Para llevar',
+      items:['📋 Arroz chaufa ×1 <em>Segundo</em>'], pago:'yape-conf', comprobante:true },
+    { id:19, hora:'14:09', min:15, titulo:'1 menú + gaseosa', monto:18, mod:'Sin mesa',
+      items:['📋 Bistec a lo pobre ×1 <em>Segundo</em>','🍽 Gaseosa personal ×1'], pago:'manual' },
+    { id:'R-7HX1', hora:'13:20', min:64, titulo:'Reserva · Carla', monto:31, reserva:true,
+      mod:'🛵 Delivery', items:['📋 Pollo al horno ×2 <em>Segundo</em>'], pago:'yape-conf',
+      comprobante:true },
+  ]},
+];
+
+let datos = clonar(BASE);
+let abierta = null;
+let filtro = '';
+let deshacer = null;
+let timerToast = null;
+
+function clonar(x){ return JSON.parse(JSON.stringify(x)); }
+function sol(n){ return 'S/ ' + n.toFixed(2); }
+function totalMesa(m){ return m.pedidos.reduce((s,p)=>s+p.monto,0); }
+// Antigüedad de la mesa = la de su pedido más viejo (más minutos esperando)
+function espera(m){ return Math.max(...m.pedidos.map(p => p.min)); }
+
+// Captura de Yape simulada — dibujada, no cargada de la red (el CSP del artifact
+// bloquea imágenes externas; en la app real es la foto que sube el comensal).
+function captura(grande){
+  const h = grande ? 320 : 54, w = grande ? 260 : 54;
+  return `<svg viewBox="0 0 260 320" width="${w}" height="${h}" role="img"
+      aria-label="Comprobante de pago">
+    <rect width="260" height="320" fill="#742284"/>
+    <circle cx="130" cy="74" r="26" fill="#fff" opacity=".18"/>
+    <path d="M118 74l8 9 16-18" stroke="#fff" stroke-width="5" fill="none"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="46" y="120" width="168" height="13" rx="6" fill="#fff" opacity=".92"/>
+    <rect x="70" y="146" width="120" height="9" rx="4" fill="#fff" opacity=".55"/>
+    <rect x="30" y="184" width="200" height="104" rx="10" fill="#fff" opacity=".95"/>
+    <rect x="46" y="204" width="96" height="11" rx="5" fill="#742284" opacity=".75"/>
+    <rect x="46" y="226" width="140" height="9" rx="4" fill="#742284" opacity=".35"/>
+    <rect x="46" y="248" width="112" height="9" rx="4" fill="#742284" opacity=".35"/>
+    <rect x="46" y="268" width="72" height="9" rx="4" fill="#742284" opacity=".2"/>
+  </svg>`;
+}
+
+function badgePago(p){
+  if (p.pago === 'manual')     return '<span class="badge badge-manual">🧾 Manual · cobrar acá</span>';
+  if (p.pago === 'yape-conf')  return '<span class="badge badge-conf">💚 Yape · ✓ Confirmado</span>';
+  if (p.pago === 'plin-conf')  return '<span class="badge badge-conf">🔵 Plin · ✓ Confirmado</span>';
+  if (p.pago === 'yape-pend')  return '<span class="badge badge-pend">💚 Yape · Pendiente confirmación</span>';
+  return '';
+}
+
+function coincide(m){
+  if (!filtro) return true;
+  const campos = [
+    m.sinMesa ? 'para llevar delivery sin mesa' : 'mesa ' + m.mesa,
+    m.nombre || '',
+    ...m.pedidos.map(p => '#' + p.id + ' ' + (p.titulo || '')),
+  ].join(' ').toLowerCase();
+  return campos.includes(filtro);
+}
+
+function render(){
+  const cont = document.getElementById('lista');
+  // Orden decidido con el usuario (2026-09-12): por antigüedad — la mesa que
+  // llegó primero arriba. La antigüedad de la mesa es la de su pedido más viejo.
+  // El grupo sin mesa siempre va al final.
+  const visibles = datos.filter(m => m.pedidos.length && coincide(m))
+                        .sort((a,b) => (a.sinMesa ? 1 : 0) - (b.sinMesa ? 1 : 0)
+                                    || espera(b) - espera(a));
+
+  const nPedidos = datos.reduce((s,m)=>s+m.pedidos.length,0);
+  const totalDia = datos.reduce((s,m)=>s+totalMesa(m),0);
+  document.getElementById('total-dia').textContent = sol(totalDia);
+  document.getElementById('kb').textContent = nPedidos;
+
+  if (!visibles.length){
+    cont.innerHTML = `<div class="vacio"><span class="ico">${filtro ? '🔍' : '✅'}</span>
+      ${filtro ? 'Ninguna mesa coincide con «' + filtro + '»' : 'Todo cobrado — no queda nada abierto'}</div>`;
+    return;
+  }
+
+  cont.innerHTML = '<div style="display:flex;flex-direction:column;gap:.6rem">' +
+    visibles.map(m => mesaHTML(m)).join('') + '</div>';
+}
+
+function mesaHTML(m){
+  const open = abierta === m.id;
+  const n = m.pedidos.length;
+  const sub = m.sinMesa
+    ? `${n} ${n === 1 ? 'pedido' : 'pedidos'} de clientes distintos`
+    : `${m.reserva ? 'reserva · ' : ''}${n} ${n === 1 ? 'pedido' : 'pedidos'} · espera ${espera(m)} min`;
+
+  return `<div class="mesa ${open ? 'abierta' : ''} ${m.sinMesa ? 'sinmesa' : ''}">
+    <div class="mesa-head">
+      <button class="mesa-open" type="button" onclick="toggle('${m.id}')" aria-expanded="${open}">
+        <span class="mesa-num">${m.sinMesa ? '🧾' : m.mesa}${m.sinMesa ? '' : '<span class="cap">mesa</span>'}</span>
+        <span class="mesa-mid">
+          <span class="mesa-tit">${m.sinMesa ? 'Para llevar, delivery y sin mesa' : 'Mesa ' + m.mesa + (m.nombre ? ' · ' + m.nombre : '')}</span>
+          <span class="mesa-sub">${sub}</span>
+        </span>
+        <span class="mesa-der">
+          <span class="monto">${sol(totalMesa(m))}</span>
+          <span class="chev">▼</span>
+        </span>
+      </button>
+      ${m.sinMesa ? '' : `<button class="btn btn-success btn-block" type="button"
+        onclick="cobrarMesa('${m.id}')">💰 Cobrar mesa ${m.mesa} · ${sol(totalMesa(m))}</button>`}
+    </div>
+    ${open ? cuerpoHTML(m) : ''}
+  </div>`;
+}
+
+function cuerpoHTML(m){
+  return `<div class="mesa-body anim">
+    ${m.pedidos.map(p => ticketHTML(m,p)).join('')}
+    ${m.sinMesa ? '<div class="aviso-grupo">Son clientes distintos — se cobran de a uno</div>' : ''}
+  </div>`;
+}
+
+function ticketHTML(m,p){
+  const rep = p.repetido
+    ? `<span class="badge badge-rep">⚠️ Comprobante ya usado en el pedido #${p.repetido}</span>` : '';
+  const mod = p.mod ? `<span class="badge badge-mod">${p.mod}</span>` : '';
+  const thumb = p.comprobante
+    ? `<button class="thumb" type="button" title="Ver comprobante"
+        onclick="verCaptura(event)">${captura(false)}</button>`
+    : '<span></span>';
+
+  return `<div class="ticket ${p.reserva ? 'reserva' : ''}">
+    <div class="ticket-head">
+      <span class="ticket-tit">${p.titulo}
+        <span class="ticket-meta">#${p.id} · ${p.hora}</span></span>
+      <span class="monto sm">${sol(p.monto)}</span>
+    </div>
+    <div class="items">${p.items.map(i => '<span class="item">' + i + '</span>').join('')}</div>
+    <div style="display:flex;gap:.35rem;flex-wrap:wrap">${mod}${badgePago(p)}${rep}</div>
+    <div class="ticket-pie">
+      ${thumb}
+      <button class="btn btn-success btn-mini" type="button"
+              onclick="cobrarPedido('${m.id}','${p.id}')">Cobrar solo este</button>
+    </div>
+  </div>`;
+}
+
+// ── Acciones ──
+function toggle(id){
+  abierta = (abierta === id) ? null : id;
+  render();
+}
+
+function cobrarMesa(id){
+  const i = datos.findIndex(m => m.id === id);
+  if (i < 0) return;
+  const m = datos[i];
+  deshacer = { tipo:'mesa', indice:i, dato:clonar(m) };
+  const monto = totalMesa(m);
+  datos.splice(i,1);
+  if (abierta === id) abierta = null;
+  render();
+  toast(`Mesa ${m.mesa} cobrada · ${sol(monto)}`);
+}
+
+function cobrarPedido(mid, pid){
+  const m = datos.find(x => x.id === mid);
+  if (!m) return;
+  const j = m.pedidos.findIndex(p => String(p.id) === String(pid));
+  if (j < 0) return;
+  const p = m.pedidos[j];
+  deshacer = { tipo:'pedido', mesaId:mid, indice:j, dato:clonar(p),
+               mesaDato: m.pedidos.length === 1 ? clonar(m) : null,
+               mesaIndice: datos.indexOf(m) };
+  m.pedidos.splice(j,1);
+  if (!m.pedidos.length){
+    datos = datos.filter(x => x.id !== mid);
+    if (abierta === mid) abierta = null;
+  }
+  render();
+  toast(`Pedido #${pid} cobrado · ${sol(p.monto)}`);
+}
+
+function toast(texto){
+  cerrarToast();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.id = 'toast';
+  el.innerHTML = `<span>${texto}</span>
+    <button type="button" onclick="deshacerUltimo()">Deshacer</button>`;
+  document.getElementById('phone').appendChild(el);
+  timerToast = setTimeout(cerrarToast, 6000);
+}
+
+function cerrarToast(){
+  clearTimeout(timerToast);
+  const t = document.getElementById('toast');
+  if (t) t.remove();
+}
+
+function deshacerUltimo(){
+  if (!deshacer) return;
+  if (deshacer.tipo === 'mesa'){
+    datos.splice(deshacer.indice, 0, deshacer.dato);
+    abierta = deshacer.dato.id;
+  } else {
+    let m = datos.find(x => x.id === deshacer.mesaId);
+    if (!m && deshacer.mesaDato){
+      m = deshacer.mesaDato;
+      m.pedidos = [];
+      datos.splice(Math.max(0,deshacer.mesaIndice), 0, m);
+    }
+    if (m){
+      m.pedidos.splice(deshacer.indice, 0, deshacer.dato);
+      abierta = m.id;
+    }
+  }
+  deshacer = null;
+  cerrarToast();
+  render();
+}
+
+function verCaptura(ev){
+  ev.stopPropagation();
+  const v = document.createElement('div');
+  v.className = 'visor';
+  v.id = 'visor';
+  v.innerHTML = `<div class="visor-card">
+    ${captura(true)}
+    <button type="button" onclick="cerrarVisor()">Cerrar</button>
+  </div>`;
+  v.addEventListener('click', e => { if (e.target === v) cerrarVisor(); });
+  document.getElementById('phone').appendChild(v);
+}
+function cerrarVisor(){
+  const v = document.getElementById('visor');
+  if (v) v.remove();
+}
+
+document.getElementById('q').addEventListener('input', e => {
+  filtro = e.target.value.trim().toLowerCase();
+  render();
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  datos = clonar(BASE);
+  abierta = null;
+  deshacer = null;
+  filtro = '';
+  document.getElementById('q').value = '';
+  cerrarToast();
+  cerrarVisor();
+  render();
+});
+
+render();
+</script>

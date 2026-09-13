@@ -977,6 +977,40 @@ validar en servicio real —
 
 ---
 
+### Día 17 (viernes 2026-09-11 — fecha a confirmar con el usuario) — no se puede juntar la cuenta de una mesa
+
+Contado por el usuario el 2026-09-12, sin visita en persona. La dueña venía usando **Agregar manual**
+desde su celular con normalidad ("ya yo lo pido desde el celular") y describió un servicio concreto:
+
+> *"Ese día me pidieron primero 2 menús manuales, y luego llegó un tercer cliente y me pidió 1 jarra
+> de chicha pero era el hijo de uno de la misma mesa, y luego pidieron un plato a la carta y quería
+> sacarles la cuenta de esa mesa, o juntar todos sus pedidos de esa mesa, y no pude."*
+
+**Por qué pasa (diagnóstico sobre el código, 2026-09-12):**
+
+- Cada toque de "Agregar manual" crea una **orden nueva e independiente** (`routes/orders.js:306`).
+  `ordenes.mesa` es una etiqueta suelta, no agrupa nada: para el sistema son 3 clientes distintos que
+  escribieron el mismo número de mesa.
+- **La Cola del día no muestra ningún monto.** El `total` se calcula y persiste recién al cobrar
+  (`routes/orders.js:447`) — antes de eso no existe en ninguna pantalla del panel. O sea que hoy no
+  puede ver ni la cuenta de **un** pedido: la suma la hace de cabeza en hora pico. Este hallazgo es
+  anterior al pedido de "juntar": sin montos, juntar no resuelve nada.
+- El único merge que existe (**Gap 8**, `autoMergeReservaEnOrden`, `routes/reservations.js:558`) ya
+  hace justo esto —fusionar ítems en la orden abierta de la misma mesa— pero solo reserva → orden, y
+  solo al marcar "cliente llegó".
+- El plano de mesas (`modules/mesas.js`) es decorativo (`cursor:default`): no es punto de acceso a nada.
+
+**Señal de negocio, además del bug:** el caso "el hijo de uno de la misma mesa" muestra que las mesas
+de este local se comportan como **grupos que crecen durante el servicio**, no como pedidos cerrados.
+Es el mismo patrón que la dueña ya había descrito el 2026-08-19 al juntar mesas físicamente para
+grupos grandes.
+
+**Estado:** abierto como [ISS-089](issues/ISS-089-cuenta-por-mesa.md). Diagnóstico + 4 opciones
+mockeadas a 360 px en artifact, a la espera de la decisión del usuario. Sin cambios de código
+todavía.
+
+---
+
 ## Plantilla para el próximo piloto
 
 ```

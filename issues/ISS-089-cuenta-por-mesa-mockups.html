@@ -1,0 +1,899 @@
+<title>Cuenta por mesa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&family=Lato:wght@400;700;900&family=Playfair+Display:wght@700&display=swap">
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   DOCUMENTO — paleta fría (acero sobre papel gris) a propósito:
+   la app es cálida (terracota sobre crema), así que el mockup se
+   lee siempre como "esto es la pantalla" y no como el documento.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --paper:#eceeef; --surface:#fbfcfc; --surface-2:#f3f5f6;
+  --ink:#161a1d; --ink-2:#4a5157; --muted:#7c858c;
+  --line:#d6dbde; --line-2:#c2c9cd;
+  --steel:#1a6090; --steel-soft:#e5eef5;
+  --ok:#2a7a4a; --ok-soft:#e8f3ec;
+  --warn:#8f5f10; --warn-soft:#f6efdd;
+  --stop:#ab392c; --stop-soft:#f7e9e7;
+  --doc-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#111417; --surface:#181c20; --surface-2:#1e2328;
+    --ink:#e7eaec; --ink-2:#a8b0b6; --muted:#78828a;
+    --line:#282e34; --line-2:#39424a;
+    --steel:#69b0e2; --steel-soft:#15242f;
+    --ok:#5fb184; --ok-soft:#15241d;
+    --warn:#cc9a3f; --warn-soft:#251f12;
+    --stop:#d4776a; --stop-soft:#261715;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111417; --surface:#181c20; --surface-2:#1e2328;
+  --ink:#e7eaec; --ink-2:#a8b0b6; --muted:#78828a;
+  --line:#282e34; --line-2:#39424a;
+  --steel:#69b0e2; --steel-soft:#15242f;
+  --ok:#5fb184; --ok-soft:#15241d;
+  --warn:#cc9a3f; --warn-soft:#251f12;
+  --stop:#d4776a; --stop-soft:#261715;
+}
+
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:var(--doc-font); font-weight:400;
+  font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{ max-width:1060px; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
+@media (max-width:520px){ .wrap{ padding:1.75rem 1rem 4rem; } }
+
+/* ── Tipografía del documento ── */
+h1,h2,h3{ text-wrap:balance; line-height:1.18; font-weight:600; letter-spacing:-.015em; }
+h1{ font-size:clamp(2rem,6vw,2.9rem); font-weight:700; letter-spacing:-.03em; }
+h2{ font-size:clamp(1.35rem,3.4vw,1.7rem); margin-bottom:.35rem; }
+h3{ font-size:1.05rem; }
+p{ max-width:68ch; }
+strong{ font-weight:600; color:var(--ink); }
+code{ font-family:var(--mono); font-size:.86em; background:var(--surface-2);
+      border:1px solid var(--line); border-radius:4px; padding:.08em .38em; color:var(--ink-2); }
+
+.eyebrow{
+  font-family:var(--mono); font-size:.7rem; font-weight:600;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+}
+
+/* ── Cabecera ── */
+.doc-head{ display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem;
+           border-bottom:1px solid var(--line); }
+.quote{
+  border-left:3px solid var(--steel); padding:.15rem 0 .15rem 1rem;
+  font-size:1.05rem; line-height:1.55; color:var(--ink-2); max-width:62ch;
+}
+.quote b{ color:var(--ink); font-weight:600; }
+.quote cite{ display:block; margin-top:.5rem; font-style:normal;
+             font-family:var(--mono); font-size:.72rem; letter-spacing:.06em;
+             text-transform:uppercase; color:var(--muted); }
+
+/* ── Secciones ── */
+section{ padding-top:2.75rem; display:flex; flex-direction:column; gap:1rem; }
+.sec-head{ display:flex; flex-direction:column; gap:.2rem; }
+
+/* ── Avisos ── */
+.note{
+  display:grid; grid-template-columns:auto 1fr; gap:.9rem;
+  background:var(--surface); border:1px solid var(--line);
+  border-left:3px solid var(--steel); border-radius:8px;
+  padding:1rem 1.1rem; max-width:72ch;
+}
+.note.key{ border-left-color:var(--warn); background:var(--warn-soft); }
+.note-mark{ font-family:var(--mono); font-size:.72rem; font-weight:600;
+            letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding-top:.2rem; }
+.note p{ margin:0; max-width:none; }
+.note p + p{ margin-top:.55rem; }
+
+/* ── Bloque de opción ── */
+.opt{
+  background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  overflow:hidden;
+}
+.opt-head{
+  display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;
+  padding:1.1rem 1.25rem; border-bottom:1px solid var(--line); background:var(--surface-2);
+}
+.opt-key{
+  font-family:var(--mono); font-weight:600; font-size:.78rem;
+  width:26px; height:26px; flex:none; border-radius:6px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--steel); color:var(--surface);
+}
+.opt-head h3{ margin:0; }
+.opt-head .sub{ font-size:.9rem; color:var(--muted); flex-basis:100%; }
+.opt-body{ display:grid; grid-template-columns:minmax(0,392px) minmax(0,1fr); gap:1.5rem;
+           padding:1.4rem 1.25rem; align-items:start; }
+@media (max-width:820px){ .opt-body{ grid-template-columns:1fr; } }
+
+.spec{ display:flex; flex-direction:column; gap:1rem; }
+.spec dl{ display:grid; grid-template-columns:auto 1fr; gap:.45rem .9rem; margin:0; align-items:start; }
+.spec dt{
+  font-family:var(--mono); font-size:.68rem; font-weight:600; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); padding-top:.25rem; white-space:nowrap;
+}
+.spec dd{ margin:0; font-size:.95rem; color:var(--ink-2); }
+.spec dd strong{ color:var(--ink); }
+.files{ font-family:var(--mono); font-size:.78rem; color:var(--muted); line-height:2; }
+.files span{ background:var(--surface-2); border:1px solid var(--line);
+             border-radius:4px; padding:.12em .4em; white-space:nowrap; }
+
+.tag{
+  display:inline-flex; align-items:center; gap:.35rem;
+  font-family:var(--mono); font-size:.68rem; font-weight:600; letter-spacing:.08em;
+  text-transform:uppercase; padding:.2rem .5rem; border-radius:4px; margin-right:.35rem;
+}
+.tag.ok{ background:var(--ok-soft); color:var(--ok); }
+.tag.warn{ background:var(--warn-soft); color:var(--warn); }
+.tag.stop{ background:var(--stop-soft); color:var(--stop); }
+
+/* ── Figura / marco del celular ── */
+figure{ margin:0; display:flex; flex-direction:column; gap:.6rem; align-items:flex-start; }
+figcaption{ font-family:var(--mono); font-size:.72rem; color:var(--muted); letter-spacing:.01em;
+            max-width:46ch; line-height:1.7; }
+.phone{
+  width:min(360px,100%); background:#f4f1ec;
+  border:1px solid var(--line-2); border-radius:16px; padding:14px 12px 16px;
+  box-shadow:0 12px 28px -18px rgba(10,20,30,.5);
+}
+.phone-bar{
+  display:flex; align-items:center; justify-content:space-between;
+  font-family:var(--mono); font-size:.62rem; letter-spacing:.1em; text-transform:uppercase;
+  color:#9a9088; padding:0 2px 10px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   APP — tokens reales de public/css/owner.css, fijos (el mockup
+   es una captura: no sigue el tema del documento).
+   ══════════════════════════════════════════════════════════════ */
+.app{
+  --bg:#f4f1ec; --surface:#ffffff; --surface-2:#faf7f2;
+  --border:#e8e1d7; --border-2:#d8cfc2;
+  --text:#1c1813; --text-2:#5c5349; --muted:#9a9088;
+  --accent:#c8692a; --accent-strong:#b25a20; --accent-soft:#fdf0e8;
+  --info:#1a6090; --info-bg:#ecf3fb;
+  --success:#2a7a4a; --success-bg:#ebf6f0;
+  --danger:#c0392b; --danger-bg:#fdeeed;
+  --warn:#ab7113; --warn-bg:#fdf6e7;
+  --r:12px;
+  font-family:'Lato',system-ui,sans-serif; color:var(--text);
+  display:flex; flex-direction:column; gap:.75rem;
+}
+.app .tabs{ display:flex; gap:2px; border-bottom:1px solid var(--border); overflow-x:auto; }
+.app .tab{
+  appearance:none; background:none; border:none; border-bottom:2px solid transparent;
+  padding:10px 9px; font:inherit; font-size:.82rem; font-weight:600; color:var(--muted);
+  white-space:nowrap; cursor:pointer;
+}
+.app .tab.active{ color:var(--accent); border-bottom-color:var(--accent); font-weight:700; }
+.app .kanban-badge{
+  display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px;
+  padding:0 5px; border-radius:9px; background:var(--border); color:var(--muted);
+  font-size:.7rem; font-weight:800; margin-left:4px;
+}
+.app .tab.active .kanban-badge{ background:var(--accent); color:#fff; }
+
+.app .cola-card{
+  border-radius:var(--r); padding:.9rem 1rem; background:var(--surface);
+  border:1px solid var(--border); border-left:4px solid var(--accent);
+  box-shadow:0 1px 3px rgba(28,24,19,.06);
+}
+.app .cola-card-header{ display:flex; justify-content:space-between; align-items:flex-start;
+                        gap:.5rem; flex-wrap:wrap; }
+.app .cola-card-title{ font-size:1rem; font-weight:700; display:flex; align-items:center;
+                       gap:.4rem; flex-wrap:wrap; min-width:0; }
+.app .cola-meta{ font-size:.85rem; color:var(--muted); font-weight:400; }
+.app .cola-tiempo{ font-size:.85rem; color:var(--muted); white-space:nowrap; }
+.app .cola-items{ margin-top:.5rem; display:flex; flex-direction:column; gap:.2rem; }
+.app .cola-item-line{ font-size:.89rem; color:var(--text-2); }
+.app .cola-item-line em{ font-style:normal; color:var(--muted); opacity:.75; }
+.app .order-actions{ display:flex; gap:8px; margin-top:.6rem; flex-wrap:wrap; }
+
+.app .btn{
+  font:inherit; font-size:.9rem; font-weight:700; min-height:44px; padding:5px 12px;
+  border-radius:8px; border:1px solid transparent; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:.3rem;
+}
+.app .btn-primary{ background:linear-gradient(135deg,#d9772f,#c8692a 55%,#b25a20); color:#fff;
+                   box-shadow:0 6px 16px -4px rgba(200,105,42,.45); }
+.app .btn-success{ background:none; color:var(--success); border-color:rgba(42,122,74,.3); }
+.app .btn-ghost{ background:var(--surface); color:var(--text-2); border-color:var(--border); }
+.app .btn-danger{ background:none; color:var(--danger); border-color:rgba(192,57,43,.3); }
+.app .btn-block{ width:100%; }
+.app .btn-lg{ min-height:52px; font-size:1rem; }
+
+.app .badge{
+  display:inline-flex; align-items:center; gap:3px; font-size:.7rem; font-weight:700;
+  padding:2px 7px; border-radius:20px; border:1px solid;
+}
+.app .badge-manual{ background:var(--warn-bg); color:var(--warn); border-color:rgba(171,113,19,.28); }
+.app .badge-yape{ background:var(--info-bg); color:var(--info); border-color:rgba(26,96,144,.25); }
+
+/* monto en la tarjeta (lo que hoy no existe) */
+.app .cola-monto{
+  font-size:1.02rem; font-weight:900; color:var(--accent);
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.app .cola-monto.sm{ font-size:.92rem; font-weight:700; color:var(--text-2); }
+
+/* chip de mesa tocable */
+.app .mesa-chip{
+  display:inline-flex; align-items:center; gap:.3rem; font:inherit; font-weight:800;
+  font-size:1rem; color:var(--accent-strong); background:var(--accent-soft);
+  border:1px solid rgba(200,105,42,.3); border-radius:20px;
+  padding:4px 11px; min-height:34px; cursor:pointer;
+}
+.app .mesa-chip .arrow{ font-size:.7rem; opacity:.7; }
+
+/* grupo de mesa (opción C) */
+.app .mesa-grupo{ border:1px solid var(--border-2); border-radius:var(--r);
+                  background:var(--surface-2); overflow:hidden; }
+.app .mesa-grupo-head{
+  display:flex; align-items:center; justify-content:space-between; gap:.5rem; flex-wrap:wrap;
+  padding:.7rem .85rem; background:#fff; border-bottom:1px solid var(--border);
+}
+.app .mesa-grupo-body{ display:flex; flex-direction:column; gap:.5rem; padding:.6rem; }
+.app .mesa-grupo-body .cola-card{ box-shadow:none; }
+.app .mesa-grupo-foot{ padding:.65rem .85rem; border-top:1px solid var(--border); background:#fff;
+                       display:flex; gap:8px; }
+
+/* hoja inferior (opción A) */
+.app .sheet{
+  background:var(--surface); border:1px solid var(--border-2);
+  border-radius:16px 16px 10px 10px; padding:.9rem 1rem 1rem;
+  box-shadow:0 -8px 26px -14px rgba(28,24,19,.35);
+  display:flex; flex-direction:column; gap:.8rem;
+}
+.app .sheet-grip{ width:38px; height:4px; border-radius:2px; background:var(--border-2);
+                  margin:0 auto .1rem; }
+.app .sheet-title{ display:flex; align-items:baseline; justify-content:space-between; gap:.5rem; }
+.app .sheet-title h4{ font-family:'Playfair Display',Georgia,serif; font-size:1.3rem;
+                      font-weight:700; margin:0; }
+.app .sheet-title .n{ font-size:.82rem; color:var(--muted); }
+.app .linea{
+  display:flex; justify-content:space-between; align-items:flex-start; gap:.6rem;
+  padding:.55rem 0; border-bottom:1px solid var(--border);
+}
+.app .linea:last-of-type{ border-bottom:none; }
+.app .linea-izq{ min-width:0; display:flex; flex-direction:column; gap:.15rem; }
+.app .linea-tit{ font-size:.92rem; font-weight:700; display:flex; align-items:center; gap:.35rem;
+                 flex-wrap:wrap; }
+.app .linea-sub{ font-size:.82rem; color:var(--muted); }
+.app .linea-der{ display:flex; flex-direction:column; align-items:flex-end; gap:.25rem; }
+.app .mini{ font-size:.74rem; color:var(--accent); background:none; border:none;
+            padding:4px 0; cursor:pointer; font-weight:700; font-family:inherit; }
+.app .estado-pill{ font-size:.68rem; font-weight:700; padding:1px 7px; border-radius:20px;
+                   background:var(--surface-2); border:1px solid var(--border); color:var(--muted); }
+.app .estado-pill.cocina{ background:var(--warn-bg); color:var(--warn); border-color:rgba(171,113,19,.28); }
+.app .total-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:.7rem .8rem; background:var(--accent-soft); border:1px solid rgba(200,105,42,.22);
+  border-radius:10px;
+}
+.app .total-row .lbl{ font-size:.88rem; font-weight:700; color:var(--text-2);
+                      text-transform:uppercase; letter-spacing:.05em; }
+.app .total-row .val{ font-family:'Playfair Display',Georgia,serif; font-size:1.6rem;
+                      font-weight:700; color:var(--accent-strong); font-variant-numeric:tabular-nums; }
+
+/* fila de mesa (opción B) */
+.app .mesa-row{
+  display:flex; align-items:center; gap:.7rem; padding:.7rem .8rem; background:var(--surface);
+  border:1px solid var(--border); border-radius:var(--r); cursor:pointer;
+}
+.app .mesa-num{
+  width:44px; height:44px; flex:none; border-radius:10px; display:flex;
+  align-items:center; justify-content:center; background:var(--accent-soft);
+  border:1px solid rgba(200,105,42,.25); color:var(--accent-strong);
+  font-weight:900; font-size:1.05rem; line-height:1;
+}
+.app .mesa-row.libre .mesa-num{ background:var(--success-bg); border-color:rgba(42,122,74,.2);
+                                color:var(--success); }
+.app .mesa-row-mid{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.15rem; }
+.app .mesa-row-tit{ font-size:.95rem; font-weight:700; }
+.app .mesa-row-sub{ font-size:.8rem; color:var(--muted); }
+
+/* aviso dentro del modal manual (opción D) */
+.app .field-label{ font-size:.78rem; font-weight:700; color:var(--text-2);
+                   text-transform:uppercase; letter-spacing:.05em; }
+.app .select{
+  width:100%; min-height:48px; border:1px solid var(--border-2); border-radius:8px;
+  background:var(--surface); padding:0 12px; font:inherit; font-size:1rem;
+  display:flex; align-items:center; justify-content:space-between; color:var(--text);
+}
+.app .merge-aviso{
+  background:var(--accent-soft); border:1px solid rgba(200,105,42,.25); border-radius:10px;
+  padding:.75rem .85rem; display:flex; flex-direction:column; gap:.6rem;
+}
+.app .merge-aviso p{ margin:0; font-size:.88rem; color:var(--text-2); max-width:none; }
+.app .choice{ display:flex; gap:6px; }
+.app .choice button{
+  flex:1; min-height:44px; border-radius:8px; font:inherit; font-size:.85rem; font-weight:700;
+  border:1px solid var(--border-2); background:var(--surface); color:var(--text-2); cursor:pointer;
+}
+.app .choice button.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* ── Tabla comparativa ── */
+.tabla-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+table{ border-collapse:collapse; width:100%; min-width:620px; font-size:.92rem; }
+th,td{ text-align:left; padding:.7rem .9rem; border-bottom:1px solid var(--line); vertical-align:top; }
+th{ font-family:var(--mono); font-size:.68rem; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); background:var(--surface-2); white-space:nowrap; }
+tbody tr:last-child td{ border-bottom:none; }
+td:first-child{ font-weight:600; white-space:nowrap; }
+
+/* ── Lista de decisiones ── */
+.ask{ display:flex; flex-direction:column; gap:.9rem; }
+.ask-item{ background:var(--surface); border:1px solid var(--line); border-radius:10px;
+           padding:1rem 1.1rem; display:flex; flex-direction:column; gap:.35rem; }
+.ask-item .q{ font-weight:600; }
+.ask-item .a{ font-size:.93rem; color:var(--ink-2); max-width:66ch; }
+
+*:focus-visible{ outline:2px solid var(--steel); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="doc-head">
+  <span class="eyebrow">Piloto #1 · Karina Menú · pedido de la dueña</span>
+  <h1>Cuenta por mesa</h1>
+  <div class="quote">
+    Me pidieron primero <b>2 menús manuales</b>, luego llegó un tercer cliente y me pidió <b>1 jarra de
+    chicha</b> —pero era el hijo de uno de la misma mesa— y luego pidieron <b>un plato a la carta</b>.
+    Quería sacarles la cuenta de esa mesa, o juntar todos sus pedidos de esa mesa, y no pude.
+    <cite>La dueña · contado el 2026-09-12</cite>
+  </div>
+  <p style="color:var(--ink-2)">
+    Diagnóstico sobre el código actual y cuatro caminos posibles, cada uno dibujado a 360&nbsp;px con
+    los tokens reales de <code>owner.css</code>. Al final, la recomendación y las decisiones que hacen
+    falta antes de escribir una línea.
+  </p>
+</header>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Diagnóstico</span>
+    <h2>La mesa hoy es una etiqueta, no una cuenta</h2>
+  </div>
+
+  <p>
+    Cada vez que se toca <strong>Agregar manual</strong> se crea una orden nueva e independiente. El
+    número de mesa queda guardado como un dato suelto dentro de esa orden —no existe ningún objeto
+    "mesa 5" que las agrupe—. Por eso esa mesa terminó con tres órdenes paralelas que el sistema no
+    relaciona entre sí: para la app son tres clientes distintos que casualmente escribieron el mismo
+    número.
+  </p>
+
+  <div class="opt-body" style="padding:0">
+    <figure>
+      <div class="phone">
+        <div class="phone-bar"><span>Cola del día</span><span>Por cobrar</span></div>
+        <div class="app">
+          <div class="cola-card">
+            <div class="cola-card-header">
+              <div class="cola-card-title">🧾 <strong>Mesa 5</strong>
+                <span class="cola-meta">Ana</span></div>
+              <span class="cola-tiempo">42 min</span>
+            </div>
+            <div class="cola-items">
+              <span class="cola-item-line">📋 Arroz con pollo ×1 <em>Segundo</em></span>
+              <span class="cola-item-line">📋 Caldo de gallina ×1 <em>Entrada</em></span>
+              <span class="cola-item-line">📋 Seco de res ×1 <em>Segundo</em></span>
+            </div>
+            <div style="margin-top:4px"><span class="badge badge-manual">🧾 Pedido manual</span></div>
+            <div class="order-actions">
+              <button class="btn btn-success">💰 Cobrar</button>
+              <button class="btn btn-danger">✗ Cancelar</button>
+            </div>
+          </div>
+          <div class="cola-card">
+            <div class="cola-card-header">
+              <div class="cola-card-title">🧾 <strong>Mesa 5</strong></div>
+              <span class="cola-tiempo">18 min</span>
+            </div>
+            <div class="cola-items">
+              <span class="cola-item-line">🍽 Jarra de chicha ×1</span>
+            </div>
+            <div style="margin-top:4px"><span class="badge badge-manual">🧾 Pedido manual</span></div>
+            <div class="order-actions">
+              <button class="btn btn-success">💰 Cobrar</button>
+              <button class="btn btn-danger">✗ Cancelar</button>
+            </div>
+          </div>
+          <div class="cola-card">
+            <div class="cola-card-header">
+              <div class="cola-card-title">🧾 <strong>Mesa 5</strong></div>
+              <span class="cola-tiempo">6 min</span>
+            </div>
+            <div class="cola-items">
+              <span class="cola-item-line">🍽 Ceviche mixto ×1</span>
+            </div>
+            <div class="order-actions">
+              <button class="btn btn-success">💰 Cobrar</button>
+              <button class="btn btn-danger">✗ Cancelar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption>Hoy: tres tarjetas sueltas que dicen "Mesa 5", tres botones Cobrar y ningún total.
+        Y encima la chicha y el ceviche seguían en cocina, así que ni siquiera aparecían juntas en
+        esta pestaña.</figcaption>
+    </figure>
+
+    <div class="spec">
+      <div class="note key">
+        <span class="note-mark">Clave</span>
+        <div>
+          <p><strong>La Cola del día no muestra ningún monto.</strong> Ni siquiera el de un pedido
+            suelto: el total se calcula y se guarda recién <em>en el momento de cobrar</em>. Antes de
+            eso no existe en ninguna pantalla del panel.</p>
+          <p>Cuando ella dice "quería sacarles la cuenta", hoy no puede sacar la cuenta de <em>un</em>
+            pedido, mucho menos la de tres: la suma la hace de cabeza en plena hora pico.
+            <strong>Mostrar el importe es el prerrequisito de todo lo demás</strong> — juntar tres
+            pedidos sin montos no le resuelve nada.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <span class="note-mark">A favor</span>
+        <div>
+          <p>La pieza difícil ya está construida: el <strong>auto-merge</strong> del Gap 8 hace
+            exactamente esto —busca la orden abierta de la misma mesa y le fusiona los ítems— pero
+            solo para reservas, y solo al marcar "cliente llegó". Extenderlo a pedido → pedido es
+            reutilizar código que lleva meses en producción con 17 tests.</p>
+        </div>
+      </div>
+
+      <dl>
+        <dt>Dónde</dt>
+        <dd class="files">
+          <span>routes/orders.js:306</span> crea una orden por pedido ·
+          <span>routes/orders.js:447</span> calcula el total solo al cobrar ·
+          <span>utils/colaDia.js</span> arma la cola sin importes ·
+          <span>modules/mesas.js</span> dibuja un plano que no es tocable
+        </dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Cuatro caminos</span>
+    <h2>De "tres pedidos sueltos" a "una cuenta"</h2>
+  </div>
+  <p>
+    Las tres primeras <strong>no tocan la base de datos</strong>: los pedidos siguen separados y lo
+    que cambia es cómo se ven y cómo se cobran. La cuarta sí los fusiona de verdad. Se pueden
+    combinar entre sí.
+  </p>
+
+  <article class="opt">
+    <div class="opt-head">
+      <span class="opt-key">A</span>
+      <h3>Tocar "Mesa 5" abre la cuenta de la mesa</h3>
+      <span class="sub">Desde cualquier tarjeta, en cualquier etapa de la cola.</span>
+    </div>
+    <div class="opt-body">
+      <figure>
+        <div class="phone">
+          <div class="phone-bar"><span>Cuenta de mesa</span><span>Hoja inferior</span></div>
+          <div class="app">
+            <div class="cola-card">
+              <div class="cola-card-header">
+                <div class="cola-card-title">🧾
+                  <button class="mesa-chip">Mesa 5 <span class="arrow">▾</span></button>
+                  <span class="cola-meta">Ana</span></div>
+                <span class="cola-monto">S/ 34.00</span>
+              </div>
+              <div class="cola-items">
+                <span class="cola-item-line">📋 Arroz con pollo ×1 <em>Segundo</em></span>
+                <span class="cola-item-line">📋 Caldo de gallina ×1 <em>Entrada</em></span>
+              </div>
+            </div>
+
+            <div class="sheet">
+              <div class="sheet-grip"></div>
+              <div class="sheet-title">
+                <h4>Mesa 5</h4>
+                <span class="n">3 pedidos · desde 13:42</span>
+              </div>
+
+              <div>
+                <div class="linea">
+                  <div class="linea-izq">
+                    <span class="linea-tit">2 menús del día</span>
+                    <span class="linea-sub">#12 · 13:42 · Ana</span>
+                  </div>
+                  <div class="linea-der">
+                    <span class="cola-monto sm">S/ 34.00</span>
+                    <button class="mini">Cobrar solo este</button>
+                  </div>
+                </div>
+                <div class="linea">
+                  <div class="linea-izq">
+                    <span class="linea-tit">Jarra de chicha
+                      <span class="estado-pill cocina">en cocina</span></span>
+                    <span class="linea-sub">#15 · 14:06</span>
+                  </div>
+                  <div class="linea-der">
+                    <span class="cola-monto sm">S/ 12.00</span>
+                    <button class="mini">Cobrar solo este</button>
+                  </div>
+                </div>
+                <div class="linea">
+                  <div class="linea-izq">
+                    <span class="linea-tit">Ceviche mixto
+                      <span class="estado-pill cocina">en cocina</span></span>
+                    <span class="linea-sub">#17 · 14:18</span>
+                  </div>
+                  <div class="linea-der">
+                    <span class="cola-monto sm">S/ 28.00</span>
+                    <button class="mini">Cobrar solo este</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="total-row">
+                <span class="lbl">Total mesa</span>
+                <span class="val">S/ 74.00</span>
+              </div>
+
+              <button class="btn btn-primary btn-block btn-lg">💰 Cobrar toda la mesa</button>
+              <button class="btn btn-ghost btn-block">➕ Agregar pedido a esta mesa</button>
+            </div>
+          </div>
+        </div>
+        <figcaption>El chip "Mesa 5" deja de ser texto y pasa a ser botón. La hoja junta todos los
+          pedidos activos de esa mesa aunque estén en etapas distintas.</figcaption>
+      </figure>
+
+      <div class="spec">
+        <dl>
+          <dt>Resuelve</dt>
+          <dd>Las dos cosas que pidió: <strong>ver la cuenta</strong> y <strong>cobrar junto</strong>.
+            Y funciona con parte de la mesa todavía en cocina — que es exactamente el caso del
+            viernes: quiso la cuenta cuando la chicha y el ceviche no habían salido.</dd>
+          <dt>Acceso</dt>
+          <dd>Cero pasos nuevos: el chip de mesa ya está en cada tarjeta de las cuatro pestañas.
+            Donde ella ya mira, ahí está.</dd>
+          <dt>Cuesta</dt>
+          <dd>Un endpoint nuevo (<code>GET /api/mesas/:numero/cuenta</code>), la hoja en
+            <code>pedidos.js</code> y el cobro agrupado transaccional.</dd>
+          <dt>Riesgo</dt>
+          <dd><span class="tag warn">Medio</span>Si la mesa arrastra un pedido sin cerrar de un
+            cliente anterior, se colaría en la cuenta. Se resuelve mostrando la hora de cada pedido
+            y dejando destildar.</dd>
+        </dl>
+        <div class="files">
+          <span>utils/colaDia.js</span> <span>routes/mesas.js</span> <span>routes/orders.js</span>
+          <span>modules/pedidos.js</span> <span>owner.html</span> <span>owner.css</span>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="opt">
+    <div class="opt-head">
+      <span class="opt-key">B</span>
+      <h3>Una pestaña "Mesas" en la Cola del día</h3>
+      <span class="sub">El plano de mesas deja de ser decorativo y pasa a ser el índice de cuentas abiertas.</span>
+    </div>
+    <div class="opt-body">
+      <figure>
+        <div class="phone">
+          <div class="phone-bar"><span>Cola del día</span><span>Mesas</span></div>
+          <div class="app">
+            <div class="tabs">
+              <button class="tab">Pendientes <span class="kanban-badge">2</span></button>
+              <button class="tab">Cocina <span class="kanban-badge">4</span></button>
+              <button class="tab">Listos <span class="kanban-badge">1</span></button>
+              <button class="tab">Cobrar <span class="kanban-badge">6</span></button>
+              <button class="tab active">Mesas <span class="kanban-badge">3</span></button>
+            </div>
+            <div class="mesa-row">
+              <div class="mesa-num">5</div>
+              <div class="mesa-row-mid">
+                <span class="mesa-row-tit">3 pedidos · Ana</span>
+                <span class="mesa-row-sub">2 en cocina · 1 por cobrar · 42 min</span>
+              </div>
+              <span class="cola-monto">S/ 74.00</span>
+            </div>
+            <div class="mesa-row">
+              <div class="mesa-num">2</div>
+              <div class="mesa-row-mid">
+                <span class="mesa-row-tit">1 pedido</span>
+                <span class="mesa-row-sub">por cobrar · Yape confirmado</span>
+              </div>
+              <span class="cola-monto">S/ 14.00</span>
+            </div>
+            <div class="mesa-row">
+              <div class="mesa-num">8</div>
+              <div class="mesa-row-mid">
+                <span class="mesa-row-tit">2 pedidos · Luis</span>
+                <span class="mesa-row-sub">listos para entregar · 11 min</span>
+              </div>
+              <span class="cola-monto">S/ 26.00</span>
+            </div>
+            <div class="mesa-row libre">
+              <div class="mesa-num">1</div>
+              <div class="mesa-row-mid">
+                <span class="mesa-row-tit">Libre</span>
+                <span class="mesa-row-sub">4 personas</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>Toda la sala en una pantalla, ordenada por lo que falta cobrar. Tocar una fila
+          abre la misma hoja de la opción A.</figcaption>
+      </figure>
+
+      <div class="spec">
+        <dl>
+          <dt>Resuelve</dt>
+          <dd>El panorama: cuánto hay abierto en cada mesa <em>sin</em> buscar pedido por pedido. Es
+            la respuesta a "¿cuánto me deben ahora mismo en toda la sala?".</dd>
+          <dt>Acceso</dt>
+          <dd>Una pestaña más en la fila que ya usa. Con 20 mesas la lista es corta y estable — no se
+            acumula como "Por cobrar", que llegó a 39 pedidos.</dd>
+          <dt>Cuesta</dt>
+          <dd>Poco extra <strong>si ya está hecha la A</strong>: reusa el mismo endpoint y la misma
+            hoja. Sola, sin la A, no aporta demasiado.</dd>
+          <dt>Riesgo</dt>
+          <dd><span class="tag ok">Bajo</span>Es una vista nueva, no cambia ningún flujo existente.
+            Solo hay que decidir si convive con el plano de mesas actual o lo reemplaza.</dd>
+        </dl>
+        <div class="files">
+          <span>modules/pedidos.js</span> <span>modules/mesas.js</span> <span>owner.html</span>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="opt">
+    <div class="opt-head">
+      <span class="opt-key">C</span>
+      <h3>"Por cobrar" agrupa sola los pedidos de una misma mesa</h3>
+      <span class="sub">Si dos pedidos comparten mesa, se apilan bajo un encabezado con el total.</span>
+    </div>
+    <div class="opt-body">
+      <figure>
+        <div class="phone">
+          <div class="phone-bar"><span>Cola del día</span><span>Por cobrar</span></div>
+          <div class="app">
+            <div class="mesa-grupo">
+              <div class="mesa-grupo-head">
+                <div class="cola-card-title">🪑 <strong>Mesa 5</strong>
+                  <span class="cola-meta">3 pedidos · Ana</span></div>
+                <span class="cola-monto">S/ 74.00</span>
+              </div>
+              <div class="mesa-grupo-body">
+                <div class="cola-card">
+                  <div class="cola-card-header">
+                    <div class="cola-card-title" style="font-size:.92rem">2 menús del día</div>
+                    <span class="cola-monto sm">S/ 34.00</span>
+                  </div>
+                  <div class="cola-items">
+                    <span class="cola-item-line">📋 Arroz con pollo ×1 <em>Segundo</em></span>
+                    <span class="cola-item-line">📋 Seco de res ×1 <em>Segundo</em></span>
+                  </div>
+                </div>
+                <div class="cola-card">
+                  <div class="cola-card-header">
+                    <div class="cola-card-title" style="font-size:.92rem">Jarra de chicha</div>
+                    <span class="cola-monto sm">S/ 12.00</span>
+                  </div>
+                </div>
+                <div class="cola-card">
+                  <div class="cola-card-header">
+                    <div class="cola-card-title" style="font-size:.92rem">Ceviche mixto</div>
+                    <span class="cola-monto sm">S/ 28.00</span>
+                  </div>
+                </div>
+              </div>
+              <div class="mesa-grupo-foot">
+                <button class="btn btn-primary" style="flex:1">💰 Cobrar los 3 · S/ 74.00</button>
+              </div>
+            </div>
+
+            <div class="cola-card">
+              <div class="cola-card-header">
+                <div class="cola-card-title">🧾 <strong>Mesa 2</strong></div>
+                <span class="cola-monto">S/ 14.00</span>
+              </div>
+              <div style="margin-top:4px"><span class="badge badge-yape">💳 Yape confirmado</span></div>
+              <div class="order-actions"><button class="btn btn-success">💰 Cobrar</button></div>
+            </div>
+          </div>
+        </div>
+        <figcaption>No hay nada nuevo que aprender ni que tocar: la agrupación aparece sola cuando
+          dos pedidos comparten mesa.</figcaption>
+      </figure>
+
+      <div class="spec">
+        <dl>
+          <dt>Resuelve</dt>
+          <dd>El cobro junto con <strong>cero curva de aprendizaje</strong>: sucede solo, en la
+            pantalla donde ya cobra.</dd>
+          <dt>No resuelve</dt>
+          <dd>El caso del viernes tal como pasó. Solo agrupa lo que ya está en "Por cobrar", y ella
+            quería la cuenta <em>mientras dos pedidos seguían en cocina</em>. Con esta opción sola
+            habría tenido que esperar a que salieran para recién ver el total.</dd>
+          <dt>Cuesta</dt>
+          <dd>Lo más barato de los cuatro: agrupar en el render de una zona, más el cobro agrupado
+            (que igual hace falta para A y B).</dd>
+          <dt>Riesgo</dt>
+          <dd><span class="tag ok">Bajo</span>Cambia el aspecto de la pestaña que más usa. Conviene
+            que cada pedido conserve su botón individual, para el que paga aparte.</dd>
+        </dl>
+        <div class="files">
+          <span>modules/pedidos.js</span> <span>owner.css</span> <span>routes/orders.js</span>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="opt">
+    <div class="opt-head">
+      <span class="opt-key">D</span>
+      <h3>Fusionar de verdad: un solo pedido por mesa</h3>
+      <span class="sub">Al tomar el pedido manual, si la mesa ya tiene cuenta abierta, los ítems se suman a esa orden.</span>
+    </div>
+    <div class="opt-body">
+      <figure>
+        <div class="phone">
+          <div class="phone-bar"><span>Agregar manual</span><span>Paso 1</span></div>
+          <div class="app">
+            <span class="field-label">Mesa</span>
+            <div class="select"><span>Mesa 5 · ocupada</span><span style="color:#9a9088">▾</span></div>
+
+            <div class="merge-aviso">
+              <p><strong>Mesa 5 ya tiene una cuenta abierta</strong><br>
+                2 menús del día · S/ 34.00 · hace 42 min</p>
+              <div class="choice">
+                <button class="on">Sumar a esa cuenta</button>
+                <button>Cuenta aparte</button>
+              </div>
+            </div>
+
+            <span class="field-label">Qué pidió</span>
+            <div class="cola-card" style="border-left-color:#e8e1d7">
+              <div class="cola-card-header">
+                <div class="cola-card-title" style="font-size:.92rem">🍽 Jarra de chicha</div>
+                <span class="cola-monto sm">S/ 12.00</span>
+              </div>
+            </div>
+
+            <div class="total-row">
+              <span class="lbl">Cuenta mesa 5</span>
+              <span class="val">S/ 46.00</span>
+            </div>
+            <button class="btn btn-primary btn-block btn-lg">Agregar a la cuenta</button>
+          </div>
+        </div>
+        <figcaption>Es la misma pregunta que ella ya se hace al tomar el pedido: "¿esto es de la
+          misma mesa o es otro cliente?". Elegida la primera opción, queda un solo pedido.</figcaption>
+      </figure>
+
+      <div class="spec">
+        <dl>
+          <dt>Resuelve</dt>
+          <dd>El problema de raíz: si nunca se crean tres pedidos, no hay nada que juntar después. La
+            cuenta, el total y el cobro salen solos porque es <strong>una sola orden</strong>.</dd>
+          <dt>Precedente</dt>
+          <dd>Es el <strong>Gap 8 extendido</strong>: la función que copia ítems a la orden abierta de
+            la misma mesa ya existe y está testeada. Cambiaría el disparador, no la lógica.</dd>
+          <dt>Cuesta</dt>
+          <dd>Medio. Lo caro no es fusionar — es decidir qué pasa con cocina y con el estado del
+            pedido.</dd>
+          <dt>Riesgo</dt>
+          <dd><span class="tag stop">Alto</span>El pedido original ya salió a cocina. Si le sumamos la
+            chicha: ¿el pedido entero vuelve a "en cocina" y la cocinera vuelve a ver los dos menús
+            que ya preparó? ¿Y si después el hijo quiere pagar lo suyo aparte, cómo se
+            desfusiona?</dd>
+        </dl>
+        <div class="files">
+          <span>routes/orders.js</span> <span>routes/reservations.js:558</span>
+          <span>modules/pedidos.js</span> <span>modules/cocina.js</span> <span>config/database.js</span>
+        </div>
+      </div>
+    </div>
+  </article>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Recomendación</span>
+    <h2>El monto primero, después A + C, y D recién cuando se vea en uso</h2>
+  </div>
+
+  <p>
+    <strong>Primero el monto en la tarjeta.</strong> Sin eso ninguna de las cuatro sirve, y de paso
+    resuelve por sí solo la mitad del pedido —"sacarles la cuenta"— incluso para una mesa con un
+    único pedido.
+  </p>
+  <p>
+    Después <strong>A</strong>, porque es la única que cubre el caso tal como ocurrió: la cuenta
+    disponible <em>mientras</em> parte del pedido sigue en cocina, y accesible desde donde ella ya
+    está mirando. <strong>C</strong> sale casi gratis encima de A —comparten el cobro agrupado— y
+    hace que la mesa se junte sola en la pestaña donde cobra, sin tener que acordarse de nada.
+  </p>
+  <p>
+    <strong>D</strong> se ve más limpia en el papel, pero cambia lo que la cocinera tiene delante a
+    mitad de preparación y no tiene vuelta atrás. Mejor dejarla para cuando A y C lleven un par de
+    servicios reales encima: si ahí ella pregunta "¿por qué no se junta solo?", ya sabremos que vale
+    la pena pagar ese costo. <strong>B</strong> es el paso siguiente natural si aparece la pregunta
+    "¿cuánto tengo abierto en toda la sala?", que hasta hoy no apareció.
+  </p>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Opción</th><th>Sirve con la mesa en cocina</th><th>Cobro junto</th>
+          <th>Toca la BD</th><th>Reversible</th><th>Tamaño</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Monto en tarjeta</td><td>Sí</td><td>—</td><td>No</td><td>Sí</td><td>Chico</td></tr>
+        <tr><td>A · Cuenta de mesa</td><td>Sí</td><td>Sí</td><td>No</td><td>Sí</td><td>Medio</td></tr>
+        <tr><td>B · Pestaña Mesas</td><td>Sí</td><td>Sí, vía A</td><td>No</td><td>Sí</td><td>Chico sobre A</td></tr>
+        <tr><td>C · Agrupar en Por cobrar</td><td>No</td><td>Sí</td><td>No</td><td>Sí</td><td>Chico</td></tr>
+        <tr><td>D · Fusión real</td><td>Sí</td><td>No hace falta</td><td>Sí</td><td>No</td><td>Medio-grande</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Antes de codear</span>
+    <h2>Cinco decisiones que cambian el resultado</h2>
+  </div>
+
+  <div class="ask">
+    <div class="ask-item">
+      <span class="q">1 · ¿Alguien paga aparte alguna vez?</span>
+      <span class="a">El caso del viernes ya lo insinúa: el hijo pidió su chicha y bien podría haber
+        querido pagarla él. Si eso pasa, cada pedido tiene que conservar su "cobrar solo este" —está
+        dibujado en A—. Si no pasa nunca, la hoja puede ser bastante más simple.</span>
+    </div>
+    <div class="ask-item">
+      <span class="q">2 · ¿Qué hacemos con la mesa que quedó sin cerrar?</span>
+      <span class="a">Si un pedido de la mañana nunca se cobró y a esa mesa se sienta otro cliente,
+        "cobrar toda la mesa" le cobraría al nuevo lo del anterior. La hoja muestra la hora de cada
+        pedido, pero falta decidir si además se destildan a mano o si se corta por tiempo (por
+        ejemplo, más de 3 horas no entra automáticamente).</span>
+    </div>
+    <div class="ask-item">
+      <span class="q">3 · ¿Se puede cobrar toda la mesa con algo todavía en cocina?</span>
+      <span class="a">Pasa cuando el cliente paga y se va antes de que salga el último plato. Se
+        puede permitir con un aviso ("2 pedidos siguen en cocina, ¿cobrar igual?") o bloquear hasta
+        que todo esté entregado. Lo primero es más fiel a cómo funciona el local.</span>
+    </div>
+    <div class="ask-item">
+      <span class="q">4 · ¿En qué momento pide ella la cuenta, en la práctica?</span>
+      <span class="a">Del relato parece que fue antes de que saliera todo —por eso A y no C—, pero
+        conviene confirmárselo: si en la práctica siempre cobra al final, con todo entregado, C sola
+        alcanzaría y sería la mitad del trabajo.</span>
+    </div>
+    <div class="ask-item">
+      <span class="q">5 · ¿Y los pedidos que el comensal hace por QR?</span>
+      <span class="a">Si un cliente de la mesa 5 pide desde su celular mientras la dueña toma pedidos
+        manuales de la misma mesa, esos también deberían entrar en la cuenta. Todo lo propuesto
+        agrupa por número de mesa, así que entran solos — pero mejor decirlo en voz alta ahora y no
+        descubrirlo en producción.</span>
+    </div>
+  </div>
+</section>
+
+</div>
