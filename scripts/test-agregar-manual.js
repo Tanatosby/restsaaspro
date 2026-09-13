@@ -36,6 +36,10 @@ function todayLima() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date());
 }
 
+// La limpieza general borra por nombre_cliente LIKE 'AgregarManualTest%', pero
+// el caso "sin nombre" crea una orden con NULL: se recuerda por id.
+const creadas = [];
+
 function ordenPrueba(nombre) {
   return db.prepare(`
     SELECT o.id, o.mesa, o.metodo_pago, o.estado_pago, o.es_manual, eo.es_en_cocina, eo.es_inicial
@@ -146,10 +150,9 @@ function ordenPrueba(nombre) {
       await page.click(`.manual-menu-card[data-menu="${idMenu}"] button:has-text("+")`);
       await page.waitForSelector(`#manual-secciones-${idMenu} button`, { timeout: 5000 });
       if (elegirPlato) {
-        // El chip "+ Elegir [sección]" abre PlatoPicker (grid de fotos) — ya no es un <select>.
-        await page.click(`#manual-secciones-${idMenu} button`);
-        await page.waitForSelector('.pp-overlay.open', { timeout: 5000 });
-        await page.click(`.pp-card[data-id="${idComponente}"]`);
+        // ISS-075 cambió el chip "+ Elegir" + PlatoPicker por una lista plana de
+        // botones, uno por plato: se elige tocando el del plato directamente.
+        await page.click(`#manual-secciones-${idMenu} button[onclick*="${idComponente}"]`);
         await page.waitForTimeout(200);
       }
       if (conCarta) {
@@ -160,34 +163,60 @@ function ordenPrueba(nombre) {
       await page.waitForTimeout(400);
     }
 
-    // ── El chip con foto reemplaza al <select>, y la carta aparece en el modal ──
-    console.log('\n── El modal muestra el chip visual y la sección "Carta" ──');
+    // ── La lista plana de platos (ISS-075) y la carta en el modal ──
+    // Este bloque medía la UI de ISS-053 (chip "+ Elegir" + PlatoPicker), que
+    // ISS-075 reemplazó por una lista de botones para que fuera más rápida en
+    // hora pico. El test quedó desactualizado y fallaba — ver ISS-092.
+    console.log('\n── El modal lista los platos como botones (ISS-075) ──');
     await page.evaluate(() => { showPanel('pedidos'); });
     await page.waitForTimeout(300);
     await page.click('button:has-text("+ Agregar manual")');
     await page.waitForFunction(() => document.getElementById('modal-agregar-manual').style.display === 'flex');
     await page.click(`.manual-menu-card[data-menu="${idMenu}"] button:has-text("+")`);
     await page.waitForSelector(`#manual-secciones-${idMenu} button`, { timeout: 5000 });
-    check((await page.locator(`#manual-secciones-${idMenu} button`).textContent()).includes('Elegir'),
-      'El chip vacío dice "+ Elegir [sección]" (no un <select>)');
 
-    await page.click(`#manual-secciones-${idMenu} button`);
-    await page.waitForSelector('.pp-overlay.open', { timeout: 5000 });
-    // El plato de prueba no tiene foto — PlatoPicker cae al placeholder 🍽️, no a <img>.
-    check(await page.locator(`.pp-card[data-id="${idComponente}"]`).count() === 1,
-      'PlatoPicker (grid de fotos) muestra el plato de la sección');
-    check(await page.locator(`.pp-card[data-id="${idComponenteSinStock}"]`).count() === 0,
-      'El plato con stock_restante = 0 NO aparece en el picker, aunque no esté marcado "Agotado"');
-    await page.click(`.pp-card[data-id="${idComponente}"]`);
-    await page.waitForTimeout(200);
-    check((await page.locator(`#manual-secciones-${idMenu} button`).textContent()).includes('cambiar'),
-      'Tras elegir, el chip queda "lleno" con el nombre del plato + "cambiar"');
+    const btnPlato = page.locator(`#manual-secciones-${idMenu} button[onclick*="${idComponente}"]`);
+    check(await btnPlato.count() === 1,
+      'Cada plato de la sección es un botón directo, sin picker intermedio');
+    check(await page.locator('.pp-overlay.open').count() === 0,
+      'No se abre ningún PlatoPicker: el modal ya no lo usa');
+    check(await page.locator(`#manual-secciones-${idMenu} button[onclick*="${idComponenteSinStock}"]`).count() === 0,
+      'El plato con stock_restante = 0 NO aparece, aunque no esté marcado "Agotado"');
+
+    await btnPlato.click();
+    await page.waitForTimeout(250);
+    check((await btnPlato.textContent()).includes('●'),
+      'Tras tocarlo queda marcado como elegido (●)');
+    await btnPlato.click();
+    await page.waitForTimeout(250);
+    check(!(await btnPlato.textContent()).includes('●'),
+      'Y volver a tocarlo lo deselecciona (mismo patrón que ISS-069)');
+    await btnPlato.click();
+    await page.waitForTimeout(250);
 
     check(await page.locator(`.manual-carta-item[data-plato="${idPlatoCarta}"]`).count() === 1,
       'La carta aparece en el modal, con el plato de prueba');
 
-    await page.click('#modal-agregar-manual button:has-text("Cancelar")');
-    await page.waitForTimeout(200);
+    // ── El nombre es opcional de verdad (reportado el 2026-09-13) ──
+    // El campo dice "(opcional)" pero el formulario lo exigía: quedó una
+    // validación viva de antes de ISS-075. El backend nunca lo pidió.
+    console.log('\n── El nombre del cliente es opcional ──');
+    check((await page.locator('label:has(#manual-nombre) span').textContent()).includes('opcional'),
+      'El campo dice "(opcional)"');
+    await page.fill('#manual-nombre', '');
+    await page.click('#manual-btn-enviar');
+    await page.waitForTimeout(900);
+    const errorNombre = await page.locator('#manual-error').textContent();
+    check(!/nombre/i.test(errorNombre),
+      `Enviar sin nombre no da error de nombre (error real: "${errorNombre || 'ninguno'}")`);
+    check(await page.evaluate(() => document.getElementById('modal-agregar-manual').style.display) === 'none',
+      'El pedido se envía y el modal se cierra');
+    const sinNombre = db.prepare(`
+      SELECT o.id, o.nombre_cliente, o.es_manual FROM ordenes o
+      WHERE o.id_restaurante = 1 AND o.es_manual = 1 AND o.nombre_cliente IS NULL
+      ORDER BY o.id DESC LIMIT 1`).get();
+    check(!!sinNombre, 'La orden quedó creada con nombre_cliente NULL');
+    if (sinNombre) creadas.push(sinNombre.id);
 
     // ── Rama A: efectivo_activo = 0 → metodo_pago debe quedar NULL ──
     console.log('\n── Rama A: restaurante SIN efectivo activo ──');
@@ -266,6 +295,11 @@ function ordenPrueba(nombre) {
       }
     } catch (_) {}
 
+    for (const id of creadas) {
+      db.prepare(`DELETE FROM orden_menu_items  WHERE id_orden = ?`).run(id);
+      db.prepare(`DELETE FROM orden_carta_items WHERE id_orden = ?`).run(id);
+      db.prepare(`DELETE FROM ordenes WHERE id = ?`).run(id);
+    }
     db.prepare(`DELETE FROM orden_menu_items  WHERE id_orden IN (SELECT id FROM ordenes WHERE nombre_cliente LIKE 'AgregarManualTest%')`).run();
     db.prepare(`DELETE FROM orden_carta_items WHERE id_orden IN (SELECT id FROM ordenes WHERE nombre_cliente LIKE 'AgregarManualTest%')`).run();
     db.prepare(`DELETE FROM ordenes WHERE nombre_cliente LIKE 'AgregarManualTest%'`).run();

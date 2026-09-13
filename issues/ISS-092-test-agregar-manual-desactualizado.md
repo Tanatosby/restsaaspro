@@ -1,6 +1,7 @@
 # ISS-092 — `test-agregar-manual.js` y un comentario de `pedidos.js` quedaron en la versión vieja del modal manual
 
-**Estado:** 🔵 Diagnosticado, **sin arreglar** — no afecta producción
+**Estado:** ✅ Resuelto el 2026-09-13 — se arregló junto con el bug del nombre obligatorio, que vive
+en el mismo modal
 **Encontrado:** 2026-09-12, validando ISS-090 (el script es uno de los E2E que se corrieron para
 comprobar que no hubiera regresión)
 **Módulo:** `scripts/test-agregar-manual.js` · comentario en `public/js/modules/pedidos.js`
@@ -43,13 +44,21 @@ Eso describe ISS-053, no el estado actual. Conviene corregirlo en la misma pasad
 afirma que se usa un widget que ya no se usa es peor que no tener comentario — manda a buscar código
 que no está ahí.
 
-## Qué habría que hacer
+## Qué se hizo (2026-09-13)
 
-1. Reescribir los checks del test contra la UI real: botón por plato dentro de
-   `#manual-secciones-<idMenu>`, el seleccionado con `●`, y la deselección al volver a tocarlo
-   (mismo patrón que ISS-069).
-2. Quitar del test la espera de `.pp-overlay` / `.pp-card`.
-3. Actualizar el comentario de `pedidos.js` para que describa la lista plana de ISS-075.
+Se resolvió junto con el bug del **nombre obligatorio** del mismo modal (el campo decía "(opcional)"
+pero el formulario lo exigía), porque no tenía sentido arreglar ese bug sin un test que lo cubriera.
+
+1. `scripts/test-agregar-manual.js` reescrito contra la UI real: botón por plato dentro de
+   `#manual-secciones-<idMenu>`, marcado con `●` al elegirlo, deselección al volver a tocarlo
+   (ISS-069), y comprobación de que **no** se abre ningún `.pp-overlay`.
+2. Se le agregó el caso nuevo: enviar sin nombre no da error y crea la orden con
+   `nombre_cliente NULL`. Como la limpieza del script borra por
+   `nombre_cliente LIKE 'AgregarManualTest%'`, esa orden se recuerda por id.
+3. El comentario de `pedidos.js` ahora cuenta las tres etapas del selector (`<select>` → PlatoPicker
+   en ISS-053 → lista plana en ISS-075) en vez de afirmar que usa un widget que dejó de usar.
+
+**Resultado: 3/5 (roto) → 35/35.**
 
 ## Nota
 

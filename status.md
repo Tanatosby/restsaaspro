@@ -333,8 +333,50 @@ no los va a mover — se cierran a mano esa primera vez.
 | — | ISS-093 — auto-merge apagado (duplicaba la cuenta de la mesa) | `d485dcf` |
 | 4 | ISS-091 — auto-entregado + poll a 20 s | pendiente de commit |
 
-**Pendiente:** desplegar todo; y, sin urgencia, retirar el código del Gap 8 (ISS-093) y actualizar
-`test-agregar-manual.js` (ISS-092).
+**Pendiente:** desplegar todo; y, sin urgencia, retirar el código del Gap 8 (ISS-093).
+
+---
+
+## 🗓 Sesión 2026-09-13 — pruebas en el celular del usuario
+
+Con el servidor local levantado y accesible desde su celular (`PORT=3000`, IP de la Wi-Fi), el
+usuario probó la Cola rediseñada antes de desplegar. Tres cosas salieron de ahí:
+
+### 1 · El botón de cobrar repetía el monto (`abb0fda`)
+
+"Cobrar mesa 5 · S/ 112.00" cuando el total ya está en la misma fila, dos centímetros más arriba.
+Queda **"💰 Cobrar mesa 5"**.
+
+### 2 · El aviso al cobrar: letra chica y sin escape (`abb0fda`)
+
+Usaba `confirm()` nativo — su tamaño de letra lo controla el navegador y no admite un "no volver a
+preguntar", que es lo que pidió el usuario: en hora pico, un aviso que se repite en cada cobro se
+vuelve un trámite. Se reemplazó por un modal propio (`#modal-cobrar-mesa`) con el total en grande.
+
+Tres decisiones sobre la casilla "No volver a preguntarme":
+
+- **Solo se recuerda si además confirma.** Marcarla y cancelar no apaga el aviso: marcar una
+  casilla no debería desactivar una red de seguridad si al final no se hizo la acción.
+- **Vive en `localStorage`**, no en el restaurante: es del dispositivo, igual que "ya vi las
+  novedades". Si la dueña lo apaga en su celular, el mozo lo sigue viendo en el suyo — el que se
+  equivoca cobrando es quien tiene el aparato en la mano.
+- **Se reactiva** desde Configuración → "🔔 Aviso al cobrar una mesa", para que no sea un "para
+  siempre" sin vuelta atrás.
+
+`test-iss089-cobrar-por-mesa.js` 31/31 → **39/39**.
+
+### 3 · El nombre en "Agregar manual" era opcional solo de nombre (ISS-092)
+
+El campo dice **"(opcional)"** pero `enviarPedidoManual()` cortaba con *"El nombre del cliente es
+obligatorio"*: una validación que quedó viva después de **ISS-075**, que había sacado nombre y mesa
+de los obligatorios. El backend nunca lo pidió. Se quitó, y se manda `nombre_cliente: nombre || null`.
+
+De paso se cerró **ISS-092**: `test-agregar-manual.js` seguía midiendo el chip "+ Elegir" +
+PlatoPicker de ISS-053, reemplazados por ISS-075 con una lista plana de botones. Estaba en **3/5**
+y no cubría el modal real; ahora **35/35**, incluido el caso "enviar sin nombre". También se
+corrigió el comentario de `pedidos.js` que afirmaba usar un widget que ya no usa.
+
+**Pendiente:** desplegar; y, sin urgencia, retirar el código del Gap 8 (ISS-093).
 
 ---
 ## 🎯 Sesión 2026-09-09 — landing (más secciones + fondo del hero) + modelo VAN

@@ -849,12 +849,17 @@ async function loadSinCerrar() {
 // sí tienen los pedidos de la app. El método de pago y el aviso de "Confirmar
 // pago" los pinta badgeManual()/badgePago() en la propia tarjeta de la cola.
 //
-// Con fotos (2026-08-19): antes cada plato se elegía con un <select> de
-// texto plano. Ahora reusa PlatoPicker — el mismo selector visual (grid de
-// fotos) que ya se usaba para armar las secciones del menú del día en
-// Configuración — sin construir ningún widget nuevo. De paso se sumó la
-// carta (antes "Agregar manual" solo tenía menú del día): mismo patrón de
-// card con foto + stepper de cantidad que ya usaba el menú.
+// Cómo se elige cada plato, en tres etapas:
+//  · al principio, un <select> de texto plano;
+//  · ISS-053 (2026-08-19) lo cambió por PlatoPicker, el selector visual de
+//    fotos que se usa para armar el menú del día, y sumó la carta al modal;
+//  · ISS-075 (2026-08-25, día 11 del piloto) volvió a algo más simple: una
+//    LISTA PLANA DE BOTONES, uno por plato disponible, con el elegido marcado
+//    con ●. La dueña necesitaba tomar el pedido más rápido en hora pico y el
+//    grid de fotos era un paso de más. Ver renderManualSeccion().
+//
+// Este comentario decía que el modal usa PlatoPicker — dejó de ser cierto en
+// ISS-075 y mandaba a buscar código que no está acá (ISS-092).
 
 let _manualMenus      = [];  // menús del día activos hoy, con secciones y platos
 let _manualInstancias = {};  // { [id_menu_dia]: [ {id_seccion: id_componente}, ... ] } — 1 entrada por instancia
@@ -1116,7 +1121,13 @@ async function enviarPedidoManual() {
   const errEl  = document.getElementById('manual-error');
   errEl.textContent = '';
 
-  if (!nombre) { errEl.textContent = 'El nombre del cliente es obligatorio'; return; }
+  // El nombre es opcional de verdad: ISS-075 lo sacó de los obligatorios ("mesa
+  // y nombre ya no son obligatorios") y el campo dice "(opcional)", pero la
+  // validación del formulario seguía exigiéndolo — el backend nunca lo pidió
+  // (POST /api/orders solo valida que haya al menos un ítem). Reportado por el
+  // usuario probando en su celular, 2026-09-13.
+  //
+  // Un pedido sin nombre es lo normal en una mesa: se identifica por el número.
 
   // Mismo criterio de secciones obligatorias que ISS-046 (utils/validarSeccionesMenu.js) —
   // el backend vuelve a validarlo, esto solo evita el ida-y-vuelta con el error 400.
@@ -1144,7 +1155,7 @@ async function enviarPedidoManual() {
   btn.disabled = true;
   btn.textContent = 'Enviando…';
   try {
-    await api('POST', '/api/orders', { mesa, nombre_cliente: nombre, menu_items, carta_items, manual: true });
+    await api('POST', '/api/orders', { mesa, nombre_cliente: nombre || null, menu_items, carta_items, manual: true });
     toast('Pedido manual enviado a cocina');
     cerrarModalAgregarManual();
     reiniciarPoll();
