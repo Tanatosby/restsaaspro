@@ -77,6 +77,15 @@ const NOVEDADES = [
       'La pestaña "Por cobrar" ahora tiene un buscador arriba: escribí un número de mesa o un nombre y te filtra la lista, para no perderte cuando hay muchos pedidos juntos.',
     ],
   },
+  {
+    id: 9,
+    fecha: '2026-09-12',
+    items: [
+      'Los pedidos que tus clientes hacen desde su celular ahora entran DIRECTO a "En cocina", sin que tengas que tocar "🍳 A cocina" primero. Es el mismo camino que ya tenían los pedidos que tomás a mano. Un toque menos por pedido en plena hora pico.',
+      'Por eso la pestaña "Pendientes" ahora es solo de reservas (las que todavía tenés que confirmar o que esperan que llegue el cliente).',
+      'No perdés nada de control: el aviso de "comprobante ya usado" y la confirmación del pago por Yape o Plin siguen apareciendo igual, cuando vas a cobrar.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

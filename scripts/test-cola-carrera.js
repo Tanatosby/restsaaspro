@@ -1,5 +1,11 @@
 // Verificación manual (no forma parte de la suite jest) de ISS-026 + ISS-027.
 //
+// ISS-090: las órdenes del comensal ya no nacen en "Pendientes" — entran
+// directo a cocina. Las pruebas de carrera 1-4 pasaron de la transición
+// Pendientes → En cocina (botón "🍳 A cocina") a En cocina → Listos (botón
+// "✅ Listo"), que es el primer paso manual que le queda a una orden. El
+// mecanismo que se prueba es el mismo; solo cambia el botón que lo dispara.
+//
 // ISS-026 — Cola del día:
 //   1) doble tap no dispara 2 PATCH ni muestra el error falso
 //      "No se puede cambiar una orden pagado"
@@ -59,6 +65,24 @@ async function crearOrden(nombre) {
   return data.id_orden;
 }
 
+// Dos modales pueden tapar el panel al entrar y hacen que cualquier click del
+// test aterrice en su overlay en vez de en el botón: Términos de uso (ISS-082,
+// solo la primera vez por usuario) y "Qué hay de nuevo" (ISS-076, cada vez que
+// hay una novedad sin leer). Cerrarlos es setup de la prueba, no lo que se mide.
+async function cerrarModalesDeBienvenida(page) {
+  const terminos = page.locator('#modal-terminos');
+  if (await terminos.isVisible().catch(() => false)) {
+    await page.check('#terminos-check');
+    await page.click('#terminos-btn');
+    await page.waitForTimeout(600);
+  }
+  const novedades = page.locator('.nov-btn-cerrar');
+  if (await novedades.count() > 0) {
+    await novedades.click().catch(() => {});
+    await page.waitForTimeout(400);
+  }
+}
+
 async function login(page) {
   await page.goto(`${BASE}/login.html`, { waitUntil: 'domcontentloaded' });
 
@@ -66,18 +90,37 @@ async function login(page) {
   // cookie sigue viva — el formulario ni siquiera llega a mostrarse. Es el
   // comportamiento deseado, así que acá solo se completa cuando hace falta.
   await page.waitForTimeout(1200);
-  if (page.url().includes('owner.html')) return;
+  if (page.url().includes('owner.html')) {
+    await cerrarModalesDeBienvenida(page);
+    return;
+  }
 
   await page.fill('#email', EMAIL);
   await page.fill('#password', PASS);
   await page.click('#submit-btn');
   await page.waitForURL('**/owner.html', { timeout: 15000 });
+  await cerrarModalesDeBienvenida(page);
 }
 
-async function irACola(page) {
+async function irACola(page, zona = null) {
   await page.evaluate(() => showPanel('pedidos'));
   await page.waitForTimeout(800);
+  // Las zonas no activas nacen con display:none (owner.html), y Playwright no
+  // hace click en lo que no se ve: para operar sobre "En cocina" hay que
+  // cambiar de pestaña primero.
+  if (zona) {
+    await page.evaluate(z => switchZona(z), zona);
+    await page.waitForTimeout(300);
+  }
 }
+
+// Botón "✅ Listo" DE ESTA ORDEN en la zona "En cocina". Va por el onclick y no
+// por el texto: la zona suele tener varios pedidos (las cards se ordenan por
+// urgencia, así que la del test no es la primera), y con `.first()` el click
+// terminaba en el pedido de otra corrida — el PATCH salía para otro id y el
+// test reportaba "0 PATCH enviados" sin que nada estuviera roto.
+const btnListo = (page, id) =>
+  page.locator(`#zona-cocina button[onclick*="accionRapidaOrden(${id},'es_listo')"]`);
 
 const estatusDe = id => db.prepare(`
   SELECT eo.nombre FROM ordenes o JOIN estatus_orden eo ON o.id_estatus = eo.id WHERE o.id = ?
@@ -88,7 +131,7 @@ const estatusDe = id => db.prepare(`
   const ctx = await browser.newContext({ viewport: { width: 360, height: 740 } });
 
   // ── Test 1: doble tap ────────────────────────────────────────────────
-  console.log('\n[Test 1] Doble tap en "A cocina" — un solo PATCH, sin error falso');
+  console.log('\n[Test 1] Doble tap en "Listo" — un solo PATCH, sin error falso');
   {
     const id = await crearOrden('Doble Tap');
     const page = await ctx.newPage();
@@ -100,7 +143,7 @@ const estatusDe = id => db.prepare(`
     });
 
     await login(page);
-    await irACola(page);
+    await irACola(page, 'cocina');
 
     // Capturar todo lo que pase por toast(), incluidos los de error
     await page.evaluate(() => {
@@ -109,7 +152,7 @@ const estatusDe = id => db.prepare(`
       window.toast = (msg, tipo) => { window.__toasts.push({ msg, tipo }); return orig(msg, tipo); };
     });
 
-    const btn = page.locator(`button:has-text("A cocina")`).first();
+    const btn = btnListo(page, id);
     await btn.waitFor({ timeout: 10000 });
 
     // Dos taps seguidos, como cuando la app no responde y el owner insiste
@@ -125,7 +168,7 @@ const estatusDe = id => db.prepare(`
       !toasts.some(t => t.tipo === 'err' && /No se puede cambiar/i.test(t.msg)),
       'sin el error falso "No se puede cambiar una orden…"'
     );
-    check(estatusDe(id) === 'preparando', `la orden quedó en preparando (real: ${estatusDe(id)})`);
+    check(estatusDe(id) === 'entregando', `la orden quedó lista / "entregando" (real: ${estatusDe(id)})`);
 
     await page.close();
   }
@@ -136,13 +179,13 @@ const estatusDe = id => db.prepare(`
     const id = await crearOrden('Carrera Poll');
     const page = await ctx.newPage();
     await login(page);
-    await irACola(page);
+    await irACola(page, 'cocina');
 
-    await page.locator(`button:has-text("A cocina")`).first().waitFor({ timeout: 10000 });
+    await btnListo(page, id).waitFor({ timeout: 10000 });
 
     // Retener la respuesta de /cola para simular el poll que arrancó antes del
     // tap y contesta después. Es exactamente la condición que hacía reaparecer
-    // el pedido en "Pendientes".
+    // el pedido en su zona anterior.
     await page.route('**/api/orders/cola', async route => {
       await new Promise(r => setTimeout(r, 3000));
       await route.continue();
@@ -152,19 +195,22 @@ const estatusDe = id => db.prepare(`
     await page.waitForTimeout(300);
 
     await page.unroute('**/api/orders/cola');
-    await page.locator(`button:has-text("A cocina")`).first().click({ force: true });
+    await btnListo(page, id).click({ force: true });
     await page.waitForTimeout(4500);            // deja llegar la respuesta retenida
 
-    const enPendientes = await page.evaluate(() =>
-      document.getElementById('zona-pendientes').innerText.includes('Carrera Poll')
-    );
+    // innerText sobre una zona con display:none devuelve su textContent
+    // (la spec lo define así cuando el elemento no se está renderizando), así
+    // que se puede leer una zona que no es la pestaña activa.
     const enCocina = await page.evaluate(() =>
       document.getElementById('zona-cocina').innerText.includes('Carrera Poll')
     );
+    const enListos = await page.evaluate(() =>
+      document.getElementById('zona-listos').innerText.includes('Carrera Poll')
+    );
 
-    check(!enPendientes, 'NO reaparece en Pendientes tras llegar la respuesta vieja');
-    check(enCocina, 'quedó en la zona "En cocina"');
-    check(estatusDe(id) === 'preparando', `estatus correcto en la BD (real: ${estatusDe(id)})`);
+    check(!enCocina, 'NO reaparece en "En cocina" tras llegar la respuesta vieja');
+    check(enListos, 'quedó en la zona "Listos"');
+    check(estatusDe(id) === 'entregando', `estatus correcto en la BD (real: ${estatusDe(id)})`);
 
     await page.close();
   }
@@ -175,8 +221,8 @@ const estatusDe = id => db.prepare(`
     const id = await crearOrden('Optimista');
     const page = await ctx.newPage();
     await login(page);
-    await irACola(page);
-    await page.locator(`button:has-text("A cocina")`).first().waitFor({ timeout: 10000 });
+    await irACola(page, 'cocina');
+    await btnListo(page, id).waitFor({ timeout: 10000 });
 
     // PATCH deliberadamente lento: la UI no debe esperarlo para reaccionar
     let lento = true;
@@ -185,17 +231,17 @@ const estatusDe = id => db.prepare(`
       await route.continue();
     });
 
-    await page.locator(`button:has-text("A cocina")`).first().click({ force: true });
+    await btnListo(page, id).click({ force: true });
     await page.waitForTimeout(400);   // mucho antes de que responda el PATCH
 
-    const yaEnCocina = await page.evaluate(() =>
-      document.getElementById('zona-cocina').innerText.includes('Optimista')
+    const yaEnListos = await page.evaluate(() =>
+      document.getElementById('zona-listos').innerText.includes('Optimista')
     );
-    check(yaEnCocina, 'la card ya está en "En cocina" a los 400 ms');
+    check(yaEnListos, 'la card ya está en "Listos" a los 400 ms');
 
     lento = false;
     await page.waitForTimeout(3500);
-    check(estatusDe(id) === 'preparando', `el servidor confirmó el cambio (real: ${estatusDe(id)})`);
+    check(estatusDe(id) === 'entregando', `el servidor confirmó el cambio (real: ${estatusDe(id)})`);
 
     await page.close();
   }
@@ -206,21 +252,21 @@ const estatusDe = id => db.prepare(`
     const id = await crearOrden('Rechazada');
     const page = await ctx.newPage();
     await login(page);
-    await irACola(page);
-    await page.locator(`button:has-text("A cocina")`).first().waitFor({ timeout: 10000 });
+    await irACola(page, 'cocina');
+    await btnListo(page, id).waitFor({ timeout: 10000 });
 
     await page.route('**/api/orders/*/estatus', route =>
       route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'Error simulado' }) })
     );
 
-    await page.locator(`button:has-text("A cocina")`).first().click({ force: true });
+    await btnListo(page, id).click({ force: true });
     await page.waitForTimeout(1500);
 
     const volvio = await page.evaluate(() =>
-      document.getElementById('zona-pendientes').innerText.includes('Rechazada')
+      document.getElementById('zona-cocina').innerText.includes('Rechazada')
     );
-    check(volvio, 'la card volvió a "Pendientes" tras el rechazo');
-    check(estatusDe(id) === 'pendiente', `la BD quedó intacta (real: ${estatusDe(id)})`);
+    check(volvio, 'la card volvió a "En cocina" tras el rechazo');
+    check(estatusDe(id) === 'preparando', `la BD quedó intacta (real: ${estatusDe(id)})`);
 
     await page.close();
   }

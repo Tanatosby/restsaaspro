@@ -115,6 +115,82 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🗓 Sesión 2026-09-12 — rediseño del flujo de la Cola + ISS-090 implementado
+
+**Prompt del usuario:** feature pedida por la dueña del piloto el viernes — tomó 2 menús manuales
+para una mesa, después una jarra de chicha (del hijo de alguien de la misma mesa) y después un plato
+a la carta, y no pudo **sacar la cuenta de esa mesa ni juntar sus pedidos**. Pidió ideas primero en
+artifact y después código. Sobre la marcha abrió dos preguntas más del flujo de la cola.
+
+### Diagnóstico (lo que se encontró en el código)
+
+- Cada pedido crea una **orden independiente**; `ordenes.mesa` es una etiqueta suelta, no agrupa nada
+  (`routes/orders.js:306`).
+- **La Cola del día no muestra ningún monto.** El `total` se calcula y persiste recién al cobrar
+  (`routes/orders.js:447`) — antes de eso no existe en ninguna pantalla del panel. La dueña no puede
+  ver ni la cuenta de *un* pedido: la suma de cabeza. Es el prerrequisito de todo lo demás.
+- El `total` que hoy devuelve `utils/colaDia.js` **solo suma carta**, los menús quedan afuera.
+- El merge por mesa ya existe (**Gap 8**, `autoMergeReservaEnOrden`) pero solo reserva → orden.
+- El plano de mesas (`modules/mesas.js`) es decorativo (`cursor:default`), no es punto de acceso.
+
+### Diseño aprobado (2 artifacts, 2 rondas de revisión con el usuario)
+
+- **Artifact 1 — diagnóstico + 4 opciones** mockeadas a 360 px con los tokens reales de `owner.css`:
+  https://claude.ai/code/artifact/f0a581b8-f510-4a17-aed6-f3da115ce8cb
+  (fuente: `issues/ISS-089-cuenta-por-mesa-mockups.html`)
+- **Artifact 2 — prototipo interactivo** de la zona "Por cobrar" por mesa:
+  https://claude.ai/code/artifact/caf02e33-fab5-4bd3-860e-aca6698d77bc
+  (fuente: `issues/ISS-089-cobrar-por-mesa-prototipo.html`)
+
+De la conversación salieron **tres issues**:
+
+| Issue | Qué | Estado |
+|---|---|---|
+| [ISS-089](issues/ISS-089-cuenta-por-mesa.md) | "Por cobrar" pasa a listar **mesas** con su cuenta y su botón "💰 Cobrar mesa N"; se abre para ver los tickets (precio, badge de pago, comprobante, "Cobrar solo este"); grupo final "Para llevar, delivery y sin mesa" **sin** cobro en bloque (son clientes distintos); orden por antigüedad; deshacer tras cobrar | Diseño aprobado, sin implementar |
+| [ISS-090](issues/ISS-090-pendientes-solo-reservas.md) | "Pendientes" deja de recibir órdenes | ✅ **Implementado hoy**, sin desplegar |
+| [ISS-091](issues/ISS-091-auto-entregado.md) | Auto-entregado configurable (default 3 min, solo órdenes) + poll de la cola a 20 s + "Regresar a cocina" en Por cobrar | Decidido, sin implementar |
+
+**Decisiones del usuario que recortaron alcance:**
+
+- La dueña pide la cuenta **cuando ya entregó todos los platos**, no con pedidos en cocina → los tres
+  pedidos siempre están en "Por cobrar", así que **no** se implementa el acceso a la cuenta desde
+  otras zonas (era la opción A del artifact 1). Un endpoint y una hoja menos.
+- La verificación del Yape en "Pendientes" **no ocurre en el uso real** ("es falso eso que se
+  verifican los pagos ahí… en un momento de aglomeración la dueña no mira el Yape"), y el aviso de
+  comprobante repetido igual reaparece al cobrar → ISS-090.
+- Una **orden** nunca puede ser delivery (`MODALIDADES_ORDEN`, `routes/public.js:295`) y "para llevar"
+  en una orden es alguien que está en el local → el auto-entregado aplica a **todas** las órdenes.
+  Las **reservas** quedan fuera enteras: ahí "cliente llegó" y "salió con el repartidor" son datos
+  reales que no los puede poner un reloj.
+- Mesa sin cerrar de un cliente anterior: **sin corte por tiempo** por ahora (se evaluó un hueco de
+  30 min entre pedidos y se descartó como no concluyente). "Cobrar solo este" lo cubre parcialmente.
+
+### ISS-090 — implementado (paso 1 de 4 del plan)
+
+- `routes/public.js`: `POST /api/public/orders` inserta con `es_en_cocina` en vez de `es_inicial`, y
+  el push pasa a **"🆕 Nueva orden en cocina"**.
+- `pedidos.js`: `clasificarZonas()` y `btnOrden()` **conservan a propósito** el soporte de órdenes
+  `es_inicial` en "Pendientes" — las que queden de antes del deploy seguirían activas pero invisibles
+  si se quitara el filtro (el mismo agujero que obligó al cierre de caja, ISS-026). Documentado en el
+  código. Ninguna orden nueva nace ahí, así que la zona se vacía sola con el uso.
+- `novedades.js`: entrada id 9 para la dueña.
+- `vision_negocio.md`: actualizado el paso 6 del flujo del pedido.
+
+**Tests:** nuevo `scripts/test-iss090-pedido-directo-cocina.js` **17/17** · `scripts/test-cola-carrera.js`
+adaptado (sus pruebas de carrera usaban la transición Pendientes → Cocina; ahora usan Cocina → Listos)
+**21/21** · `jest` **478/478** · sin regresión en `test-cobrar-homologado` 14/14 y `test-menus-vendidos` 9/9.
+
+**Dos bugs de los scripts de prueba, anteriores a este cambio, arreglados de paso:** no cerraban los
+overlays de Términos (ISS-082) ni de Novedades (ISS-076), que se comían todos los clicks, y
+`test-cola-carrera` buscaba el botón por texto con `.first()` — con más de un pedido en la zona el
+click caía en el pedido equivocado y el test reportaba "0 PATCH enviados" sin que nada estuviera roto.
+Queda **1 check fallando en `test-agregar-manual.js`** ("+ Elegir [sección]"), del widget PlatoPicker,
+sin relación con ISS-090 — no se tocó.
+
+**Pendiente:** deploy (ISS-090) y los pasos 2-4 del plan: el monto en la cola (backend), ISS-089 y
+ISS-091.
+
+---
 ## 🎯 Sesión 2026-09-09 — landing (más secciones + fondo del hero) + modelo VAN
 
 **Prompt del usuario:** continuar la landing sobre la base del 2026-09-08 y, aparte, armar un

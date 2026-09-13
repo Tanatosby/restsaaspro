@@ -350,9 +350,21 @@ router.post('/orders', (req, res) => {
   let ordenId;
   try {
     ordenId = db.transaction(() => {
+      // ISS-090: la orden del comensal entra DIRECTO a cocina, igual que el
+      // pedido manual (routes/orders.js, manual:true). Antes nacía es_inicial y
+      // paraba en la zona "Pendientes" esperando un tap de "🍳 A cocina".
+      //
+      // Esa parada se justificaba como el punto donde la dueña revisa el
+      // comprobante de Yape/Plin antes de que la cocina gaste insumos, pero en
+      // el uso real no ocurre: en hora pico pasa los pedidos sin mirarlos. Y no
+      // se pierde nada al quitarla — comprobanteThumb() y el aviso "⚠️ Ya usado
+      // en el pedido #N" (comprobante_repetido_de, ISS-051) se pintan en la
+      // tarjeta en TODAS las zonas, y requiereConfirmarPagoAntes() sigue
+      // bloqueando el cobro de un pago digital sin confirmar. La verificación
+      // efectiva ya vivía en el cobro; lo único que sobraba era el tap extra.
       const { lastInsertRowid } = db.prepare(`
         INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, modalidad, cargo_modalidad)
-        VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_inicial = 1), ?, ?)
+        VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE es_en_cocina = 1), ?, ?)
       `).run(mesa || null, nombre_cliente?.trim() || null, fecha, id_restaurante, modalidadResumen, cargo_modalidad);
 
       // Ítems de carta
@@ -385,8 +397,10 @@ router.post('/orders', (req, res) => {
     throw e;
   }
 
+  // ISS-090: el pedido ya entró a cocina, así que el aviso lo dice — el
+  // cocinero no tiene que esperar que alguien lo habilite.
   enviarPushRestaurante(db, id_restaurante, {
-    title: '🆕 Nueva orden',
+    title: '🆕 Nueva orden en cocina',
     body:  `${nombre_cliente.trim()} — mesa ${mesa || 's/n'}`,
     icon:  '/icons/icon-192.png',
     badge: '/icons/badge-96.png',

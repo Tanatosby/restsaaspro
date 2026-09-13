@@ -12,18 +12,23 @@ _(vacío)_
 
 ## En análisis
 
-_(vacío)_
+| ID | Título | Módulo | Prioridad |
+|----|--------|--------|-----------|
+| [ISS-089](ISS-089-cuenta-por-mesa.md) | No se puede juntar ni ver la cuenta de una mesa — "Por cobrar" pasa a listar mesas (diseño aprobado 2026-09-12) | `orders.js`/`colaDia.js`/`pedidos.js` | 🔴 Alta |
+| [ISS-091](ISS-091-auto-entregado.md) | Auto-entregado configurable: "Listos" se vacía sola a los 3 min (solo órdenes) + bajar el poll de la cola | job nuevo/`config.js`/`pedidos.js` | 🟡 Media |
 
 ## Fix pendiente (diagnosticado, sin implementar)
 
 | ID | Título | Módulo | Prioridad |
 |----|--------|--------|-----------|
 | [ISS-059](ISS-059-revertir-pedido-cancelado.md) | Sin forma de revertir un pedido cancelado por error | `orders.js`/`reservations.js`/`pedidos.js` | 🔴 Alta |
+| [ISS-092](ISS-092-test-agregar-manual-desactualizado.md) | `test-agregar-manual.js` mide la UI vieja del modal manual (chip "+ Elegir" + PlatoPicker, reemplazados por ISS-075) + comentario obsoleto en `pedidos.js` | `scripts/test-agregar-manual.js`/`pedidos.js` | 🟢 Baja |
 
 ## Resueltos
 
 | ID | Título | Fecha resolución | Solución |
 |----|--------|-----------------|---------|
+| [ISS-090](ISS-090-pendientes-solo-reservas.md) | "Pendientes" cobraba un toque extra por cada pedido de la app sin verificar nada | 2026-09-12 | Decisión del usuario: en hora pico la dueña pasa los pedidos a cocina sin mirar el comprobante, así que la zona no protegía nada. `POST /api/public/orders` inserta con `es_en_cocina` (antes `es_inicial`) y el push pasa a "🆕 Nueva orden en cocina". No se pierde control: `comprobanteThumb()` y el aviso "⚠️ Ya usado en el pedido #N" se pintan en todas las zonas, y `requiereConfirmarPagoAntes` sigue bloqueando el cobro de un Yape sin confirmar. `clasificarZonas()`/`btnOrden()` conservan a propósito el soporte de órdenes `es_inicial`: las que quedaron de antes del deploy seguirían activas pero invisibles si se quitara el filtro (mismo agujero que obligó al cierre de caja, ISS-026). Nuevo `scripts/test-iss090-pedido-directo-cocina.js` 17/17; `scripts/test-cola-carrera.js` adaptado a la transición Cocina→Listos 21/21 (+ arreglados 2 fallos propios del script, anteriores a este cambio: no cerraba los overlays de Términos/Novedades y buscaba el botón por texto con `.first()`, así que el click caía en otro pedido); jest 478/478. **Sin desplegar**, sin verificar en uso real. |
 | [ISS-060](ISS-060-acceso-pensionista-menu.md) | Pensionistas sin un camino claro para llegar a `pensionista.html` | 2026-09-07 | Opción C (decidida el 2026-08-21). `menu.html`: pill `<a>` "🧾 ¿Eres pensionista?" junto a "Consultar mi reserva" → `/login.html` (que ya redirige el rol a `/pensionista.html`). `pensionista.html`: widget `PwaInstall` en `<head>` + botón "📲 Instalar app" oculto salvo que la PWA sea instalable (en iOS abre el instructivo). `.btn-consultar` subió a 44px (touch target) + `text-decoration:none`. Sin backend; `pwa-install.js`/`pensionista.html` ya precacheados/versionados. `test-iss060-acceso-pensionista.js` 13/13 + sin regresión (`test-pwa-install` 9/9, `test-pensionista-cliente` 29/29, jest 478/478). **Desplegado 2026-09-08** (`fdc9877`), sin verificar por un pensionista real. |
 | [ISS-088](ISS-088-colapsar-resumen-pedido-pago.md) | El resumen "Tu pedido" quedaba siempre visible justo debajo de adjuntar el comprobante | 2026-09-04 | Feedback probando Reservar (ISS-087). Se preguntó al usuario entre 3 opciones — eligió colapsarlo detrás de un link. `#pago-items-wrap` pasa a un botón "Ver mi pedido" (`togglePagoItems()`, 44px) que despliega la lista; `showPagoStep()` reinicia el colapso al abrir la pantalla desde cero. Sin cambios en cómo se arma `#pago-items`. 478/478 jest + E2E sin regresión (`test-iss048-volver-pago` 15/15, `test-pedir-cantidad-primero` 24/24, `test-reservar-cantidad-primero` 21/21). Desplegado 2026-09-07 (`bda3610`), sin verificar en uso real. |
 | [ISS-087](ISS-087-reservar-cantidad-primero.md) | Reservar seguía con el picker directo (versión vieja) mientras Pedir ya usaba "cantidad primero" | 2026-09-04 | Se generalizaron las ~9 funciones del wizard de ISS-080 para aceptar `mode` en vez de duplicarlas. `renderMenuDiaCard` unificada (sin branch de reservar); `renderReservarContent()` dividida en fetch+reset y `renderReservarCards()` (repintado puro, sin fetch, para el wizard). Bug latente corregido de paso: `menu-qty-${m.id}` sin namespace por modo colisionaba en el DOM — pasa a `menu-qty-${mode}-${m.id}`. Retirado el atajo "+1 mismo menú" (ISS-064, `mostrarAtajoRepetirMenu` y afines) — redundante en los dos modos ahora. Sin tocar a propósito: el carrito de Reservar sigue agrupando menús idénticos con su propio stepper (`agruparMenusCarrito`). 478/478 jest + 94/94 E2E (5 scripts, 1 nuevo: `test-reservar-cantidad-primero.js`). **Sin desplegar**, sin verificar en uso real. |

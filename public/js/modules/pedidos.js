@@ -185,6 +185,13 @@ function renderColaDesdeCache() {
 
 function clasificarZonas(ordenes, reservas) {
   return {
+    // ISS-090: "Pendientes" pasa a ser una zona de RESERVAS. Ninguna orden
+    // nueva nace ahí — las del comensal entran directo a cocina igual que las
+    // manuales (routes/public.js). El filtro de órdenes es_inicial se conserva
+    // a propósito: las que ya estaban en ese estado cuando se desplegó el
+    // cambio tienen que seguir viéndose y poder pasar a cocina. Si se quitara,
+    // quedarían activas pero invisibles — el mismo agujero que obligó a
+    // construir el cierre de caja (ISS-026).
     pendientes: [
       ...ordenes.filter(o => o.es_inicial)
                 .map(o => ({ tipo: 'orden', datos: o })),
@@ -357,6 +364,8 @@ function btnRegresarACocinaReserva(r) {
 function btnOrden(o, zona) {
   const paraLlevar = o.modalidad === 'para_llevar';
   const btnCobrar = `<button class="btn btn-success btn-sm" onclick="cobrarColaOrden(${o.id})">💰 Cobrar</button>`;
+  // ISS-090: ninguna orden nueva llega acá (nacen en cocina). Se mantiene para
+  // las que quedaron en es_inicial desde antes del cambio — ver clasificarZonas().
   if (zona === 'pendientes' && o.es_inicial)
     return `<button class="btn btn-primary btn-sm" onclick="accionRapidaOrden(${o.id},'es_en_cocina')">🍳 A cocina</button>`;
   // Día 9 del piloto: en la zona Cocina solo se podía cancelar, no marcar listo.

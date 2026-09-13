@@ -142,7 +142,12 @@ Igual hasta que el pedido está listo. Luego:
 5. Confirma el pedido → pago al final o pago por app
 
 [Sistema]
-6. Crea orden asociada a la mesa
+6. Crea orden asociada a la mesa — entra DIRECTO a "En cocina" (ISS-090, 2026-09-12).
+   Antes nacía en "Pendientes" y alguien tenía que habilitarla a mano; esa parada se
+   justificaba como el punto de revisión del comprobante Yape/Plin, pero en el uso real
+   no ocurría (en hora pico se pasaban sin mirar). La verificación efectiva vive en el
+   cobro, donde el aviso de comprobante repetido sigue visible. "Pendientes" queda como
+   zona de reservas.
 
 [Cocina]
 7. Ve la orden en el panel (junto con las reservas activas)

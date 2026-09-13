@@ -76,6 +76,20 @@ function ordenPrueba(nombre) {
     await page.waitForLoadState('networkidle');
     console.log('Login OK →', page.url());
 
+    // Términos (ISS-082) y "Qué hay de nuevo" (ISS-076) tapan el panel al
+    // entrar: sin cerrarlos, los clicks del test aterrizan en su overlay.
+    const modalTerminos = page.locator('#modal-terminos');
+    if (await modalTerminos.isVisible().catch(() => false)) {
+      await page.check('#terminos-check');
+      await page.click('#terminos-btn');
+      await page.waitForTimeout(600);
+    }
+    const novCerrar = page.locator('.nov-btn-cerrar');
+    if (await novCerrar.count() > 0) {
+      await novCerrar.click().catch(() => {});
+      await page.waitForTimeout(400);
+    }
+
     // ── Fixture: un menú del día de hoy, con 1 sección obligatoria y 1 plato ──
     console.log('\n── Preparando un menú del día de prueba ──');
     const hoy = todayLima();
