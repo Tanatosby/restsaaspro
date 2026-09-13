@@ -57,6 +57,11 @@ async function loadConfiguracion() {
     const maeEl = document.getElementById('cfg-minutos-auto-entregado');
     if (maeEl) maeEl.value = cfg.minutos_auto_entregado ?? 3;
 
+    // Aviso al cobrar una mesa (ISS-089). No viene del servidor: es una
+    // preferencia de ESTE dispositivo, guardada por pedidos.js en localStorage.
+    const ccmEl = document.getElementById('cfg-confirmar-cobro-mesa');
+    if (ccmEl) ccmEl.checked = pideConfirmacionDeCobro();
+
     // Ventana de cancelación de reservas (cliente)
     const mcEl = document.getElementById('cfg-minutos-cancelacion-reserva');
     if (mcEl) mcEl.value = cfg.minutos_cancelacion_reserva ?? 30;
@@ -357,6 +362,20 @@ async function guardarMinutosPreparacion() {
     await api('PATCH', '/api/menu/config/minutos-preparacion', { minutos_preparacion: minutos });
     toast('Tiempo de preparación guardado');
   } catch(e) { toast(e.message, 'err'); }
+}
+
+// ISS-089 — volver a activar (o desactivar) el aviso previo al cobro de una
+// mesa. Vive en localStorage: es de este celular, no del restaurante.
+// CONFIRMAR_COBRO_KEY y pideConfirmacionDeCobro() los define pedidos.js. Se
+// carga después que config.js, pero no importa: estas funciones solo corren
+// cuando el usuario abre el panel, con todos los módulos ya evaluados.
+function guardarConfirmarCobroMesa() {
+  const preguntar = document.getElementById('cfg-confirmar-cobro-mesa').checked;
+  try {
+    if (preguntar) localStorage.removeItem(CONFIRMAR_COBRO_KEY);
+    else           localStorage.setItem(CONFIRMAR_COBRO_KEY, 'no');
+    toast(preguntar ? 'Te preguntaremos antes de cobrar una mesa' : 'No volveremos a preguntar en este celular');
+  } catch { toast('No se pudo guardar la preferencia', 'err'); }
 }
 
 // ISS-091 — cuánto espera un pedido en "Listos" antes de pasar solo a

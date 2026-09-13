@@ -376,9 +376,11 @@ function renderMesaCuenta(grupo) {
     ? `${n} ${plural}${n > 1 ? ' de clientes distintos' : ''}`
     : `${n} ${plural} · espera ${esperaGrupo(grupo)} min`;
 
+  // Sin el monto: ya está en la misma fila, justo encima. Repetirlo en el botón
+  // era ruido (feedback del usuario probando en el celular, 2026-09-13).
   const btnCobrarMesa = sinMesa ? '' : `
     <button class="btn btn-success btn-block" type="button"
-      onclick="cobrarMesaCola('${esc(grupo.clave)}')">💰 Cobrar mesa ${esc(String(grupo.mesa))} · ${fSoles(totalGrupo(grupo))}</button>`;
+      onclick="cobrarMesaCola('${esc(grupo.clave)}')">💰 Cobrar mesa ${esc(String(grupo.mesa))}</button>`;
 
   return `
     <div class="mesa-cuenta ${abierta ? 'abierta' : ''} ${sinMesa ? 'sin-mesa' : ''}">
@@ -444,6 +446,50 @@ function toggleMesaCuenta(clave) {
   renderColaDesdeCache();
 }
 
+// ── Confirmación del cobro de mesa ──────────────────────
+// No se usa confirm() nativo: en el celular su letra es diminuta y no admite un
+// "no volver a preguntar", que es justo lo que pidió el usuario al probarlo —
+// en hora pico, un aviso que se repite en cada cobro se vuelve un trámite.
+// La preferencia es del dispositivo (como "ya vi las novedades"), así que vive
+// en localStorage; se puede volver a activar desde Configuración.
+const CONFIRMAR_COBRO_KEY = 'mp-confirmar-cobro-mesa';
+
+function pideConfirmacionDeCobro() {
+  try { return localStorage.getItem(CONFIRMAR_COBRO_KEY) !== 'no'; }
+  catch { return true; }   // sin localStorage, mejor preguntar
+}
+
+let _resolverCobroMesa = null;
+
+function confirmarCobroMesa(grupo) {
+  const modal = document.getElementById('modal-cobrar-mesa');
+  if (!modal) return Promise.resolve(true);   // sin modal, no bloquear el cobro
+
+  const n = grupo.items.length;
+  document.getElementById('cobrar-mesa-titulo').textContent  = `Cobrar mesa ${grupo.mesa}`;
+  document.getElementById('cobrar-mesa-detalle').innerHTML   =
+    `Se van a cerrar <strong>${n} ${n === 1 ? 'pedido' : 'pedidos'}</strong> de esta mesa.`;
+  document.getElementById('cobrar-mesa-total').textContent   = fSoles(totalGrupo(grupo));
+  document.getElementById('cobrar-mesa-no-preguntar').checked = false;
+  modal.style.display = 'flex';
+
+  return new Promise(resolve => { _resolverCobroMesa = resolve; });
+}
+
+function cerrarModalCobrarMesa(confirmado) {
+  const modal = document.getElementById('modal-cobrar-mesa');
+  if (modal) modal.style.display = 'none';
+
+  // Solo se recuerda si además confirmó: marcar la casilla y cancelar no puede
+  // dejar el aviso apagado para siempre.
+  if (confirmado && document.getElementById('cobrar-mesa-no-preguntar')?.checked) {
+    try { localStorage.setItem(CONFIRMAR_COBRO_KEY, 'no'); } catch {}
+  }
+  const resolver = _resolverCobroMesa;
+  _resolverCobroMesa = null;
+  if (resolver) resolver(!!confirmado);
+}
+
 // Cobro en bloque. Sin "deshacer": el backend no permite salir de `es_pagado`
 // (el mismo bloqueo de ISS-059), así que la red es preguntar ANTES — mismo
 // criterio que el resto de las acciones irreversibles del panel.
@@ -455,13 +501,10 @@ async function cobrarMesaCola(clave) {
   const clavePedido = `mesa${clave}`;
   if (_enVuelo.has(clavePedido)) return;
 
-  const n     = grupo.items.length;
-  const monto = fSoles(totalGrupo(grupo));
-  const ok = confirm(
-    `Vas a cobrar ${n} ${n === 1 ? 'pedido' : 'pedidos'} de la mesa ${grupo.mesa} por ${monto}.\n\n` +
-    `Una vez cobrados no se pueden reabrir.`
-  );
-  if (!ok) return;
+  if (pideConfirmacionDeCobro()) {
+    const ok = await confirmarCobroMesa(grupo);
+    if (!ok) return;
+  }
 
   const ordenes  = grupo.items.filter(i => i.tipo === 'orden').map(i => i.datos.id);
   const reservas = grupo.items.filter(i => i.tipo === 'reserva').map(i => i.datos.id);

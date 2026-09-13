@@ -55,14 +55,17 @@ function limpiar() {
   });
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
 
-  // El cobro en bloque pregunta antes (no hay "deshacer": el backend no deja
-  // salir de es_pagado). Por defecto se acepta; un test lo cancela a propósito.
-  let aceptarDialogos = true;
-  const dialogos = [];
-  page.on('dialog', async d => {
-    dialogos.push(d.message());
-    aceptarDialogos ? await d.accept() : await d.dismiss();
-  });
+  // El cobro en bloque pregunta antes con un modal propio (no confirm() nativo:
+  // su letra es diminuta en el celular y no admite "no volver a preguntar").
+  const modalCobro   = () => page.locator('#modal-cobrar-mesa');
+  const confirmarEnModal = async () => {
+    await page.locator('#modal-cobrar-mesa button:has-text("Cobrar")').click();
+    await page.waitForTimeout(1200);
+  };
+  const cancelarEnModal = async () => {
+    await page.locator('#modal-cobrar-mesa button:has-text("Cancelar")').click();
+    await page.waitForTimeout(400);
+  };
 
   try {
     // ── login ──
@@ -189,19 +192,39 @@ function limpiar() {
 
     // ── F. cobrar la mesa completa ──
     console.log('\n── F. "Cobrar mesa" pide confirmación y cierra todo junto ──');
-    aceptarDialogos = false;
-    await page.locator(`#zona-cobrar .mesa-cuenta:has-text("Mesa ${MESA_A}") button:has-text("Cobrar mesa")`).first().click();
-    await page.waitForTimeout(700);
-    check(dialogos.length === 1 && /3 pedidos/.test(dialogos[0]) && /112\.00/.test(dialogos[0]),
-      `Pregunta antes, con el detalle: "${(dialogos[0] || '').replace(/\n+/g, ' ')}"`);
+    const btnCobrarMesaA = () => page
+      .locator(`#zona-cobrar .mesa-cuenta:has-text("Mesa ${MESA_A}") button:has-text("Cobrar mesa")`).first();
+
+    check(!(await btnCobrarMesaA().innerText()).includes('S/'),
+      `El botón no repite el monto — ya está en la fila ("${(await btnCobrarMesaA().innerText()).trim()}")`);
+
+    await btnCobrarMesaA().click();
+    await page.waitForTimeout(600);
+    check(await modalCobro().isVisible(), 'Se abre el aviso antes de cobrar');
+    const textoModal = (await modalCobro().innerText()).replace(/\n+/g, ' | ');
+    check(/3 pedidos/.test(textoModal) && /112\.00/.test(textoModal),
+      `Con el detalle y el total: "${textoModal}"`);
+    check(await page.locator('#cobrar-mesa-no-preguntar').count() === 1,
+      'Y la opción "No volver a preguntarme"');
+
+    await cancelarEnModal();
     const sigueAbierta = db.prepare(
       `SELECT COUNT(*) n FROM ordenes o JOIN estatus_orden eo ON o.id_estatus = eo.id
        WHERE o.id IN (?,?,?) AND eo.es_pagado = 0`).get(a1, a2, a3).n;
-    check(sigueAbierta === 3, 'Al cancelar el aviso no se cobra nada');
+    check(sigueAbierta === 3, 'Al cancelar no se cobra nada');
 
-    aceptarDialogos = true;
-    await page.locator(`#zona-cobrar .mesa-cuenta:has-text("Mesa ${MESA_A}") button:has-text("Cobrar mesa")`).first().click();
-    await page.waitForTimeout(1800);
+    // Marcar la casilla y CANCELAR no debe apagar el aviso
+    await btnCobrarMesaA().click();
+    await page.waitForTimeout(500);
+    await page.check('#cobrar-mesa-no-preguntar');
+    await cancelarEnModal();
+    check(await page.evaluate(() => pideConfirmacionDeCobro()),
+      'Marcar "no preguntar" y cancelar NO apaga el aviso (solo cuenta si confirma)');
+
+    await btnCobrarMesaA().click();
+    await page.waitForTimeout(500);
+    await confirmarEnModal();
+    await page.waitForTimeout(1200);
 
     const cobradas = db.prepare(`
       SELECT o.id, o.total, o.estado_pago, eo.nombre estatus
@@ -220,6 +243,27 @@ function limpiar() {
     check(await page.locator(`#zona-cobrar .mesa-cuenta:has-text("Mesa ${MESA_B}")`).count() === 1,
       `La mesa ${MESA_B} sigue ahí, intacta`);
 
+    // "No volver a preguntarme": al confirmar sí queda guardado, y el siguiente
+    // cobro va directo. Al final se restaura para no dejar el panel alterado.
+    await page.evaluate(() => localStorage.setItem('mp-confirmar-cobro-mesa', 'no'));
+    await page.locator(`#zona-cobrar .mesa-cuenta:has-text("Mesa ${MESA_B}") button:has-text("Cobrar mesa")`).first().click();
+    await page.waitForTimeout(1400);
+    check(!(await modalCobro().isVisible()), 'Con "no preguntar" activo, el cobro va directo sin aviso');
+    check(db.prepare(`SELECT eo.es_pagado FROM ordenes o JOIN estatus_orden eo ON o.id_estatus = eo.id WHERE o.id = ?`)
+            .get(b1).es_pagado === 1, `Y cobró igual la mesa ${MESA_B}`);
+
+    // Configuración permite volver a activarlo
+    await page.evaluate(() => showPanel('configuracion'));
+    await page.waitForTimeout(1200);
+    check(await page.isChecked('#cfg-confirmar-cobro-mesa') === false,
+      'Configuración refleja que el aviso está desactivado');
+    await page.check('#cfg-confirmar-cobro-mesa');
+    await page.waitForTimeout(400);
+    check(await page.evaluate(() => pideConfirmacionDeCobro()),
+      'Y desde ahí se vuelve a activar — no es una decisión sin vuelta atrás');
+    await page.evaluate(() => showPanel('pedidos'));
+    await page.waitForTimeout(500);
+
     // La consola se revisa ACÁ, antes del bloque G: ese bloque provoca 409/400/404
     // a propósito contra el endpoint, y el navegador los loguea como error de red.
     check(errors.length === 0,
@@ -227,6 +271,7 @@ function limpiar() {
 
     // ── G. todo-o-nada en el endpoint ──
     console.log('\n── G. El endpoint es todo-o-nada ──');
+    // El único que queda sin cobrar a esta altura es el del grupo sin mesa
     const loteMixto = await page.evaluate(async ([yaCobrada, abierta]) => {
       const r = await fetch('/api/orders/cobrar-mesa', {
         method: 'POST',
@@ -235,11 +280,11 @@ function limpiar() {
         body: JSON.stringify({ ordenes: [yaCobrada, abierta] }),
       });
       return { status: r.status, data: await r.json() };
-    }, [a1, b1]);
+    }, [a1, s1]);
     check(loteMixto.status === 409, `Rechaza el lote con un pedido ya cobrado (status ${loteMixto.status})`);
-    const bSigueAbierta = db.prepare(
-      `SELECT eo.es_pagado FROM ordenes o JOIN estatus_orden eo ON o.id_estatus = eo.id WHERE o.id = ?`).get(b1);
-    check(bSigueAbierta.es_pagado === 0,
+    const otroSigueAbierto = db.prepare(
+      `SELECT eo.es_pagado FROM ordenes o JOIN estatus_orden eo ON o.id_estatus = eo.id WHERE o.id = ?`).get(s1);
+    check(otroSigueAbierto.es_pagado === 0,
       'Y NO cobró el otro pedido del lote: o todos o ninguno');
 
     const vacio = await page.evaluate(async () => {
