@@ -331,16 +331,17 @@ no los va a mover — se cierran a mano esa primera vez.
 | 1 | ISS-090 — los pedidos de la app entran directo a cocina | `843fea7` |
 | 2+3 | ISS-089 — el monto en la cola + "Por cobrar" por mesa con cobro en bloque | `b7af6b7` |
 | — | ISS-093 — auto-merge apagado (duplicaba la cuenta de la mesa) | `d485dcf` |
-| 4 | ISS-091 — auto-entregado + poll a 20 s | pendiente de commit |
+| 4 | ISS-091 — auto-entregado + poll a 20 s | `e329d86` |
 
 **Pendiente:** desplegar todo; y, sin urgencia, retirar el código del Gap 8 (ISS-093).
 
 ---
 
-## 🗓 Sesión 2026-09-13 — pruebas en el celular del usuario
+## 🗓 Sesión 2026-09-13 — pruebas en el celular del usuario + mesas de una vez (ISS-094)
 
 Con el servidor local levantado y accesible desde su celular (`PORT=3000`, IP de la Wi-Fi), el
-usuario probó la Cola rediseñada antes de desplegar. Tres cosas salieron de ahí:
+usuario probó la Cola rediseñada antes de desplegar. Tres cosas salieron de ahí (1-3); la 4 es
+ISS-094, pedido aparte de la misma sesión:
 
 ### 1 · El botón de cobrar repetía el monto (`abb0fda`)
 
@@ -377,6 +378,42 @@ y no cubría el modal real; ahora **35/35**, incluido el caso "enviar sin nombre
 corrigió el comentario de `pedidos.js` que afirmaba usar un widget que ya no usa.
 
 **Pendiente:** desplegar; y, sin urgencia, retirar el código del Gap 8 (ISS-093).
+
+**Deploy — confirmado SIN desplegar (2026-09-13, preguntado al usuario):** último deploy sigue siendo
+`fdc9877` (2026-09-08). Pendientes de deploy: `88a9622..8f57ba0` — 11 commits, 6 con código de la app
+(`843fea7` ISS-090, `b7af6b7` ISS-089, `d485dcf` ISS-093, `e329d86` ISS-091, `abb0fda`, `8f57ba0`
+ISS-092). Hasta desplegar, en producción el nombre de "Agregar manual" sigue siendo obligatorio.
+
+### 4 · ISS-094 — crear las mesas de una vez + mesa escrita a mano en "Agregar manual"
+
+**Prompt del usuario:** *"¿puedes mejorar la parte de crear mesas para hacerlo más rápido? No sé si
+sea necesario tener todas las mesas en el mapa para el cambio que hemos hecho"*.
+
+**Respuesta a la duda:** no. "Por cobrar" (ISS-089), el QR y la mesa de una reserva usan solo el
+número; la tabla `mesas` la leían únicamente el Plano y el selector de "Agregar manual" — y ese
+selector era el problema: sin mesas creadas, el pedido manual quedaba "Sin mesa" y no se juntaba
+con la cuenta de su mesa.
+
+**Decidido sobre mockup** (`issues/ISS-094-crear-mesas-mockups.html`, artifact
+https://claude.ai/code/artifact/3e2d3b49-996b-41fb-be4a-44c32f03a517): de las 6 pantallas, el
+usuario eligió la A (un número + un botón) y la D (mesa escrita); luego, por pregunta, "siempre
+número" en Agregar manual y "solo formulario + resumen" en Configuración (sin grilla ni modo quitar).
+
+**Hecho:** `POST /api/mesas/lote` + `utils/mesas.js` (crea 1..N que falten, nunca borra) ·
+Configuración → Mesas nueva (resumen por rangos, ayuda que anticipa, sin capacidad ni ✕) · QR por
+mesa arranca con esa cantidad · "Agregar manual" con input numérico y validación · `POST /api/orders`
+valida la mesa (`normalizarNumeroMesa`) · novedad id 12 (incluye también el nombre opcional de
+ISS-092, que no tenía entrada) · `Readme.md`, `features.md`, `ISSUES.md`, `issues/ISS-094-*.md`.
+
+**Verificación:** jest **524/524** (31 nuevos en `tests/mesas-lote.test.js`) ·
+`scripts/test-iss094-mesas.js` **30/30** (incluye: sin mesas creadas, pedido manual mesa 97 + QR
+mesa 97 → una sola fila "Mesa 97 · 2 pedidos" en Por cobrar; 360 px a letra ×1,7 sin overflow) ·
+sin regresión: `test-agregar-manual` 35/35, `test-iss089` 39/39, `test-cobrar-homologado` 14/14,
+`test-iss090` 17/17, `test-iss091` 22/22.
+
+**Probado por el usuario en local** (servidor `PORT=3000` en la Wi-Fi): *"funciona bien"*.
+
+**Pendiente:** deploy (lo hace el usuario); verlo con la dueña.
 
 ---
 ## 🎯 Sesión 2026-09-09 — landing (más secciones + fondo del hero) + modelo VAN

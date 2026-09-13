@@ -8,7 +8,19 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 > (`conversacion_*.md`) y por lo tanto **no viajaba entre las 2 laptops del usuario**. Este archivo sí
 > está en git: es la copia viva del backlog. Actualizarlo al cerrar cada sesión.
 
-**Última actualización:** 2026-09-09
+**Última actualización:** 2026-09-13
+
+---
+
+## 🚚 Listo para desplegar (2026-09-13) — rediseño de la Cola + mesas
+
+Todo commiteado y pusheado, **sin desplegar** (último deploy: `fdc9877`, 2026-09-08): ISS-090
+(pedidos de la app directo a cocina), ISS-089 ("Por cobrar" por mesa), ISS-093 (auto-merge
+apagado), ISS-091 ("Listos" se vacía sola), aviso de cobro legible, ISS-092 (nombre opcional en
+"Agregar manual") e **ISS-094** (crear mesas de una vez + mesa escrita a mano en "Agregar manual").
+Después del deploy, lo que hay que mirar con la dueña es la **Cola en hora pico**: cuenta por mesa,
+auto-entregado a los 3 min y pedidos manuales escribiendo la mesa. Sin urgencia: retirar el código
+del Gap 8 (ISS-093).
 
 ---
 

@@ -214,43 +214,91 @@ async function eliminarFotoRestaurante() {
 }
 
 // ── Mesas (desde panel Configuración) ───────────────────
+// ISS-094: se crean todas de una vez con POST /api/mesas/lote (antes, de a una:
+// 20 vueltas para el piloto). Decidido con el usuario sobre el mockup: solo el
+// formulario + un resumen, sin lista ni ✕ por mesa. Quitar mesas no tiene
+// pantalla — nada del día a día depende de esta lista (solo el Plano de mesas).
+
+let _mesasNumeros = [];  // números de mesa ya creados, ordenados
+
+// "1 a 20, 30" — agrupa números consecutivos en rangos
+function rangosMesas(numeros) {
+  const partes = [];
+  let i = 0;
+  while (i < numeros.length) {
+    let j = i;
+    while (j + 1 < numeros.length && numeros[j + 1] === numeros[j] + 1) j++;
+    partes.push(j > i ? `${numeros[i]} a ${numeros[j]}` : `${numeros[i]}`);
+    i = j + 1;
+  }
+  return partes.join(', ');
+}
+
 async function loadMesasConfig() {
-  const el = document.getElementById('cfg-mesas-list');
-  if (!el) return;
+  const resumen = document.getElementById('cfg-mesas-resumen');
+  if (!resumen) return;
   try {
     const mesas = await api('GET', '/api/mesas');
-    if (!mesas.length) {
-      el.innerHTML = '<span style="font-size:0.857143rem;color:var(--muted)">Sin mesas configuradas</span>';
-      return;
+    _mesasNumeros = mesas.map(m => m.numero).sort((a, b) => a - b);
+    const input = document.getElementById('cfg-mesas-cantidad');
+    const btn   = document.getElementById('cfg-mesas-btn');
+
+    if (!_mesasNumeros.length) {
+      resumen.textContent = 'Crea todas tus mesas de una vez. Aparecen en el plano de mesas.';
+      btn.textContent = 'Crear mesas';
+    } else {
+      const n = _mesasNumeros.length;
+      resumen.innerHTML = `Tienes <strong style="color:var(--text)">${n} ${n === 1 ? 'mesa' : 'mesas'}</strong>: ${esc(rangosMesas(_mesasNumeros))}.`;
+      btn.textContent = 'Crear las que faltan';
+      input.value = _mesasNumeros[_mesasNumeros.length - 1];
     }
-    el.innerHTML = mesas.map(m => `
-      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:0.928571rem">
-        <span style="font-weight:700">Mesa ${m.numero}</span>
-        <span style="color:var(--muted);font-size:0.785714rem">${m.capacidad} personas</span>
-        <button onclick="eliminarMesa(${m.id}, ${m.numero})" style="margin-left:4px;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.928571rem;padding:0 2px" title="Eliminar">✕</button>
-      </div>`).join('');
-  } catch(e) { el.innerHTML = `<span style="color:var(--danger);font-size:0.857143rem">${e.message}</span>`; }
+    actualizarAyudaMesas();
+    // El generador de QR por mesa arranca con la cantidad de mesas creadas
+    const qrNum = document.getElementById('qr-num-mesas');
+    if (qrNum && _mesasNumeros.length) qrNum.value = Math.min(_mesasNumeros[_mesasNumeros.length - 1], 100);
+  } catch(e) {
+    resumen.innerHTML = `<span style="color:var(--danger)">${esc(e.message)}</span>`;
+  }
 }
 
-async function crearMesa() {
-  const numero    = document.getElementById('cfg-mesa-numero').value;
-  const capacidad = document.getElementById('cfg-mesa-capacidad').value;
-  if (!numero) return toast('Ingresa el número de mesa', 'err');
-  try {
-    await api('POST', '/api/mesas', { numero, capacidad });
-    document.getElementById('cfg-mesa-numero').value = '';
-    toast(`Mesa ${numero} agregada`);
-    loadMesasConfig();
-  } catch(e) { toast(e.message, 'err'); }
+// Texto bajo el campo: qué va a pasar al tocar el botón, antes de tocarlo
+function actualizarAyudaMesas() {
+  const ayuda = document.getElementById('cfg-mesas-ayuda');
+  if (!ayuda) return;
+  const n = parseInt(document.getElementById('cfg-mesas-cantidad').value, 10);
+  if (!Number.isInteger(n) || n < 1 || n > 100) {
+    ayuda.textContent = 'Pon un número entre 1 y 100.';
+    return;
+  }
+  if (!_mesasNumeros.length) {
+    ayuda.textContent = n === 1 ? 'Se crea la mesa 1.' : `Se crean numeradas del 1 al ${n}.`;
+    return;
+  }
+  const existentes = new Set(_mesasNumeros);
+  const faltan = [];
+  for (let i = 1; i <= n; i++) if (!existentes.has(i)) faltan.push(i);
+  ayuda.textContent = faltan.length
+    ? `Se ${faltan.length === 1 ? 'agrega la mesa' : 'agregan las mesas'} ${rangosMesas(faltan)}. No se borra ninguna.`
+    : 'Ya tienes todas esas mesas. Para agregar más, pon un número mayor.';
 }
 
-async function eliminarMesa(id, numero) {
-  if (!confirm(`¿Eliminar Mesa ${numero}?`)) return;
+async function crearMesasLote() {
+  const cantidad = parseInt(document.getElementById('cfg-mesas-cantidad').value, 10);
+  if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 100)
+    return toast('Pon cuántas mesas tiene tu local, entre 1 y 100', 'err');
+  const btn = document.getElementById('cfg-mesas-btn');
+  btn.disabled = true;
   try {
-    await api('DELETE', `/api/mesas/${id}`);
-    toast(`Mesa ${numero} eliminada`);
-    loadMesasConfig();
-  } catch(e) { toast(e.message, 'err'); }
+    const { creadas } = await api('POST', '/api/mesas/lote', { cantidad });
+    toast(creadas.length
+      ? `Se ${creadas.length === 1 ? 'creó 1 mesa' : `crearon ${creadas.length} mesas`}`
+      : 'Ya tenías todas esas mesas');
+    await loadMesasConfig();
+  } catch(e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── QR del menú ──────────────────────────────────────────

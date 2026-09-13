@@ -872,29 +872,27 @@ function todayLimaPedidos() {
 
 async function abrirModalAgregarManual() {
   document.getElementById('manual-nombre').value = '';
+  document.getElementById('manual-mesa').value = '';
   document.getElementById('manual-error').textContent = '';
   _manualInstancias = {};
   _manualCartaQty   = {};
 
   document.getElementById('modal-agregar-manual').style.display = 'flex';
 
-  const selMesa    = document.getElementById('manual-mesa');
+  // La mesa se escribe a mano (ISS-094): ya no se pide la lista de mesas.
+  // Antes era un <select> de las mesas creadas en Configuración — si la dueña
+  // no las había creado, solo ofrecía "Sin mesa" y el pedido no se juntaba con
+  // la cuenta de su mesa en "Por cobrar".
   const listaMenus = document.getElementById('manual-menus-lista');
   const listaCarta = document.getElementById('manual-carta-lista');
-  selMesa.innerHTML = '<option value="">Sin mesa</option>';
   listaMenus.innerHTML = '<div class="loading-text">Cargando menú del día…</div>';
   listaCarta.innerHTML = '';
 
   try {
-    const [mesas, menus, carta] = await Promise.all([
-      api('GET', '/api/mesas/estado'),
+    const [menus, carta] = await Promise.all([
       api('GET', `/api/menu/menus-dia?dia=${todayLimaPedidos()}`),
       api('GET', '/api/menu/platos-carta'),
     ]);
-
-    if (mesas.length) {
-      selMesa.innerHTML += mesas.map(m => `<option value="${m.numero}">Mesa ${m.numero} · ${esc(m.estado)}</option>`).join('');
-    }
 
     // Igual criterio que el cliente en menu.html (routes/public.js): solo
     // menús activos hoy — el mozo no debería poder tomar un pedido de un
@@ -1117,9 +1115,18 @@ function cambiarCantidadCartaManual(platoId, delta) {
 
 async function enviarPedidoManual() {
   const nombre = document.getElementById('manual-nombre').value.trim();
-  const mesa   = document.getElementById('manual-mesa').value || null;
+  const mesaEl = document.getElementById('manual-mesa');
+  const mesa   = mesaEl.value.trim() || null;
   const errEl  = document.getElementById('manual-error');
   errEl.textContent = '';
+
+  // type="number" deja escribir "5.5", "0" o "-3"; y si se tipea algo que no es
+  // número, value llega vacío con validity.badInput — no mandarlo como "sin mesa".
+  if (mesaEl.validity.badInput || (mesa !== null && (!/^\d+$/.test(mesa) || Number(mesa) < 1))) {
+    errEl.textContent = 'El número de mesa tiene que ser un número entero mayor a 0';
+    mesaEl.focus();
+    return;
+  }
 
   // El nombre es opcional de verdad: ISS-075 lo sacó de los obligatorios ("mesa
   // y nombre ya no son obligatorios") y el campo dice "(opcional)", pero la

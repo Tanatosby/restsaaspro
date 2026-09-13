@@ -4,6 +4,7 @@ const router  = express.Router();
 const db      = require('../config/database');
 const { authenticate, authorizePermiso } = require('../middleware/authenticate');
 const { fechaLima } = require('../utils/fecha');
+const { crearMesasLote, cantidadMesasValida, MAX_MESAS } = require('../utils/mesas');
 
 router.use(authenticate);
 
@@ -111,6 +112,17 @@ router.post('/', authorizePermiso(), (req, res) => {
   `).run(parseInt(numero), parseInt(capacidad) || 4, req.user.restaurant_id);
 
   res.status(201).json({ id: lastInsertRowid, numero: parseInt(numero), capacidad: parseInt(capacidad) || 4, activo: 1 });
+});
+
+// POST /api/mesas/lote — crear las mesas 1..cantidad que falten (ISS-094)
+// Body: { cantidad }. No borra ni toca las existentes; repetirlo no duplica.
+router.post('/lote', authorizePermiso(), (req, res) => {
+  const cantidad = cantidadMesasValida(req.body?.cantidad);
+  if (!cantidad)
+    return res.status(400).json({ error: `Pon cuántas mesas tiene tu local, entre 1 y ${MAX_MESAS}` });
+
+  const resultado = crearMesasLote(db, req.user.restaurant_id, cantidad);
+  res.status(201).json(resultado);
 });
 
 // PATCH /api/mesas/:id — editar capacidad o activo

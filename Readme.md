@@ -147,6 +147,7 @@ PATCH /api/reservations/:id/mesa             ← asignar mesa a reserva
 GET  /api/mesas                              ← lista de mesas
 GET  /api/mesas/estado                       ← estado en tiempo real (libre/ocupada/reservada)
 POST /api/mesas                              ← crear mesa
+POST /api/mesas/lote                         ← crear las mesas 1..N que falten (ISS-094)
 PATCH /api/mesas/:id                         ← editar capacidad/activo
 DELETE /api/mesas/:id                        ← eliminar mesa
 ```

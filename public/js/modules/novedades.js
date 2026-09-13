@@ -108,6 +108,16 @@ const NOVEDADES = [
       'La Cola del día ahora se actualiza cada 20 segundos en vez de cada minuto, para que veas los pedidos moverse casi al instante.',
     ],
   },
+  {
+    id: 12,
+    fecha: '2026-09-13',
+    items: [
+      'En "Agregar manual" el nombre del cliente ahora sí es opcional: podés enviar el pedido sin escribirlo.',
+      'En "Agregar manual" la mesa ahora se escribe con el teclado de números, en vez de buscarla en una lista. Si escribís "5", el pedido se junta en "Por cobrar" con lo que la mesa 5 pidió desde el QR.',
+      'Crear tus mesas es mucho más rápido: en Configuración → Mesas ponés cuántas mesas tiene tu local (por ejemplo 20) y se crean todas de una vez. Si después agregás más, se crean solo las que faltan; nunca se borra ninguna.',
+      'El generador de QR por mesa ya viene con tu cantidad de mesas puesta.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

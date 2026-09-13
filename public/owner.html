@@ -838,24 +838,23 @@
           <div><div class="sec-title">Configuración</div><div class="sec-sub">Personalización visual del restaurante</div></div>
         </div>
 
-        <!-- Mesas -->
+        <!-- Mesas — ISS-094: se crean todas de una vez (antes, de a una con
+             número + capacidad). Ni "Por cobrar", ni el QR, ni "Agregar manual"
+             consultan esta lista: hoy solo alimenta el Plano de mesas. -->
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-header">
             <span class="card-title">Mesas del restaurante</span>
           </div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
-            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-              <div>
-                <label for="cfg-mesa-numero" style="font-size:0.857143rem;font-weight:600;display:block;margin-bottom:4px">N° mesa</label>
-                <input type="number" id="cfg-mesa-numero" min="1" placeholder="ej: 5" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:1.142857rem;background:var(--bg)" />
+            <div id="cfg-mesas-resumen" style="font-size:1rem;color:var(--text-2)">Crea todas tus mesas de una vez. Aparecen en el plano de mesas.</div>
+            <div style="display:flex;flex-direction:column;gap:0.4rem">
+              <label for="cfg-mesas-cantidad" style="font-size:0.857143rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">¿Cuántas mesas tiene tu local?</label>
+              <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+                <input type="number" id="cfg-mesas-cantidad" inputmode="numeric" min="1" max="100" value="20" oninput="actualizarAyudaMesas()" style="width:5.2em;min-height:44px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums;border:1.5px solid var(--border);border-radius:7px;padding:6px 8px;font-size:max(16px,1.142857rem);font-family:inherit;background:var(--surface-2);color:var(--text)" />
+                <button class="btn btn-primary" id="cfg-mesas-btn" style="flex:1 1 auto" onclick="crearMesasLote()">Crear mesas</button>
               </div>
-              <div>
-                <label for="cfg-mesa-capacidad" style="font-size:0.857143rem;font-weight:600;display:block;margin-bottom:4px">Capacidad</label>
-                <input type="number" id="cfg-mesa-capacidad" min="1" value="4" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:1.142857rem;background:var(--bg)" />
-              </div>
-              <button class="btn btn-primary btn-sm" onclick="crearMesa()">+ Agregar mesa</button>
             </div>
-            <div id="cfg-mesas-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+            <div id="cfg-mesas-ayuda" style="font-size:1rem;color:var(--muted)">Se crean numeradas del 1 al 20.</div>
           </div>
         </div>
 
@@ -1285,11 +1284,12 @@
       Para el cliente que toma el pedido de palabra (mesa, sin internet o sin celular). Entra directo a cocina.
     </div>
     <div style="padding:1rem 1.5rem;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0.9rem">
+      <!-- Mesa escrita a mano (ISS-094), no un selector de las mesas creadas:
+           más rápido con el teclado numérico y coincide siempre con el número
+           del QR, así "Por cobrar" junta el pedido con la cuenta de su mesa. -->
       <label style="display:flex;flex-direction:column;gap:0.3rem">
         <span style="font-size:0.857143rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">Mesa (opcional)</span>
-        <select id="manual-mesa" style="font-size:1.142857rem;font-family:inherit;padding:10px 12px;min-height:44px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--text)">
-          <option value="">Sin mesa</option>
-        </select>
+        <input id="manual-mesa" type="number" inputmode="numeric" min="1" step="1" placeholder="N° de mesa, ej: 5" autocomplete="off" style="font-size:max(16px,1.142857rem);font-family:inherit;padding:10px 12px;min-height:44px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--text)">
       </label>
       <label style="display:flex;flex-direction:column;gap:0.3rem">
         <span style="font-size:0.857143rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">Nombre del cliente (opcional)</span>

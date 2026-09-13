@@ -11,6 +11,7 @@ const { descontarStock, devolverStock, itemsMenuDeOrden } = require('../utils/st
 const { requiereConfirmarPagoAntes } = require('../utils/verificacionPago');
 const { colaDelDia, cocinaDelDia, pedidosSinCerrar } = require('../utils/colaDia');
 const { validarSeccionesMenu } = require('../utils/validarSeccionesMenu');
+const { normalizarNumeroMesa } = require('../utils/mesas');
 
 router.use(authenticate);
 
@@ -319,6 +320,13 @@ router.post('/', authorizePermiso(), (req, res) => {
   if (!carta_items?.length && !menu_items?.length)
     return res.status(400).json({ error: 'La orden debe tener al menos un ítem' });
 
+  // "Agregar manual" escribe la mesa a mano desde ISS-094 (antes era un selector):
+  // puede llegar vacía, con espacios o inválida. Tiene que quedar como entero
+  // para que "Por cobrar" la junte con los pedidos por QR de la misma mesa.
+  const numeroMesa = normalizarNumeroMesa(mesa);
+  if (numeroMesa.error)
+    return res.status(400).json({ error: numeroMesa.error });
+
   // Verificar que el restaurante existe y está activo
   const restaurante = db.prepare(`
     SELECT id, efectivo_activo FROM restaurantes WHERE id = ? AND activo = 1
@@ -367,7 +375,7 @@ router.post('/', authorizePermiso(), (req, res) => {
       const { lastInsertRowid } = db.prepare(`
         INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, metodo_pago, es_manual)
         VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE ${flagEstatus} = 1), ?, ?)
-      `).run(mesa || null, nombre_cliente || null, fecha, id_restaurante, metodoManual, manual ? 1 : 0);
+      `).run(numeroMesa.mesa, nombre_cliente || null, fecha, id_restaurante, metodoManual, manual ? 1 : 0);
 
       const stmtCarta = db.prepare(`
         INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)
