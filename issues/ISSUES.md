@@ -21,7 +21,7 @@ _(vacío)_
 | ID | Título | Módulo | Prioridad |
 |----|--------|--------|-----------|
 | [ISS-059](ISS-059-revertir-pedido-cancelado.md) | Sin forma de revertir un pedido cancelado por error | `orders.js`/`reservations.js`/`pedidos.js` | 🔴 Alta |
-| [ISS-093](ISS-093-automerge-duplica-cuenta.md) | El auto-merge (Gap 8) deja la reserva activa con sus ítems tras copiarlos a la orden: la mesa suma doble y Ganancias también | `reservations.js` | 🔴 Alta |
+| [ISS-093](ISS-093-automerge-duplica-cuenta.md) | El auto-merge (Gap 8) duplicaba la cuenta de una mesa con reserva — 🟡 **mitigado 2026-09-12**: apagado para todos; queda retirar el código | `reservations.js`/`database.js` | 🟡 Media |
 | [ISS-092](ISS-092-test-agregar-manual-desactualizado.md) | `test-agregar-manual.js` mide la UI vieja del modal manual (chip "+ Elegir" + PlatoPicker, reemplazados por ISS-075) + comentario obsoleto en `pedidos.js` | `scripts/test-agregar-manual.js`/`pedidos.js` | 🟢 Baja |
 
 ## Resueltos

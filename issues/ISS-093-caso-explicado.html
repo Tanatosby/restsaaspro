@@ -1,0 +1,487 @@
+<title>Cuenta duplicada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&family=Lato:wght@400;700;900&family=Playfair+Display:wght@700&display=swap">
+
+<style>
+/* Misma paleta fría de la serie ISS-089: documento en acero, app en terracota. */
+:root{
+  --paper:#eceeef; --surface:#fbfcfc; --surface-2:#f3f5f6;
+  --ink:#161a1d; --ink-2:#4a5157; --muted:#7c858c;
+  --line:#d6dbde; --line-2:#c2c9cd;
+  --steel:#1a6090; --steel-soft:#e5eef5;
+  --ok:#2a7a4a; --ok-soft:#e8f3ec;
+  --warn:#8f5f10; --warn-soft:#f6efdd;
+  --stop:#ab392c; --stop-soft:#f7e9e7;
+  --doc-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#111417; --surface:#181c20; --surface-2:#1e2328;
+    --ink:#e7eaec; --ink-2:#a8b0b6; --muted:#78828a;
+    --line:#282e34; --line-2:#39424a;
+    --steel:#69b0e2; --steel-soft:#15242f;
+    --ok:#5fb184; --ok-soft:#15241d;
+    --warn:#cc9a3f; --warn-soft:#251f12;
+    --stop:#d4776a; --stop-soft:#261715;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111417; --surface:#181c20; --surface-2:#1e2328;
+  --ink:#e7eaec; --ink-2:#a8b0b6; --muted:#78828a;
+  --line:#282e34; --line-2:#39424a;
+  --steel:#69b0e2; --steel-soft:#15242f;
+  --ok:#5fb184; --ok-soft:#15241d;
+  --warn:#cc9a3f; --warn-soft:#251f12;
+  --stop:#d4776a; --stop-soft:#261715;
+}
+
+body{ background:var(--paper); color:var(--ink); font-family:var(--doc-font);
+      font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+.wrap{ max-width:960px; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
+@media (max-width:520px){ .wrap{ padding:1.75rem 1rem 4rem; } }
+
+h1,h2,h3{ text-wrap:balance; line-height:1.18; font-weight:600; letter-spacing:-.015em; }
+h1{ font-size:clamp(2rem,6vw,2.9rem); font-weight:700; letter-spacing:-.03em; }
+h2{ font-size:clamp(1.35rem,3.4vw,1.7rem); margin-bottom:.35rem; }
+h3{ font-size:1.02rem; }
+p{ max-width:68ch; }
+strong{ font-weight:600; color:var(--ink); }
+code{ font-family:var(--mono); font-size:.86em; background:var(--surface-2);
+      border:1px solid var(--line); border-radius:4px; padding:.08em .38em; color:var(--ink-2); }
+.eyebrow{ font-family:var(--mono); font-size:.7rem; font-weight:600; letter-spacing:.14em;
+          text-transform:uppercase; color:var(--muted); }
+
+.doc-head{ display:flex; flex-direction:column; gap:.85rem; padding-bottom:2rem;
+           border-bottom:1px solid var(--line); }
+section{ padding-top:2.75rem; display:flex; flex-direction:column; gap:1rem; }
+.sec-head{ display:flex; flex-direction:column; gap:.2rem; }
+
+.note{ display:grid; grid-template-columns:auto 1fr; gap:.9rem; background:var(--surface);
+       border:1px solid var(--line); border-left:3px solid var(--steel); border-radius:8px;
+       padding:1rem 1.1rem; max-width:72ch; }
+.note.key{ border-left-color:var(--warn); background:var(--warn-soft); }
+.note.stopnote{ border-left-color:var(--stop); background:var(--stop-soft); }
+.note.okn{ border-left-color:var(--ok); background:var(--ok-soft); }
+.note-mark{ font-family:var(--mono); font-size:.72rem; font-weight:600; letter-spacing:.1em;
+            text-transform:uppercase; color:var(--muted); padding-top:.2rem; }
+.note p{ margin:0; max-width:none; }
+.note p + p{ margin-top:.55rem; }
+
+/* ── Línea de tiempo del caso ── */
+.pasos{ display:flex; flex-direction:column; gap:0; }
+.paso{
+  display:grid; grid-template-columns:auto 1fr; gap:1rem;
+  padding-bottom:1.6rem; position:relative;
+}
+.paso:not(:last-child)::before{
+  content:''; position:absolute; left:17px; top:38px; bottom:0; width:2px;
+  background:var(--line-2);
+}
+.paso-num{
+  width:36px; height:36px; flex:none; border-radius:50%; z-index:1;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--surface); border:2px solid var(--line-2);
+  font-family:var(--mono); font-size:.85rem; font-weight:600; color:var(--ink-2);
+}
+.paso.clave .paso-num{ border-color:var(--stop); color:var(--stop); background:var(--stop-soft); }
+.paso-cuerpo{ display:flex; flex-direction:column; gap:.5rem; min-width:0; padding-top:.3rem; }
+.paso-tit{ font-weight:600; font-size:1.02rem; }
+.paso-cuerpo p{ margin:0; font-size:.95rem; color:var(--ink-2); }
+
+/* ── Filas de base de datos ── */
+.db{ display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+@media (max-width:640px){ .db{ grid-template-columns:1fr; } }
+.db-caja{
+  border:1px solid var(--line); border-radius:8px; background:var(--surface); overflow:hidden;
+  font-family:var(--mono); font-size:.78rem;
+}
+.db-caja.res{ border-top:3px solid var(--steel); }
+.db-caja.ord{ border-top:3px solid #c8692a; }
+.db-tit{
+  padding:.5rem .7rem; background:var(--surface-2); border-bottom:1px solid var(--line);
+  font-weight:600; font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+}
+.db-fila{ padding:.45rem .7rem; border-bottom:1px solid var(--line); color:var(--ink-2);
+          display:flex; justify-content:space-between; gap:.6rem; }
+.db-fila:last-child{ border-bottom:none; }
+.db-fila.nueva{ background:var(--stop-soft); color:var(--stop); font-weight:600; }
+.db-fila.vacia{ color:var(--muted); font-style:italic; }
+.db-total{ padding:.5rem .7rem; background:var(--surface-2); border-top:1px solid var(--line-2);
+           display:flex; justify-content:space-between; font-weight:600; color:var(--ink); }
+
+.suma{
+  margin-top:.2rem; padding:.9rem 1.1rem; border-radius:8px;
+  background:var(--stop-soft); border:1px solid color-mix(in srgb, var(--stop) 25%, transparent);
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:.6rem 1.2rem;
+}
+.suma-lbl{ font-size:.82rem; font-weight:600; color:var(--stop); text-transform:uppercase;
+           letter-spacing:.06em; }
+.suma-val{ font-family:'Playfair Display',Georgia,serif; font-size:1.7rem; font-weight:700;
+           color:var(--stop); }
+.suma-nota{ font-size:.9rem; color:var(--ink-2); }
+
+/* ── Bloque de código / salida ── */
+pre{
+  margin:0; padding:.9rem 1rem; border-radius:8px; overflow-x:auto;
+  background:var(--surface); border:1px solid var(--line);
+  font-family:var(--mono); font-size:.8rem; line-height:1.7; color:var(--ink-2);
+}
+pre b{ color:var(--stop); font-weight:600; }
+pre .ok{ color:var(--ok); }
+
+/* ── Mini UI de la app (los botones reales) ── */
+.tira{
+  display:flex; flex-wrap:wrap; align-items:center; gap:.4rem;
+  padding:.9rem; border-radius:10px; background:#f4f1ec; border:1px solid var(--line-2);
+  font-family:'Lato',sans-serif;
+}
+.paso-btn{
+  font:inherit; font-size:.85rem; font-weight:700; padding:8px 12px; border-radius:8px;
+  border:1px solid #d8cfc2; background:#fff; color:#5c5349; white-space:nowrap;
+}
+.paso-btn.on{ background:linear-gradient(135deg,#d9772f,#c8692a 55%,#b25a20); color:#fff;
+              border-color:transparent; box-shadow:0 4px 12px -4px rgba(200,105,42,.5); }
+.paso-flecha{ color:#9a9088; font-size:.8rem; }
+.tira-pie{ font-family:var(--mono); font-size:.72rem; color:var(--muted); margin-top:.5rem; }
+
+.cond{ display:flex; flex-direction:column; gap:.6rem; }
+.cond-item{
+  display:grid; grid-template-columns:auto 1fr; gap:.8rem; align-items:start;
+  background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:.85rem 1rem;
+}
+.cond-chip{
+  font-family:var(--mono); font-size:.68rem; font-weight:600; padding:.25rem .5rem;
+  border-radius:4px; white-space:nowrap;
+}
+.cond-chip.si{ background:var(--stop-soft); color:var(--stop); }
+.cond-chip.raro{ background:var(--warn-soft); color:var(--warn); }
+.cond-item p{ margin:0; font-size:.93rem; color:var(--ink-2); }
+.cond-item b{ color:var(--ink); }
+
+.tabla-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+table{ border-collapse:collapse; width:100%; min-width:580px; font-size:.92rem; }
+th,td{ text-align:left; padding:.7rem .9rem; border-bottom:1px solid var(--line); vertical-align:top; }
+th{ font-family:var(--mono); font-size:.68rem; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); background:var(--surface-2); white-space:nowrap; }
+tbody tr:last-child td{ border-bottom:none; }
+td:first-child{ font-weight:600; white-space:nowrap; }
+
+*:focus-visible{ outline:2px solid var(--steel); outline-offset:2px; }
+</style>
+
+<div class="wrap">
+
+<header class="doc-head">
+  <span class="eyebrow">ISS-093 · el caso, paso a paso</span>
+  <h1>Cuenta duplicada</h1>
+  <p style="color:var(--ink-2)">
+    Cuando una mesa tiene una <strong>reserva</strong> y además pedidos, el sistema puede contar los
+    mismos platos dos veces. Acá está el caso completo: qué botón lo dispara —sí existe, pero no se
+    llama como esperabas—, qué pasa por dentro, y cuándo puede ocurrir de verdad.
+  </p>
+</header>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Tu duda, primero</span>
+    <h2>El botón existe: se llama "🍽 Entregado"</h2>
+  </div>
+
+  <p>
+    Tenías razón en que <strong>no hay ningún botón que diga "Cliente llegó"</strong>. Ese nombre
+    quedó solo adentro, en el dato que guarda la base (<code>es_cliente_llego</code>). El botón que
+    lo aplica es el que la dueña conoce como <strong>"🍽 Entregado"</strong>, y está en el flujo que
+    vos describiste, entre "Listo" y "Completar":
+  </p>
+
+  <div>
+    <div class="tira">
+      <span class="paso-btn">✓ Confirmar</span>
+      <span class="paso-flecha">→</span>
+      <span class="paso-btn">🍳 A cocina</span>
+      <span class="paso-flecha">→</span>
+      <span class="paso-btn">✅ Listo</span>
+      <span class="paso-flecha">→</span>
+      <span class="paso-btn on">🍽 Entregado</span>
+      <span class="paso-flecha">→</span>
+      <span class="paso-btn">💰 Completar</span>
+    </div>
+    <div class="tira-pie">
+      El de naranja aplica <code>es_cliente_llego</code> · está en Cola del día → zona "Listos"
+      (<code>pedidos.js:660</code>) y en el panel Reservas (<code>reservas.js:86</code>).
+      En una reserva sin mesa el mismo botón dice "📦 Recogido".
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="note-mark">Por qué</span>
+    <div>
+      <p>El nombre viene del Gap 2: <em>"Botón 🍽 Entregado en reservas (semánticamente: cliente
+      llegó + sentó + plato entregado)"</em>. Se renombró en la pantalla para que tuviera sentido
+      para la dueña, pero <strong>el dato interno y el efecto que dispara quedaron con el nombre
+      viejo</strong>. Por eso no lo reconociste: es el mismo botón con dos nombres.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Qué hace ese botón por dentro</span>
+    <h2>Fue pensado para ayudar, y ayuda</h2>
+  </div>
+
+  <p>
+    Al tocar "🍽 Entregado" en una reserva <strong>que tiene mesa asignada</strong>, el sistema hace
+    algo más que cambiar el estado: busca si esa mesa tiene un pedido abierto y, si lo encuentra,
+    <strong>le pasa los platos de la reserva</strong>. Es el <strong>auto-merge</strong> (Gap 8, en
+    producción desde mayo) y la intención es buena: que el cliente que reservó y además pidió algo
+    en la mesa termine con <em>una sola cuenta</em>, sin que nadie tenga que juntarlas a mano.
+  </p>
+  <p>
+    El problema no es la idea. Es que <strong>copia los platos en vez de moverlos</strong>.
+  </p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">El caso</span>
+    <h2>Mesa 7, paso a paso</h2>
+  </div>
+  <p>
+    Lo que sigue es exactamente la prueba que corrí contra el sistema real, con números redondos
+    para que se siga fácil.
+  </p>
+
+  <div class="pasos">
+    <div class="paso">
+      <span class="paso-num">1</span>
+      <div class="paso-cuerpo">
+        <span class="paso-tit">Carla reserva y paga por adelantado</span>
+        <p>Pide 1 ceviche por la app: <strong>S/ 28</strong>. Queda como reserva.</p>
+      </div>
+    </div>
+
+    <div class="paso">
+      <span class="paso-num">2</span>
+      <div class="paso-cuerpo">
+        <span class="paso-tit">Llega al local y la dueña le asigna la mesa 7</span>
+        <p>Desde el panel Reservas, botón "Asignar". Las reservas nacen <em>sin</em> mesa: esto es un
+          paso manual y es la puerta de entrada de todo lo que sigue.</p>
+      </div>
+    </div>
+
+    <div class="paso">
+      <span class="paso-num">3</span>
+      <div class="paso-cuerpo">
+        <span class="paso-tit">Ya sentada, Carla pide otro ceviche</span>
+        <p>La dueña lo toma con "Agregar manual" en la mesa 7: <strong>S/ 28</strong>. Ahora la mesa 7
+          tiene un pedido abierto, además de la reserva.</p>
+        <div class="db">
+          <div class="db-caja res">
+            <div class="db-tit">Reserva de Carla</div>
+            <div class="db-fila"><span>Ceviche ×1</span><span>28.00</span></div>
+            <div class="db-total"><span>Total</span><span>S/ 28.00</span></div>
+          </div>
+          <div class="db-caja ord">
+            <div class="db-tit">Pedido de la mesa 7</div>
+            <div class="db-fila"><span>Ceviche ×1</span><span>28.00</span></div>
+            <div class="db-total"><span>Total</span><span>S/ 28.00</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="paso clave">
+      <span class="paso-num">4</span>
+      <div class="paso-cuerpo">
+        <span class="paso-tit">La dueña toca "🍽 Entregado" en la reserva</span>
+        <p>Acá se dispara el auto-merge: <strong>copia</strong> el ceviche de la reserva al pedido de
+          la mesa… <strong>y deja el de la reserva donde estaba</strong>. La reserva tampoco se
+          cierra: sigue viva, esperando su "💰 Completar".</p>
+        <div class="db">
+          <div class="db-caja res">
+            <div class="db-tit">Reserva de Carla — sigue abierta</div>
+            <div class="db-fila"><span>Ceviche ×1</span><span>28.00</span></div>
+            <div class="db-total"><span>Total</span><span>S/ 28.00</span></div>
+          </div>
+          <div class="db-caja ord">
+            <div class="db-tit">Pedido de la mesa 7</div>
+            <div class="db-fila"><span>Ceviche ×1</span><span>28.00</span></div>
+            <div class="db-fila nueva"><span>Ceviche ×1 ← copiado</span><span>28.00</span></div>
+            <div class="db-total"><span>Total</span><span>S/ 56.00</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="paso">
+      <span class="paso-num">5</span>
+      <div class="paso-cuerpo">
+        <span class="paso-tit">Las dos llegan juntas a "Por cobrar"</span>
+        <p>La reserva y el pedido quedan en la misma zona, con los mismos dos ceviches contados de
+          los dos lados.</p>
+        <div class="suma">
+          <span class="suma-lbl">La mesa 7 muestra</span>
+          <span class="suma-val">S/ 84.00</span>
+          <span class="suma-nota">Carla consumió <strong>2 ceviches = S/ 56</strong>.
+            Sobran S/ 28.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:.5rem">La prueba, tal cual salió</h3>
+  <pre>auto_merge_activo: 1
+
+ANTES   → ítems en la orden: 1 | ítems en la reserva: 1
+PATCH es_cliente_llego → 200 {"estatus":"cliente llegó"}
+<b>DESPUÉS → ítems en la orden: 2 | ítems en la reserva: 1</b>
+estado de la reserva: { nombre: 'cliente llegó', es_full: 0 }   <span class="ok">← sigue activa</span>
+
+En la cola de la mesa 77:
+  orden   → total 56
+  reserva → total 28
+  <b>SUMA QUE MOSTRARÍA LA MESA: 84</b>   ← el cliente consumió 56</pre>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">La causa, en una línea</span>
+    <h2>Copiar no es mover</h2>
+  </div>
+
+  <p>
+    La función que hace el merge (<code>autoMergeReservaEnOrden</code>) hace <strong>tres cosas de
+    las cuatro que hacían falta</strong>: busca la orden de la mesa, copia los platos de carta y
+    copia los platos de menú. Lo que <strong>no</strong> hace es borrar el original ni cerrar la
+    reserva. Nunca se le indicó que lo hiciera.
+  </p>
+
+  <div class="note stopnote">
+    <span class="note-mark">Y lo peor</span>
+    <div>
+      <p>Si se cobran las dos —y la pantalla invita a hacerlo, porque las dos aparecen en "Por
+      cobrar"— cada una guarda su propio total. <strong>Ganancias termina contando S/ 84 donde
+      entraron S/ 56.</strong> No es solo un número mal en pantalla: ensucia el reporte del día.</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="note-mark">Importante</span>
+    <div>
+      <p><strong>Esto no lo trae la vista nueva por mesa.</strong> Existe desde mayo, cuando se hizo
+      el Gap 8. Lo que cambió es que antes <em>no había montos en ninguna pantalla</em>, así que era
+      imposible notarlo; ahora la cuenta de la mesa lo muestra en grande — y un número equivocado a
+      la vista es peor que ningún número, porque se puede cobrar.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">¿Pasa de verdad?</span>
+    <h2>Hacen falta cuatro cosas a la vez</h2>
+  </div>
+
+  <div class="cond">
+    <div class="cond-item">
+      <span class="cond-chip raro">poco común</span>
+      <p><b>1 · Que la reserva tenga mesa asignada.</b> Las reservas nacen <em>sin</em> mesa: alguien
+        tiene que entrar al panel Reservas y tocar "Asignar". Si la dueña no lo hace —y por lo que
+        contás del piloto, las mesas se identifican con el acrílico del QR, no asignándolas en el
+        sistema— <strong>el auto-merge nunca se dispara</strong> y nada de esto ocurre.</p>
+    </div>
+    <div class="cond-item">
+      <span class="cond-chip si">habitual</span>
+      <p><b>2 · Que esa misma mesa tenga un pedido abierto</b> en ese momento. Con el flujo actual
+        (la mesa pide por QR o la dueña carga manual) es lo normal.</p>
+    </div>
+    <div class="cond-item">
+      <span class="cond-chip si">habitual</span>
+      <p><b>3 · Que se toque "🍽 Entregado"</b> en la reserva. Es un paso obligatorio del flujo: sin
+        él la reserva no llega a "Por cobrar".</p>
+    </div>
+    <div class="cond-item">
+      <span class="cond-chip si">activado</span>
+      <p><b>4 · Que el auto-merge esté encendido.</b> Viene activado de fábrica
+        (<code>auto_merge_activo = 1</code>) y hay un interruptor en Configuración que casi
+        seguramente nadie tocó.</p>
+    </div>
+  </div>
+
+  <div class="note okn">
+    <span class="note-mark">Conclusión</span>
+    <div>
+      <p>La condición 1 es el cuello de botella, y es la única que depende de un gesto manual poco
+      frecuente. <strong>Es muy posible que en el piloto esto no haya pasado nunca.</strong> Pero
+      cuando pasa, el error es de dinero — y silencioso.</p>
+    </div>
+  </div>
+
+  <h3>Cómo saberlo con certeza</h3>
+  <p>Esta consulta, corrida en el servidor, dice si alguna vez se dieron las condiciones:</p>
+  <pre>sqlite3 database.sqlite "
+SELECT r.id AS reserva, r.mesa, r.fecha, r.total AS total_reserva,
+       o.id AS orden, o.total AS total_orden
+FROM reservas r
+JOIN estatus_reserva er ON r.id_estatus = er.id
+JOIN ordenes o ON o.mesa = r.mesa
+              AND substr(o.fecha,1,10) = substr(r.fecha,1,10)
+              AND o.id_restaurante = r.id_restaurante
+WHERE r.mesa IS NOT NULL
+  AND (er.es_cliente_llego = 1 OR er.es_full = 1);
+"</pre>
+  <p style="font-size:.93rem;color:var(--ink-2)">
+    Si no devuelve filas, el caso nunca ocurrió y el arreglo es preventivo. Si devuelve filas, cada
+    una es una mesa donde pudo haberse cobrado de más, y conviene revisar esos totales.
+  </p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Cómo se arregla</span>
+    <h2>Tres caminos</h2>
+  </div>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead><tr><th>Opción</th><th>Qué hace</th><th>Qué hay que aceptar</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A · Cerrar la reserva</td>
+          <td>Al copiar los platos, la reserva se da por terminada (total 0) y sale de la cola. La
+            cuenta queda una sola: la de la mesa.</td>
+          <td>Quedan reservas "completadas" que nunca se cobraron por sí mismas. Hay que mirar cómo
+            se ven en el historial de reservas.</td>
+        </tr>
+        <tr>
+          <td>B · Vaciar la reserva</td>
+          <td>Se le borran los platos al copiarlos: la reserva sigue en la cola pero vale 0.</td>
+          <td>Una reserva sin platos se ve rara en el historial, y alguien puede pensar que se
+            perdió el pedido.</td>
+        </tr>
+        <tr>
+          <td>C · No copiar: vincular</td>
+          <td>La reserva se "engancha" a la orden de la mesa y la cuenta se lee de un solo lado, sin
+            duplicar nada.</td>
+          <td>Es el arreglo correcto de fondo y el más caro: toca el modelo de datos y todo lo que
+            hoy lee platos de reservas.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note key">
+    <span class="note-mark">Y una cuarta</span>
+    <div>
+      <p><strong>Apagar el auto-merge.</strong> El interruptor ya existe en Configuración. Si en la
+      práctica nadie asigna mesas a las reservas, la función no está ayudando a nadie y sí puede
+      hacer daño: apagarla cuesta un click y elimina el riesgo hasta que se decida el arreglo de
+      fondo. No es elegante, pero es reversible y gratis.</p>
+    </div>
+  </div>
+</section>
+
+</div>

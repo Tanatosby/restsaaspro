@@ -255,7 +255,45 @@ Si se cobran las dos (y la cola invita a hacerlo: ambas están en "Por cobrar"),
 más**. Ya pasaba antes; sin montos en pantalla nadie podía notarlo. **Necesita una decisión** entre
 cerrar la reserva al fusionarla, borrarle los ítems, o vincular en vez de copiar — ver ISS-093.
 
-**Pendiente:** deploy de ISS-090 (`843fea7`) y del paso 2+3; decidir ISS-093; y el paso 4 (ISS-091).
+### ISS-093 resuelto por apagado: el Gap 8 queda obsoleto
+
+Decisión del usuario tras ver el caso explicado en artifact: *"el merge que hicimos en Gap 8 ya no es
+necesario. Por ahora apágalo y documenta posterior eliminación"*.
+
+**Por qué el Gap 8 quedó sin trabajo que hacer:** ISS-089 agrupa por número de mesa **al mostrar**, así
+que la reserva y los pedidos de esa mesa ya se ven y se cobran juntos sin copiar una sola fila. El
+auto-merge escribía datos para conseguir un efecto de lectura — y esa escritura era lo que duplicaba.
+Verificado con el merge apagado, montando el caso completo (reserva con mesa 1 + pedido en la mesa 1 +
+botón "🍽 Entregado"):
+
+```
+ítems en la orden: 1 | ítems en la reserva: 1   ← no copió nada
+Mesa 1 · Carla | 2 pedidos | S/ 56.00 | 💰 Cobrar mesa 1 · S/ 56.00
+"Cobrar mesa 1" enviaría → {"ordenes":[89],"reservas":[44],"total":56}
+```
+
+S/ 56 = lo que el cliente consumió (con el merge encendido decía S/ 84). Captura en
+`issues/screenshots/iss093-sin-merge.png`.
+
+**Cambio observable aceptado:** con el merge apagado la cocina ve **dos tickets** (reserva + pedido
+posterior) en vez de uno. Es más fiel —son dos momentos de pedido— y el usuario lo confirmó.
+
+**Cómo quedó apagado:** migración de una sola vez en `config/database.js` (`UPDATE ... = 0`, con la
+columna `auto_merge_apagado_iss093` como marca para no volver a pisar la decisión de un dueño que lo
+encienda después — verificado reiniciando); `auto_merge_activo = 0` explícito en los dos INSERT de
+restaurante (`admin.js`, `auth.js`) porque cambiar el `DEFAULT` de una columna en SQLite obliga a
+recrear la tabla; fallbacks de `menu.js`/`config.js` invertidos; y el toggle de Configuración quedó con
+un aviso visible de que cobra de más y ya no hace falta.
+
+**Dato de contexto que bajó la urgencia:** las reservas nacen **sin mesa** y asignarla es un gesto
+manual del panel Reservas. El usuario lo confirmó desde la operación real: *"en el momento del
+embotellamiento no hay forma que alguien le asigne una mesa"*. Es probable que en el piloto el
+auto-merge no se haya disparado nunca. Queda en ISS-093 la consulta SQL para confirmarlo en producción.
+
+**Pendiente:** retirar el código del Gap 8 en su propia sesión (sin urgencia).
+
+**Pendiente general:** deploy de ISS-090 (`843fea7`), del paso 2+3 (`b7af6b7`) y de esto; y el paso 4
+(ISS-091: auto-entregado + poll a 20 s).
 
 ---
 ## 🎯 Sesión 2026-09-09 — landing (más secciones + fondo del hero) + modelo VAN

@@ -410,8 +410,12 @@ router.post('/restaurantes', (req, res) => {
   const ownerRole = db.prepare(`SELECT id FROM roles WHERE nombre = 'owner'`).get();
   const hash      = bcrypt.hashSync(password, 10);
 
+  // auto_merge_activo explícito en 0 — ISS-093. La columna quedó con
+  // `DEFAULT 1` de cuando se creó (Gap 8) y cambiar el default de una columna
+  // existente en SQLite obliga a recrear la tabla; se apaga acá, que es el
+  // único lugar donde nace un restaurante desde el admin.
   const { lastInsertRowid: restaurantId } = db.prepare(
-    `INSERT INTO restaurantes (nombre) VALUES (?)`
+    `INSERT INTO restaurantes (nombre, auto_merge_activo) VALUES (?, 0)`
   ).run(restaurantName);
 
   db.prepare(`

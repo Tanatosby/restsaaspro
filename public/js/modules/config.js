@@ -79,9 +79,9 @@ async function loadConfiguracion() {
     if (tapEl) tapEl.value = cfg.costo_tapper    ?? 0;
     if (delEl) delEl.value = cfg.tarifa_delivery  ?? 0;
 
-    // Auto-merge (Gap 8)
+    // Auto-merge (Gap 8) — apagado por defecto desde ISS-093
     const amEl = document.getElementById('cfg-auto-merge-activo');
-    if (amEl) amEl.checked = cfg.auto_merge_activo ?? true;
+    if (amEl) amEl.checked = cfg.auto_merge_activo ?? false;
 
     // Slug / URL personalizada
     const slugEl = document.getElementById('config-slug');

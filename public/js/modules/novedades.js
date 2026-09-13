@@ -95,6 +95,7 @@ const NOVEDADES = [
       'Si tocás la fila de la mesa se abren los pedidos uno por uno, con su precio, su comprobante y un botón "Cobrar solo este" — por si alguien de la mesa quiere pagar lo suyo aparte.',
       'Antes de cobrar una mesa completa te pregunta, porque una vez cobrada no se puede reabrir.',
       'Los pedidos para llevar y los que no tienen mesa van juntos al final. Ese grupo NO se cobra junto a propósito: son clientes distintos.',
+      'Corregido un cobro de más: cuando una mesa tenía una reserva Y además pedía algo en la mesa, el sistema podía contar esos platos dos veces (una mesa de S/ 56 llegaba a mostrar S/ 84). Ya no pasa. Si alguna vez usaste la opción "Auto-merge" en Configuración, quedó apagada — no la necesitás: la cuenta de la mesa ya junta la reserva con sus pedidos, y con el monto correcto.',
     ],
   },
 ];

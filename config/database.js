@@ -524,6 +524,30 @@ try { db.exec(`ALTER TABLE reservas  ADD COLUMN cargo_modalidad REAL DEFAULT 0`)
 // Migración idempotente: auto-merge cuenta por mesa (Gap 8)
 try { db.exec(`ALTER TABLE restaurantes ADD COLUMN auto_merge_activo INTEGER DEFAULT 1`); } catch (_) {}
 
+// ISS-093 — el auto-merge se apaga para todos.
+//
+// Copiaba los ítems de la reserva a la orden de la misma mesa SIN borrarlos del
+// origen ni cerrar la reserva, así que los mismos platos quedaban contados dos
+// veces y la cuenta de esa mesa (y Ganancias, al cobrar las dos) salía inflada:
+// medido, una mesa de S/ 56 mostraba S/ 84.
+//
+// Además quedó redundante: desde ISS-089 la zona "Por cobrar" agrupa por número
+// de mesa al MOSTRAR, así que la reserva y los pedidos de esa mesa ya se ven y
+// se cobran juntos sin copiar una sola fila. Verificado con el merge apagado:
+// la mesa muestra S/ 56 y un solo botón cobra reserva + pedido.
+//
+// El toggle de Configuración sigue existiendo por si alguien lo quiere, pero
+// queda advertido ahí mismo. La eliminación del Gap 8 se hará en su sesión.
+//
+// La columna marcadora es lo que hace que este UPDATE corra UNA sola vez: si el
+// ALTER falla es porque ya migró, y entonces no se vuelve a pisar la decisión de
+// un dueño que lo haya encendido a propósito después.
+try {
+  db.exec(`ALTER TABLE restaurantes ADD COLUMN auto_merge_apagado_iss093 INTEGER DEFAULT 1`);
+  db.prepare(`UPDATE restaurantes SET auto_merge_activo = 0`).run();
+  console.log('[ISS-093] Auto-merge apagado en los restaurantes existentes');
+} catch (_) { /* ya migrado */ }
+
 // Migración idempotente: slug único por restaurante (URL personalizada)
 // SQLite no admite UNIQUE en ALTER TABLE ADD COLUMN — se agrega la columna y luego el índice por separado
 try { db.exec(`ALTER TABLE restaurantes ADD COLUMN slug TEXT`); } catch (_) {}

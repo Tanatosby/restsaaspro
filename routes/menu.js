@@ -995,7 +995,7 @@ router.get('/restaurante/config', authorizePermiso(), (req, res) => {
     delivery_activo:             row.delivery_activo              ?? 0,
     costo_tapper:                row.costo_tapper                 ?? 0,
     tarifa_delivery:             row.tarifa_delivery              ?? 0,
-    auto_merge_activo:           row.auto_merge_activo            ?? 1,
+    auto_merge_activo:           row.auto_merge_activo            ?? 0,   // ISS-093: apagado salvo que el dueño lo encienda
     slug:                        row.slug                         || null,
     minutos_cancelacion_reserva: row.minutos_cancelacion_reserva  ?? 30,
     horario_activo:              row.horario_activo               ?? 0,

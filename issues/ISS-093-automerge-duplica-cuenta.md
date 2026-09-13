@@ -1,6 +1,8 @@
 # ISS-093 — El auto-merge (Gap 8) deja la reserva activa con sus ítems: la mesa suma doble
 
-**Estado:** 🔴 Diagnosticado con evidencia, **sin arreglar** — necesita una decisión del usuario
+**Estado:** 🟡 **Mitigado el 2026-09-12** — el auto-merge quedó apagado para todos. Falta retirar el
+código del Gap 8, en su propia sesión (decisión del usuario: *"el merge que hicimos en Gap 8 ya no es
+necesario. Por ahora apágalo y documenta posterior eliminación"*).
 **Encontrado:** 2026-09-12, implementando ISS-089 (la vista por mesa lo hace visible)
 **Módulo:** `routes/reservations.js` (`autoMergeReservaEnOrden`)
 **Prioridad:** 🔴 Alta — afecta el monto que se cobra y lo que entra en Ganancias
@@ -55,8 +57,64 @@ En la cola de la mesa 77:
    lado. Es el arreglo correcto de fondo y el más caro: toca el modelo y todo lo que hoy lee ítems
    de reserva.
 
-**Mientras no se decida:** el riesgo existe igual (es anterior a ISS-089), pero conviene resolverlo
-antes de que la dueña se acostumbre a cobrar por el número de la mesa.
+## ✅ Lo que se hizo (2026-09-12)
+
+**Se apagó el auto-merge para todos**, que es la cuarta opción: la más barata y reversible. Y no
+porque no hubiera tiempo para la buena, sino porque **la función quedó sin trabajo que hacer**.
+
+### Por qué ya no hace falta
+
+Desde ISS-089, "Por cobrar" **agrupa por número de mesa al mostrar**. La reserva y los pedidos de esa
+mesa ya aparecen juntos, con el total correcto, y un solo botón los cobra a todos. El auto-merge
+escribía datos (copiar filas) para conseguir un efecto de lectura (verlos juntos) — y esa escritura
+era justamente lo que duplicaba.
+
+Verificado con el merge **apagado**, montando el caso completo (reserva con mesa 1 + un pedido más en
+la mesa 1, y el botón "🍽 Entregado" tocado):
+
+```
+auto_merge_activo ahora: 0
+PATCH "Entregado" → 200
+ítems en la orden:   1   ← sin merge, no le copió nada
+ítems en la reserva: 1
+
+── La fila de la mesa ──
+Mesa 1 · Carla | 2 pedidos · espera 40 min | S/ 56.00 | 💰 Cobrar mesa 1 · S/ 56.00
+
+── Desplegada ──
+🧾 Pedido #1  Carla  S/ 28.00 → Cobrar solo este
+📅 Reserva SINMRG  Carla  S/ 28.00  💚 Yape · ✓ Confirmado → Cobrar solo esta
+
+"Cobrar mesa 1" enviaría → {"ordenes":[89],"reservas":[44],"total":56}
+```
+
+**S/ 56, que es lo que el cliente consumió** (con el merge encendido esa misma mesa decía S/ 84).
+Captura: `issues/screenshots/iss093-sin-merge.png`.
+
+### Cambio observable, aceptado por el usuario
+
+Con el merge apagado, **la cocina ve dos tickets** (la reserva y el pedido posterior) en vez de uno
+con todo junto. Es más fiel a la realidad —son dos momentos de pedido, con horas distintas— y el
+usuario lo confirmó: *"lo de la cocina es correcto, esa parte estaría bien"*.
+
+### Cómo quedó apagado
+
+| Dónde | Qué |
+|---|---|
+| `config/database.js` | Migración de **una sola vez**: `UPDATE restaurantes SET auto_merge_activo = 0`. La columna marcadora `auto_merge_apagado_iss093` es lo que impide que vuelva a correr — si un dueño lo enciende a propósito después, un reinicio **no** le pisa la decisión (verificado). |
+| `routes/admin.js` · `routes/auth.js` | Los dos lugares donde nace un restaurante insertan `auto_merge_activo = 0` explícito. La columna quedó con `DEFAULT 1` de cuando se creó el Gap 8 y cambiar el default en SQLite obliga a recrear la tabla — no vale el riesgo por esto. |
+| `routes/menu.js` · `config.js` | Los fallbacks pasaron de "encendido" a "apagado" cuando el dato falta. |
+| `owner.html` | El toggle sigue, pero con un aviso visible: que cobra de más y que ya no hace falta. |
+
+`jest` 483/483 (los 17 tests del auto-merge siguen pasando: prueban la función, que no se tocó).
+`test-iss089-cobrar-por-mesa` 31/31.
+
+## Lo que queda: retirar el Gap 8
+
+Decidido para una sesión propia, sin urgencia. Sería: borrar `autoMergeReservaEnOrden()` y su llamada,
+la columna `auto_merge_activo`, el toggle de Configuración, `PATCH /api/menu/config/auto-merge` y
+`tests/auto-merge.test.js`. Antes de hacerlo conviene ver un servicio real con la vista por mesa, por
+si aparece algún caso que sólo el merge resolvía.
 
 ## Cómo reproducir
 

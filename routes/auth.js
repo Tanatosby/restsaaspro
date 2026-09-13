@@ -78,8 +78,9 @@ router.post('/register',authenticate, authorize('admin'), (req, res) => {
   const ownerRole = db.prepare("SELECT id FROM roles WHERE nombre = 'owner'").get();
 
   // 5. Create restaurant first
+  // auto_merge_activo explícito en 0 — ISS-093 (ver config/database.js).
   const restaurant = db.prepare(`
-    INSERT INTO restaurantes (nombre) VALUES (?)
+    INSERT INTO restaurantes (nombre, auto_merge_activo) VALUES (?, 0)
   `).run(restaurantName);
 
   // 6. Create the owner user linked to that restaurant

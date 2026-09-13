@@ -105,7 +105,8 @@ Una **reserva** en este sistema **no es reservar una mesa** — es un **pedido a
 [Mozo — cuando llega el cliente]
 11. Cliente llega, dice su código (ej: "soy r7Xk2mQ")
     - Si es dine-in: mozo asigna mesa, marca "cliente_llegó" en el sistema
-      → la reserva queda vinculada a esa mesa (auto-merge)
+      → la reserva queda vinculada a esa mesa (el auto-merge está apagado desde ISS-093:
+        la unión ocurre al mostrar, agrupando por número de mesa en "Por cobrar")
       → cualquier orden adicional del cliente en esa mesa se suma a la misma cuenta
     - Si es para llevar: mozo busca el pedido por código, lo entrega, marca "entregado"
 
@@ -333,7 +334,7 @@ En orden de impacto:
 | 5 | ~~Precio por modalidad (tapper, delivery fee)~~ | ~~Alto~~ | ~~Media~~ | ✅ Completado 2026-05-25 — `costo_tapper`/`tarifa_delivery` en `restaurantes`; `cargo_modalidad` en `ordenes` y `reservas`; total incluye cargo; desglose visual en menu.html; config en owner. 21 tests. |
 | 6 | ~~Código de reserva aleatorio + página de estado para el cliente~~ | ~~Alto~~ | ~~Media~~ | ✅ Completado 2026-05-21 |
 | 7 | ~~Refactor estatus dinámicos por flags (REFACTOR-001)~~ | ~~Alto~~ | ~~Alta~~ | ✅ Completado 2026-05-21 |
-| 8 | ~~Auto-merge cuenta por mesa al marcar `cliente llegó`~~ | ~~**Alto MVP**~~ | ~~Media~~ | ✅ Completado 2026-05-25 — Al marcar `es_cliente_llego`, copia ítems carta+menú de la reserva a la orden activa de la misma mesa. Solo actúa si `auto_merge_activo=1` y la reserva tiene mesa. Configurable desde owner. 17 tests. |
+| 8 | ~~Auto-merge cuenta por mesa al marcar `cliente llegó`~~ | ~~**Alto MVP**~~ | ~~Media~~ | ⚠️ **APAGADO el 2026-09-12 (ISS-093)** — copiaba los ítems sin borrarlos del origen ni cerrar la reserva: la mesa contaba doble (S/ 56 → S/ 84). Y quedó redundante: desde ISS-089 "Por cobrar" agrupa por número de mesa al mostrar, así que reserva + pedidos de esa mesa se ven y se cobran juntos sin copiar nada. Pendiente retirar el código. |
 | 9 | Configuración de delivery (fijo / gratis / por zona) | Bajo MVP | Media | Pendiente — diferido: primeros 8 clientes no usan delivery |
 | 10 | ~~Descartable opcional para à la carta en pedidos de llevar/delivery~~ | ~~**Alto MVP**~~ | ~~Baja~~ | ✅ Cerrado por diseño 2026-05-25 — El `costo_tapper` ya cubre envase + menaje en pedidos para llevar. El caso edge (comer en local y llevarse algo) se resuelve agregando "Cubiertos descartables" como ítem de carta con el precio que quiera el owner. No requiere feature dedicada. |
 | 11 | Delivery por distancia con geolocalización | Bajo | Alta | Fase 2 |
@@ -358,8 +359,25 @@ Al crear una orden/reserva, calcular el cargo extra según modalidad: `para_llev
 
 > **Fix 2026-08-11 (ISS-029):** el cargo era un monto fijo por pedido — 2 menús para llevar solo sumaban 1 tapper. Ahora escala por unidad: `costo_tapper × (cantidad de menús del día + cantidad de ítems a la carta)`, más la tarifa de delivery fija si aplica. Cada plato/menú para llevar necesita su propio envase. Ver `utils/menuPricing.js::contarUnidadesMenu` y `routes/public.js::calcularCargoModalidad`.
 
-**Gap 8 — Auto-merge cuenta por mesa al marcar `cliente llegó`**
-Cuando el mozo marca `es_cliente_llego` en una reserva que tiene mesa asignada, el sistema busca automáticamente si hay una orden activa en esa misma mesa y fusiona los ítems en una sola cuenta. Evita que el mozo tenga que hacer el merge manual en hora pico. Si no hay orden en la mesa, no hace nada. Configurable: el owner puede desactivar el auto-merge si prefiere manejar cuentas separadas.
+**Gap 8 — Auto-merge cuenta por mesa** ⚠️ *apagado el 2026-09-12 — ver [ISS-093](issues/ISS-093-automerge-duplica-cuenta.md)*
+
+La idea era que la reserva y los pedidos de una misma mesa terminaran en una sola cuenta sin que
+nadie los juntara a mano. La implementación **copiaba** los ítems de la reserva a la orden de la
+mesa pero **no los borraba del origen ni cerraba la reserva**, así que los mismos platos quedaban
+contados dos veces: medido, una mesa de S/ 56 mostraba S/ 84, y si se cobraban las dos, Ganancias
+contaba de más.
+
+Además quedó **redundante**: desde ISS-089 la zona "Por cobrar" agrupa por número de mesa **al
+mostrar**, así que la reserva y los pedidos de esa mesa ya se ven juntos, con el total correcto, y
+un solo botón los cobra. Copiar filas era la forma frágil de conseguir un efecto de lectura.
+
+Disparador real: el botón **"🍽 Entregado"** (aplica `es_cliente_llego`; no existe ningún botón que
+diga "cliente llegó"). Sólo actuaba si la reserva tenía **mesa asignada**, que es un gesto manual
+del panel Reservas — por eso es probable que en el piloto nunca se haya disparado.
+
+Estado: `auto_merge_activo = 0` para todos (migración de una sola vez) y explícito en 0 para los
+restaurantes nuevos. El toggle sigue en Configuración con un aviso de que cobra de más. **Queda
+retirar el código en su propia sesión.**
 
 **Gap 9 — Configuración de delivery (fijo / gratis / por zona)** *(diferido — primeros 8 clientes no usan delivery)*
 El dueño elige el tipo de tarifa de delivery desde el panel Configuración: sin delivery, delivery gratis, o tarifa fija única. La variante por zona/distancia pertenece a Gap 11. Solo relevante cuando algún cliente active `delivery_activo`.
