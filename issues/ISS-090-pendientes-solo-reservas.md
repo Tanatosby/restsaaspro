@@ -1,6 +1,6 @@
 # ISS-090 — "Pendientes" desaparece para órdenes
 
-**Estado:** ✅ Implementado el 2026-09-12 — **sin desplegar**, sin verificar en uso real
+**Estado:** ✅ Implementado el 2026-09-12 — **desplegado el 2026-09-13** (`b5e471b`), sin verificar en uso real
 **Origen:** revisión del flujo de la cola durante ISS-089
 **Módulo:** `routes/public.js` · `public/js/modules/pedidos.js`
 **Prioridad:** 🟡 Media — no es un bug, es un paso de más en hora pico

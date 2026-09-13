@@ -1,6 +1,6 @@
 # ISS-089 — No se puede juntar ni ver la cuenta de una mesa
 
-**Estado:** ✅ Implementado el 2026-09-12 — **sin desplegar**, sin verificar en uso real
+**Estado:** ✅ Implementado el 2026-09-12 — **desplegado el 2026-09-13** (`b5e471b`), sin verificar en uso real
 **Reportado por:** la dueña del piloto #1, servicio del viernes (2026-09-11, fecha a confirmar)
 **Contado por el usuario:** 2026-09-12
 **Módulo:** `routes/orders.js` · `utils/colaDia.js` · `modules/pedidos.js` · `modules/mesas.js`

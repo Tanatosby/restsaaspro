@@ -12,9 +12,9 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 
 ---
 
-## 🚚 Listo para desplegar (2026-09-13) — rediseño de la Cola + mesas
+## 🚚 Desplegado el 2026-09-13 (`b5e471b`) — rediseño de la Cola + mesas
 
-Todo commiteado y pusheado, **sin desplegar** (último deploy: `fdc9877`, 2026-09-08): ISS-090
+**Desplegado el 2026-09-13** (`fdc9877..b5e471b`), sin verificar todavía en uso real: ISS-090
 (pedidos de la app directo a cocina), ISS-089 ("Por cobrar" por mesa), ISS-093 (auto-merge
 apagado), ISS-091 ("Listos" se vacía sola), aviso de cobro legible, ISS-092 (nombre opcional en
 "Agregar manual") e **ISS-094** (crear mesas de una vez + mesa escrita a mano en "Agregar manual").

@@ -1,6 +1,6 @@
 # ISS-091 — Auto-entregado: "Listos" se vacía sola
 
-**Estado:** ✅ Implementado el 2026-09-13 — **sin desplegar**, sin verificar en uso real
+**Estado:** ✅ Implementado el 2026-09-13 — **desplegado el 2026-09-13** (`b5e471b`), sin verificar en uso real
 **Origen:** revisión del flujo de la cola durante ISS-089
 **Módulo:** `utils/` (job nuevo) · `config/database.js` · `routes/menu.js` (config) · `modules/config.js` · `modules/pedidos.js`
 **Prioridad:** 🟡 Media — ataca de frente la acumulación de ISS-085

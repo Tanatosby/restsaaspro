@@ -1,6 +1,6 @@
 # ISS-094 — Crear las mesas era de a una, y "Agregar manual" dependía de que existieran
 
-**Estado:** ✅ Resuelto el 2026-09-13 — sin desplegar
+**Estado:** ✅ Resuelto el 2026-09-13 — desplegado el 2026-09-13 (`b5e471b`), sin verificar en uso real
 **Encontrado:** 2026-09-13, pedido del usuario: *"¿puedes mejorar la parte de crear mesas para
 hacerlo más rápido? No sé si sea necesario tener todas las mesas en el mapa para el cambio que
 hemos hecho"* (el cambio: "Por cobrar" por mesa, ISS-089)
@@ -81,6 +81,6 @@ El número es lo que une todo: el QR de la mesa 5 y un pedido manual escrito "5"
 
 ## Pendiente
 
-- Deploy (lo hace el usuario).
+- ~~Deploy~~ — desplegado el 2026-09-13 (`b5e471b`).
 - Ver a la dueña crear las mesas y tomar un pedido manual escribiendo la mesa en hora pico.
 - Si algún día hace falta quitar mesas desde la pantalla, el diseño está en el mockup (pantalla C).

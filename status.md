@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-08
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-13
 
 **Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
@@ -37,6 +37,13 @@ por el usuario:
 | 2026-09-04 (2) | `4ac2a5b..805fdd9` | **ISS-086** (plegar Yape/Plin al volver: total + tarjeta + 3 pasos en una línea, comprobante como único acento) e **ISS-087** (Reservar pasa al flujo "cantidad primero" de Pedir — stepper en la card, tap-foto suma 1, wizard encadenado; se retiró el atajo "+1 mismo menú" que solo le quedaba a Reservar). `git pull` fast-forward, `pm2 restart` → online (↺ 65, mem 62.3 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-07 | `805fdd9..bda3610` | **ISS-088** — el resumen "Tu pedido" en la pantalla de pago se colapsa detrás de un link "Ver mi pedido" (antes quedaba siempre visible bajo el adjuntar-comprobante). `git pull` fast-forward, `pm2 restart` → online (↺ 66, mem 61.9 MB), `curl /health` → `{"status":"ok","uptime":2.9}`. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-08 | `bda3610..fdc9877` | **ISS-060** — acceso del pensionista a su pantalla: link "🧾 ¿Eres pensionista?" en el header de `menu.html` → `/login.html` (que ya redirige el rol a `/pensionista.html`) + botón "📲 Instalar app" en `pensionista.html` (oculto salvo que la PWA sea instalable). Frontend puro. `git pull` fast-forward, `pm2 restart` → online (↺ 67, mem 60.8 MB), `curl /health` → `{"status":"ok","uptime":2.8}`. Confirmado por el usuario (log de consola SSH). |
+| 2026-09-13 | `fdc9877..b5e471b` | **Rediseño de la Cola completo:** **ISS-090** (pedidos de la app directo a cocina), **ISS-089** ("Por cobrar" por mesa con cobro en bloque), **ISS-093** (auto-merge apagado, con migración), **ISS-091** ("Listos" se vacía sola a los 3 min + `ordenes.listo_at` + poll a 20 s), aviso de cobro legible con "no volver a preguntar", **ISS-092** (nombre opcional en "Agregar manual") e **ISS-094** (mesas de una vez + mesa escrita en "Agregar manual"). Además, docs de landing y VAN. 52 archivos. `git pull` fast-forward, `pm2 restart` → online (↺ 68, mem 61.3 MB), `curl /health` → `{"status":"ok","uptime":2.8}`. Confirmado por el usuario (log de consola SSH). |
+
+**Deploy `b5e471b` confirmado el 2026-09-13.** Todo el rediseño de la Cola (ISS-089 a ISS-093) +
+ISS-094, en un solo deploy. **Sin verificar en uso real** — lo que hay que mirar con la dueña en
+hora pico: la cuenta por mesa y "💰 Cobrar mesa", los pedidos que pasan solos de "Listos" a "Por
+cobrar", y "Agregar manual" escribiendo la mesa. **Ojo:** los pedidos que estaban en "Listos" al
+momento del deploy no tienen `listo_at` y no se mueven solos — se cierran a mano esa primera vez.
 
 **Deploy `9af4255` confirmado el 2026-09-02.** Sin verificar en uso real: ISS-082 (overlay de
 Términos en el primer ingreso del owner) e ISS-083 (subida de fotos en un celular de gama baja
@@ -413,7 +420,8 @@ sin regresión: `test-agregar-manual` 35/35, `test-iss089` 39/39, `test-cobrar-h
 
 **Probado por el usuario en local** (servidor `PORT=3000` en la Wi-Fi): *"funciona bien"*.
 
-**Pendiente:** deploy (lo hace el usuario); verlo con la dueña.
+**Desplegado el 2026-09-13** (`b5e471b`, junto con todo lo pendiente desde `fdc9877`). Pendiente:
+verlo con la dueña.
 
 ---
 ## 🎯 Sesión 2026-09-09 — landing (más secciones + fondo del hero) + modelo VAN

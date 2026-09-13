@@ -1,6 +1,6 @@
 # ISS-093 — El auto-merge (Gap 8) deja la reserva activa con sus ítems: la mesa suma doble
 
-**Estado:** 🟡 **Mitigado el 2026-09-12** — el auto-merge quedó apagado para todos. Falta retirar el
+**Estado:** 🟡 **Mitigado el 2026-09-12** — el auto-merge quedó apagado para todos (desplegado el 2026-09-13, `b5e471b`). Falta retirar el
 código del Gap 8, en su propia sesión (decisión del usuario: *"el merge que hicimos en Gap 8 ya no es
 necesario. Por ahora apágalo y documenta posterior eliminación"*).
 **Encontrado:** 2026-09-12, implementando ISS-089 (la vista por mesa lo hace visible)
