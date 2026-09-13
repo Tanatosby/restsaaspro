@@ -5,7 +5,7 @@ const db        = require('../config/database');
 const ExcelJS   = require('exceljs');
 const { authenticate, authorize, authorizePermiso } = require('../middleware/authenticate');
 const { calcularPrecioUnitario, calcularMenuTotal } = require('../utils/menuPricing');
-const { calcularTotalOrden } = require('../utils/totales');
+const { calcularTotalOrden, calcularTotalReserva } = require('../utils/totales');
 const { fechaLima } = require('../utils/fecha');
 const { descontarStock, devolverStock, itemsMenuDeOrden } = require('../utils/stock');
 const { requiereConfirmarPagoAntes } = require('../utils/verificacionPago');
@@ -459,6 +459,109 @@ router.patch('/:id/estatus', authorizePermiso(), (req, res) => {
   }
 
   res.json({ message: `Orden #${req.params.id} → ${nuevoEstatus.nombre}`, estatus: nuevoEstatus.nombre });
+});
+
+// ─────────────────────────────────────────────────────
+// POST /api/orders/cobrar-mesa
+// Cobra de una vez todos los pedidos de una mesa — ISS-089.
+//
+// La mesa del piloto terminó con 3 pedidos sueltos (2 menús, una jarra de
+// chicha y un plato a la carta) y la dueña no tenía forma de cerrarlos juntos.
+//
+// Recibe los IDS EXPLÍCITOS que la dueña tiene en pantalla, no el número de
+// mesa: si entre el render y el toque entra un pedido nuevo a esa mesa (el
+// comensal pidió desde su celular), cobrar "toda la mesa 5" cerraría algo que
+// ella no vio y el monto cobrado no coincidiría con el que le mostramos.
+//
+// Todo o nada: si un pedido no se puede cobrar, no se cobra ninguno. Con
+// dinero es preferible "no se cobró nada porque el pedido #15 ya estaba
+// cobrado" antes que dejar la mesa cobrada a medias sin que nadie sepa cuánto.
+// ─────────────────────────────────────────────────────
+router.post('/cobrar-mesa', authorizePermiso(), (req, res) => {
+  const normalizar = lista => [...new Set(
+    (Array.isArray(lista) ? lista : []).map(Number).filter(n => Number.isInteger(n) && n > 0)
+  )];
+  const idsOrdenes  = normalizar(req.body.ordenes);
+  const idsReservas = normalizar(req.body.reservas);
+  const rid = req.user.restaurant_id;
+
+  if (!idsOrdenes.length && !idsReservas.length)
+    return res.status(400).json({ error: 'No hay pedidos para cobrar' });
+
+  const estPagado = db.prepare(`SELECT id, nombre FROM estatus_orden   WHERE es_pagado = 1`).get();
+  const estFull   = db.prepare(`SELECT id, nombre FROM estatus_reserva WHERE es_full   = 1`).get();
+  if (!estPagado || !estFull)
+    return res.status(500).json({ error: 'Faltan los estatus de cobro en la base de datos' });
+
+  // ── Validación completa ANTES de escribir nada ──
+  const ordenes = [];
+  for (const id of idsOrdenes) {
+    const o = db.prepare(`
+      SELECT o.id, o.metodo_pago, o.estado_pago, eo.nombre AS estatus_actual,
+             eo.es_pagado, eo.es_cancelado
+      FROM ordenes o
+      JOIN estatus_orden eo ON o.id_estatus = eo.id
+      WHERE o.id = ? AND o.id_restaurante = ?
+    `).get(id, rid);
+
+    if (!o) return res.status(404).json({ error: `El pedido #${id} no existe` });
+    if (o.es_pagado || o.es_cancelado)
+      return res.status(409).json({ error: `El pedido #${id} ya está ${o.estatus_actual} — actualizá la cola` });
+    // Mismo criterio que el cobro de un toque (ISS-072): si el pago digital
+    // está sin confirmar, este mismo cobro lo confirma. Lo que no se puede es
+    // cobrar un Yape/Plin del que nunca se registró el pago.
+    if (requiereConfirmarPagoAntes(o.metodo_pago, o.estado_pago) && !o.estado_pago)
+      return res.status(400).json({ error: `El pedido #${id} no tiene pago registrado — cobralo por separado` });
+    ordenes.push(o);
+  }
+
+  const reservas = [];
+  for (const id of idsReservas) {
+    const r = db.prepare(`
+      SELECT r.id, r.metodo_pago, r.estado_pago, er.nombre AS estatus_actual,
+             er.es_full, er.es_cancelado
+      FROM reservas r
+      JOIN estatus_reserva er ON r.id_estatus = er.id
+      WHERE r.id = ? AND r.id_restaurante = ?
+    `).get(id, rid);
+
+    if (!r) return res.status(404).json({ error: `La reserva #${id} no existe` });
+    if (r.es_full || r.es_cancelado)
+      return res.status(409).json({ error: `La reserva #${id} ya está ${r.estatus_actual} — actualizá la cola` });
+    if (requiereConfirmarPagoAntes(r.metodo_pago, r.estado_pago) && !r.estado_pago)
+      return res.status(400).json({ error: `La reserva #${id} no tiene pago registrado — cobrala por separado` });
+    reservas.push(r);
+  }
+
+  // ── Cobro, en una sola transacción ──
+  const total = db.transaction(() => {
+    let suma = 0;
+
+    for (const o of ordenes) {
+      const t = calcularTotalOrden(db, o.id);
+      db.prepare(`
+        UPDATE ordenes SET id_estatus = ?, total = ?, estado_pago = 'pagado' WHERE id = ?
+      `).run(estPagado.id, t, o.id);
+      suma += t;
+    }
+
+    for (const r of reservas) {
+      const t = calcularTotalReserva(db, r.id);
+      db.prepare(`
+        UPDATE reservas SET id_estatus = ?, total = ?, estado_pago = 'pagado' WHERE id = ?
+      `).run(estFull.id, t, r.id);
+      suma += t;
+    }
+
+    return suma;
+  })();
+
+  res.json({
+    message: `${ordenes.length + reservas.length} pedidos cobrados`,
+    total,
+    ordenes:  ordenes.map(o => o.id),
+    reservas: reservas.map(r => r.id),
+  });
 });
 
 // ─────────────────────────────────────────────────────

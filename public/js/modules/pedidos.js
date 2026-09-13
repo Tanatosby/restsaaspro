@@ -172,10 +172,11 @@ function renderColaDesdeCache() {
       badge.textContent = zonas[z].length;
       badge.classList.toggle('kb-badge-active', zonas[z].length > 0);
     }
-    const items = (z === 'cobrar' && _filtroCobrar)
-      ? zonas[z].filter(it => coincideFiltroCobrar(it, _filtroCobrar))
-      : zonas[z];
-    renderZona(z, items);
+    // "Por cobrar" se filtra por MESA, no por pedido (ISS-089): el filtro se
+    // aplica dentro de renderCobrarPorMesa() para que, si coincide un pedido,
+    // se muestre su mesa completa. Filtrar acá dejaría la cuenta de la mesa
+    // incompleta — y el total mostrado sería menor al que hay que cobrar.
+    renderZona(z, zonas[z]);
   });
 
   if (content) content.scrollTop = scrollPrevio;
@@ -229,22 +230,257 @@ function renderZona(zona, items) {
 
   // Si los datos son idénticos a lo último pintado, no tocar el DOM — evita
   // el parpadeo de destruir y recrear todas las cards en cada poll. El filtro
-  // de "Por cobrar" entra en la firma para que repinte al escribir.
-  const filtrando = zona === 'cobrar' && !!_filtroCobrar;
-  const firma = JSON.stringify([items.map(i => i.datos), filtrando ? _filtroCobrar : 0]);
+  // de "Por cobrar" y la mesa desplegada entran en la firma para que repinte
+  // al escribir o al abrir una mesa.
+  const esCobrar = zona === 'cobrar';
+  const firma = JSON.stringify([
+    items.map(i => i.datos),
+    esCobrar ? _filtroCobrar : 0,
+    esCobrar ? _mesaAbierta : 0,
+  ]);
   if (_ultimaFirmaZona[zona] === firma) return;
   _ultimaFirmaZona[zona] = firma;
 
+  // "Por cobrar" no lista pedidos: lista mesas con su cuenta (ISS-089).
+  if (esCobrar) {
+    el.innerHTML = renderCobrarPorMesa(items);
+    return;
+  }
+
   if (!items.length) {
-    el.innerHTML = filtrando
-      ? emptyState('🔍', `Ninguna mesa coincide con « ${esc(_filtroCobrar)} »`)
-      : emptyState('✅', 'Sin pedidos en esta etapa');
+    el.innerHTML = emptyState('✅', 'Sin pedidos en esta etapa');
     return;
   }
   el.innerHTML = items
     .sort((a, b) => urgenciaItem(b) - urgenciaItem(a))
     .map(item => renderKanbanCard(item, zona))
     .join('');
+}
+
+// ════════════════════════════════════════════════════════
+// "POR COBRAR" POR MESA — ISS-089
+//
+// La zona dejó de listar pedidos sueltos. Ahora lista MESAS: cada fila trae la
+// cuenta acumulada y su botón de cobrar, y se despliega sólo cuando hace falta
+// ver los tickets uno por uno.
+//
+// Sale del día 17 del piloto: una mesa tomó 2 menús manuales, después una jarra
+// de chicha (del hijo de alguien de la misma mesa) y después un plato a la
+// carta. Eran 3 órdenes independientes — la mesa es sólo una etiqueta en
+// `ordenes.mesa`, no agrupa nada — así que la dueña veía 3 tarjetas con 3
+// botones "Cobrar", ningún total, y tenía que sumar de cabeza en hora pico.
+//
+// Decisiones tomadas con el usuario sobre el prototipo (ver ISS-089):
+//  · el botón "💰 Cobrar mesa" está en la FILA, sin abrir nada: el caso común
+//    se cobra de un toque.
+//  · adentro NO se repite el total de la mesa — ya está siempre visible arriba.
+//  · los pedidos sin mesa (para llevar / sin mesa asignada) van juntos al
+//    final, pero ese grupo NO tiene cobro en bloque: son clientes distintos y
+//    un toque cerraría los pedidos de varias personas.
+//  · orden por antigüedad: la mesa que llegó primero, arriba.
+// ════════════════════════════════════════════════════════
+
+// Mesa desplegada (una sola a la vez: en 360px dos abiertas ya obligan a
+// scrollear para encontrar el botón de cobrar). null = todas plegadas.
+let _mesaAbierta = null;
+
+const SIN_MESA = 'sin-mesa';
+
+function claveMesaItem(item) {
+  const m = item.datos.mesa;
+  return (m === null || m === undefined || m === '') ? SIN_MESA : String(m);
+}
+
+function agruparPorMesa(items) {
+  const grupos = new Map();
+  for (const item of items) {
+    const clave = claveMesaItem(item);
+    if (!grupos.has(clave)) {
+      grupos.set(clave, { clave, mesa: clave === SIN_MESA ? null : item.datos.mesa, items: [] });
+    }
+    grupos.get(clave).items.push(item);
+  }
+  return [...grupos.values()];
+}
+
+function minutosDesde(item) {
+  return Math.floor((Date.now() - new Date(toUTC(item.datos.created_at)).getTime()) / 60000);
+}
+
+// Antigüedad de la mesa = la de su pedido más viejo (el que lleva más esperando)
+function esperaGrupo(grupo) {
+  return Math.max(...grupo.items.map(minutosDesde));
+}
+
+function totalGrupo(grupo) {
+  return grupo.items.reduce((s, i) => s + (Number(i.datos.total) || 0), 0);
+}
+
+// El filtro del buscador (ISS-085) se evalúa por pedido pero decide por MESA:
+// si coincide un pedido, se muestra la mesa entera. Si se filtrara pedido por
+// pedido, la cuenta quedaría incompleta y el total mostrado sería menor al que
+// hay que cobrar.
+function coincideGrupo(grupo, filtro) {
+  if (!filtro) return true;
+  if (grupo.clave === SIN_MESA && 'para llevar sin mesa'.includes(filtro)) return true;
+  return grupo.items.some(item => coincideFiltroCobrar(item, filtro));
+}
+
+function renderCobrarPorMesa(items) {
+  if (!items.length) return emptyState('✅', 'No queda nada por cobrar');
+
+  const grupos = agruparPorMesa(items)
+    .filter(g => coincideGrupo(g, _filtroCobrar))
+    // Sin mesa siempre al final; el resto por antigüedad (más viejo arriba)
+    .sort((a, b) =>
+      (a.clave === SIN_MESA ? 1 : 0) - (b.clave === SIN_MESA ? 1 : 0) ||
+      esperaGrupo(b) - esperaGrupo(a));
+
+  if (!grupos.length) {
+    return emptyState('🔍', `Ninguna mesa coincide con « ${esc(_filtroCobrar)} »`);
+  }
+
+  const totalDia = items.reduce((s, i) => s + (Number(i.datos.total) || 0), 0);
+
+  return `
+    <div class="cobrar-resumen">
+      <span class="cobrar-resumen-lbl">Por cobrar hoy</span>
+      <span class="cobrar-resumen-val">${fSoles(totalDia)}</span>
+    </div>
+    ${grupos.map(renderMesaCuenta).join('')}`;
+}
+
+function renderMesaCuenta(grupo) {
+  const abierta = _mesaAbierta === grupo.clave;
+  const n       = grupo.items.length;
+  const sinMesa = grupo.clave === SIN_MESA;
+  const plural  = n === 1 ? 'pedido' : 'pedidos';
+
+  // Nombre del cliente sólo si toda la mesa es de uno: con varios, mostrar el
+  // primero confundiría sobre de quién es la cuenta.
+  const nombres = [...new Set(grupo.items.map(i => i.datos.nombre_cliente).filter(Boolean))];
+  const titulo  = sinMesa
+    ? 'Para llevar y sin mesa'
+    : `Mesa ${esc(String(grupo.mesa))}${nombres.length === 1 ? ' · ' + esc(nombres[0]) : ''}`;
+  // La aclaración "de clientes distintos" sólo tiene sentido si hay más de uno
+  const sub = sinMesa
+    ? `${n} ${plural}${n > 1 ? ' de clientes distintos' : ''}`
+    : `${n} ${plural} · espera ${esperaGrupo(grupo)} min`;
+
+  const btnCobrarMesa = sinMesa ? '' : `
+    <button class="btn btn-success btn-block" type="button"
+      onclick="cobrarMesaCola('${esc(grupo.clave)}')">💰 Cobrar mesa ${esc(String(grupo.mesa))} · ${fSoles(totalGrupo(grupo))}</button>`;
+
+  return `
+    <div class="mesa-cuenta ${abierta ? 'abierta' : ''} ${sinMesa ? 'sin-mesa' : ''}">
+      <div class="mesa-cuenta-head">
+        <button class="mesa-cuenta-open" type="button" aria-expanded="${abierta}"
+          onclick="toggleMesaCuenta('${esc(grupo.clave)}')">
+          <span class="mesa-cuenta-num">${sinMesa ? '🧾' : esc(String(grupo.mesa))}${sinMesa ? '' : '<span class="cap">mesa</span>'}</span>
+          <span class="mesa-cuenta-mid">
+            <span class="mesa-cuenta-tit">${titulo}</span>
+            <span class="mesa-cuenta-sub">${sub}</span>
+          </span>
+          <span class="mesa-cuenta-der">
+            <span class="mesa-cuenta-monto">${fSoles(totalGrupo(grupo))}</span>
+            <span class="mesa-cuenta-chev">▼</span>
+          </span>
+        </button>
+        ${btnCobrarMesa}
+      </div>
+      ${abierta ? `<div class="mesa-cuenta-body">
+        ${grupo.items.map(renderTicketCuenta).join('')}
+        ${sinMesa ? '<div class="mesa-cuenta-aviso">Son clientes distintos — se cobran de a uno</div>' : ''}
+      </div>` : ''}
+    </div>`;
+}
+
+// Ticket dentro de la cuenta de la mesa. Es la misma información de la tarjeta
+// de la cola (ítems, pago, comprobante) más el precio del pedido, que es lo que
+// antes no existía en ninguna pantalla.
+function renderTicketCuenta(item) {
+  const esOrden = item.tipo === 'orden';
+  const d       = item.datos;
+  const items   = renderItemLines(d.carta_items, d.menu_items, d.modalidad);
+  const modBadge = badgeModalidad(d.modalidad, false, contarMenusParaLlevar(d.menu_items));
+  const titulo  = esOrden
+    ? `🧾 Pedido #${d.numero_dia ?? d.id}`
+    : `📅 Reserva${d.codigo ? ' ' + esc(d.codigo) : ''}`;
+  const pagoHtml = (d.metodo_pago || d.es_manual)
+    ? `<div class="ticket-cuenta-pago">${badgeManual(d)}${badgePago(d)}</div>` : '';
+
+  const btnSolo = esOrden
+    ? `<button class="btn btn-success btn-sm" type="button" onclick="cobrarColaOrden(${d.id})">Cobrar solo este</button>`
+    : `<button class="btn btn-success btn-sm" type="button" onclick="cobrarColaReserva(${d.id})">Cobrar solo esta</button>`;
+
+  return `
+    <div class="ticket-cuenta ${esOrden ? '' : 'reserva'}">
+      <div class="ticket-cuenta-head">
+        <span class="ticket-cuenta-tit">${titulo}
+          ${d.nombre_cliente ? `<span class="cola-meta">${esc(d.nombre_cliente)}</span>` : ''}
+          ${modBadge}</span>
+        <span class="ticket-cuenta-monto">${fSoles(d.total)}</span>
+      </div>
+      ${items ? `<div class="cola-items">${items}</div>` : ''}
+      ${pagoHtml}
+      <div class="ticket-cuenta-pie">
+        ${comprobanteThumb(d) || '<span></span>'}
+        ${btnSolo}
+      </div>
+    </div>`;
+}
+
+function toggleMesaCuenta(clave) {
+  _mesaAbierta = (_mesaAbierta === clave) ? null : clave;
+  renderColaDesdeCache();
+}
+
+// Cobro en bloque. Sin "deshacer": el backend no permite salir de `es_pagado`
+// (el mismo bloqueo de ISS-059), así que la red es preguntar ANTES — mismo
+// criterio que el resto de las acciones irreversibles del panel.
+async function cobrarMesaCola(clave) {
+  const zonas = clasificarZonas(_cache.ordenes, _cache.reservas);
+  const grupo = agruparPorMesa(zonas.cobrar).find(g => g.clave === clave);
+  if (!grupo || !grupo.items.length) return;
+
+  const clavePedido = `mesa${clave}`;
+  if (_enVuelo.has(clavePedido)) return;
+
+  const n     = grupo.items.length;
+  const monto = fSoles(totalGrupo(grupo));
+  const ok = confirm(
+    `Vas a cobrar ${n} ${n === 1 ? 'pedido' : 'pedidos'} de la mesa ${grupo.mesa} por ${monto}.\n\n` +
+    `Una vez cobrados no se pueden reabrir.`
+  );
+  if (!ok) return;
+
+  const ordenes  = grupo.items.filter(i => i.tipo === 'orden').map(i => i.datos.id);
+  const reservas = grupo.items.filter(i => i.tipo === 'reserva').map(i => i.datos.id);
+
+  _enVuelo.add(clavePedido);
+  _cargaSeq++;   // invalidar polls en vuelo, igual que accionRapida()
+
+  // Optimista: la mesa desaparece de la cola al instante
+  const previos = grupo.items.map(i => ({ tipo: i.tipo, item: i.datos, copia: { ...i.datos } }));
+  for (const { tipo, item } of previos) {
+    if (tipo === 'orden') aplicarFlagLocal(item, FLAGS_ORDEN,   'es_pagado');
+    else                  aplicarFlagLocal(item, FLAGS_RESERVA, 'es_full');
+  }
+  if (_mesaAbierta === clave) _mesaAbierta = null;
+  renderColaDesdeCache();
+
+  try {
+    const r = await api('POST', '/api/orders/cobrar-mesa', { ordenes, reservas });
+    toast(`Mesa ${grupo.mesa} cobrada · ${fSoles(r.total)}`);
+    reiniciarPoll();
+    await loadColaDia();
+  } catch (e) {
+    for (const { item, copia } of previos) Object.assign(item, copia);
+    renderColaDesdeCache();
+    toast(e.message, 'err');
+  } finally {
+    _enVuelo.delete(clavePedido);
+  }
 }
 
 function urgenciaItem(item) {

@@ -76,6 +76,15 @@ function emptyState(icon, text) {
   return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div></div>`;
 }
 
+// Montos en soles, siempre con 2 decimales. Compartida desde ISS-089, cuando
+// los importes dejaron de vivir solo en el cierre de caja y pasaron a la Cola
+// del día: conviene que "S/ 0.00" se escriba en un solo lugar.
+// Un total ausente (null/undefined, pedido sin ítems) se muestra como S/ 0.00,
+// nunca como "S/ NaN".
+function fSoles(monto) {
+  return 'S/ ' + (Number(monto) || 0).toFixed(2);
+}
+
 // ── Agrupamiento de platos por instancia de menú — ISS-041 ──────────────────
 // Compartido por cocina.js, ordenes.js, reservas.js y pedidos.js: si un pedido
 // trae 2 menús del día con entrada y segundo distintos, cada vista tiene que

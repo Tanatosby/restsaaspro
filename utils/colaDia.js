@@ -7,8 +7,11 @@
 // proceso Node entero: con 2-3 pedidos y varios celulares polleando, la app se
 // sentía trabada y las acciones tardaban en responder. Ver ISS-026.
 //
-// Acá se usa un número fijo de consultas (6) sin importar cuántos pedidos haya:
-// una por lista y una por tipo de ítem, agrupando en JS.
+// Acá se usa un número fijo de consultas sin importar cuántos pedidos haya:
+// una por lista, una por tipo de ítem y una por las secciones de los menús
+// involucrados, agrupando en JS.
+
+const { calcularMenuTotal } = require('./menuPricing');
 
 // `fecha` guarda 'YYYY-MM-DD' desde utils/fecha.js, pero hay registros viejos
 // con timestamp completo ('2026-06-04 03:46:13'). substr(...,1,10) hace que el
@@ -50,8 +53,12 @@ function itemsDeOrdenes(db, ids) {
 
   // `grupo` + `menu_nombre` alimentan el agrupamiento por instancia de menú en
   // la vista de Cocina y en Cola del día — ISS-041.
+  // `precio_menu` + `id_seccion_menu` son para el total (ver conItems): no se
+  // joinea `menu_secciones` acá a propósito, porque esta consulta también
+  // alimenta el render y una fila duplicada se vería como un plato repetido.
   const menu = db.prepare(`
     SELECT omi.id_orden, omi.id, omi.cantidad, omi.grupo, omi.modalidad, omi.id_menu_dia,
+           cmd.id_seccion_menu, md.precio AS precio_menu,
            pm.nombre AS plato, sm.nombre AS seccion, md.nombre AS menu_nombre
     FROM orden_menu_items omi
     JOIN componentes_menu_dia cmd ON omi.id_componente  = cmd.id
@@ -80,6 +87,7 @@ function itemsDeReservas(db, ids) {
 
   const menu = db.prepare(`
     SELECT rmi.id_reserva, rmi.id, rmi.cantidad, rmi.grupo, rmi.modalidad, rmi.id_menu_dia,
+           cmd.id_seccion_menu, md.precio AS precio_menu,
            pm.nombre AS plato, sm.nombre AS seccion, md.nombre AS menu_nombre
     FROM reserva_menu_items rmi
     JOIN componentes_menu_dia cmd ON rmi.id_componente  = cmd.id
@@ -96,15 +104,73 @@ function itemsDeReservas(db, ids) {
   };
 }
 
-function conItems(registros, items) {
+// ── Precio del menú del día (ISS-089) ────────────────────────────────────────
+
+/**
+ * Secciones de los menús involucrados, en UNA consulta para toda la lista.
+ *
+ * El precio de un menú se reparte entre sus secciones obligatorias
+ * (utils/menuPricing.js), así que para valorizar una línea hacen falta dos
+ * datos que no están en la línea: si su sección es obligatoria y cuántas
+ * obligatorias tiene ese menú. `utils/totales.js` los resuelve con una consulta
+ * por menú y otra por pedido — perfecto para un pedido suelto, inviable acá:
+ * la cola se pide cada 20 s y better-sqlite3 es síncrono, así que cada consulta
+ * de más bloquea el proceso Node entero (ISS-026).
+ */
+function seccionesDeMenus(db, idsMenuDia) {
+  const requeridoPor    = new Map();   // `${menu}:${seccion}` -> 0|1
+  const obligatoriasPor = new Map();   // menu -> cuántas secciones obligatorias
+  if (!idsMenuDia.length) return { requeridoPor, obligatoriasPor };
+
+  const filas = db.prepare(`
+    SELECT id_menu_dia, id_seccion_menu, requerido
+    FROM menu_secciones
+    WHERE id_menu_dia IN (${placeholders(idsMenuDia)})
+  `).all(...idsMenuDia);
+
+  for (const f of filas) {
+    requeridoPor.set(`${f.id_menu_dia}:${f.id_seccion_menu}`, f.requerido);
+    if (f.requerido) {
+      obligatoriasPor.set(f.id_menu_dia, (obligatoriasPor.get(f.id_menu_dia) || 0) + 1);
+    }
+  }
+  return { requeridoPor, obligatoriasPor };
+}
+
+/**
+ * `total` = carta + menú del día + cargo por modalidad, el mismo criterio que
+ * `calcularTotalOrden`/`calcularTotalReserva` (utils/totales.js), que es lo que
+ * se persiste al cobrar.
+ *
+ * Antes acá solo se sumaban los ítems de carta: un pedido de puros menús daba
+ * total 0. Nadie lo notaba porque la Cola del día no mostraba montos — el único
+ * lugar que lo usaba era el cierre de caja, donde un pedido de menús aparecía
+ * sin importe. Ver ISS-089.
+ */
+function conItems(db, registros, items) {
+  const idsMenuDia = [...new Set(
+    [...items.menu.values()].flat().map(i => i.id_menu_dia)
+  )];
+  const { requeridoPor, obligatoriasPor } = seccionesDeMenus(db, idsMenuDia);
+
   return registros.map(r => {
     const carta = items.carta.get(r.id) || [];
     const menu  = items.menu.get(r.id)  || [];
+
+    const cartaTotal = carta.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0);
+    // calcularMenuTotal() necesita `requerido` y `total_obligatorias` en cada
+    // línea; se arman acá y no viajan al frontend (son detalle del cálculo).
+    const menuValorizado = menu.map(i => ({
+      ...i,
+      requerido:          requeridoPor.get(`${i.id_menu_dia}:${i.id_seccion_menu}`) ?? 0,
+      total_obligatorias: obligatoriasPor.get(i.id_menu_dia) || 0,
+    }));
+
     return {
       ...r,
       carta_items: carta,
       menu_items:  menu,
-      total: carta.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0),
+      total: cartaTotal + calcularMenuTotal(menuValorizado) + (r.cargo_modalidad ?? 0),
     };
   });
 }
@@ -130,6 +196,7 @@ function ordenesActivas(db, id_restaurante, hoy, anteriores = false) {
       o.comprobante_repetido_de,
       o.comprobante_repetido_tipo,
       o.modalidad,
+      o.cargo_modalidad,
       o.es_manual,
       eo.nombre      AS estatus,
       eo.es_inicial,
@@ -146,7 +213,7 @@ function ordenesActivas(db, id_restaurante, hoy, anteriores = false) {
     ORDER BY o.created_at ASC
   `).all(id_restaurante, hoy);
 
-  return conItems(ordenes, itemsDeOrdenes(db, ordenes.map(o => o.id)));
+  return conItems(db, ordenes, itemsDeOrdenes(db, ordenes.map(o => o.id)));
 }
 
 // ── Reservas ─────────────────────────────────────────────────────────────────
@@ -173,6 +240,7 @@ function reservasActivas(db, id_restaurante, hoy, anteriores = false) {
       r.comprobante_repetido_de,
       r.comprobante_repetido_tipo,
       r.modalidad,
+      r.cargo_modalidad,
       er.nombre          AS estatus,
       er.es_inicial,
       er.es_confirmada,
@@ -189,7 +257,7 @@ function reservasActivas(db, id_restaurante, hoy, anteriores = false) {
     ORDER BY r.fecha ASC, r.created_at ASC
   `).all(id_restaurante, hoy);
 
-  return conItems(reservas, itemsDeReservas(db, reservas.map(r => r.id)));
+  return conItems(db, reservas, itemsDeReservas(db, reservas.map(r => r.id)));
 }
 
 // ── API del módulo ───────────────────────────────────────────────────────────

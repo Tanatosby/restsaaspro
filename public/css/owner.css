@@ -395,6 +395,8 @@ html, body {
 .btn-warn    { background: none; color: var(--warn);    border: 1px solid color-mix(in srgb, var(--warn) 32%, transparent); font-size:1rem; padding: 5px 14px; min-height: 44px; }
 .btn-warn:hover    { background: var(--warn-bg); }
 .btn-sm { padding: 5px 12px; font-size:1rem; min-height: 44px; }
+/* Botón que ocupa todo el ancho disponible — ISS-089 ("Cobrar mesa N") */
+.btn-block { width: 100%; }
 
 /* ── Form fields ── */
 .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 0.875rem; }
@@ -683,6 +685,103 @@ tbody tr:hover { background: var(--surface-2); }
 }
 .kanban-badge.kb-badge-active { background: var(--accent); color: #fff; }
 .zona-pedidos { display: flex; flex-direction: column; gap: 0.75rem; }
+
+/* ── "Por cobrar" por mesa (ISS-089) ─────────────────────────────
+   La zona dejó de listar pedidos sueltos: lista mesas con su cuenta.
+   Cada fila trae el total y su botón de cobrar sin desplegar nada; el
+   despliegue muestra los tickets, con el precio de cada pedido (que antes
+   no existía en ninguna pantalla del panel). Ver modules/pedidos.js. */
+
+.cobrar-resumen {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  padding: 0.6rem 0.8rem; border-radius: var(--r);
+  background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.cobrar-resumen-lbl {
+  font-size: 0.785714rem; font-weight: 700; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.cobrar-resumen-val {
+  font-family: var(--font-display); font-size: 1.357143rem; font-weight: 700;
+  color: var(--accent-strong); font-variant-numeric: tabular-nums;
+}
+
+.mesa-cuenta {
+  border: 1px solid var(--border); border-radius: var(--r); background: var(--surface);
+  box-shadow: var(--shadow-xs); overflow: hidden;
+  transition: box-shadow var(--t), border-color var(--t);
+}
+.mesa-cuenta.abierta { border-color: var(--border-2); box-shadow: var(--shadow); }
+.mesa-cuenta-head { display: flex; flex-direction: column; gap: 0.45rem; padding: 0.65rem 0.75rem; }
+
+/* Toda la fila superior es el área de despliegue; el botón de cobrar va
+   debajo para que el touch target de 44px de uno no se coma el del otro. */
+.mesa-cuenta-open {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%;
+  background: none; border: none; padding: 0; min-height: 48px;
+  font: inherit; text-align: left; color: var(--text); cursor: pointer;
+}
+.mesa-cuenta-open:focus-visible { outline: none; box-shadow: var(--ring); border-radius: var(--r-sm); }
+
+.mesa-cuenta-num {
+  width: 44px; height: 44px; flex: none; border-radius: 11px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--accent-strong); font-weight: 900; font-size: 1.142857rem; line-height: 1;
+}
+.mesa-cuenta-num .cap {
+  font-size: 0.5rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; opacity: 0.75; margin-top: 1px;
+}
+.mesa-cuenta.sin-mesa .mesa-cuenta-num {
+  background: var(--info-bg); border-color: color-mix(in srgb, var(--info) 22%, transparent);
+  color: var(--info);
+}
+
+.mesa-cuenta-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+.mesa-cuenta-tit { font-size: 0.964286rem; font-weight: 700; }
+.mesa-cuenta-sub { font-size: 0.785714rem; color: var(--muted); }
+.mesa-cuenta-der { display: flex; align-items: center; gap: 0.4rem; flex: none; }
+.mesa-cuenta-monto {
+  font-size: 1.05rem; font-weight: 900; color: var(--accent);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.mesa-cuenta-chev { font-size: 0.642857rem; color: var(--muted); transition: transform var(--t); }
+.mesa-cuenta.abierta .mesa-cuenta-chev { transform: rotate(180deg); }
+
+.mesa-cuenta-body {
+  border-top: 1px solid var(--border); background: var(--surface-2);
+  padding: 0.6rem; display: flex; flex-direction: column; gap: 0.5rem;
+  animation: mesa-abrir 0.22s var(--ease);
+}
+@keyframes mesa-abrir {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mesa-cuenta-body { animation: none; }
+}
+.mesa-cuenta-aviso { font-size: 0.785714rem; color: var(--muted); text-align: center; padding: 0.2rem; }
+
+.ticket-cuenta {
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 4px solid var(--accent); border-radius: 10px;
+  padding: 0.7rem 0.8rem; display: flex; flex-direction: column; gap: 0.4rem;
+}
+.ticket-cuenta.reserva { border-left-color: var(--info); }
+.ticket-cuenta-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+.ticket-cuenta-tit {
+  font-size: 0.928571rem; font-weight: 700;
+  display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; min-width: 0;
+}
+.ticket-cuenta-monto {
+  font-size: 0.928571rem; font-weight: 700; color: var(--text-2);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ticket-cuenta-pago { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.ticket-cuenta-pie {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 0.6rem;
+}
 
 /* Miniatura de foto clicable en las tablas de platos (menú/carta).
    Con foto abre el widget PhotoEditor; sin foto dispara la subida. */

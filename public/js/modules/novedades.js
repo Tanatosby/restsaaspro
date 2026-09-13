@@ -86,6 +86,17 @@ const NOVEDADES = [
       'No perdés nada de control: el aviso de "comprobante ya usado" y la confirmación del pago por Yape o Plin siguen apareciendo igual, cuando vas a cobrar.',
     ],
   },
+  {
+    id: 10,
+    fecha: '2026-09-12',
+    items: [
+      '"Por cobrar" ahora te muestra MESAS, no pedidos sueltos. Si una mesa pidió 3 veces (los menús, después la jarra, después el plato a la carta), ves una sola fila "Mesa 5" con la cuenta sumada y un botón "💰 Cobrar mesa 5" — se cobra todo junto, de un toque.',
+      'Por fin ves los montos: cada mesa muestra cuánto debe, y arriba está el total de todo lo que te queda por cobrar hoy. Antes tenías que sumar de cabeza.',
+      'Si tocás la fila de la mesa se abren los pedidos uno por uno, con su precio, su comprobante y un botón "Cobrar solo este" — por si alguien de la mesa quiere pagar lo suyo aparte.',
+      'Antes de cobrar una mesa completa te pregunta, porque una vez cobrada no se puede reabrir.',
+      'Los pedidos para llevar y los que no tienen mesa van juntos al final. Ese grupo NO se cobra junto a propósito: son clientes distintos.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

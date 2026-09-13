@@ -11,6 +11,7 @@
 
 const Database = require('better-sqlite3');
 const { colaDelDia, cocinaDelDia, pedidosSinCerrar, agruparPorPadre } = require('../utils/colaDia');
+const { calcularTotalOrden } = require('../utils/totales');
 
 const HOY    = '2026-08-10';
 const AYER   = '2026-08-09';
@@ -51,7 +52,7 @@ function crearDB() {
       mesa TEXT, nombre_cliente TEXT, fecha TEXT, created_at TEXT,
       metodo_pago TEXT, estado_pago TEXT, comprobante_url TEXT,
       comprobante_hash TEXT, comprobante_repetido_de INTEGER, comprobante_repetido_tipo TEXT,
-      modalidad TEXT,
+      modalidad TEXT, cargo_modalidad REAL DEFAULT 0,
       es_manual INTEGER DEFAULT 0,
       id_restaurante INTEGER, id_estatus INTEGER, total REAL
     );
@@ -61,7 +62,7 @@ function crearDB() {
       fecha TEXT, hora_llegada TEXT, mesa TEXT, created_at TEXT,
       metodo_pago TEXT, estado_pago TEXT, comprobante_url TEXT,
       comprobante_hash TEXT, comprobante_repetido_de INTEGER, comprobante_repetido_tipo TEXT,
-      modalidad TEXT,
+      modalidad TEXT, cargo_modalidad REAL DEFAULT 0,
       id_restaurante INTEGER, id_estatus INTEGER, total REAL
     );
 
@@ -96,13 +97,25 @@ function crearDB() {
 
     INSERT INTO platos_carta (nombre, precio) VALUES ('Ceviche', 25.0);
     INSERT INTO platos_menu  (nombre) VALUES ('Arroz con pollo');
+    INSERT INTO platos_menu  (nombre) VALUES ('Sopa criolla');
     INSERT INTO secciones_menu (nombre) VALUES ('Segundo');
+    INSERT INTO secciones_menu (nombre) VALUES ('Entrada');
     INSERT INTO componentes_menu_dia (id_menu_dia, id_plato_menu, id_seccion_menu) VALUES (1, 1, 1);
+    INSERT INTO componentes_menu_dia (id_menu_dia, id_plato_menu, id_seccion_menu) VALUES (1, 2, 2);
 
     -- El nombre del menú viaja al frontend para poder rotular los grupos
     -- cuando un pedido mezcla tipos distintos (ISS-041)
     CREATE TABLE menus_dia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, precio REAL);
     INSERT INTO menus_dia (nombre, precio) VALUES ('Menú del día', 11.0);
+
+    -- Las secciones del menú definen cómo se reparte su precio (ISS-089): el
+    -- total de la cola las necesita para valorizar los ítems de menú.
+    CREATE TABLE menu_secciones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id_menu_dia INTEGER, id_seccion_menu INTEGER, requerido INTEGER DEFAULT 0
+    );
+    INSERT INTO menu_secciones (id_menu_dia, id_seccion_menu, requerido) VALUES (1, 1, 1);
+    INSERT INTO menu_secciones (id_menu_dia, id_seccion_menu, requerido) VALUES (1, 2, 1);
   `);
   return db;
 }
@@ -115,6 +128,17 @@ function crearOrden(db, { fecha, estatus = 'pendiente', cliente = 'Cliente', res
     INSERT INTO ordenes (mesa, nombre_cliente, fecha, created_at, id_restaurante, id_estatus, modalidad)
     VALUES ('1', ?, ?, ?, ?, ?, 'en_local')
   `).run(cliente, fecha, fecha, rest, idEstatusOrden(db, estatus)).lastInsertRowid;
+}
+
+// Un menú completo del fixture = una línea por sección obligatoria
+// (Segundo + Entrada). `grupo` distingue instancias del mismo menú (ISS-041).
+function insertarMenuCompleto(db, idOrden, grupo = null) {
+  const ins = db.prepare(`
+    INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo)
+    VALUES (?, 1, ?, 1, ?)
+  `);
+  ins.run(idOrden, 1, grupo);   // componente 1 → sección Segundo
+  ins.run(idOrden, 2, grupo);   // componente 2 → sección Entrada
 }
 
 function crearReserva(db, { fecha, estatus = 'pendiente', cliente = 'Cliente', rest = 1 }) {
@@ -347,22 +371,77 @@ describe('ítems agrupados (sin N+1)', () => {
     expect(items[0].menu_nombre).toBe('Menú del día');
   });
 
-  test('el total no cambia por agregar grupo — el precio no depende de la instancia', () => {
+  // ── Total (ISS-089) ───────────────────────────────────────────────────────
+  // El menú del fixture cuesta 11.0 y tiene 2 secciones obligatorias, así que
+  // cada línea requerida aporta 5.5 y un menú completo (Segundo + Entrada) 11.
+
+  test('el total suma carta + menú del día', () => {
     const db = crearDB();
     const id = crearOrden(db, { fecha: HOY });
     db.prepare(`INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario) VALUES (?,1,2,25.0)`).run(id);
-    db.prepare(`INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo) VALUES (?,1,1,1,1)`).run(id);
-    db.prepare(`INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo) VALUES (?,1,1,1,2)`).run(id);
+    insertarMenuCompleto(db, id);
+
+    // 2 ceviches (50) + 1 menú completo (11)
+    expect(colaDelDia(db, 1, HOY).ordenes[0].total).toBe(61);
+  });
+
+  test('el total sale de los ítems de carta cuando no hay menú', () => {
+    const db = crearDB();
+    const id = crearOrden(db, { fecha: HOY });
+    db.prepare(`INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario) VALUES (?,1,2,25.0)`).run(id);
 
     expect(colaDelDia(db, 1, HOY).ordenes[0].total).toBe(50);
   });
 
-  test('el total sale de los ítems de carta', () => {
+  test('un pedido de puros menús ya NO da total 0', () => {
     const db = crearDB();
     const id = crearOrden(db, { fecha: HOY });
-    db.prepare(`INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario) VALUES (?,1,2,25.0)`).run(id);
+    insertarMenuCompleto(db, id);
 
-    expect(colaDelDia(db, 1, HOY).ordenes[0].total).toBe(50);
+    // Antes de ISS-089 el total solo sumaba carta: este pedido valía 0 y
+    // aparecía sin importe en el cierre de caja.
+    expect(colaDelDia(db, 1, HOY).ordenes[0].total).toBe(11);
+  });
+
+  test('el precio no depende de la instancia — 2 menús iguales valen el doble', () => {
+    const db = crearDB();
+    const id = crearOrden(db, { fecha: HOY });
+    insertarMenuCompleto(db, id, 1);
+    insertarMenuCompleto(db, id, 2);
+
+    expect(colaDelDia(db, 1, HOY).ordenes[0].total).toBe(22);
+  });
+
+  test('suma el cargo por modalidad (tapper / delivery)', () => {
+    const db = crearDB();
+    const id = crearOrden(db, { fecha: HOY });
+    insertarMenuCompleto(db, id);
+    db.prepare(`UPDATE ordenes SET cargo_modalidad = 1.5 WHERE id = ?`).run(id);
+
+    expect(colaDelDia(db, 1, HOY).ordenes[0].total).toBe(12.5);
+  });
+
+  test('coincide con calcularTotalOrden — el mismo número que se persiste al cobrar', () => {
+    const db = crearDB();
+    const id = crearOrden(db, { fecha: HOY });
+    db.prepare(`INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario) VALUES (?,1,3,25.0)`).run(id);
+    insertarMenuCompleto(db, id, 1);
+    insertarMenuCompleto(db, id, 2);
+    db.prepare(`UPDATE ordenes SET cargo_modalidad = 2.0 WHERE id = ?`).run(id);
+
+    // Es la garantía de que el monto que ve la dueña en la cola es el mismo que
+    // después entra en Ganancias: si alguien cambia una de las dos fórmulas,
+    // este test falla.
+    expect(colaDelDia(db, 1, HOY).ordenes[0].total).toBe(calcularTotalOrden(db, id));
+  });
+
+  test('el total de una reserva también incluye el menú', () => {
+    const db = crearDB();
+    const id = crearReserva(db, { fecha: HOY });
+    db.prepare(`INSERT INTO reserva_menu_items (id_reserva, id_menu_dia, id_componente, cantidad) VALUES (?,1,1,1)`).run(id);
+    db.prepare(`INSERT INTO reserva_menu_items (id_reserva, id_menu_dia, id_componente, cantidad) VALUES (?,1,2,1)`).run(id);
+
+    expect(colaDelDia(db, 1, HOY).reservas[0].total).toBe(11);
   });
 
   test('una orden sin ítems trae listas vacías, no undefined', () => {

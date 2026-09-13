@@ -1,6 +1,6 @@
 # ISS-089 — No se puede juntar ni ver la cuenta de una mesa
 
-**Estado:** 🟢 Diseño aprobado — prototipo interactivo validado con el usuario (2026-09-12), **sin implementar**
+**Estado:** ✅ Implementado el 2026-09-12 — **sin desplegar**, sin verificar en uso real
 **Reportado por:** la dueña del piloto #1, servicio del viernes (2026-09-11, fecha a confirmar)
 **Contado por el usuario:** 2026-09-12
 **Módulo:** `routes/orders.js` · `utils/colaDia.js` · `modules/pedidos.js` · `modules/mesas.js`
@@ -114,6 +114,81 @@ Del rediseño de la cola salieron dos cambios separables, cada uno con su issue:
 - [ISS-091](ISS-091-auto-entregado.md) — auto-entregado configurable + bajar el poll de la cola.
 
 Los tres se tocan: con ISS-091, "Listos" se vacía sola hacia la vista de mesas de este issue.
+
+## Progreso
+
+### ✅ Paso 2 — el monto en la cola (backend), 2026-09-12
+
+`utils/colaDia.js` ahora devuelve el **total real** de cada pedido: carta + menú del día +
+`cargo_modalidad`, el mismo criterio que `calcularTotalOrden`/`calcularTotalReserva`
+(`utils/totales.js`), que es lo que se persiste al cobrar.
+
+- Antes sumaba **solo los ítems de carta**: un pedido de puros menús valía 0. No se notaba porque la
+  Cola no muestra montos — pero el **cierre de caja** sí usa ese campo (`cierreItemOrden` en
+  `pedidos.js`), así que ahí un pedido de menús aparecía sin importe. **Arreglado de paso.**
+- El precio de un menú se reparte entre sus secciones obligatorias, así que hacían falta `requerido`
+  y `total_obligatorias` por línea. `totales.js` los resuelve con una consulta por menú y otra por
+  pedido — inviable acá. Se agregó **una sola consulta fija por lista** (`seccionesDeMenus()`) y el
+  resto se arma en JS.
+- `menu_secciones` **no** se joinea en la consulta de ítems a propósito: esa misma consulta alimenta
+  el render, y una fila duplicada se vería como un plato repetido en Cocina. Solo se agregaron
+  `precio_menu` e `id_seccion_menu`, que no cambian la cardinalidad.
+- `cargo_modalidad` se agregó al SELECT de órdenes y reservas.
+
+**Verificación:**
+
+- `tests/cola-dia.test.js`: 7 tests nuevos de total (**29/29** el archivo, **483/483** jest). Incluye
+  uno de **equivalencia contra `calcularTotalOrden`** — si alguien cambia una de las dos fórmulas, el
+  test falla: el monto que ve la dueña tiene que ser el mismo que después entra en Ganancias.
+- Contra **datos reales** de la BD local: 19 pedidos comparados uno a uno contra
+  `calcularTotalOrden`/`calcularTotalReserva`, **19 coinciden, 0 difieren** (8 de ellos con menú del
+  día, los que antes daban 0).
+- **Carga (restricción de ISS-026):** **5 consultas fijas** con 1, 40 y 200 pedidos en la cola;
+  4.7 ms con 200. No crece con la cantidad de pedidos.
+
+El monto *visible* en pantalla llega con el paso 3 (la vista por mesa); acá solo se construye el dato.
+
+### ✅ Paso 3 — "Por cobrar" por mesa, 2026-09-12
+
+**Backend — `POST /api/orders/cobrar-mesa`** (`routes/orders.js`)
+
+- Recibe los **ids explícitos** que la dueña tiene en pantalla, no el número de mesa. Si entre el
+  render y el toque entra un pedido nuevo a esa mesa (el comensal pidió desde su celular), cobrar
+  "toda la mesa 5" cerraría algo que ella no vio y el monto cobrado no coincidiría con el mostrado.
+- **Todo o nada**, en una transacción: si un pedido ya está cobrado o cancelado, no se cobra ninguno
+  (409). Con dinero es preferible "no se cobró nada porque el pedido #15 ya estaba cobrado" antes que
+  una mesa cobrada a medias sin que nadie sepa cuánto.
+- Valida todo **antes** de escribir. Escribe `total` (vía `calcularTotalOrden`/`calcularTotalReserva`)
+  y `estado_pago='pagado'` en cada pedido, igual que el cobro de a uno. Cubre órdenes y reservas.
+- Conserva la regla de `requiereConfirmarPagoAntes`: un Yape/Plin sin pago registrado no entra al
+  lote y se avisa que se cobre por separado.
+
+**Frontend — `pedidos.js` + `owner.css`**
+
+- `renderCobrarPorMesa()` reemplaza el listado de tarjetas de la zona: una fila por mesa con número,
+  nombre (sólo si toda la mesa es de un cliente), cantidad de pedidos, espera y **monto acumulado**,
+  más el botón **"💰 Cobrar mesa N · S/ X"** sin desplegar nada.
+- Arriba, un resumen **"Por cobrar hoy"** con el total de la zona.
+- Al desplegar (una mesa a la vez: en 360 px dos abiertas obligan a scrollear para encontrar el
+  botón): tickets con `#pedido`, ítems, badges de pago, comprobante, **precio** y "Cobrar solo este".
+- Orden por antigüedad (la mesa que llegó primero arriba); el grupo sin mesa siempre al final y
+  **sin cobro en bloque**.
+- El buscador de ISS-085 pasa a filtrar **por mesa**: se reutiliza `coincideFiltroCobrar()` por
+  pedido pero se decide por grupo, para que la cuenta mostrada nunca quede incompleta.
+- `fSoles()` nuevo en `utils.js` — los importes dejaron de vivir sólo en el cierre de caja.
+
+**Sin "deshacer":** el prototipo lo mostraba, pero el backend **no permite salir de `es_pagado`** (el
+mismo bloqueo que ISS-059 tiene abierto para los cancelados) y no hay `cobrado_at` para acotar una
+ventana de reversión. En su lugar, el cobro en bloque **pregunta antes** (`confirm()`, el patrón que
+ya usa el panel para lo irreversible). Queda pendiente de decisión: ver "Sigue abierto".
+
+**Verificación:** `scripts/test-iss089-cobrar-por-mesa.js` **31/31** — agrupación, orden por
+antigüedad, grupo sin mesa sin cobro en bloque, montos por ticket, filtro por mesa, confirmación
+(incluido el caso "cancelar no cobra nada"), cobro en bloque con `total` persistido, y los tres
+rechazos del endpoint (409 con un pedido ya cobrado sin tocar el resto, 400 lote vacío, 404
+inexistente). Sin regresión: `test-ya-pago-foto-buscador` 25/25, `test-cobrar-homologado` 14/14,
+jest 483/483. Capturas reales a 360 px en `issues/screenshots/iss089-cobrar-*.png`, **sin overflow
+horizontal**.
 
 ## Notas de implementación (para cuando haya decisión)
 

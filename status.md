@@ -187,8 +187,75 @@ click caía en el pedido equivocado y el test reportaba "0 PATCH enviados" sin q
 Queda **1 check fallando en `test-agregar-manual.js`** ("+ Elegir [sección]"), del widget PlatoPicker,
 sin relación con ISS-090 — no se tocó.
 
-**Pendiente:** deploy (ISS-090) y los pasos 2-4 del plan: el monto en la cola (backend), ISS-089 y
-ISS-091.
+### Paso 2 — el monto en la cola (backend, prerrequisito de ISS-089)
+
+`utils/colaDia.js` devuelve el **total real** de cada pedido: carta + menú del día +
+`cargo_modalidad`, el mismo criterio que `calcularTotalOrden`/`calcularTotalReserva`, que es lo que
+se persiste al cobrar. Antes sumaba **solo carta** — un pedido de puros menús valía 0. Nadie lo
+notaba porque la Cola no muestra montos, pero el **cierre de caja** sí usa ese campo
+(`cierreItemOrden`): ahí un pedido de menús aparecía sin importe. **Arreglado de paso.**
+
+- Se agregó **una consulta fija por lista** (`seccionesDeMenus()`) para traer `requerido` y
+  `total_obligatorias`, que es lo que necesita `calcularMenuTotal()`. `totales.js` los resuelve con
+  una consulta por menú y otra por pedido — inviable en la cola, que se pide cada 20 s.
+- `menu_secciones` **no** se joinea en la consulta de ítems a propósito: esa misma consulta alimenta
+  el render y una fila duplicada se vería como un plato repetido en Cocina. Solo se agregaron
+  `precio_menu` e `id_seccion_menu`, que no cambian la cardinalidad.
+- `cargo_modalidad` agregado al SELECT de órdenes y reservas.
+
+**Verificación:** 7 tests nuevos en `tests/cola-dia.test.js` (**483/483** jest), uno de ellos de
+**equivalencia contra `calcularTotalOrden`** — si alguien cambia una de las dos fórmulas el test
+falla, porque el monto que ve la dueña tiene que ser el mismo que entra en Ganancias. Contra datos
+reales de la BD local: **19 pedidos comparados, 19 coinciden** (8 con menú del día, los que antes
+daban 0). Carga: **5 consultas fijas** con 1, 40 y 200 pedidos (4.7 ms con 200) — la restricción de
+ISS-026 se mantiene.
+
+El monto *visible* llega con el paso 3; acá solo se construye el dato.
+
+### Paso 3 — "Por cobrar" por mesa (ISS-089 completo)
+
+**Backend — `POST /api/orders/cobrar-mesa`:** cobro en bloque transaccional, **todo o nada**. Recibe
+los **ids explícitos** que la dueña tiene en pantalla, no el número de mesa: si entre el render y el
+toque entra un pedido nuevo a esa mesa (el comensal pidió desde su celular), cobrar "toda la mesa 5"
+cerraría algo que ella no vio y el monto cobrado no coincidiría con el mostrado. Valida todo antes de
+escribir; persiste `total` y `estado_pago` igual que el cobro de a uno; cubre órdenes y reservas.
+
+**Frontend:** la zona dejó de listar pedidos. Ahora lista **mesas**: número, nombre (sólo si toda la
+mesa es de un cliente), cantidad de pedidos, espera y **monto acumulado**, más el botón
+**"💰 Cobrar mesa N · S/ X"** sin desplegar nada. Arriba, el resumen "Por cobrar hoy". Al desplegar
+(una mesa a la vez), tickets con precio, badges de pago, comprobante y "Cobrar solo este". Orden por
+antigüedad; grupo sin mesa al final y **sin cobro en bloque** (son clientes distintos). El buscador de
+ISS-085 pasa a filtrar **por mesa** reutilizando `coincideFiltroCobrar()`, para que la cuenta mostrada
+nunca quede incompleta. `fSoles()` nuevo en `utils.js`.
+
+**Sin "deshacer":** el prototipo lo mostraba, pero el backend no permite salir de `es_pagado` (mismo
+bloqueo que ISS-059) y no hay `cobrado_at` para acotar una ventana. En su lugar el cobro en bloque
+**pregunta antes** (`confirm()`, el patrón del panel para lo irreversible). Pendiente de decisión.
+
+**Verificación:** `scripts/test-iss089-cobrar-por-mesa.js` **31/31** (agrupación, orden por antigüedad,
+grupo sin mesa, montos por ticket, filtro por mesa, confirmación incluido "cancelar no cobra nada",
+cobro en bloque con `total` persistido, y los 3 rechazos del endpoint). jest **483/483**; sin regresión
+en `test-ya-pago-foto-buscador` 25/25 ni `test-cobrar-homologado` 14/14. Capturas reales a 360 px en
+`issues/screenshots/iss089-cobrar-*.png`, **sin overflow horizontal**.
+
+### 🔴 Hallazgo: el auto-merge duplica la cuenta de una mesa con reserva ([ISS-093](issues/ISS-093-automerge-duplica-cuenta.md))
+
+Implementando la vista por mesa apareció algo que **no introduce ISS-089 pero que ISS-089 pone a la
+vista**: `autoMergeReservaEnOrden()` (Gap 8) copia los ítems de la reserva a la orden de la mesa y
+**deja la reserva activa con sus ítems**. Verificado contra el código real:
+
+```
+ANTES   → ítems en la orden: 1 | ítems en la reserva: 1
+PATCH es_cliente_llego → 200
+DESPUÉS → ítems en la orden: 2 | ítems en la reserva: 1   (reserva sigue activa)
+La mesa mostraría S/ 84 — el cliente consumió S/ 56
+```
+
+Si se cobran las dos (y la cola invita a hacerlo: ambas están en "Por cobrar"), **Ganancias cuenta de
+más**. Ya pasaba antes; sin montos en pantalla nadie podía notarlo. **Necesita una decisión** entre
+cerrar la reserva al fusionarla, borrarle los ítems, o vincular en vez de copiar — ver ISS-093.
+
+**Pendiente:** deploy de ISS-090 (`843fea7`) y del paso 2+3; decidir ISS-093; y el paso 4 (ISS-091).
 
 ---
 ## 🎯 Sesión 2026-09-09 — landing (más secciones + fondo del hero) + modelo VAN
