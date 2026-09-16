@@ -1011,6 +1011,34 @@ todavía.
 
 ---
 
+### Cierre del Piloto #1 (2026-09-16) — conversión a cliente pagante, S/250/mes
+
+Contado por el usuario el mismo día: **Karina Menú cerró el piloto y se convirtió en cliente
+pagante, S/250 al mes.** Es el primer cliente que paga precio de lista desde que arrancó Menú Pro
+(2026-07-13, ver arriba) — hasta ahora "gratis solo para los 2 pilotos actuales" (`backlog.md`)
+era la política; con este cierre esa política pasa a estado histórico para este restaurante en
+particular.
+
+**Contexto:** la negociación de precio estaba planeada para la semana del 2026-09-07 (ver memoria
+`negociacion-precio-piloto1.md`), apoyada en la evidencia acumulada del piloto — encuesta ISS-081
+(95% valoración positiva / 94% prefiere el flujo nuevo), ~90 issues resueltos entre julio y
+septiembre, y el checkpoint de 3-4 semanas cumplido el 2026-09-07 (Día 16) sin quejas de servicio.
+El precio de S/250/mes coincide con el "precio de referencia" que ya estaba anotado como tentativo
+en `backlog.md` desde el 2026-08-10 — queda confirmado como precio real con el primer cliente que
+paga, tal como estaba previsto ("se cierra con el primer cliente que pague").
+
+**Pendiente / próximos pasos:**
+1. Confirmar con el usuario si el acuerdo quedó por escrito (WhatsApp u otro medio), según la
+   política ya definida en `backlog.md` ("el precio se acuerda por escrito el día uno").
+2. Definir si este cliente entra en el plan **Pro** o **Premium** (discusión de planes del
+   2026-09-08, sin cerrar) — hoy usa Pensionistas, que quedó mapeado como feature Premium.
+3. Actualizar `backlog.md` §Comercial: ya no es "gratis solo para los 2 pilotos actuales" para este
+   restaurante, y el precio deja de ser tentativo.
+4. ISS-089 (juntar cuenta por mesa) sigue abierto — no bloqueó el cierre, pero conviene resolverlo
+   pronto ahora que es un cliente pagante, no un piloto gratuito.
+
+---
+
 ## Plantilla para el próximo piloto
 
 ```

@@ -559,62 +559,94 @@ Es un punto de contacto distinto (y activo) del principio 9 de la sección 11 �
 
 ---
 
-## 16. Planes: Pro / Premium — discusión 2026-09-08 (sin cerrar)
+## 16. Planes: Básico / Pro / Premium — cerrado 2026-09-16
 
-> **Estado: discutido, no decidido, sin implementar.** Salió de una conversación con el usuario
-> el 2026-09-08 (empezó evaluando skills de diseño para la landing y derivó a modelo de planes).
-> Se anota para retomar — no hay ninguna tarea inmediata acá. Para el primer cliente (posible
-> viernes 2026-09-11) alcanza con tener claro el discurso comercial de qué vende cada plan.
+> **Estado: decidido, precios cerrados, gating sin implementar.** Estructura de 2 planes discutida
+> el 2026-09-08; se convirtió en 3 planes y los 3 precios quedaron cerrados el 2026-09-16, mismo
+> día en que Karina Menú se convirtió en el primer cliente pagante (`pilotos.md`, `backlog.md`
+> §Comercial). Falta implementar el gating en código — ver preguntas abiertas más abajo.
 
-**Dos planes de pago, Pro y Premium.** El eje de diferenciación acordado es **features + soporte**,
-no límites de volumen (a un restaurante de menú chico "si vendes más te cobro más" lo asusta; ver
-`backlog.md` §Comercial y la corrección de target en §1). Pro = todo lo operativo del día a día;
-Premium = lo que ayuda a analizar y hacer crecer el negocio.
+**Tres planes de pago: Básico, Pro y Premium.** El eje de diferenciación es **features**, no
+límites de volumen (a un restaurante de menú chico "si vendes más te cobro más" lo asusta; ver
+`backlog.md` §Comercial y la corrección de target en §1). Básico = solo la carta digital y el
+flujo mínimo de órdenes/cocina/cobro, sin reservas ni gestión de equipo; Pro suma lo operativo de
+un restaurante con más de una persona a cargo; Premium suma lo que ayuda a analizar y hacer crecer
+el negocio.
 
-### Qué incluiría cada plan (borrador)
+### Qué incluye cada plan (cerrado 2026-09-16)
 
-| Feature | Pro | Premium |
-|---|---|---|
-| Menú QR (menú del día + carta), órdenes, cola de cocina, plano de mesas, cola del día | ✅ | ✅ |
-| Reservas | ✅ | ✅ |
-| Gestión de usuarios / roles (mozo, cocinero, admin) | ✅ | ✅ |
-| Nombre propio del restaurante (menú del cliente + panel) | ✅ | ✅ |
-| Reportería básica: KPIs del día + Ganancias del día | ✅ | ✅ |
-| **Reportería avanzada**: rangos semana/mes, Análisis de pedidos, Curva de clientes, Hora pico, export a Excel | — | ✅ |
-| **Marca propia visual**: foto de portada + colores primario/secundario del menú del cliente | — | ✅ |
-| **Pensionistas** (panel del owner + `pensionista.html` + saldos/movimientos) | — | ✅ |
+| Feature | Básico — S/150 | Pro — S/250 | Premium — S/300 |
+|---|---|---|---|
+| Crear menú del día + carta digital (QR) | ✅ | ✅ | ✅ |
+| Descargar menú/carta como imagen para compartir | ✅ | ✅ | ✅ |
+| Órdenes por QR + Cola del día (cocina + cobros) | ✅ | ✅ | ✅ |
+| Reservas | ❌ | ✅ | ✅ |
+| Plano de mesas + gestión de usuarios/roles (mozo, cocinero, admin) | ❌ | ✅ | ✅ |
+| Nombre propio del restaurante (menú del cliente + panel) | ❌ | ✅ | ✅ |
+| Reportería básica: KPIs del día + Ganancias del día | ❌ | ✅ | ✅ |
+| **Reportería avanzada**: rangos semana/mes, Análisis de pedidos, Curva de clientes, Hora pico, export a Excel | ❌ | ❌ | ✅ |
+| **Marca propia visual**: foto de portada + colores primario/secundario del menú del cliente | ❌ | ❌ | ✅ |
+| **Pensionistas** (panel del owner + `pensionista.html` + saldos/movimientos) | ❌ | ❌ | ✅ |
+
+**Caso Karina Menú:** queda con features de **Premium** (usa Pensionistas) pagando **S/250/mes de
+forma permanente**, tarifa fija de primer cliente — no es un descuento temporal, no tiene fecha de
+subida a S/300.
 
 ### Dónde cortaría el gating, feature por feature (para cuando se implemente)
 
+**Principio general: ocultar y bloquear, nunca borrar** — ver "Qué pasa con los datos al cambiar
+de plan" arriba. Todos los puntos de corte de abajo son de visibilidad/acceso, no de datos.
+
+- **Reservas / Mesas / Usuarios:** ocultar los paneles "Reservas", "Mesas" y "Usuarios" de
+  `owner.html` y bloquear sus rutas (`routes/reservations.js`, `routes/mesas.js`, gestión de roles)
+  si el restaurante es Básico. Sin nombre propio configurable tampoco — el Básico usaría un nombre
+  genérico o de alta fija por soporte.
 - **Reportes** (`reportes.js` / `#panel-reportes` en `owner.html`):
+  - *Básico:* sin panel de Reportes, o una versión mínima sin KPIs — a decidir si se oculta del
+    todo o se deja un resumen mínimo.
   - *Pro:* tarjetas de stats del día (`#stats-reportes`) + card "💰 Ganancias" solo intervalo "Día".
   - *Premium:* botones Semana/Mes (Ganancias y Curva de clientes), card "📊 Análisis de pedidos",
     card "📈 Curva de clientes", card "🕐 Hora pico de demanda", y **todos** los botones "⬇ Excel"
     (`descargarFormatoGanancias`, `descargarFormatoPedidos`, `descargarFormatoDemanda`).
 - **Marca visual** (`config.js`):
-  - *Siempre (Pro + Premium):* `PATCH /api/menu/config/nombre` — el nombre del restaurante.
+  - *Pro + Premium:* `PATCH /api/menu/config/nombre` — el nombre del restaurante.
   - *Premium:* subir/quitar foto de portada (`POST`/`DELETE /api/menu/restaurante/foto`) y
     `PATCH /api/menu/restaurante/config` con `color_primario` / `color_secundario`.
 - **Pensionistas:** ocultar el panel "Pensionistas" de `owner.html` y bloquear `/api/pensionistas*`
   y `/api/pensionista*` si el restaurante no es Premium; no se ofrece el rol `pensionista` ni
   `pensionista.html`.
 
+### Qué pasa con los datos al cambiar de plan — decidido 2026-09-16
+
+**Bajar de plan nunca borra datos, solo oculta y bloquea.** Si un restaurante usa Premium (por
+ejemplo, da de alta pensionistas con saldo, sube foto de portada y colores) y luego baja a Pro,
+esos datos **se quedan intactos en la base** — solo se oculta el panel correspondiente en
+`owner.html` y se bloquean sus rutas (mismo criterio que ya usa el proyecto para "cancelar" una
+orden: nunca se borra, solo se bloquea el estado, ver `ISS-059`). Si el restaurante vuelve a subir
+a Premium después, todo reaparece tal cual quedó, sin reconfigurar nada. Aplica a cualquier
+downgrade entre los 3 planes (Premium→Pro, Pro→Básico, Premium→Básico), no solo a Pensionistas.
+
+**Cambiar el plan de un restaurante puntual no es una migración de base de datos.** La migración
+(agregar la columna `plan` a `restaurantes`) se hace una sola vez, cuando se construya el gating
+(P1 en `backlog.md`). Después de eso, cambiar de plan es solo actualizar el valor de esa columna
+para ese restaurante (`UPDATE restaurantes SET plan = ... WHERE id = ...`) — no una migración ni
+un cambio de estructura.
+
 ### Preguntas abiertas (sin responder a propósito)
 
-- **Cómo se marca el plan de un restaurante.** Candidato: columna `plan` (`'pro'` | `'premium'`)
-  en la tabla `restaurantes`, leída en login y puesta en el JWT junto a `restaurant_id`, más un
-  helper de gating en backend y flags en el frontend. Sin diseñar.
-- **Los dos precios.** Hoy solo hay S/250/mes tentativo de referencia (`backlog.md` §Comercial).
-  Con dos planes ese número sería el de uno (probablemente Pro) y Premium queda por encima.
-  Números concretos: se acuerdan con el primer cliente que pague.
+- **Cómo se marca el plan de un restaurante.** Candidato: columna `plan`
+  (`'basico'` | `'pro'` | `'premium'`) en la tabla `restaurantes`, leída en login y puesta en el
+  JWT junto a `restaurant_id`, más un helper de gating en backend y flags en el frontend. Sin
+  diseñar. El caso Karina (features Premium, precio de Pro) exige que el plan y el precio sean
+  campos independientes, no uno derivado del otro.
 - **Plan Free / demo.** Idea del usuario: menú de **solo lectura** (sin pedidos, sin cocina, sin
   reportes) con autopromoción discreta "Hecho con Menú Pro" en el pie, como canal de captación —
-  no de ingreso. Variante que se evaluó: Free = solo órdenes + cola del día. **Aparcada** para
-  después del primer cliente. Nota: monetizar el Free con publicidad de terceros de AdSense se
-  descartó en la discusión — los números no dan (≈500 visitas/día entre 10 locales ≈ US$7-30/mes
-  total) y degrada el menú, que es la cara del restaurante ante su comensal. Si algo se muestra
-  en el menú del Free, que sea del propio restaurante (plato destacado, promo del día). Ver §15
-  para el modelo de publicidad agregada a escala, que es otra cosa.
+  no de ingreso. Variante que se evaluó: Free = solo órdenes + cola del día. **Aparcada** — con el
+  plan Básico (S/150) ya cubriendo el escalón más bajo de pago, falta decidir si todavía tiene
+  sentido un Free sin costo por debajo de Básico. Nota: monetizar el Free con publicidad de
+  terceros de AdSense se descartó en la discusión — los números no dan (≈500 visitas/día entre 10
+  locales ≈ US$7-30/mes total) y degrada el menú, que es la cara del restaurante ante su comensal.
+  Ver §15 para el modelo de publicidad agregada a escala, que es otra cosa.
 
 ### Ideas de landing que salieron en la misma conversación (para retomar)
 

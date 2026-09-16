@@ -40,10 +40,18 @@ premium **primero en el artifact**, antes de tocar `public/landing.html`.
   (el archivo del repo es la fuente; para editar, republicar a esa misma URL).
 - **Pendiente de construir sobre esta base** (ver también `vision_negocio.md` §16):
   problema→solución en 3 pasos · demo/video corto del flujo real · testimonio real de Karina ·
-  tabla de precios Pro/Premium · FAQ (hardware, wifi caído, tiempo de montaje) · CTA + WhatsApp.
-  Reemplazar las maquetas dibujadas por capturas reales del piloto cuando estén.
-- **No es para el viernes** (primer cliente): la prioridad de esa fecha sigue siendo cerrar y
-  onboardear. La landing se trabaja con calma en paralelo.
+  tabla de precios Básico/Pro/Premium (ya sin bloqueo — precios cerrados 2026-09-16) · FAQ
+  (hardware, wifi caído, tiempo de montaje) · CTA + WhatsApp. Reemplazar las maquetas dibujadas por
+  capturas reales del piloto cuando estén.
+- **Video de Karina Menú** (a grabar la semana del 2026-09-16, guion revisado con el usuario):
+  ella hablando de su experiencia (nombre + "uso Menú Pro" + qué mejoró, evitar precisar un número
+  exacto de meses de uso) + ella usándolo en servicio (cocina → listos → mesa) + un comensal
+  pidiendo por QR + 2 comentarios de comensales (mejor de pregunta abierta en cámara que guion
+  leído, para que no suene armado) + CTA final. Resuelve dos pendientes a la vez (video + testimonio).
+  Grabar también en vertical/cuadrado de paso — sirve como material de venta para el pool de
+  expansión Vicus/Santa Isabel (ver abajo), sin grabar dos veces.
+- **Ya no aplica "no antes del viernes"** — ese plazo era para el primer cliente (cumplido). La
+  landing se sigue trabajando con calma, ahora con datos reales (precio, testimonio en camino).
 
 **Avance 2026-09-09** (detalle en `status.md`): secciones nuevas ("¿Qué es menupro.tech?",
 diagrama de flujo de 7 pasos), se quitó "Lleva tu restaurante a otro nivel", hero más bajo en
@@ -621,17 +629,44 @@ enlace "¿Eres pensionista?" en `menu.html` + botón `PwaInstall` en `pensionist
 
 ## Comercial
 
-> ⚠️ **El precio es tentativo y puede cambiar** (indicación del usuario, 2026-08-10). No tomarlo como
-> dato firme para decisiones de producto.
+> **Precios cerrados, 2026-09-16** — ya no son referencia tentativa (indicación original del
+> usuario, 2026-08-10). Ver `vision_negocio.md` §16 para el detalle de qué incluye cada plan y
+> `pilotos.md` §Cierre del Piloto #1.
 
-- Precio de referencia: **S/250 al mes** por restaurante.
-- **Gratis solo para los 2 pilotos actuales.** Desde el restaurante #3 se cobra.
+- **3 planes: Básico S/150, Pro S/250, Premium S/300** al mes por restaurante. Detalle de features
+  por plan en `vision_negocio.md` §16.
+- Piloto #1 (Karina Menú) cerró el 2026-09-16 y pasó a ser cliente pagante — usa features de
+  **Premium** (Pensionistas) pagando **S/250/mes fijo de forma permanente**, tarifa de primer
+  cliente (no es descuento temporal, no tiene fecha de subida a S/300).
+- **Gratis solo para el piloto #2 restante.** Desde el restaurante #3 se cobra (el piloto #1 ya
+  no cuenta como gratuito).
 - El precio se acuerda por escrito el día uno (aunque sea por WhatsApp): "gratis hasta tal fecha,
-  después S/X", para que la conversión no sea una venta nueva.
+  después S/X", para que la conversión no sea una venta nueva. **Con Karina Menú el acuerdo fue
+  verbal (apretón de manos, 2026-09-15), no por escrito** — un mes gratis y luego pago; el usuario
+  controla la desactivación manual si no paga al vencer el mes gratis. Pendiente: pasarlo a
+  escrito (WhatsApp) para dejarlo trazable, siguiendo la política del proyecto.
 
 ### Perfil de cliente a buscar
 Dueño de 25–45 años, ya usa Yape y WhatsApp Business, quizá vende por delivery, 1–2 mozos, carta que
 cambia seguido.
+
+### Pool de expansión — zona Vicus/Santa Isabel, Piura (2026-09-16)
+
+El usuario ubica geográficamente ~12 restaurantes de menú de alta concurrencia en dos zonas
+cercanas entre sí en Piura, todos candidatos naturales (mismo perfil que Karina Menú):
+
+- **Zona Vicus** (alrededor de Karina Menú): su suegro (atrás), Crisolito (al lado), El menú de
+  las sombrillas (al lado), Pa picar menú (al frente), Don menú de 12 soles (frente de "pa picar",
+  panadería), La Martita menú.
+- **Zona Santa Isabel:** los del Mega y Santa Isabel (varios más, sin nombrar en detalle).
+
+Sin decidir todavía a cuál abordar primero — quedó como pregunta abierta el 2026-09-16 (mismo día
+del cierre de Karina Menú): ¿ir al vecino inmediato de Karina, o a uno más alejado dentro del
+mismo pool? Contras del vecino inmediato: riesgo de incomodar a Karina si su competidor directo
+usa la misma herramienta. A favor: cercanía reduce tiempo de onboarding/soporte (CAC en horas, ver
+Modelo VAN) y Karina misma puede ser la referencia/testimonio. **Nota aparte:** "Crisolito" es el
+mismo nombre del restaurante demo sembrado en la BD desde el inicio del proyecto (`project_state`)
+— posible coincidencia o candidato ya considerado desde antes, sin confirmar.
 
 ### Modelo VAN + pitch (2026-09-09)
 
@@ -652,33 +687,36 @@ cambia seguido.
     ver `vision_negocio.md` §1) y el **dolor central = la hora pico** (que todos los comensales se
     sientan atendidos en un tiempo justo).
 
-### Discusión 2026-09-08 — planes Pro / Premium + landing (sin cerrar, para retomar)
+### Planes Básico / Pro / Premium — cerrado 2026-09-16 (discusión original 2026-09-08)
 
-Conversación con el usuario: empezó evaluando skills de diseño para la landing (`taste-skill`,
+Conversación del 2026-09-08: empezó evaluando skills de diseño para la landing (`taste-skill`,
 `scroll-craft` — ninguna aplica, atadas a React/Next; no se descargó nada) y derivó a modelo de
-planes. **Nada de esto es tarea inmediata.** Detalle completo en `vision_negocio.md` §16.
+planes (entonces solo Pro/Premium, sin cerrar). El 2026-09-16, al cerrar el primer cliente
+pagante, se agregó un tercer plan Básico y se cerraron los 3 precios. Detalle completo (features
+por plan + gating pendiente) en `vision_negocio.md` §16.
 
-Lo acordado a nivel de discurso comercial (para el posible primer cliente del viernes 2026-09-11
-alcanza con esto):
+- **Tres planes: Básico (S/150), Pro (S/250), Premium (S/300).** Se diferencian por features, no
+  por límites de volumen.
+- **Básico:** crear menú/carta digital + descargar como imagen + órdenes por QR + Cola del día
+  (cocina + cobros). Sin reservas, sin mesas/usuarios, sin reportería.
+- **Pro:** Básico + reservas, plano de mesas, gestión de usuarios/roles, nombre propio del
+  restaurante, reportería básica (KPIs + ganancias del día).
+- **Premium:** Pro + reportería avanzada + export a Excel, marca visual (foto de portada + colores
+  del menú del cliente), módulo **Pensionistas**.
 
-- **Dos planes: Pro y Premium.** Se diferencian por features + soporte, no por límites de volumen.
-- **Pro:** menú QR, órdenes, cocina, mesas, cola del día, **reservas**, gestión de usuarios,
-  nombre propio del restaurante, reportería básica (KPIs + ganancias del día).
-- **Premium** agrega: reportería avanzada + export a Excel, marca visual (foto de portada +
-  colores del menú del cliente), módulo **Pensionistas**.
+Pendientes:
 
-Pendientes (post primer cliente, P1 en adelante):
-
-- [ ] **P1 — Gating Pro/Premium en código.** Columna `plan` en `restaurantes` → JWT → helper de
-      bloqueo backend + flags frontend. Puntos de corte ya mapeados feature por feature en
-      `vision_negocio.md` §16. El nombre del restaurante queda en ambos planes; solo la foto de
-      portada y los colores son Premium.
-- [ ] **Fijar los dos precios.** Hoy solo hay S/250/mes tentativo. Con dos planes, ese sería el
-      piso (Pro) y Premium por encima. Se cierra con el primer cliente que pague.
-- [ ] **Plan Free / demo** — idea aparcada. Menú de solo lectura con autopromoción en el pie como
-      canal de captación (no de ingreso). Monetizarlo con AdSense se descartó (números no dan +
-      degrada el menú). Retomar más adelante.
+- [ ] **P1 — Gating Básico/Pro/Premium en código.** Columna `plan` en `restaurantes` → JWT →
+      helper de bloqueo backend + flags frontend. Puntos de corte ya mapeados feature por feature
+      en `vision_negocio.md` §16. **Ojo:** el plan y el precio deben ser campos independientes —
+      Karina tiene features Premium pagando precio de Pro (S/250 fijo).
+- [x] **Fijar los 3 precios.** S/150 (Básico) / S/250 (Pro) / S/300 (Premium) cerrados el
+      2026-09-16, mismo día del cierre de Karina Menú (primer cliente pagante) — ver `pilotos.md`.
+- [ ] **Plan Free / demo** — idea aparcada. Con el Básico (S/150) ya cubriendo el escalón más bajo
+      de pago, falta decidir si todavía tiene sentido un Free sin costo por debajo de él.
+      Monetizarlo con AdSense se descartó (números no dan + degrada el menú).
 - [ ] **Landing premium** — rehacer `public/landing.html` como pieza propia con acabado más
-      cuidado. NO antes del viernes (prioridad = cerrar y onboardear al primer cliente). Hacerla
-      la semana siguiente con testimonio real + capturas del piloto. Fijar pricing antes (la tabla
-      manda la estructura). Conceptos y referencias en `vision_negocio.md` §16.
+      cuidado. Retomada la semana del 2026-09-16 en el artifact (`landing/landing-concepto.html`),
+      ver sección PRÓXIMO más arriba. Ya con los 3 precios cerrados, la tabla de precios de la
+      landing puede construirse directo (antes había que esperar a fijar pricing). Conceptos y
+      referencias en `vision_negocio.md` §16.

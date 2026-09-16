@@ -118,6 +118,13 @@ const NOVEDADES = [
       'El generador de QR por mesa ya viene con tu cantidad de mesas puesta.',
     ],
   },
+  {
+    id: 13,
+    fecha: '2026-09-16',
+    items: [
+      'En "Agregar manual" ahora podés marcar si el pedido es "🍽 Comer aquí" o "🥡 Para llevar" (solo aparece si tenés "para llevar" activado en Configuración). Si elegís "Para llevar", se suma el cargo del envase, igual que cuando el cliente pide para llevar por el QR.',
+    ],
+  },
 ];
 
 const NOVEDADES_KEY = 'novedadesVistaId';

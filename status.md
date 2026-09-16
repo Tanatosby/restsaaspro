@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-13
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-16
 
 **Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
@@ -119,6 +119,73 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
   verlo usado por un pensionista real.
 - Pensionistas: falta integración en Cola del día/Cocina y reportería separada — ver
   `pensionistas.md` §0-bis y `features.md`. No bloquea el uso de las Fases 1+2.
+
+---
+
+## 🎯 Sesión 2026-09-16 (2) — ISS-095: "Agregar manual" ahora marca para llevar
+
+**Prompt del usuario:** preguntó directo si en "Agregar manual" se podía indicar que un pedido es
+para llevar. Diagnóstico: no se podía — `POST /api/orders` (la ruta de Agregar manual) no aceptaba
+ningún campo de modalidad, a diferencia de `menu.html`/`POST /api/public/orders` que lo maneja
+completo desde ISS-047. Mockup a 360px aprobado antes de codear (4 pantallas: hoy, propuesta en
+"Comer aquí", propuesta en "Para llevar" con el cargo, y el resultado en la Cola del día) —
+[`issues/ISS-095-manual-para-llevar-mockups.html`](issues/ISS-095-manual-para-llevar-mockups.html),
+artifact: https://claude.ai/artifact/G5pjUBxzi6qa1cXhoHWJBZ.
+
+**Implementado:**
+- `utils/modalidadPedido.js`: se movieron `enriquecerMenuItems()` y `calcularCargoModalidad()`
+  desde `routes/public.js` (recibiendo `db` como parámetro, mismo patrón que `utils/totales.js`) —
+  ahora reusables desde cualquier ruta sin duplicar el cálculo del cargo por tapper (ISS-029).
+- `routes/orders.js` `POST /api/orders`: acepta `modalidad` ('en_local'|'para_llevar'), valida
+  contra `restaurante.para_llevar_activo`, normaliza los ítems y calcula/guarda `cargo_modalidad`
+  — mismas columnas (`ordenes.modalidad`, `orden_menu_items.modalidad`,
+  `orden_carta_items.modalidad`) que ya usa el flujo por QR.
+- `owner.html` + `pedidos.js`: toggle nuevo "🍽 Comer aquí / 🥡 Para llevar" en el modal de Agregar
+  manual (oculto si el restaurante no tiene "para llevar" activo), con el aviso del cargo por
+  envase al elegir "Para llevar". Un solo valor para todo el pedido, no por ítem — decisión
+  explícita del mockup, ya que acá el mozo toma un pedido a la vez.
+- Sin cambios en Cola del día/Cocina/"Por cobrar" — ya sabían pintar `badgeModalidad()` y agrupar
+  por mesa sin importar el origen del pedido.
+
+**Verificación:** `npx jest` 524/524 (sin regresión), `test-agregar-manual.js` 35/35 (sin
+regresión), `test-modalidad-mixta.js` 19/19 (sin regresión tras mover el cálculo del cargo),
+`test-badge-modalidad-cocina.js` 15/15, `test-pago-mixto.js` 5/5, y el nuevo
+`scripts/test-iss095-manual-para-llevar.js` **19/19**. Detalle completo en
+[`issues/ISS-095-manual-para-llevar.md`](issues/ISS-095-manual-para-llevar.md).
+
+**Pendiente: deploy.**
+
+---
+
+## 🎯 Sesión 2026-09-16 — Piloto #1 cerrado: Karina Menú se convierte en cliente pagante (S/250/mes)
+
+**Prompt del usuario:** avisó que se cerró el piloto 1 con Karina Menú y que se convirtió en
+cliente pagante a S/250 al mes. Sesión sin cambios de código — solo actualización de documentación,
+según la regla del proyecto.
+
+**Contexto:** la negociación estaba planeada para la semana del 2026-09-07 (ver memoria
+`negociacion-precio-piloto1.md`), apoyada en la encuesta ISS-081 (95% valoración positiva / 94%
+prefiere el flujo nuevo) y el checkpoint de 3-4 semanas cumplido sin quejas el 2026-09-07 (Día 16
+del piloto). El precio coincide con el "precio de referencia" tentativo que estaba anotado en
+`backlog.md` desde el 2026-08-10 — con este cierre pasa de tentativo a confirmado.
+
+**Cambios de documentación:**
+- `pilotos.md` — nueva sección "Cierre del Piloto #1 (2026-09-16)" con el resultado y pendientes
+  (confirmar acuerdo por escrito, definir plan Pro/Premium, actualizar Comercial).
+- `backlog.md` §Comercial — el precio deja de marcarse como tentativo; "gratis solo para los 2
+  pilotos" pasa a "gratis solo para el piloto #2 restante"; ítem "Fijar el precio piso" marcado
+  hecho.
+- Memoria `negociacion-precio-piloto1.md` actualizada — negociación cerrada con resultado.
+- Landing (`landing/landing-concepto.html`): secciones nuevas "¿Tienes alguno de estos
+  problemas?" (antes/ahora) y tabla de precios Básico/Pro/Premium, con los 3 planes cerrados el
+  mismo día — ver sesión de landing más abajo si existe, o `backlog.md` §PRÓXIMO.
+- `vision_negocio.md` §16: planes Básico/Pro/Premium cerrados (S/150/S/250/S/300) y decisión de
+  que bajar de plan nunca borra datos, solo oculta y bloquea.
+
+**Pendiente para la próxima sesión (no bloqueante):**
+- Confirmar si el acuerdo con Karina Menú quedó por escrito (política del proyecto).
+- ISS-089 (juntar cuenta por mesa) sigue abierto — ahora con más urgencia por ser cliente pagante.
+- Grabar el video testimonial de Karina Menú para la landing (guion revisado con el usuario).
 
 ---
 

@@ -865,6 +865,9 @@ let _manualMenus      = [];  // menús del día activos hoy, con secciones y pla
 let _manualInstancias = {};  // { [id_menu_dia]: [ {id_seccion: id_componente}, ... ] } — 1 entrada por instancia
 let _manualCarta      = [];  // platos de carta activos
 let _manualCartaQty   = {};  // { [id_plato_carta]: cantidad }
+let _manualModalidad         = 'en_local';  // ISS-095 — un solo valor para todo el pedido
+let _manualParaLlevarActivo  = false;       // config del restaurante (GET /api/menu/restaurante/config)
+let _manualCostoTapper       = 0;
 
 function todayLimaPedidos() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date());
@@ -876,6 +879,7 @@ async function abrirModalAgregarManual() {
   document.getElementById('manual-error').textContent = '';
   _manualInstancias = {};
   _manualCartaQty   = {};
+  _manualModalidad  = 'en_local';
 
   document.getElementById('modal-agregar-manual').style.display = 'flex';
 
@@ -889,10 +893,18 @@ async function abrirModalAgregarManual() {
   listaCarta.innerHTML = '';
 
   try {
-    const [menus, carta] = await Promise.all([
+    const [menus, carta, cfg] = await Promise.all([
       api('GET', `/api/menu/menus-dia?dia=${todayLimaPedidos()}`),
       api('GET', '/api/menu/platos-carta'),
+      api('GET', '/api/menu/restaurante/config'),
     ]);
+
+    // ISS-095: el toggle de modalidad solo aparece si el restaurante tiene
+    // "para llevar" activo — mismo criterio que menu.html (ISS-047).
+    _manualParaLlevarActivo = !!cfg.para_llevar_activo;
+    _manualCostoTapper      = cfg.costo_tapper ?? 0;
+    document.getElementById('manual-modalidad-field').style.display = _manualParaLlevarActivo ? 'flex' : 'none';
+    renderModalidadManual();
 
     // Igual criterio que el cliente en menu.html (routes/public.js): solo
     // menús activos hoy — el mozo no debería poder tomar un pedido de un
@@ -913,6 +925,34 @@ async function abrirModalAgregarManual() {
 
 function cerrarModalAgregarManual() {
   document.getElementById('modal-agregar-manual').style.display = 'none';
+}
+
+// ISS-095: toggle de modalidad del pedido manual — un solo valor para todo
+// el pedido (no por ítem, a diferencia de menu.html/ISS-047). Mismo lenguaje
+// visual que el resto de botones del modal (primary = elegido, ghost = no).
+function setModalidadManual(mod) {
+  _manualModalidad = mod;
+  renderModalidadManual();
+}
+
+function renderModalidadManual() {
+  const btnLocal  = document.getElementById('manual-mod-local');
+  const btnLlevar = document.getElementById('manual-mod-llevar');
+  const cargoEl   = document.getElementById('manual-mod-cargo');
+  if (!btnLocal || !btnLlevar) return;
+
+  const activo   = 'background:var(--accent);color:#fff;border:none';
+  const inactivo = 'background:transparent;color:var(--text);border:1px solid var(--border-2)';
+  const base     = 'flex:1;min-height:44px;padding:0 12px;border-radius:7px;font-size:1rem;font-weight:600;font-family:inherit;cursor:pointer;';
+  btnLocal.style  = base + (_manualModalidad === 'en_local'    ? activo : inactivo);
+  btnLlevar.style = base + (_manualModalidad === 'para_llevar' ? activo : inactivo);
+
+  if (_manualModalidad === 'para_llevar' && _manualCostoTapper > 0) {
+    cargoEl.textContent = `+ S/ ${_manualCostoTapper.toFixed(2)} por envase`;
+    cargoEl.style.display = 'block';
+  } else {
+    cargoEl.style.display = 'none';
+  }
 }
 
 // ── Stock rápido: marcar "Agotado" sin entrar a Configuración ───────────
@@ -1162,7 +1202,7 @@ async function enviarPedidoManual() {
   btn.disabled = true;
   btn.textContent = 'Enviando…';
   try {
-    await api('POST', '/api/orders', { mesa, nombre_cliente: nombre || null, menu_items, carta_items, manual: true });
+    await api('POST', '/api/orders', { mesa, nombre_cliente: nombre || null, menu_items, carta_items, manual: true, modalidad: _manualModalidad });
     toast('Pedido manual enviado a cocina');
     cerrarModalAgregarManual();
     reiniciarPoll();

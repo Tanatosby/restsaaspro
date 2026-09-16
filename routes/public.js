@@ -13,9 +13,8 @@ const { descontarStock, devolverStock, itemsMenuDeReserva } = require('../utils/
 const { dentroDeVentanaCancelacion } = require('../utils/cancelacionReserva');
 const { estadoHorario, mensajeHorario, validarHorarioAhora, validarHorarioReserva } = require('../utils/horarioAtencion');
 const { enviarPushRestaurante } = require('../utils/pushNotificaciones');
-const { contarUnidadesMenu } = require('../utils/menuPricing');
 const { validarSeccionesMenu } = require('../utils/validarSeccionesMenu');
-const { normalizarModalidades, resumirModalidad } = require('../utils/modalidadPedido');
+const { normalizarModalidades, resumirModalidad, calcularCargoModalidad } = require('../utils/modalidadPedido');
 const { buscarComprobanteRepetido } = require('../utils/comprobanteDuplicado');
 const db      = require('../config/database');
 
@@ -54,73 +53,9 @@ function getRestaurante(id) {
   `).get(id);
 }
 
-// ─────────────────────────────────────────────────────
-// Helper: enriquece los menu_items recibidos ({ id_componente, ... }) con
-// id_menu_dia / requerido / total_obligatorias, necesarios para deducir
-// cuántas unidades de menú se pidieron (ver contarUnidadesMenu).
-// ─────────────────────────────────────────────────────
-function enriquecerMenuItems(idRestaurante, menuItems) {
-  const seccionesCache = new Map();
-  return menuItems.map(item => {
-    const info = db.prepare(`
-      SELECT cmd.id_menu_dia, ms.requerido
-      FROM componentes_menu_dia cmd
-      JOIN menus_dia md      ON cmd.id_menu_dia = md.id
-      JOIN menu_secciones ms ON ms.id_menu_dia = cmd.id_menu_dia
-                            AND ms.id_seccion_menu = cmd.id_seccion_menu
-      WHERE cmd.id = ? AND md.id_restaurante = ?
-    `).get(item.id_componente, idRestaurante);
-    if (!info) return null;
-
-    if (!seccionesCache.has(info.id_menu_dia)) {
-      const { total_obligatorias } = db.prepare(`
-        SELECT COUNT(*) AS total_obligatorias FROM menu_secciones
-        WHERE id_menu_dia = ? AND requerido = 1
-      `).get(info.id_menu_dia);
-      seccionesCache.set(info.id_menu_dia, total_obligatorias);
-    }
-
-    return {
-      id_menu_dia:       info.id_menu_dia,
-      requerido:         info.requerido,
-      total_obligatorias: seccionesCache.get(info.id_menu_dia),
-    };
-  }).filter(Boolean);
-}
-
-// ─────────────────────────────────────────────────────
-// Helper: calcula el cargo por modalidad (Gap 5).
-// El tapper se cobra por cada menú completo (unidadesMenu) y por cada
-// ítem a la carta (cada plato para llevar necesita su propio envase).
-// La tarifa de delivery es fija por pedido (un solo viaje).
-// ─────────────────────────────────────────────────────
-// ISS-047: el tapper se cobra **solo por lo que se lleva**, no por el pedido
-// entero. Antes, marcar el pedido como "para llevar" cobraba envase de todas las
-// unidades — en un pedido de 1 menú para llevar + 1 para comer ahí se cobraban
-// 2 tappers en vez de 1. Recibe los ítems con `modalidad` ya normalizada.
-function calcularCargoModalidad(modalidad, rest, idRestaurante, cartaItems, menuItems) {
-  if (modalidad === 'en_local') return 0;
-
-  // En delivery viaja el pedido entero, así que todo va envasado — el envase se
-  // cobra por cada unidad, como antes de ISS-047. En para_llevar/mixto se cobra
-  // solo lo que el comensal marcó para llevar.
-  const esDelivery  = modalidad === 'delivery';
-  const menuLlevar  = esDelivery ? (menuItems  || []) : (menuItems  || []).filter(i => i.modalidad === 'para_llevar');
-  const cartaLlevar = esDelivery ? (cartaItems || []) : (cartaItems || []).filter(i => i.modalidad === 'para_llevar');
-
-  // Con `grupo` (ISS-041) las unidades se cuentan directo; sin él —cliente viejo—
-  // se deduce como siempre, contando filas de secciones obligatorias.
-  const conGrupo = menuLlevar.length > 0 && menuLlevar.every(i => i.grupo != null);
-  const unidadesMenu = conGrupo
-    ? new Set(menuLlevar.map(i => i.grupo)).size
-    : contarUnidadesMenu(enriquecerMenuItems(idRestaurante, menuLlevar));
-
-  const unidadesCarta = cartaLlevar.reduce((s, i) => s + (i.cantidad || 1), 0);
-
-  let cargo = (unidadesMenu + unidadesCarta) * (rest.costo_tapper ?? 0);
-  if (modalidad === 'delivery') cargo += (rest.tarifa_delivery ?? 0);
-  return cargo;
-}
+// enriquecerMenuItems() y calcularCargoModalidad() viven en
+// utils/modalidadPedido.js desde ISS-095 —
+// la usa también routes/orders.js ("Agregar manual").
 
 // ─────────────────────────────────────────────────────
 // GET /api/public/restaurante/:id
@@ -344,7 +279,7 @@ router.post('/orders', (req, res) => {
   // no lo ofrece. Las órdenes además nunca habían validado esto.
   if (!rest.para_llevar_activo && [...menuNorm, ...cartaNorm].some(i => i.modalidad === 'para_llevar'))
     return res.status(400).json({ error: 'Este restaurante no ofrece para llevar' });
-  const cargo_modalidad  = calcularCargoModalidad(modalidadResumen, rest, id_restaurante, cartaNorm, menuNorm);
+  const cargo_modalidad  = calcularCargoModalidad(db, modalidadResumen, rest, id_restaurante, cartaNorm, menuNorm);
 
   // Todo válido — insertar en transacción (si el stock no alcanza, revierte todo)
   let ordenId;
@@ -511,7 +446,7 @@ router.post('/reservations', (req, res) => {
   // Mismo cierre que en las órdenes: 'mixto' esquivaba el chequeo de arriba
   if (!rest.para_llevar_activo && [...menuNormRes, ...cartaNormRes].some(i => i.modalidad === 'para_llevar'))
     return res.status(400).json({ error: 'Este restaurante no ofrece para llevar' });
-  const cargo_modalidad_res = calcularCargoModalidad(modalidadResumenRes, rest, id_restaurante, cartaNormRes, menuNormRes);
+  const cargo_modalidad_res = calcularCargoModalidad(db, modalidadResumenRes, rest, id_restaurante, cartaNormRes, menuNormRes);
 
   // Insertar en transacción (si el stock no alcanza, revierte todo)
   let reservaId, codigo;

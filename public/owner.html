@@ -1295,6 +1295,17 @@
         <span style="font-size:0.857143rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">Nombre del cliente (opcional)</span>
         <input id="manual-nombre" type="text" autocomplete="off" style="font-size:1.142857rem;font-family:inherit;padding:10px 12px;min-height:44px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--text)">
       </label>
+      <!-- Modalidad (ISS-095): solo visible si el restaurante tiene "para llevar"
+           activo (mismo criterio que menu.html). Un solo valor para todo el
+           pedido, no por ítem — ver mockup issues/ISS-095-...html. -->
+      <div id="manual-modalidad-field" style="display:none;flex-direction:column;gap:0.3rem">
+        <span style="font-size:0.857143rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">Modalidad</span>
+        <div style="display:flex;gap:0.5rem">
+          <button type="button" id="manual-mod-local" onclick="setModalidadManual('en_local')" style="flex:1;min-height:44px;padding:0 12px;border-radius:7px;font-size:1rem;font-weight:600;font-family:inherit;border:none;cursor:pointer">🍽 Comer aquí</button>
+          <button type="button" id="manual-mod-llevar" onclick="setModalidadManual('para_llevar')" style="flex:1;min-height:44px;padding:0 12px;border-radius:7px;font-size:1rem;font-weight:600;font-family:inherit;cursor:pointer">🥡 Para llevar</button>
+        </div>
+        <span id="manual-mod-cargo" style="display:none;font-size:0.857143rem;color:var(--accent);font-weight:600"></span>
+      </div>
       <div id="manual-menus-lista"></div>
       <div id="manual-carta-lista"></div>
       <div id="manual-error" style="color:var(--danger);font-size:0.928571rem"></div>

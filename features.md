@@ -299,6 +299,15 @@ el `<select>` de texto plano por sección se reemplazó por un chip que abre `Pl
 fotos ya existente, reusado de Configuración) y se sumó una sección "Carta" con el mismo patrón
 card+stepper — `POST /api/orders` ya aceptaba `carta_items`, cero cambios de backend. 28/28.
 
+**Actualizado 2026-09-16 — modalidad "para llevar" ([`ISS-095`](issues/ISS-095-manual-para-llevar.md)):**
+`POST /api/orders` no aceptaba ningún campo de modalidad — todo pedido manual quedaba "en el
+local" sin excepción, sin cobrar el envase. Mockup a 360px aprobado antes de codear. Toggle nuevo
+"🍽 Comer aquí / 🥡 Para llevar" en el modal (oculto sin `para_llevar_activo`), un solo valor para
+todo el pedido, no por ítem. `calcularCargoModalidad()`/`enriquecerMenuItems()` se movieron de
+`routes/public.js` a `utils/modalidadPedido.js` para reusarlas sin duplicar el cálculo del tapper
+(ISS-029). jest 524/524, `test-agregar-manual` 35/35, `test-modalidad-mixta` 19/19 (sin regresión
+en el flujo por QR), nuevo `test-iss095-manual-para-llevar.js` 19/19.
+
 ## ~~Descargar el menú del día como foto~~ ✅ Completado 2026-08-17
 
 Pedido de la dueña el día 4 del piloto #1 (2026-08-17). Ese día **4 comensales no pudieron usar la

@@ -623,6 +623,185 @@
     line-height: 1.5;
   }
 
+  /* ============ SHIFT (del cuaderno a la app) ============ */
+  .shift {
+    padding-block: clamp(3.5rem, 12vh, 7rem);
+  }
+  .shift-inner {
+    max-width: 900px;
+  }
+  .shift-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    text-align: center;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .shift-sub {
+    text-align: center;
+    color: var(--muted);
+    margin: .6rem auto 0;
+    max-width: 42ch;
+    font-size: clamp(.95rem, 2.5vw, 1.1rem);
+  }
+  .shift-rows {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.5rem, 4vw, 2rem);
+    margin-top: clamp(2.5rem, 7vw, 3.5rem);
+  }
+  .shift-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    align-items: stretch;
+    gap: clamp(.7rem, 2.5vw, 1.3rem);
+  }
+  .shift-before, .shift-after {
+    display: flex;
+    gap: .8rem;
+    align-items: flex-start;
+    padding: 1.1rem 1.2rem;
+    border-radius: 14px;
+  }
+  .shift-before {
+    background: transparent;
+    border: 1px dashed var(--hairline);
+  }
+  .shift-after {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+  }
+  .shift-ico { flex: none; width: 22px; height: 22px; margin-top: .1rem; }
+  .shift-before .shift-ico { color: var(--muted); }
+  .shift-after .shift-ico { color: var(--green); }
+  .shift-tag {
+    display: block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .64rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: .3rem;
+  }
+  .shift-before .shift-tag { color: var(--muted); }
+  .shift-after .shift-tag { color: var(--green); }
+  .shift-txt { font-size: .92rem; line-height: 1.45; margin: 0; color: var(--ink); }
+  .shift-before .shift-txt { color: var(--muted); }
+  .shift-arrow {
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+  }
+  .shift-arrow svg { width: 20px; height: 20px; }
+
+  /* ============ PRICING ============ */
+  .pricing {
+    padding-block: clamp(3.5rem, 12vh, 7rem);
+  }
+  .pricing-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    text-align: center;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .pricing-sub {
+    text-align: center;
+    color: var(--muted);
+    margin: .6rem auto 0;
+    max-width: 42ch;
+    font-size: clamp(.95rem, 2.5vw, 1.1rem);
+  }
+  .plans {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(1rem, 3vw, 1.5rem);
+    margin-top: clamp(2.6rem, 7vw, 3.8rem);
+    align-items: start;
+  }
+  .plan {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    padding: clamp(1.4rem, 4vw, 1.7rem);
+    border-radius: 18px;
+    background: var(--device-bg);
+    border: 1px solid var(--device-ln);
+  }
+  .plan--reco {
+    border-color: var(--accent);
+    box-shadow: var(--shadow);
+  }
+  .plan-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent-br);
+    color: #fff;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .6rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: .32rem .7rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .plan-name {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--ink);
+  }
+  .plan-price {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    color: var(--ink);
+    line-height: 1;
+    margin-top: .3rem;
+  }
+  .plan-price span {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 400;
+    font-size: .76rem;
+    color: var(--muted);
+    margin-left: .3rem;
+  }
+  .plan--reco .plan-price { color: var(--accent); }
+  .plan--premium { border-color: var(--green); }
+  .plan--premium .plan-price { color: var(--green); }
+  .plan-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+  }
+  .plan-list li {
+    display: flex;
+    gap: .55rem;
+    align-items: flex-start;
+    font-size: .86rem;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  .plan-list svg { flex: none; width: 16px; height: 16px; margin-top: .18rem; color: var(--green); }
+  .pricing-note {
+    text-align: center;
+    color: var(--muted);
+    font-size: .8rem;
+    margin: clamp(1.8rem, 4vw, 2.4rem) auto 0;
+    max-width: 46ch;
+  }
+
   /* ============ FOOT ============ */
   .foot {
     padding-block: 2.6rem 3.2rem;
@@ -676,6 +855,12 @@
     }
     .phone { width: min(240px, 66%); }
     .browser { width: 100%; }
+
+    .shift-row { grid-template-columns: 1fr; }
+    .shift-arrow { transform: rotate(90deg); }
+
+    .plans { grid-template-columns: 1fr; }
+    .plan--reco { order: -1; }
   }
 </style>
 
@@ -796,6 +981,107 @@
     </section>
   </main>
 </div>
+
+<section class="shift" id="por-que">
+  <div class="wrap shift-inner">
+    <h2 class="shift-h">¿Tienes alguno de estos problemas?</h2>
+    <p class="shift-sub">Así te ayuda menupro.tech con cada uno.</p>
+
+    <div class="shift-rows">
+
+      <div class="shift-row">
+        <div class="shift-before">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Antes</span>
+            <p class="shift-txt">Se toma el pedido anotándolo en un papel, o de memoria.</p>
+          </span>
+        </div>
+        <span class="shift-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+        <div class="shift-after">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Ahora</span>
+            <p class="shift-txt">Lo ingresas directo en menupro.tech y lo tienes ahí, listo para revisar.</p>
+          </span>
+        </div>
+      </div>
+
+      <div class="shift-row">
+        <div class="shift-before">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Antes</span>
+            <p class="shift-txt">La cocina se entera del pedido a gritos, plato por plato.</p>
+          </span>
+        </div>
+        <span class="shift-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+        <div class="shift-after">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Ahora</span>
+            <p class="shift-txt">La cocina lo ve en su pantalla y marca cada plato apenas lo termina.</p>
+          </span>
+        </div>
+      </div>
+
+      <div class="shift-row">
+        <div class="shift-before">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Antes</span>
+            <p class="shift-txt">Cerrar el día es sumar boletas a mano, sin saber bien qué se vendió más.</p>
+          </span>
+        </div>
+        <span class="shift-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+        <div class="shift-after">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Ahora</span>
+            <p class="shift-txt">Al cerrar, ya tienes las ventas del día y qué se vendió más, sin sumar nada.</p>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
 
 <section class="showcase" id="producto">
   <div class="wrap showcase-inner">
@@ -952,6 +1238,91 @@
       </li>
 
     </ol>
+  </div>
+</section>
+
+<section class="pricing" id="precios">
+  <div class="wrap">
+    <h2 class="pricing-h">Un plan por lo que realmente usas</h2>
+    <p class="pricing-sub">Sin límites de mesas ni de pedidos — los planes se diferencian por funciones, no por cuánto vendes.</p>
+
+    <div class="plans">
+
+      <article class="plan">
+        <div>
+          <div class="plan-name">Básico</div>
+          <div class="plan-price">S/ 150<span>al mes</span></div>
+        </div>
+        <ul class="plan-list">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Carta digital por QR: menú del día y carta
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Descarga del menú y la carta como imagen
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Pedidos por QR + Cola del día (cocina y cobros)
+          </li>
+        </ul>
+      </article>
+
+      <article class="plan plan--reco">
+        <span class="plan-badge">El más elegido</span>
+        <div>
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">S/ 250<span>al mes</span></div>
+        </div>
+        <ul class="plan-list">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Todo lo de Básico
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Reservas
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Plano de mesas y gestión de mozos/cocineros
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Reportería básica: ventas y ganancias del día
+          </li>
+        </ul>
+      </article>
+
+      <article class="plan plan--premium">
+        <div>
+          <div class="plan-name">Premium</div>
+          <div class="plan-price">S/ 300<span>al mes</span></div>
+        </div>
+        <ul class="plan-list">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Todo lo de Pro
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Reportería avanzada + exportar a Excel
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Marca propia: foto de portada y colores
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Pensionistas: clientes con saldo prepago
+          </li>
+        </ul>
+      </article>
+
+    </div>
+
+    <p class="pricing-note">Precio fijo por restaurante, no por venta — vendas 20 menús o 200, pagas lo mismo.</p>
   </div>
 </section>
 

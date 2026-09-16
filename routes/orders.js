@@ -12,6 +12,7 @@ const { requiereConfirmarPagoAntes } = require('../utils/verificacionPago');
 const { colaDelDia, cocinaDelDia, pedidosSinCerrar } = require('../utils/colaDia');
 const { validarSeccionesMenu } = require('../utils/validarSeccionesMenu');
 const { normalizarNumeroMesa } = require('../utils/mesas');
+const { normalizarModalidades, resumirModalidad, calcularCargoModalidad } = require('../utils/modalidadPedido');
 
 router.use(authenticate);
 
@@ -310,7 +311,10 @@ router.post('/', authorizePermiso(), (req, res) => {
     nombre_cliente,
     carta_items,   // [{ id_plato_carta, cantidad }]
     menu_items,    // [{ id_componente, id_menu_dia, cantidad }]
-    manual         // true → botón "Agregar manual" en la cola (mozo toma el pedido de palabra)
+    manual,        // true → botón "Agregar manual" en la cola (mozo toma el pedido de palabra)
+    modalidad = 'en_local'   // 'en_local' | 'para_llevar' — un solo valor para todo el pedido
+                              // (ISS-095): "Agregar manual" no separa por ítem como sí hace
+                              // menu.html (ISS-047) — el mozo toma un pedido a la vez.
   } = req.body;
 
   const id_restaurante = req.user.restaurant_id;
@@ -319,6 +323,10 @@ router.post('/', authorizePermiso(), (req, res) => {
     return res.status(400).json({ error: 'Tu usuario no tiene un restaurante asignado' });
   if (!carta_items?.length && !menu_items?.length)
     return res.status(400).json({ error: 'La orden debe tener al menos un ítem' });
+
+  const MODALIDADES_MANUAL = ['en_local', 'para_llevar'];
+  if (!MODALIDADES_MANUAL.includes(modalidad))
+    return res.status(400).json({ error: 'modalidad inválida para un pedido manual' });
 
   // "Agregar manual" escribe la mesa a mano desde ISS-094 (antes era un selector):
   // puede llegar vacía, con espacios o inválida. Tiene que quedar como entero
@@ -329,11 +337,13 @@ router.post('/', authorizePermiso(), (req, res) => {
 
   // Verificar que el restaurante existe y está activo
   const restaurante = db.prepare(`
-    SELECT id, efectivo_activo FROM restaurantes WHERE id = ? AND activo = 1
+    SELECT id, efectivo_activo, para_llevar_activo, costo_tapper FROM restaurantes WHERE id = ? AND activo = 1
   `).get(id_restaurante);
 
   if (!restaurante)
     return res.status(404).json({ error: 'Restaurante no encontrado o inactivo' });
+  if (modalidad === 'para_llevar' && !restaurante.para_llevar_activo)
+    return res.status(400).json({ error: 'Este restaurante no tiene activado "para llevar"' });
 
   const fecha = fechaLima();
 
@@ -368,30 +378,37 @@ router.post('/', authorizePermiso(), (req, res) => {
   const flagEstatus  = manual ? 'es_en_cocina' : 'es_inicial';
   const metodoManual = manual ? (restaurante.efectivo_activo ? 'efectivo' : null) : null;
 
+  // Modalidad por línea (ISS-095) — mismo mecanismo que menu.html (ISS-047),
+  // aplicado uniforme porque acá no hay toggle por ítem: cada línea hereda la
+  // modalidad del pedido. cargo_modalidad cubre el envase si es para llevar.
+  const { menu: menuNorm, carta: cartaNorm } = normalizarModalidades(menu_items, carta_items, modalidad);
+  const modalidadResumen = resumirModalidad(menuNorm, cartaNorm, modalidad);
+  const cargo_modalidad  = calcularCargoModalidad(db, modalidadResumen, restaurante, id_restaurante, cartaNorm, menuNorm);
+
   // Insertar en transacción (si el stock no alcanza, revierte todo)
   let ordenId;
   try {
     ordenId = db.transaction(() => {
       const { lastInsertRowid } = db.prepare(`
-        INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, metodo_pago, es_manual)
-        VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE ${flagEstatus} = 1), ?, ?)
-      `).run(numeroMesa.mesa, nombre_cliente || null, fecha, id_restaurante, metodoManual, manual ? 1 : 0);
+        INSERT INTO ordenes (mesa, nombre_cliente, fecha, id_restaurante, id_estatus, metodo_pago, es_manual, modalidad, cargo_modalidad)
+        VALUES (?, ?, ?, ?, (SELECT id FROM estatus_orden WHERE ${flagEstatus} = 1), ?, ?, ?, ?)
+      `).run(numeroMesa.mesa, nombre_cliente || null, fecha, id_restaurante, metodoManual, manual ? 1 : 0, modalidadResumen, cargo_modalidad);
 
       const stmtCarta = db.prepare(`
-        INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario)
-        VALUES (?, ?, ?, (SELECT precio FROM platos_carta WHERE id = ? AND activo = 1))
+        INSERT INTO orden_carta_items (id_orden, id_plato_carta, cantidad, precio_unitario, modalidad)
+        VALUES (?, ?, ?, (SELECT precio FROM platos_carta WHERE id = ? AND activo = 1), ?)
       `);
-      for (const item of (carta_items || [])) {
-        stmtCarta.run(lastInsertRowid, item.id_plato_carta, item.cantidad || 1, item.id_plato_carta);
+      for (const item of cartaNorm) {
+        stmtCarta.run(lastInsertRowid, item.id_plato_carta, item.cantidad || 1, item.id_plato_carta, item.modalidad);
       }
 
       // `grupo` distingue instancias del mismo menú en el pedido — ISS-041.
       const stmtMenu = db.prepare(`
-        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO orden_menu_items (id_orden, id_menu_dia, id_componente, cantidad, grupo, modalidad)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
-      for (const item of (menu_items || [])) {
-        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1, item.grupo ?? null);
+      for (const item of menuNorm) {
+        stmtMenu.run(lastInsertRowid, item.id_menu_dia, item.id_componente, item.cantidad || 1, item.grupo ?? null, item.modalidad);
       }
 
       // Descuenta stock de los platos con control; lanza 409 si no alcanza

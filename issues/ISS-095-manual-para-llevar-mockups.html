@@ -1,0 +1,278 @@
+<title>Para llevar en manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&family=Lato:wght@400;700;900&display=swap">
+
+<style>
+/* Documento: paleta fría a propósito (igual que ISS-089/ISS-094), para que la
+   pantalla de la app —cálida, tokens reales de owner.css— se lea como "la pantalla". */
+:root{
+  --paper:#eceeef; --surface:#fbfcfc; --surface-2:#f3f5f6;
+  --ink:#161a1d; --ink-2:#4a5157; --muted:#6f787f;
+  --line:#d6dbde; --line-2:#c2c9cd;
+  --steel:#1a6090; --steel-soft:#e5eef5;
+  --ok:#2a7a4a; --ok-soft:#e8f3ec;
+  --doc-font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#111417; --surface:#181c20; --surface-2:#1e2328;
+    --ink:#e7eaec; --ink-2:#a8b0b6; --muted:#838c94;
+    --line:#282e34; --line-2:#39424a;
+    --steel:#69b0e2; --steel-soft:#15242f;
+    --ok:#5fb184; --ok-soft:#15241d;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111417; --surface:#181c20; --surface-2:#1e2328;
+  --ink:#e7eaec; --ink-2:#a8b0b6; --muted:#838c94;
+  --line:#282e34; --line-2:#39424a;
+  --steel:#69b0e2; --steel-soft:#15242f;
+  --ok:#5fb184; --ok-soft:#15241d;
+}
+
+body{ background:var(--paper); color:var(--ink); font-family:var(--doc-font);
+      font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+.wrap{ max-width:1120px; margin:0 auto; padding:2.5rem 1.25rem 5rem;
+       display:flex; flex-direction:column; gap:2.25rem; }
+@media (max-width:520px){ .wrap{ padding:1.75rem 1rem 4rem; } }
+h1,h2,h3{ text-wrap:balance; line-height:1.2; margin:0; letter-spacing:-.015em; }
+h1{ font-size:clamp(1.9rem,5.5vw,2.6rem); font-weight:700; letter-spacing:-.03em; }
+h2{ font-size:clamp(1.25rem,3vw,1.55rem); font-weight:600; }
+p{ margin:0; max-width:68ch; color:var(--ink-2); }
+p strong{ color:var(--ink); font-weight:600; }
+code{ font-family:var(--mono); font-size:.85em; background:var(--surface-2);
+      border:1px solid var(--line); border-radius:4px; padding:.05em .35em; }
+.eyebrow{ font-family:var(--mono); font-size:.72rem; font-weight:600; letter-spacing:.12em;
+          text-transform:uppercase; color:var(--steel); }
+header{ display:flex; flex-direction:column; gap:.7rem; }
+section{ display:flex; flex-direction:column; gap:1rem; }
+
+/* Tabla de dependencias (igual convención que ISS-094) */
+.deps{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.deps table{ border-collapse:collapse; width:100%; min-width:560px; font-size:.93rem; }
+.deps th,.deps td{ text-align:left; padding:.65rem .9rem; border-bottom:1px solid var(--line); vertical-align:top; }
+.deps tr:last-child td{ border-bottom:none; }
+.deps th{ font-family:var(--mono); font-size:.68rem; letter-spacing:.1em; text-transform:uppercase;
+          color:var(--muted); font-weight:600; background:var(--surface-2); }
+.pill{ display:inline-block; font-family:var(--mono); font-size:.7rem; font-weight:600;
+       letter-spacing:.06em; text-transform:uppercase; padding:.12rem .45rem; border-radius:4px; white-space:nowrap; }
+.pill.no{ background:var(--ok-soft); color:var(--ok); }
+.pill.si{ background:var(--steel-soft); color:var(--steel); }
+
+/* Galería de pantallas */
+.screens{ display:grid; grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr)); gap:2rem 1.5rem; align-items:start; }
+figure{ margin:0; display:flex; flex-direction:column; gap:.65rem; }
+figcaption{ display:flex; flex-direction:column; gap:.25rem; max-width:44ch; }
+figcaption b{ font-size:.98rem; font-weight:600; color:var(--ink); }
+figcaption span{ font-size:.88rem; color:var(--ink-2); line-height:1.55; }
+.cap-key{ font-family:var(--mono); font-size:.7rem; font-weight:600; letter-spacing:.1em; color:var(--muted); }
+.phone{ width:min(360px,100%); border:1px solid var(--line-2); border-radius:18px; overflow:hidden;
+        box-shadow:0 14px 30px -20px rgba(10,20,30,.55); }
+
+/* ══════════════════════════════════════════════════════════════
+   APP — tokens y medidas reales de public/css/owner.css. Tema claro fijo:
+   esto es una captura, no un widget del panel real.
+   ══════════════════════════════════════════════════════════════ */
+.app{
+  --fs:1;
+  --bg:#f4f1ec; --surface:#ffffff; --surface-2:#faf7f2;
+  --border:#e8e1d7; --border-2:#d8cfc2;
+  --text:#1c1813; --text-2:#5c5349; --muted:#9a9088;
+  --accent:#c8692a; --accent-strong:#b25a20; --accent-soft:#fdf0e8;
+  font-size:calc(14px * var(--fs)); line-height:1.45;
+  font-family:'Lato',system-ui,sans-serif; color:var(--text); background:var(--bg);
+  padding:1.2em 1.1em 1.5em;
+  display:flex; flex-direction:column; gap:1.25em;
+}
+.app *{ box-sizing:border-box; }
+.app.dim{ background:#8c8781; padding:1em .9em; }
+.app .lbl{ font-size:.857em; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+.app .field{ display:flex; flex-direction:column; gap:.4em; }
+.app input{ font:inherit; font-size:max(16px,1.142857em); padding:.55em .7em; min-height:44px;
+            border:1.5px solid var(--border); border-radius:7px; background:var(--surface-2); color:var(--text); }
+.app .btn{ font:inherit; font-size:1em; font-weight:700; min-height:44px; padding:.5em 1.1em; border-radius:7px;
+           display:inline-flex; align-items:center; justify-content:center; gap:.4em; border:none; white-space:nowrap; cursor:pointer; }
+.app .btn-primary{ background:linear-gradient(135deg,#d9772f 0%,#c8692a 55%,#b25a20 100%); color:#fff;
+                   box-shadow:0 6px 16px -4px rgba(200,105,42,.45); }
+.app .btn-ghost{ background:var(--surface); color:var(--text-2); border:1px solid var(--border); }
+.app .btn-block{ width:100%; }
+.app .fantasma{ border:1px dashed var(--border-2); border-radius:10px; padding:.9em; color:var(--muted); font-size:.93em; }
+
+/* Modal de Agregar manual */
+.app .modal{ background:var(--surface); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+.app .modal-head{ padding:1.1em 1.25em; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.app .modal-head b{ font-size:1.142857em; }
+.app .modal-head span{ font-size:1.43em; color:var(--muted); min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:flex-end; }
+.app .modal-body{ padding:1em 1.25em; display:flex; flex-direction:column; gap:.9em; }
+.app .modal-foot{ padding:.9em 1.25em 1.1em; border-top:1px solid var(--border); display:flex; gap:.6em; justify-content:flex-end; flex-wrap:wrap; }
+
+/* Toggle de modalidad — mismo lenguaje visual que .btn-primary/.btn-ghost,
+   nada nuevo que aprender: es el mismo par de botones de siempre. */
+.app .seg{ display:flex; gap:.5em; }
+.app .seg .btn{ flex:1 1 0; }
+.app .charge{ font-size:.93em; color:var(--accent-strong); font-weight:700; display:flex; align-items:center; gap:.35em; }
+.app .charge .muted{ color:var(--muted); font-weight:400; }
+
+/* Tarjeta de la Cola del día (misma estructura que .cola-card de owner.css) */
+.app .cola-card{ border-radius:10px; padding:.9em 1.05em; background:var(--surface);
+                  border:1px solid var(--border); border-left:4px solid var(--accent); }
+.app .cola-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:.5em; flex-wrap:wrap; }
+.app .cola-title{ font-size:1em; font-weight:700; color:var(--text); display:flex; align-items:center; gap:.4em; flex-wrap:wrap; }
+.app .cola-time{ font-size:.857em; color:var(--muted); white-space:nowrap; }
+.app .cola-items{ margin-top:.5em; font-size:.93em; color:var(--text-2); }
+.app .badges{ margin-top:.4em; display:flex; gap:.4em; flex-wrap:wrap; }
+.app .badge{ font-size:.785714em; padding:2px 8px; border-radius:20px; font-weight:600; }
+.app .badge.manual{ background:#ede9fe; color:#5b21b6; }
+.app .badge.llevar{ background:#e0f2fe; color:#0369a1; }
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Diagnóstico técnico (2026-09-16) · Agregar manual · mockup a 360 px</span>
+  <h1>"Para llevar" en un pedido manual</h1>
+  <p>Hoy <strong>"Agregar manual" no tiene forma de marcar un pedido para llevar</strong> — todo pedido
+    manual queda "en el local" sin excepción, aunque el mozo lo haya tomado por teléfono o de palabra
+    para alguien que se lo lleva. El toggle ya existe en <code>menu.html</code> (el comensal), pero
+    <code>POST /api/orders</code> (la ruta que usa Agregar manual) ni siquiera acepta el campo. Sin
+    cambios de código todavía — esto es la propuesta para revisar antes de tocar nada.</p>
+</header>
+
+<section>
+  <h2>Qué depende de esto</h2>
+  <div class="deps">
+    <table>
+      <thead><tr><th>Lugar</th><th>¿Cambia?</th><th>Qué pasa hoy / qué pasaría</th></tr></thead>
+      <tbody>
+        <tr><td>Modal "Agregar manual" (<code>pedidos.js</code>)</td><td><span class="pill si">Sí</span></td><td>Se agrega el toggle 🍽/🥡. Un solo valor para todo el pedido, no por ítem — una mesa manual es normalmente un solo caso.</td></tr>
+        <tr><td><code>POST /api/orders</code> (<code>routes/orders.js</code>)</td><td><span class="pill si">Sí</span></td><td>Hoy no lee <code>modalidad</code> del body. Pasaría a validarla contra <code>para_llevar_activo</code> del restaurante, igual que ya hace <code>routes/public.js</code>.</td></tr>
+        <tr><td>Cargo por tapper (<code>calcularCargoModalidad</code>)</td><td><span class="pill si">Sí</span></td><td>Hoy solo vive en <code>routes/public.js</code>. Para reusarla sin duplicar la lógica del cargo (S/1.50 por envase, ISS-029), conviene moverla a <code>utils/modalidadPedido.js</code>.</td></tr>
+        <tr><td>Cola del día / Cocina (<code>pedidos.js</code>, <code>cocina.js</code>)</td><td><span class="pill no">No</span></td><td>Ya saben pintar el badge "🥡 Para llevar" — <code>badgeModalidad()</code> no distingue si el pedido vino por QR o manual.</td></tr>
+        <tr><td>"Por cobrar" por mesa (ISS-089)</td><td><span class="pill no">No</span></td><td>Nada: sigue agrupando por número de mesa, con o sin modalidad.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Pantallas</h2>
+  <div class="screens">
+
+    <!-- A · hoy -->
+    <figure>
+      <div class="phone"><div class="app dim">
+        <div class="modal">
+          <div class="modal-head"><b>+ Agregar pedido manual</b><span aria-hidden="true">✕</span></div>
+          <div class="modal-body">
+            <div class="field">
+              <label class="lbl">Mesa (opcional)</label>
+              <input type="number" value="5" readonly>
+            </div>
+            <div class="field">
+              <label class="lbl">Nombre del cliente (opcional)</label>
+              <input type="text" placeholder="Rocío" readonly>
+            </div>
+            <div class="fantasma">Menú del día y carta — sin cambios</div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn-ghost" type="button">Cancelar</button>
+            <button class="btn btn-primary" type="button">🍳 Enviar a cocina</button>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="cap-key">A · HOY</span><b>Sin ningún control de modalidad</b>
+        <span>No importa si Rocío se lo lleva o come ahí: el pedido siempre queda "en el local" — la columna existe en la base, pero nada la toca desde este formulario.</span></figcaption>
+    </figure>
+
+    <!-- B · propuesta, en local -->
+    <figure>
+      <div class="phone"><div class="app dim">
+        <div class="modal">
+          <div class="modal-head"><b>+ Agregar pedido manual</b><span aria-hidden="true">✕</span></div>
+          <div class="modal-body">
+            <div class="field">
+              <label class="lbl">Mesa (opcional)</label>
+              <input type="number" value="5" readonly>
+            </div>
+            <div class="field">
+              <label class="lbl">Nombre del cliente (opcional)</label>
+              <input type="text" placeholder="Rocío" readonly>
+            </div>
+            <div class="field">
+              <label class="lbl">Modalidad</label>
+              <div class="seg">
+                <button class="btn btn-primary" type="button">🍽 Comer aquí</button>
+                <button class="btn btn-ghost" type="button">🥡 Para llevar</button>
+              </div>
+            </div>
+            <div class="fantasma">Menú del día y carta — sin cambios</div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn-ghost" type="button">Cancelar</button>
+            <button class="btn btn-primary" type="button">🍳 Enviar a cocina</button>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="cap-key">B · PROPUESTA — "COMER AQUÍ" (POR DEFECTO)</span><b>Un toggle, no un campo por ítem</b>
+        <span>Arranca en "Comer aquí" porque es el caso más común en Agregar manual (mesa que ya está sentada). Dos toques, mismo lenguaje visual que los botones que ya existen.</span></figcaption>
+    </figure>
+
+    <!-- C · propuesta, para llevar -->
+    <figure>
+      <div class="phone"><div class="app dim">
+        <div class="modal">
+          <div class="modal-head"><b>+ Agregar pedido manual</b><span aria-hidden="true">✕</span></div>
+          <div class="modal-body">
+            <div class="field">
+              <label class="lbl">Mesa (opcional)</label>
+              <input type="number" placeholder="Sin mesa" readonly>
+            </div>
+            <div class="field">
+              <label class="lbl">Nombre del cliente (opcional)</label>
+              <input type="text" value="Rocío" readonly>
+            </div>
+            <div class="field">
+              <label class="lbl">Modalidad</label>
+              <div class="seg">
+                <button class="btn btn-ghost" type="button">🍽 Comer aquí</button>
+                <button class="btn btn-primary" type="button">🥡 Para llevar</button>
+              </div>
+              <span class="charge">+ S/ 1.50 <span class="muted">· envase para llevar</span></span>
+            </div>
+            <div class="fantasma">Menú del día y carta — sin cambios</div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn-ghost" type="button">Cancelar</button>
+            <button class="btn btn-primary" type="button">🍳 Enviar a cocina</button>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="cap-key">C · PROPUESTA — "PARA LLEVAR"</span><b>El cargo por envase aparece solo</b>
+        <span>Mismo cargo que ya existe por QR (ISS-029, S/1.50/envase) — hoy un pedido manual para llevar nunca lo cobraba porque la modalidad ni se registraba.</span></figcaption>
+    </figure>
+
+    <!-- D · resultado en la cola -->
+    <figure>
+      <div class="phone"><div class="app">
+        <div class="cola-card">
+          <div class="cola-head">
+            <span class="cola-title">🧾 <strong>Sin mesa</strong> <span style="color:var(--muted);font-weight:400">Rocío</span></span>
+            <span class="cola-time">2 min</span>
+          </div>
+          <div class="cola-items">1 Menú Ejecutivo — Lomo saltado</div>
+          <div class="badges">
+            <span class="badge manual">🧾 Pedido manual · Confirmar pago al cobrar</span>
+            <span class="badge llevar">🥡 Para llevar</span>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><span class="cap-key">D · RESULTADO EN LA COLA DEL DÍA</span><b>Cocina ya sabe envasarlo</b>
+        <span>El badge "🥡 Para llevar" es el mismo que ya pinta cualquier pedido por QR — <code>badgeModalidad()</code> no necesita cambios, solo que el dato le llegue.</span></figcaption>
+    </figure>
+
+  </div>
+</section>
+
+</div>
