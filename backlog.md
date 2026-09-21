@@ -12,6 +12,44 @@ Plan de la etapa actual y **el porqué** de cada prioridad. El log técnico de l
 
 ---
 
+## ▶️ EMPEZAR ACÁ LA PRÓXIMA SESIÓN (cierre del 2026-09-21)
+
+Ese día quedó **desplegado y verificado** (servidor y repo en `4c27845`): landing nueva con el video de Karina,
+enlace a Términos, manejador de errores 4xx y swap de 1 GB. Detalle en `status.md` (sesiones del 2026-09-21).
+Pendientes, en el orden que propongo:
+
+**Servidor (rápidos, el usuario los hace por SSH o en el navegador)**
+1. **Reinicio del servidor** — el login dice `*** System restart required ***` (115 días de uptime). De madrugada,
+   con backup manual antes; procedimiento en `deploy.md` §9. Después: `pm2 status`, `/health`, `swapon --show`.
+2. **UptimeRobot** (gratis) apuntando a `https://menupro.tech/health` cada 5 min, con aviso al correo/WhatsApp.
+   Hoy nos enteramos de una caída cuando una dueña reclama. Es lo que más protege.
+3. **Restore de prueba del backup** (pendiente desde el 2026-08-19) y **copia externa** de los backups (hoy viven
+   en el mismo servidor).
+
+**Landing**
+4. **Activar un menú del día en "Restaurante Demo" (`id=1`)**: "Ver demo" hoy muestra solo la carta
+   (`/api/public/menu?restaurante=1` → `[]`).
+5. **Confirmar 3 frases dudosas de los subtítulos del video** ("me ahorró el tiempo", "definitivamente" en R4,
+   "preparo y llevo el plato a la mesa") y decidir si se agrega la frase que quedó fuera ("…toda la toma de pedidos…").
+   Si cambia algo: editar el texto en `Documentsudiosideo_landing\editar_video.py`, re-renderizar (~3 min),
+   copiar el MP4/VTT a `landing/media/`, `node scripts/build-landing.js`, commit.
+6. **Probar la landing en un celular real** (Android de gama media, con datos móviles): carga, video, botón de play.
+7. **Crear el canal de YouTube** y subir el testimonio como primer video; después los tutoriales. La zona de
+   videos se construye cuando haya 2–3 (fachada + ampliar la CSP de `app.js`, ver arriba).
+8. Ideas sin decidir: versión vertical 9:16 del video para WhatsApp; comensales opinando (guion original).
+
+**Producto / negocio**
+9. **P1 — Gating Básico/Pro/Premium en código** (plan y precio como campos independientes). Es lo que desbloquea
+   volver a mostrar precios (junto con ≥5 clientes pagando y la revisión de competencia).
+10. Sigue abierto **ISS-089** (juntar cuenta por mesa) y verificar **ISS-095** ("para llevar" en Agregar manual)
+    en uso real con Karina.
+11. Confirmar por escrito (WhatsApp) el acuerdo con Karina Menú, que fue verbal.
+
+**Recordatorio de flujo:** el mockup del artifact (`landing/landing-concepto.html`, artifact `bb16c4fd-…`) es la
+fuente; `public/landing.html` se genera con `node scripts/build-landing.js` — ver memoria `landing-flujo-mockup-a-produccion`.
+
+---
+
 ## 🚚 Desplegado el 2026-09-13 (`b5e471b`) — rediseño de la Cola + mesas
 
 **Desplegado el 2026-09-13** (`fdc9877..b5e471b`), sin verificar todavía en uso real: ISS-090
