@@ -64,8 +64,8 @@ Decisiones tomadas con el usuario en esta sesión:
   (3) confirmar con el usuario las 3 frases dudosas de los subtítulos (ver `status.md`); (4) crear el
   canal de YouTube; (5) para la fachada de YouTube habrá que ampliar la CSP de `app.js`
   (`frame-src https://www.youtube-nocookie.com` e `img-src https://i.ytimg.com`, hoy el servidor solo
-  permite recursos propios, Google Fonts y unos CDN); (6) opcional: enlace a `/terminos.html` en el pie
-  (la landing anterior no lo tenía).
+  permite recursos propios, Google Fonts y unos CDN); (6) ✅ enlace a `/terminos.html` en el pie
+  (agregado 2026-09-21, la landing anterior no lo tenía).
 
 **Tarea inmediata acordada con el usuario (2026-09-08):** continuar el diseño de la landing
 premium **primero en el artifact**, antes de tocar `public/landing.html`.

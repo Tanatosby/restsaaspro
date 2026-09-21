@@ -663,8 +663,9 @@ eso y de forma confidencial; (2) tratamiento de los datos personales de los clie
 - Texto completo en `public/terminos.html` (8 secciones). Columna "T&C" en el panel admin con la
   fecha/versión de aceptación por restaurante.
 - Tests: `tests/terminos-aceptacion.test.js` (9 casos). **478/478 jest verde.**
-- Pendiente: revisión legal formal del texto (borrador) y el copy pasivo en la landing (entrada
-  anterior, sin implementar).
+- **2026-09-21:** el usuario dio por bueno el texto vigente desde el 28-08-2026 y se enlazó como
+  "Términos" en el pie de la landing nueva; el copy pasivo sobre IA también quedó en ese pie. (No consta
+  una revisión legal formal por un abogado — si se hace, anotarla acá.)
 
 ### Módulo Pensionistas — lo que falta tras las Fases 1 y 2
 *Anotado 2026-07-15, decisiones cerradas el 2026-08-10. **El núcleo ya está implementado** — ver

@@ -186,6 +186,8 @@ de consola y 0 bloqueos CSP en Chromium; sin scroll lateral a 360/390/1280; prec
 — archivos: `public/landing.html`, `public/sw.js`, `scripts/build-landing.js`, `public/landing/media/`,
 `public/landing/og-menupro.jpg`, `landing/landing-concepto.html`, `.gitignore` y los `.md`.
 **Deploy: pendiente y lo hace el usuario** (al commitear, preguntar si ya está desplegado).
+Commit `a959d94` (landing) + commit siguiente con el enlace **Términos** en el pie (el usuario confirmó
+que `terminos.html` del 28-08 está bien). Pusheados a `main`; **falta que el usuario confirme el deploy**.
 
 **Pendiente (el usuario ya vio el borrador y dijo "está bien"):** confirmar el texto dudoso —
 "me ahorró el tiempo" (R9), "definitivamente" en R4 (Whisper lo oye ahí, el usuario lo dictó en R10),
