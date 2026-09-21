@@ -31,7 +31,7 @@ Pendientes, en el orden que propongo:
    (`/api/public/menu?restaurante=1` → `[]`).
 5. **Confirmar 3 frases dudosas de los subtítulos del video** ("me ahorró el tiempo", "definitivamente" en R4,
    "preparo y llevo el plato a la mesa") y decidir si se agrega la frase que quedó fuera ("…toda la toma de pedidos…").
-   Si cambia algo: editar el texto en `Documentsudiosideo_landing\editar_video.py`, re-renderizar (~3 min),
+   Si cambia algo: editar el texto en `Documents\audios\video_landing\editar_video.py`, re-renderizar (~3 min),
    copiar el MP4/VTT a `landing/media/`, `node scripts/build-landing.js`, commit.
 6. **Probar la landing en un celular real** (Android de gama media, con datos móviles): carga, video, botón de play.
 7. **Crear el canal de YouTube** y subir el testimonio como primer video; después los tutoriales. La zona de
