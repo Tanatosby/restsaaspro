@@ -32,3 +32,6 @@ Thumbs.db
 # Screenshots de salida de los tests E2E
 scripts/_pwa-test-shots/
 scripts/_*-shots/
+
+# Video testimonial de la landing (11 MB, no va al repo; origen en Documentsudiosideo_landing)
+landing/media/

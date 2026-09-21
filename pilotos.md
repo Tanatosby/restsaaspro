@@ -1037,6 +1037,21 @@ paga, tal como estaba previsto ("se cierra con el primer cliente que pague").
 4. ISS-089 (juntar cuenta por mesa) sigue abierto — no bloqueó el cierre, pero conviene resolverlo
    pronto ahora que es un cliente pagante, no un piloto gratuito.
 
+### Testimonio en video de Karina (recibido 2026-09-21)
+
+Karina grabó su testimonio para la landing (81 s, a cámara en su local; el archivo llegó por WhatsApp el 2026-09-21, la fecha exacta de grabación no está registrada). Lo que dice, según la
+transcripción corregida por Pedro — sirve como evidencia de valor real, en sus palabras:
+
+- **Antes:** el horario de almuerzo es muy concurrido, los chicos "vienen de golpe"; ir de mesa en mesa
+  tomando pedidos "me quitaba tiempo", "no había mucha rapidez de atención".
+- **Ahora:** "con Menú Pro todo se me arregló", "hace el trabajo prácticamente de una persona",
+  "me ordena los pedidos en orden de llegada", llegan directo a cocina y ella solo prepara y lleva
+  el plato; "Menú Pro me arregló la vida", "ya no tengo necesidad de más personal".
+- Cierra con "me ha facilitado un montón". **Argumento comercial fuerte:** ahorro de una persona de
+  personal, no solo de tiempo.
+- Dato de contexto: ya era cliente pagante (S/250/mes desde el 2026-09-16). Edición del video: ver
+  `status.md` (sesión 2026-09-21).
+
 ---
 
 ## Plantilla para el próximo piloto

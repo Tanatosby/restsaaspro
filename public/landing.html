@@ -1,786 +1,1827 @@
 <!DOCTYPE html>
+<!-- ARCHIVO GENERADO — no editar a mano. Fuente: landing/landing-concepto.html
+     Regenerar con: node scripts/build-landing.js -->
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menupro — Sistema de pedidos para tu restaurante</title>
   <meta name="description" content="Menupro es un sistema de pedidos, reservas y cocina para restaurantes que venden menú. El cliente escanea un QR, pide desde su celular, y tú gestionas todo desde el tuyo.">
-  <meta name="theme-color" content="#1a1612">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            // Paleta terracota — coherente con el owner panel (#c8692a)
-            brand: { light: '#fdf0e8', DEFAULT: '#c8692a', dark: '#a0521e' },
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          },
-        }
-      }
-    }
-  </script>
+  <meta name="theme-color" content="#F7F6F1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#15120D" media="(prefers-color-scheme: dark)">
+  <link rel="canonical" href="https://menupro.tech/">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <!-- Al compartir el link por WhatsApp / redes -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_PE">
+  <meta property="og:site_name" content="Menupro">
+  <meta property="og:url" content="https://menupro.tech/">
+  <meta property="og:title" content="Menupro — Sistema de pedidos para tu restaurante">
+  <meta property="og:description" content="Menupro es un sistema de pedidos, reservas y cocina para restaurantes que venden menú. El cliente escanea un QR, pide desde su celular, y tú gestionas todo desde el tuyo.">
+  <meta property="og:image" content="https://menupro.tech/landing/og-menupro.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
   <style>
-    :root {
-      --brand: #c8692a;
-      --brand-dark: #a0521e;
-      --brand-glow: rgba(200, 105, 42, 0.28);
-    }
+  :root { color-scheme: light; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; } }
+  [hidden]:not([hidden=until-found i]) { display: none !important; }
+  img { max-width: 100%; }
 
-    html { scroll-behavior: smooth; }
+  /* ============ TOKENS ============ */
+  :root {
+    --ground:    #F7F6F1;   /* papel cálido, no crema beige */
+    --panel:     #FDFCFA;   /* zona del producto, un punto más clara */
+    --ink:       #221E18;   /* casi negro cálido */
+    --muted:     #6C6860;   /* gris cálido para texto secundario */
+    --hairline:  #E4E0D6;
+    --accent:    #AC4C1B;   /* terracota Menú Pro, oscurecido para contraste */
+    --accent-br: #C8692A;   /* terracota de marca, para superficies grandes */
+    --green:     #2E7D4F;   /* verde Menú Pro, uso mínimo (el punto) */
+    --device-bg: #FFFFFF;
+    --device-ln: #ECE8DF;
+    --shadow:    38px 44px 90px -46px rgba(46,34,20,.34), 0 3px 10px rgba(46,34,20,.05);
+    --focus:     var(--accent);
+    --on-accent: #FFFFFF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #15120D;
+      --panel:     #1C1913;
+      --ink:       #F1EDE3;
+      --muted:     #A09A8C;
+      --hairline:  #2C271F;
+      --accent:    #EA8250;
+      --accent-br: #EA8250;
+      --green:     #5CAF7D;
+      --device-bg: #211D15;
+      --device-ln: #322C22;
+      --shadow:    38px 44px 100px -46px rgba(0,0,0,.66), 0 3px 10px rgba(0,0,0,.34);
+      --focus:     var(--accent);
+    --on-accent: #15120D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:    #15120D;
+    --panel:     #1C1913;
+    --ink:       #F1EDE3;
+    --muted:     #A09A8C;
+    --hairline:  #2C271F;
+    --accent:    #EA8250;
+    --accent-br: #EA8250;
+    --green:     #5CAF7D;
+    --device-bg: #211D15;
+    --device-ln: #322C22;
+    --shadow:    38px 44px 100px -46px rgba(0,0,0,.66), 0 3px 10px rgba(0,0,0,.34);
+    --focus:     var(--accent);
+    --on-accent: #15120D;
+  }
 
-    /* Compensa el header sticky de 2 filas (logo + chips) al saltar por ancla */
-    section[id] { scroll-margin-top: 7.5rem; }
+  /* ============ BASE ============ */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
-    /* Barra de chips: scroll horizontal en móvil sin scrollbar visible */
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
+  body {
+    margin: 0;
+    overflow-x: hidden;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
 
-    /* ── Phone frame ───────────────────────────── */
-    .phone-frame {
-      border-radius: 26px;
-      box-shadow: 0 0 0 3px #3a342e, 0 24px 70px rgba(0,0,0,0.55);
-      overflow: hidden;
-      display: block;
-      max-width: 260px;
-    }
-    .phone-frame img { display: block; width: 100%; height: auto; }
+  .wrap {
+    width: 100%;
+    max-width: 1120px;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 5vw, 3.5rem);
+  }
 
-    /* Hero phone: flotante con leve rotación + glow del producto */
-    .hero-phone {
-      position: relative;
-      transform: rotate(-3deg);
-      animation: float 6s ease-in-out infinite;
-    }
-    .hero-phone::before {
-      content: "";
-      position: absolute;
-      inset: -28px;
-      border-radius: 50%;
-      background: var(--brand-glow);
-      filter: blur(80px);
-      z-index: -1;
-    }
-    @keyframes float {
-      0%, 100% { transform: rotate(-3deg) translateY(0); }
-      50%      { transform: rotate(-3deg) translateY(-14px); }
-    }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
 
-    /* ── Gradient mesh del hero ────────────────── */
-    .gradient-mesh {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .gradient-mesh::before,
-    .gradient-mesh::after {
-      content: "";
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(90px);
-      mix-blend-mode: screen;
-      opacity: 0.55;
-    }
-    .gradient-mesh::before {
-      width: 480px; height: 480px;
-      top: -120px; left: -80px;
-      background: radial-gradient(circle, #c8692a 0%, transparent 70%);
-    }
-    .gradient-mesh::after {
-      width: 420px; height: 420px;
-      bottom: -140px; right: -60px;
-      background: radial-gradient(circle, #7c5cff 0%, transparent 70%);
-    }
-    .gradient-mesh .blob-3 {
-      content: "";
-      position: absolute;
-      width: 360px; height: 360px;
-      top: 40%; left: 45%;
-      border-radius: 50%;
-      filter: blur(100px);
-      mix-blend-mode: screen;
-      opacity: 0.4;
-      background: radial-gradient(circle, #2563eb 0%, transparent 70%);
-    }
+  /* ============ META BAR ============ */
+  .meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 1.4rem;
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .72rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .meta b { color: var(--ink); font-weight: 500; }
 
-    /* ── Animaciones on-scroll ─────────────────── */
-    .reveal {
+  /* ============ HERO ============ */
+  .hero {
+    position: relative;
+    isolation: isolate;
+    min-height: 82svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: clamp(1.1rem, 3vw, 1.9rem);
+    padding-block: clamp(2.5rem, 9vh, 6rem);
+  }
+  /* PRUEBA: fondo del título — dos opciones, se alternan en la clase del
+     <section class="hero ...">:
+       · hero-bg-a = aurora suave de color de marca  (OPCIÓN A — la guardada)
+       · hero-bg-b = mancha luminosa abajo-derecha del texto */
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: -60px;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* ---- OPCIÓN A: aurora ---- */
+  .hero-bg-a::before {
+    background:
+      radial-gradient(38% 34% at 26% 30%, color-mix(in srgb, var(--accent-br) 32%, transparent), transparent 60%),
+      radial-gradient(42% 38% at 78% 34%, color-mix(in srgb, var(--green)     26%, transparent), transparent 62%),
+      radial-gradient(46% 40% at 52% 80%, color-mix(in srgb, var(--accent)     22%, transparent), transparent 64%);
+    filter: blur(60px) saturate(112%);
+    opacity: .5;
+    -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 92%);
+            mask-image: linear-gradient(to bottom, #000 52%, transparent 92%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-bg-a::before { animation: heroAurora 19s ease-in-out infinite alternate; }
+    @keyframes heroAurora {
+      from { transform: translate3d(-5%, -3%, 0) scale(1); }
+      to   { transform: translate3d(6%, 4%, 0)  scale(1.16); }
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .hero-bg-a::before { opacity: .4; }
+  }
+  :root[data-theme="dark"] .hero-bg-a::before { opacity: .4; }
+
+  /* ---- OPCIÓN B: mancha luminosa justo debajo del texto, ligeramente a la
+         derecha del centro, con el grueso de la luz tirando a la izquierda ---- */
+  .hero-bg-b::before {
+    background:
+      /* hotspot cálido, centrado tras el texto */
+      radial-gradient(30% 34% at 50% 52%, color-mix(in srgb, var(--accent-br) 68%, #fff), transparent 62%),
+      /* halo terracota */
+      radial-gradient(62% 62% at 50% 56%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 74%);
+    filter: blur(50px) saturate(120%);
+    opacity: .5;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-bg-b::before { animation: heroGlow 14s ease-in-out infinite alternate; }
+    @keyframes heroGlow {
+      from { transform: translate3d(0, 0, 0)     scale(1);    opacity: .46; }
+      to   { transform: translate3d(-2%, -2%, 0) scale(1.12); opacity: .66; }
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .hero-bg-b::before { opacity: .5; mix-blend-mode: screen; }
+  }
+  :root[data-theme="dark"] .hero-bg-b::before { opacity: .5; mix-blend-mode: screen; }
+
+  /* ============ HERO · ESCENA DEL RESTAURANTE (PRUEBA) ============
+     Se activa con la clase hero--scene en el <section class="hero ...">.
+     Sin esa clase el hero queda EXACTAMENTE igual que hoy (escena oculta). */
+  .hero-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(1.1rem, 3vw, 1.9rem);
+  }
+  .hero-scene { display: none; }
+  .hero--scene .hero-scene {
+    display: block;
+    width: min(300px, 74vw);
+    flex: none;
+  }
+  .hero--scene .hero-scene svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+  /* pantalla ancha: texto a la izquierda, restaurante a la derecha */
+  @media (min-width: 761px) {
+    .hero--scene {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(1.5rem, 5vw, 4.5rem);
+    }
+    .hero--scene .hero-text { align-items: flex-start; text-align: left; }
+    .hero--scene .wordmark { font-size: clamp(2rem, 5.4vw, 3.7rem); }
+    .hero--scene .tagline {
+      align-self: flex-start;
+      justify-content: flex-start;
+      text-align: left;
+      max-width: 26ch;
+    }
+    .hero--scene .hero-scene { width: clamp(240px, 30vw, 360px); }
+  }
+
+  /* piezas de la ilustración */
+  .sc-wall    { fill: var(--device-bg); stroke: var(--hairline); stroke-width: 2; }
+  .sc-trim    { fill: var(--accent-br); }
+  .sc-awning  { fill: var(--accent-br); }
+  .sc-stripe  { fill: color-mix(in srgb, #fff 82%, var(--accent-br)); }
+  .sc-glass   { fill: color-mix(in srgb, var(--accent) 16%, transparent); stroke: var(--hairline); stroke-width: 2; }
+  .sc-mullion { stroke: var(--hairline); stroke-width: 2; stroke-linecap: round; }
+  .sc-door    { fill: color-mix(in srgb, var(--ink) 78%, var(--accent-br)); }
+  .sc-knob    { fill: var(--accent-br); }
+  .sc-board   { fill: var(--ink); }
+  .sc-board-t { fill: var(--ground); font: 700 11px "Manrope", sans-serif; }
+  .sc-board-t2{ fill: color-mix(in srgb, var(--ground) 72%, transparent); font: 700 8px "Manrope", sans-serif; }
+  .sc-leaf    { fill: var(--green); }
+  .sc-pot     { fill: var(--accent-br); }
+  .sc-lit     { fill: var(--accent-br); opacity: .16; }
+  .sc-steam   { fill: none; stroke: var(--muted); stroke-width: 3; stroke-linecap: round; opacity: .45; }
+  .sc-shadow  { fill: color-mix(in srgb, var(--ink) 12%, transparent); }
+  .sc-head    { fill: var(--ink); }
+  .sc-body-a  { fill: var(--accent); }
+  .sc-body-b  { fill: var(--green); }
+  .sc-table-top { fill: var(--device-bg); stroke: var(--hairline); stroke-width: 2; }
+  .sc-plate   { fill: color-mix(in srgb, #fff 88%, var(--accent-br)); }
+  /* mesera: contorno claro para que se despegue de la puerta oscura */
+  .sc-head-w  { fill: var(--ink); stroke: var(--device-bg); stroke-width: 2.5; }
+  .sc-body-w  { fill: var(--green); stroke: var(--device-bg); stroke-width: 2.5; }
+  .sc-apron   { fill: var(--device-bg); stroke: var(--hairline); stroke-width: 1.5; }
+  .sc-arm     { fill: none; stroke: var(--green); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+  .sc-food    { fill: var(--accent-br); }
+  .sc-vap     { fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; opacity: .45; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* la escena aparece deslizándose desde la derecha al cargar */
+    .hero--scene .sc-all {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: sceneIn .9s cubic-bezier(.2,.7,.2,1) both;
+    }
+    @keyframes sceneIn {
+      from { opacity: 0; transform: translateX(48px) scale(.95); }
+      to   { opacity: 1; transform: translateX(0)    scale(1);   }
+    }
+    /* el toldo se despliega */
+    .hero--scene .sc-awning-g {
+      transform-box: fill-box;
+      transform-origin: top center;
+      animation: awningDrop .55s .5s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes awningDrop { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    /* la planta se balancea */
+    .hero--scene .sc-plant {
+      transform-box: fill-box;
+      transform-origin: bottom center;
+      animation: plantSway 4.6s ease-in-out infinite alternate;
+    }
+    @keyframes plantSway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+    /* luz cálida de las ventanas, latido lento */
+    .hero--scene .sc-lit { animation: litPulse 4s ease-in-out infinite alternate; }
+    @keyframes litPulse { from { opacity: .1; } to { opacity: .3; } }
+    /* vapor de la chimenea */
+    .hero--scene .sc-steam { animation: steamRise 3s ease-in-out infinite; }
+    .hero--scene .sc-steam.s2 { animation-delay: 1.5s; }
+    @keyframes steamRise {
+      0%   { opacity: 0; transform: translateY(6px); }
+      35%  { opacity: .45; }
+      100% { opacity: 0; transform: translateY(-16px); }
+    }
+    /* la mesera camina: pequeño rebote, y sube el vapor del plato */
+    .hero--scene .sc-waitress { animation: waitStep .7s ease-in-out infinite alternate; }
+    @keyframes waitStep { from { transform: translateY(0); } to { transform: translateY(-2.5px); } }
+    .hero--scene .sc-vap { animation: steamRise 2.4s ease-in-out infinite; }
+    .hero--scene .sc-vap.v2 { animation-delay: 1.2s; }
+    /* toda la escena flota apenas */
+    .hero--scene .sc-float { animation: scFloat 5s ease-in-out infinite alternate; }
+    @keyframes scFloat { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+  }
+
+  .wordmark {
+    font-family: "Manrope", "IBM Plex Sans", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 8vw, 5.5rem);
+    line-height: .95;
+    letter-spacing: -.03em;
+    color: var(--ink);
+    margin: 0;
+    white-space: nowrap;
+  }
+  .wordmark .dot { color: var(--green); }
+  .wordmark .tld { color: var(--accent); }
+
+  /* aparición de MENUPRO.TECH al cargar */
+  @media (prefers-reduced-motion: no-preference) {
+    .wordmark.in { animation: wordmarkIn 1s cubic-bezier(.2,.7,.2,1) both; }
+    @keyframes wordmarkIn {
+      from { opacity: 0; filter: blur(14px); letter-spacing: .1em; }
+      to   { opacity: 1; filter: blur(0);    letter-spacing: -.03em; }
+    }
+    .wordmark .ch { display: inline-block; }
+
+    @keyframes blurSweep {
+      0%   { filter: blur(0);   }
+      50%  { filter: blur(5px); }
+      100% { filter: blur(0);   }
+    }
+    /* onda de desenfoque que cruza el título de izquierda a derecha.
+       en automático cada ~10 s — clave en móvil, que no tiene hover */
+    .wordmark.sweep .ch {
+      animation: blurSweep .55s ease both;
+      animation-delay: calc(var(--i, 0) * 0.04s);
+    }
+    /* además, al pasar el mouse en web */
+    @media (hover: hover) {
+      .wordmark:hover .ch {
+        animation: blurSweep .55s ease both;
+        animation-delay: calc(var(--i, 0) * 0.04s);
+      }
+    }
+  }
+
+  .tagline {
+    font-size: clamp(1rem, 3.3vw, 1.9rem);
+    line-height: 1.3;
+    font-weight: 400;
+    color: var(--muted);
+    margin: 0;
+    align-self: center;
+    text-align: center;
+    text-wrap: balance;
+    max-width: 34ch;
+    min-height: 3.9em;          /* reserva ~3 líneas: el layout no salta al cambiar de frase */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tagline .t-txt {
+      display: inline-block;
+      transition: opacity .38s ease, filter .38s ease, transform .38s ease;
+    }
+    .tagline.swapping .t-txt {
       opacity: 0;
-      transform: translateY(24px);
-      transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1);
+      filter: blur(6px);
+      transform: translateY(6px);
     }
-    .reveal.in-view { opacity: 1; transform: translateY(0); }
-    /* Stagger para tarjetas hijas */
-    .reveal.in-view .stagger { animation: rise .6s cubic-bezier(.16,1,.3,1) backwards; }
-    .stagger { --i: 0; }
-    .reveal.in-view .stagger { animation-delay: calc(var(--i) * .08s); }
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(18px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+  }
 
-    /* ── Nav glassmorphism + shrink ────────────── */
-    #nav {
-      background: rgba(17, 24, 39, 0.7);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(55, 65, 81, 0.6);
-      transition: padding .3s ease, background .3s ease, border-color .3s ease;
-    }
-    #nav.nav-shrunk {
-      background: rgba(17, 24, 39, 0.92);
-      border-bottom-color: rgba(55, 65, 81, 0.25);
-    }
-    #nav.nav-shrunk .nav-inner { height: 3rem; }
+  /* ============ SHOWCASE ============ */
+  .showcase {
+    background: var(--panel);
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    padding-block: clamp(3.5rem, 11vh, 8rem);
+  }
+  .showcase-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(2.5rem, 7vw, 4.5rem);
+  }
 
-    /* ── Cards con hover/active lift ───────────── */
-    .card-lift {
-      transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s ease, border-color .25s ease;
-    }
-    .card-lift:hover, .card-lift:active {
-      transform: translateY(-3px);
-      box-shadow: 0 14px 36px rgba(0,0,0,0.12);
-    }
+  .devices {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: clamp(1rem, 4vw, 3rem);
+    width: 100%;
+  }
 
-    /* ── FAQ con <details> ─────────────────────── */
-    .faq-item summary { list-style: none; cursor: pointer; }
-    .faq-item summary::-webkit-details-marker { display: none; }
-    .faq-chevron { transition: transform .3s ease; }
-    .faq-item[open] .faq-chevron { transform: rotate(180deg); }
-    .faq-body { animation: faqOpen .3s cubic-bezier(.16,1,.3,1); }
-    @keyframes faqOpen {
-      from { opacity: 0; transform: translateY(-6px); }
-      to   { opacity: 1; transform: translateY(0); }
+  html.js .devices .dev { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .devices .dev {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1);
     }
+    html.js .devices.is-visible .dev { opacity: 1; transform: none; }
+    html.js .devices.is-visible .dev:nth-child(2) { transition-delay: .08s; }
+  }
 
-    /* ── prefers-reduced-motion ────────────────── */
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-      .hero-phone { animation: none; }
-      .reveal { opacity: 1; transform: none; transition: none; }
-      .reveal.in-view .stagger { animation: none; }
-      .faq-body { animation: none; }
-      .card-lift { transition: none; }
+  /* -- browser -- */
+  .browser {
+    width: min(560px, 100%);
+    border: 1px solid var(--device-ln);
+    border-radius: 16px;
+    background: var(--device-bg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .b-bar {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .7rem .9rem;
+    border-bottom: 1px solid var(--device-ln);
+  }
+  .b-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--hairline); }
+  .b-url {
+    margin-left: .6rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem;
+    color: var(--muted);
+  }
+  .b-body { padding: clamp(1rem, 3.5vw, 1.6rem); }
+  .b-title {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 1rem;
+  }
+  .b-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
+  .b-col { display: flex; flex-direction: column; gap: .5rem; }
+  .b-col-h {
+    font-size: .68rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .b-col-h b { color: var(--ink); font-weight: 600; }
+  .b-chip {
+    font-size: .78rem;
+    padding: .42rem .55rem;
+    border-radius: 8px;
+    background: var(--ground);
+    border: 1px solid var(--device-ln);
+    color: var(--ink);
+  }
+  .b-chip--ok {
+    color: var(--green);
+    border-color: color-mix(in srgb, var(--green) 35%, transparent);
+    background: color-mix(in srgb, var(--green) 10%, var(--ground));
+  }
+
+  /* -- phone -- */
+  .phone {
+    width: min(228px, 58%);
+    border: 1px solid var(--device-ln);
+    border-radius: 26px;
+    background: var(--device-bg);
+    box-shadow: var(--shadow);
+    padding: .5rem;
+  }
+  .phone-screen {
+    border: 1px solid var(--device-ln);
+    border-radius: 20px;
+    padding: 1.05rem .95rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+  }
+  .m-rest {
+    display: block;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  .m-day {
+    display: block;
+    font-size: .72rem;
+    color: var(--muted);
+    margin-top: .15rem;
+  }
+  .m-price {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: 1.7rem;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .m-price span {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 400;
+    font-size: .7rem;
+    color: var(--muted);
+    margin-left: .35rem;
+  }
+  .m-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+  .m-list li {
+    font-size: .8rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--device-ln);
+  }
+  .m-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .m-list em { color: var(--muted); font-style: normal; }
+  .m-tag {
+    display: inline-block;
+    min-width: 4.4rem;
+    font-size: .64rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .m-cta {
+    margin-top: .25rem;
+    border: 0;
+    border-radius: 11px;
+    background: var(--accent-br);
+    color: #fff;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: .92rem;
+    padding: .7rem 1rem;
+    cursor: pointer;
+  }
+
+  /* ============ ABOUT ============ */
+  .about {
+    padding-block: clamp(3.5rem, 12vh, 7rem);
+  }
+  .about-inner {
+    max-width: 860px;
+    margin-inline: auto;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1rem, 3vw, 1.6rem);
+  }
+  .about-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    margin: 0;
+  }
+  .about-h .tld { color: var(--accent); }
+  .about-p {
+    font-size: clamp(1.2rem, 4.6vw, 1.45rem);
+    line-height: 1.55;
+    color: var(--muted);
+    margin: 0;
+    text-align: justify;
+    text-justify: inter-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+  .about-p:last-child { text-align-last: left; }
+
+  /* ============ FLOW ============ */
+  .flow {
+    background: var(--panel);
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    padding-block: clamp(3.5rem, 12vh, 7rem);
+  }
+  .flow-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    text-align: center;
+    margin: 0;
+  }
+  .flow-sub {
+    text-align: center;
+    color: var(--muted);
+    margin: .6rem auto 0;
+    max-width: 30ch;
+    font-size: clamp(.95rem, 2.5vw, 1.1rem);
+  }
+
+  .flow-steps {
+    list-style: none;
+    margin: clamp(2.5rem, 7vw, 4rem) auto 0;
+    padding: 0;
+    max-width: 560px;
+    position: relative;
+  }
+  /* la línea vertical: el "flujo" que une los pasos */
+  .flow-steps::before {
+    content: "";
+    position: absolute;
+    left: 27px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: var(--hairline);
+  }
+
+  .step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    column-gap: 1rem;
+    row-gap: .15rem;
+    padding-bottom: clamp(1.7rem, 5.5vw, 2.6rem);
+  }
+  .step:last-child { padding-bottom: 0; }
+
+  .step-ico {
+    grid-row: 1 / span 3;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--device-bg);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  .step-ico svg { width: 25px; height: 25px; display: block; }
+  .step--ok .step-ico { border-color: var(--green); color: var(--green); }
+
+  /* chevron de dirección sobre la línea, entre paso y paso */
+  .step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 28px;
+    bottom: calc(clamp(1.7rem, 5.5vw, 2.6rem) / 2 - 3px);
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid var(--muted);
+    border-bottom: 2px solid var(--muted);
+    transform: translate(-50%, 50%) rotate(45deg);
+  }
+
+  .step-n {
+    align-self: end;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    letter-spacing: .12em;
+    color: var(--muted);
+  }
+  .step-t {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1rem, 3vw, 1.18rem);
+    letter-spacing: -.01em;
+    text-transform: uppercase;
+  }
+  .step-d {
+    align-self: start;
+    color: var(--muted);
+    font-size: clamp(.9rem, 2.4vw, 1rem);
+    line-height: 1.5;
+  }
+
+  /* ============ SHIFT (del cuaderno a la app) ============ */
+  .shift {
+    padding-block: clamp(3.5rem, 12vh, 7rem);
+  }
+  .shift-inner {
+    max-width: 900px;
+  }
+  .shift-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    text-align: center;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .shift-sub {
+    text-align: center;
+    color: var(--muted);
+    margin: .6rem auto 0;
+    max-width: 42ch;
+    font-size: clamp(.95rem, 2.5vw, 1.1rem);
+  }
+  .shift-rows {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.5rem, 4vw, 2rem);
+    margin-top: clamp(2.5rem, 7vw, 3.5rem);
+  }
+  .shift-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    align-items: stretch;
+    gap: clamp(.7rem, 2.5vw, 1.3rem);
+  }
+  .shift-before, .shift-after {
+    display: flex;
+    gap: .8rem;
+    align-items: flex-start;
+    padding: 1.1rem 1.2rem;
+    border-radius: 14px;
+  }
+  .shift-before {
+    background: transparent;
+    border: 1px dashed var(--hairline);
+  }
+  .shift-after {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+  }
+  .shift-ico { flex: none; width: 22px; height: 22px; margin-top: .1rem; }
+  .shift-before .shift-ico { color: var(--muted); }
+  .shift-after .shift-ico { color: var(--green); }
+  .shift-tag {
+    display: block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .64rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: .3rem;
+  }
+  .shift-before .shift-tag { color: var(--muted); }
+  .shift-after .shift-tag { color: var(--green); }
+  .shift-txt { font-size: .92rem; line-height: 1.45; margin: 0; color: var(--ink); }
+  .shift-before .shift-txt { color: var(--muted); }
+  .shift-arrow {
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+  }
+  .shift-arrow svg { width: 20px; height: 20px; }
+
+  /* ============ PRUEBA (video testimonial de Karina) ============
+     Zona 2: va justo después del hero, sobre el mismo fondo. La sección de
+     problemas (SHIFT) que le sigue pierde su padding de arriba para no sumar
+     dos espacios seguidos. */
+  .proof {
+    padding-block: clamp(.5rem, 3vh, 2rem) clamp(3.5rem, 12vh, 7rem);
+  }
+  .proof + .shift { padding-top: 0; }
+  .proof-inner { max-width: 900px; }
+  .proof-eyebrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    margin: 0 0 .9rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .74rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .proof-eyebrow::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .proof-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    text-align: center;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .proof-sub {
+    text-align: center;
+    color: var(--muted);
+    margin: .6rem auto 0;
+    max-width: 42ch;
+    font-size: clamp(.95rem, 2.5vw, 1.1rem);
+  }
+  .proof-media {
+    position: relative;
+    margin-top: clamp(2rem, 6vw, 3rem);
+    aspect-ratio: 16 / 9;
+    max-width: 100%;
+    border: 1px solid var(--device-ln);
+    border-radius: 16px;
+    background: #141210;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .proof-media video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .proof-play {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 76px;
+    height: 76px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent-br);
+    color: var(--ground);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 12px 32px -10px rgba(0, 0, 0, .55);
+  }
+  .proof-play svg { width: 30px; height: 30px; margin-left: 4px; display: block; }
+  @media (prefers-reduced-motion: no-preference) {
+    .proof-play { transition: transform .2s ease; }
+    .proof-play:hover { transform: scale(1.06); }
+  }
+  .proof-quotes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.2rem, 4vw, 2.5rem);
+    margin-top: clamp(1.8rem, 5vw, 2.6rem);
+  }
+  .proof-quote {
+    margin: 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--hairline);
+  }
+  .proof-quote p {
+    margin: 0;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.1rem, 3.6vw, 1.35rem);
+    line-height: 1.3;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+  }
+  .proof-quote cite {
+    display: block;
+    margin-top: .65rem;
+    font-style: normal;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .74rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  @media (max-width: 760px) {
+    .proof-quotes { grid-template-columns: 1fr; }
+  }
+
+  /* ============ CABECERA FIJA (acciones) ============ */
+  .topbar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 50;
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .topbar-in {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    min-height: 64px;
+  }
+  .brand {
+    font-family: "Manrope", "IBM Plex Sans", sans-serif;
+    font-weight: 800;
+    font-size: clamp(.98rem, 4.2vw, 1.15rem);
+    letter-spacing: -.02em;
+    color: var(--ink);
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .brand:hover { text-decoration: none; }
+  .brand .dot { color: var(--green); }
+  .brand .tld { color: var(--accent); }
+  .top-actions { display: flex; align-items: center; gap: .25rem; }
+  .top-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: .8rem;
+    border-radius: 10px;
+    color: var(--ink);
+    font-size: .94rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .top-link:hover { text-decoration: none; background: var(--hairline); }
+  .top-link--demo { display: none; }
+  @media (min-width: 640px) { .top-link--demo { display: inline-flex; } }
+
+  /* botones (cabecera y cierre) */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    min-height: 48px;
+    padding-inline: 1.5rem;
+    border: 1.5px solid transparent;
+    border-radius: 999px;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+  }
+  .btn:hover { text-decoration: none; }
+  .btn svg { width: 19px; height: 19px; flex: none; }
+  .btn--primary { background: var(--accent); color: var(--on-accent); }
+  .btn--primary:hover { filter: brightness(1.08); }
+  .btn--ghost { border-color: var(--hairline); color: var(--ink); background: transparent; }
+  .btn--ghost:hover { background: var(--panel); border-color: var(--muted); }
+  .btn--sm { min-height: 44px; padding-inline: 1.05rem; font-size: .92rem; }
+  .btn { white-space: nowrap; }
+  /* pantallas de 360 px: la cabecera tiene que entrar completa en una línea */
+  @media (max-width: 420px) {
+    .topbar .wrap { padding-inline: 1rem; }
+    .top-link { padding-inline: .55rem; }
+    .btn--sm { padding-inline: .95rem; }
+    .btn--sm svg { display: none; }
+  }
+
+  /* ============ FUNCIONES ============ */
+  .features {
+    padding-block: clamp(3.5rem, 12vh, 7rem);
+  }
+  .feat-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    text-align: center;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .feat-sub {
+    text-align: center;
+    color: var(--muted);
+    margin: .6rem auto 0;
+    max-width: 42ch;
+    font-size: clamp(.95rem, 2.5vw, 1.1rem);
+  }
+  /* una sola pieza: las celdas se separan con un filete, no con 9 tarjetas sueltas */
+  .feat-grid {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    max-width: 760px;
+    margin: clamp(2.2rem, 6vw, 3.4rem) auto 0;
+    padding: 0;
+    background: var(--hairline);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  @media (min-width: 900px) {
+    .feat-grid { grid-template-columns: repeat(3, 1fr); max-width: none; }
+  }
+  .feat {
+    display: flex;
+    align-items: flex-start;
+    gap: .95rem;
+    padding: 1.3rem 1.25rem;
+    background: var(--panel);
+  }
+  .feat-ico {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+  }
+  .feat-ico svg { width: 22px; height: 22px; display: block; }
+  .feat-body { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+  .feat-t {
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    font-size: 1.02rem;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+  }
+  .feat-d { color: var(--muted); font-size: .92rem; line-height: 1.45; }
+
+  /* ============ CIERRE CON CTA ============ */
+  .closing {
+    background: var(--panel);
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    padding-block: clamp(3.5rem, 12vh, 6.5rem);
+  }
+  .closing-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.1rem;
+    max-width: 760px;
+  }
+  .closing-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .closing-p {
+    margin: 0;
+    max-width: 44ch;
+    color: var(--muted);
+    font-size: clamp(1rem, 2.8vw, 1.15rem);
+    text-wrap: balance;
+  }
+  .closing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .75rem;
+    margin-top: .6rem;
+  }
+  .closing-note { margin: .4rem 0 0; color: var(--muted); font-size: .86rem; }
+  @media (max-width: 480px) {
+    .closing-actions { flex-direction: column; align-items: stretch; width: 100%; }
+  }
+
+  /* ============ FOOT ============ */
+  .foot {
+    border-top: 1px solid var(--hairline);
+    padding-block: 2.2rem 2.6rem;
+  }
+  .foot-in {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+  }
+  .foot-mark {
+    font-family: "Manrope", "IBM Plex Sans", sans-serif;
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -.02em;
+    color: var(--ink);
+  }
+  .foot-mark .dot { color: var(--green); }
+  .foot-mark .tld { color: var(--accent); }
+  .foot-tag { margin: .15rem 0 0; color: var(--muted); font-size: .92rem; }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 0 .2rem; margin-inline: -.6rem; }
+  .foot-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: .7rem;
+    color: var(--muted);
+    font-size: .95rem;
+  }
+  .foot-links a:hover { color: var(--ink); text-decoration: none; }
+  .foot-legal {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: .4rem 1.4rem;
+    margin-top: 1.3rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--hairline);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .74rem;
+    letter-spacing: .03em;
+    color: var(--muted);
+  }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 760px) {
+    /* en celular la sección del título se acorta: si ocupa casi toda la
+       pantalla el wordmark se ve solitario (en web sí queda bien) */
+    .hero {
+      min-height: 38svh;
+      padding-block: clamp(1.5rem, 6vh, 2.5rem);
     }
-  </style>
+    /* con la escena activa, el hero necesita crecer para que entre la ilustración */
+    .hero--scene {
+      min-height: auto;
+      padding-block: clamp(2rem, 8vh, 3.5rem);
+      gap: 1.7rem;
+    }
+    .hero--scene .hero-scene { width: min(258px, 66vw); }
+    /* en celular la escena va estática, sin animación */
+    .hero--scene .sc-all,
+    .hero--scene .sc-awning-g,
+    .hero--scene .sc-plant,
+    .hero--scene .sc-lit,
+    .hero--scene .sc-waitress,
+    .hero--scene .sc-float { animation: none; }
+    .hero--scene .sc-steam,
+    .hero--scene .sc-vap { display: none; }
+    /* el fondo se pierde en un hero tan bajo: menos blur, más presencia */
+    .hero::before { inset: -30px; }
+    .hero { overflow-x: clip; }   /* el resplandor no debe ensanchar la página en celular */
+    .hero-bg-a::before {
+      filter: blur(32px) saturate(118%);
+      opacity: .7;
+      -webkit-mask-image: linear-gradient(to bottom, #000 64%, transparent 100%);
+              mask-image: linear-gradient(to bottom, #000 64%, transparent 100%);
+    }
+    .hero-bg-b::before {
+      filter: blur(34px) saturate(120%);
+      opacity: .54;
+    }
+    .devices {
+      flex-direction: column-reverse;   /* el celular queda arriba */
+      align-items: center;
+    }
+    .phone { width: min(240px, 66%); }
+    .browser { width: 100%; }
+
+    .shift-row { grid-template-columns: 1fr; }
+    .shift-arrow { transform: rotate(90deg); }
+
+  }
+</style>
 </head>
-<body class="font-sans bg-white text-gray-900 antialiased">
-
-  <!-- ═══════════════════════════════════════════
-       NAV
-  ═══════════════════════════════════════════ -->
-  <nav id="nav" class="sticky top-0 z-50">
-    <div class="nav-inner max-w-5xl mx-auto px-4 h-14 flex items-center justify-between transition-all">
-      <a href="/" class="text-white font-bold text-lg tracking-tight">
-        menu<span class="text-brand">pro</span>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="#" aria-label="Menupro.tech, inicio">MENUPRO<span class="dot">.</span><span class="tld">TECH</span></a>
+    <nav class="top-actions" aria-label="Acciones">
+      <a class="top-link top-link--demo" href="/menu?restaurante=1&amp;mesa=1" target="_blank" rel="noopener">Ver demo</a>
+      <a class="top-link" href="/login">Ingresar</a>
+      <a class="btn btn--primary btn--sm" href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante.%20%C2%BFPodemos%20coordinar%20una%20demo%3F" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.9 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5z"/></svg>
+        Probar gratis
       </a>
-      <div class="flex items-center gap-3">
-        <a href="/manuales"
-           class="text-gray-400 hover:text-white text-sm transition-colors hidden sm:block">
-          Manuales
-        </a>
-        <a href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante.%20%C2%BFPodemos%20coordinar%20una%20demo%3F"
-           target="_blank" rel="noopener"
-           class="bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors min-h-[44px] flex items-center">
-          Probar gratis
-        </a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <main>
+    <section class="hero hero-bg-b hero--scene">
+      <div class="hero-text">
+        <h1 class="wordmark">MENUPRO<span class="dot">.</span><span class="tld">TECH</span></h1>
+        <p class="tagline">Para restaurantes que venden menús</p>
       </div>
+
+      <div class="hero-scene" aria-hidden="true">
+        <svg viewBox="-10 0 340 320" role="img" aria-label="Ilustración de un restaurante">
+          <g class="sc-all">
+            <g class="sc-float">
+              <ellipse class="sc-shadow" cx="160" cy="254" rx="126" ry="9"/>
+              <ellipse class="sc-shadow" cx="160" cy="305" rx="156" ry="9"/>
+
+              <!-- techo + chimenea + vapor -->
+              <path class="sc-trim" d="M38 76 L160 42 L282 76 Z"/>
+              <rect class="sc-trim" x="222" y="44" width="15" height="24" rx="2"/>
+              <path class="sc-steam s1" d="M226 40 q8 -8 0 -16 q-8 -8 0 -16"/>
+              <path class="sc-steam s2" d="M235 42 q8 -8 0 -16 q-8 -8 0 -16"/>
+
+              <!-- pared -->
+              <rect class="sc-wall" x="46" y="86" width="228" height="164" rx="4"/>
+
+              <!-- luz de las ventanas -->
+              <ellipse class="sc-lit" cx="96" cy="170" rx="30" ry="28"/>
+              <ellipse class="sc-lit" cx="224" cy="170" rx="30" ry="28"/>
+              <ellipse class="sc-lit" cx="160" cy="176" rx="20" ry="24"/>
+
+              <!-- ventana izquierda -->
+              <rect class="sc-glass" x="66" y="142" width="60" height="56" rx="6"/>
+              <line class="sc-mullion" x1="96" y1="142" x2="96" y2="198"/>
+              <line class="sc-mullion" x1="66" y1="170" x2="126" y2="170"/>
+              <rect class="sc-trim" x="62" y="198" width="68" height="6" rx="2"/>
+
+              <!-- ventana derecha -->
+              <rect class="sc-glass" x="194" y="142" width="60" height="56" rx="6"/>
+              <line class="sc-mullion" x1="224" y1="142" x2="224" y2="198"/>
+              <line class="sc-mullion" x1="194" y1="170" x2="254" y2="170"/>
+              <rect class="sc-trim" x="190" y="198" width="68" height="6" rx="2"/>
+
+              <!-- puerta -->
+              <rect class="sc-door" x="138" y="150" width="44" height="100" rx="4"/>
+              <rect class="sc-glass" x="145" y="158" width="30" height="22" rx="3"/>
+              <circle class="sc-knob" cx="174" cy="205" r="3.4"/>
+              <rect class="sc-trim" x="126" y="248" width="68" height="6" rx="2"/>
+
+              <!-- cornisa -->
+              <rect class="sc-trim" x="40" y="76" width="240" height="14" rx="3"/>
+
+              <!-- toldo a rayas -->
+              <g class="sc-awning-g">
+                <rect class="sc-awning" x="44" y="88" width="232" height="30"/>
+                <rect class="sc-stripe" x="73"  y="88" width="29" height="30"/>
+                <rect class="sc-stripe" x="131" y="88" width="29" height="30"/>
+                <rect class="sc-stripe" x="189" y="88" width="29" height="30"/>
+                <circle class="sc-awning" cx="58.5"  cy="118" r="14.5"/>
+                <circle class="sc-stripe" cx="87.5"  cy="118" r="14.5"/>
+                <circle class="sc-awning" cx="116.5" cy="118" r="14.5"/>
+                <circle class="sc-stripe" cx="145.5" cy="118" r="14.5"/>
+                <circle class="sc-awning" cx="174.5" cy="118" r="14.5"/>
+                <circle class="sc-stripe" cx="203.5" cy="118" r="14.5"/>
+                <circle class="sc-awning" cx="232.5" cy="118" r="14.5"/>
+                <circle class="sc-stripe" cx="261.5" cy="118" r="14.5"/>
+              </g>
+
+              <!-- pizarra "MENÚ DEL DÍA" en la vereda -->
+              <g class="sc-easel">
+                <rect class="sc-board" x="-2" y="232" width="56" height="50" rx="3" transform="rotate(-6 26 257)"/>
+                <line class="sc-mullion" x1="10" y1="280" x2="2" y2="304"/>
+                <line class="sc-mullion" x1="42" y1="280" x2="50" y2="304"/>
+                <text class="sc-board-t"  x="26" y="253" text-anchor="middle" transform="rotate(-6 26 257)">MENÚ</text>
+                <text class="sc-board-t2" x="26" y="268" text-anchor="middle" transform="rotate(-6 26 257)">DEL DÍA</text>
+              </g>
+
+              <!-- mesitas de la vereda con gente comiendo (escala 2) -->
+              <g class="sc-patio">
+                <g transform="translate(-156 -204) scale(2)">
+                  <circle class="sc-head" cx="114" cy="222" r="5.5"/>
+                  <rect class="sc-body-a" x="107" y="228" width="14" height="20" rx="5"/>
+                  <circle class="sc-head" cx="138" cy="224" r="5.5"/>
+                  <rect class="sc-body-b" x="131" y="230" width="14" height="18" rx="5"/>
+                  <ellipse class="sc-table-top" cx="126" cy="240" rx="15" ry="4.5"/>
+                  <ellipse class="sc-plate" cx="126" cy="239" rx="5" ry="2"/>
+                  <rect class="sc-trim" x="124" y="240" width="4" height="12"/>
+                  <ellipse class="sc-shadow" cx="126" cy="252" rx="8" ry="2"/>
+                </g>
+                <g transform="translate(-186 -204) scale(2)">
+                  <circle class="sc-head" cx="210" cy="222" r="5.5"/>
+                  <rect class="sc-body-b" x="203" y="228" width="14" height="20" rx="5"/>
+                  <circle class="sc-head" cx="230" cy="225" r="5"/>
+                  <rect class="sc-body-a" x="224" y="231" width="13" height="17" rx="5"/>
+                  <ellipse class="sc-table-top" cx="219" cy="241" rx="14" ry="4.5"/>
+                  <ellipse class="sc-plate" cx="219" cy="240" rx="4.5" ry="1.8"/>
+                  <rect class="sc-trim" x="217" y="241" width="4" height="11"/>
+                  <ellipse class="sc-shadow" cx="219" cy="252" rx="7.5" ry="2"/>
+                </g>
+              </g>
+
+              <!-- mesera llevando un plato, de camino a una mesa -->
+              <g transform="translate(166 306) scale(1.12) translate(-166 -306)"><g class="sc-waitress">
+                <ellipse class="sc-shadow" cx="166" cy="306" rx="16" ry="3.2"/>
+                <rect class="sc-head" x="158" y="286" width="7" height="20" rx="3.5" transform="rotate(-9 161.5 286)"/>
+                <rect class="sc-head" x="168" y="286" width="7" height="20" rx="3.5" transform="rotate(9 171.5 286)"/>
+                <path class="sc-arm" d="M158 264 Q149 273 151 283"/>
+                <rect class="sc-body-w" x="153" y="258" width="26" height="36" rx="11"/>
+                <rect class="sc-apron" x="158" y="274" width="16" height="20" rx="4"/>
+                <ellipse class="sc-head" cx="177" cy="244" rx="3.6" ry="6.5" transform="rotate(28 177 244)"/>
+                <circle class="sc-head-w" cx="166" cy="247" r="9.5"/>
+                <path class="sc-arm" d="M176 265 L188 272 L195 261"/>
+                <ellipse class="sc-table-top" cx="196" cy="258" rx="14" ry="3.8"/>
+                <path class="sc-food" d="M187 257 a9 8 0 0 1 18 0 z"/>
+                <circle class="sc-leaf" cx="196" cy="247" r="2.6"/>
+                <path class="sc-vap v1" d="M192 242 q3 -4 0 -8 q-3 -4 0 -8"/>
+                <path class="sc-vap v2" d="M200 242 q3 -4 0 -8 q-3 -4 0 -8"/>
+              </g></g>
+
+              <!-- planta -->
+              <g transform="translate(44 4)"><g class="sc-plant">
+                <ellipse class="sc-leaf" cx="255" cy="228" rx="7" ry="12" transform="rotate(-22 255 228)"/>
+                <ellipse class="sc-leaf" cx="271" cy="228" rx="7" ry="12" transform="rotate(22 271 228)"/>
+                <ellipse class="sc-leaf" cx="263" cy="221" rx="8" ry="13"/>
+                <path class="sc-pot" d="M251 234 h24 l-3 16 h-18 z"/>
+              </g></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </section>
+  </main>
+</div>
+
+
+<section class="proof" id="testimonio">
+  <div class="wrap proof-inner">
+    <p class="proof-eyebrow">Cliente real</p>
+    <h2 class="proof-h">Karina ya lo usa en su restaurante</h2>
+    <p class="proof-sub">Lo cuenta ella misma, en su local, con sus palabras.</p>
+
+    <div class="proof-media">
+      <video id="karina-video" controls playsinline preload="none" poster="/landing/media/karina-poster.jpg"
+             aria-label="Testimonio de Karina, dueña de Karina Menú, sobre cómo usa Menú Pro">
+        <source src="/landing/media/karina-landing.mp4" type="video/mp4">
+        <track kind="captions" srclang="es" label="Español" src="/landing/media/karina.vtt">
+        Tu navegador no puede reproducir este video.
+      </video>
+      <button class="proof-play" id="karina-play" type="button" aria-label="Reproducir el testimonio de Karina">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>
+      </button>
     </div>
 
-    <!-- Navegación por secciones (chips sticky — parte del header). Scroll horizontal en móvil, centrados en desktop. -->
-    <div class="border-t border-gray-700/50">
-      <nav aria-label="Secciones de la página"
-           class="max-w-5xl mx-auto px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar md:justify-center">
-        <a href="#problema" class="flex-none inline-flex items-center whitespace-nowrap min-h-[44px] bg-white/5 hover:bg-white/10 border border-gray-600 hover:border-brand text-gray-200 hover:text-white text-sm font-medium px-4 rounded-full transition-colors">¿Qué soluciona?</a>
-        <a href="#tutorial" class="flex-none inline-flex items-center whitespace-nowrap min-h-[44px] bg-white/5 hover:bg-white/10 border border-gray-600 hover:border-brand text-gray-200 hover:text-white text-sm font-medium px-4 rounded-full transition-colors">¿Cómo se usa?</a>
-        <a href="#features" class="flex-none inline-flex items-center whitespace-nowrap min-h-[44px] bg-white/5 hover:bg-white/10 border border-gray-600 hover:border-brand text-gray-200 hover:text-white text-sm font-medium px-4 rounded-full transition-colors">¿Qué necesitas?</a>
-        <a href="#faq" class="flex-none inline-flex items-center whitespace-nowrap min-h-[44px] bg-white/5 hover:bg-white/10 border border-gray-600 hover:border-brand text-gray-200 hover:text-white text-sm font-medium px-4 rounded-full transition-colors">¿Tienes más preguntas?</a>
-      </nav>
+    <div class="proof-quotes">
+      <figure class="proof-quote">
+        <p>“Menú Pro me arregló la vida.”</p>
+        <cite>Karina · dueña de Karina Menú</cite>
+      </figure>
+      <figure class="proof-quote">
+        <p>“Ya no tengo necesidad de más personal.”</p>
+        <cite>Karina · dueña de Karina Menú</cite>
+      </figure>
     </div>
-  </nav>
+  </div>
+</section>
 
+<section class="shift" id="por-que">
+  <div class="wrap shift-inner">
+    <h2 class="shift-h">¿Tienes alguno de estos problemas?</h2>
+    <p class="shift-sub">Así te ayuda menupro.tech con cada uno.</p>
 
-  <!-- ═══════════════════════════════════════════
-       HERO
-  ═══════════════════════════════════════════ -->
-  <section class="relative bg-gray-900 text-white pt-16 pb-20 px-4 overflow-hidden">
-    <div class="gradient-mesh"><div class="blob-3"></div></div>
-    <div class="relative max-w-5xl mx-auto">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:gap-16">
+    <div class="shift-rows">
 
-        <!-- Texto -->
-        <div class="lg:flex-1">
-          <div class="flex flex-wrap gap-2 mb-5">
-            <span class="inline-block bg-brand/20 text-brand-light text-xs font-semibold px-3 py-1 rounded-full tracking-wide uppercase">
-              Para restaurantes que venden menú
-            </span>
-          </div>
-          <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight mb-5">
-            La aplicación que tu restaurante necesita:
-            <span class="text-brand">controla todo desde tu celular.</span>
-          </h1>
-          <p class="text-gray-400 text-lg leading-relaxed mb-8 max-w-lg">
-            Menupro es un sistema de pedidos, reservas y cocina para restaurantes que venden menú.
-            El cliente escanea un QR, pide desde su celular, y tú gestionas todo desde el tuyo.
-          </p>
-          <div class="flex flex-col sm:flex-row gap-3">
-            <a href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante.%20%C2%BFPodemos%20coordinar%20una%20demo%3F"
-               target="_blank" rel="noopener"
-               class="bg-brand hover:bg-brand-dark text-white font-bold px-6 py-3 rounded-xl text-base text-center transition-colors min-h-[52px] flex items-center justify-center gap-2">
-              Solicita un mes gratis de prueba sin compromiso
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-            </a>
-            <a href="/menu?restaurante=1&mesa=1"
-               target="_blank" rel="noopener"
-               class="border border-gray-600 hover:border-brand hover:text-white text-gray-300 font-semibold px-6 py-3 rounded-xl text-base text-center transition-colors min-h-[52px] flex items-center justify-center gap-2">
-              Ver cómo lo vería tu cliente
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-            </a>
-          </div>
-          <p class="text-gray-500 text-sm mt-4">
-            ¿Ya tienes cuenta?
-            <a href="/login" class="text-brand hover:text-brand-dark underline underline-offset-2 transition-colors">
-              Ingresar al sistema →
-            </a>
-          </p>
+      <div class="shift-row">
+        <div class="shift-before">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Antes</span>
+            <p class="shift-txt">Se toma el pedido anotándolo en un papel, o de memoria.</p>
+          </span>
         </div>
+        <span class="shift-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+        <div class="shift-after">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Ahora</span>
+            <p class="shift-txt">Lo ingresas directo en menupro.tech y lo tienes ahí, listo para revisar.</p>
+          </span>
+        </div>
+      </div>
 
-        <!-- Screenshot hero -->
-        <div class="lg:flex-shrink-0 flex justify-center mt-12 lg:mt-0">
-          <div class="hero-phone">
-            <div class="phone-frame">
-              <img src="/landing/screenshots/hero-menu-cliente.png"
-                   alt="Menú QR del cliente en celular"
-                   width="260">
+      <div class="shift-row">
+        <div class="shift-before">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Antes</span>
+            <p class="shift-txt">La cocina se entera del pedido a gritos, plato por plato.</p>
+          </span>
+        </div>
+        <span class="shift-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+        <div class="shift-after">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Ahora</span>
+            <p class="shift-txt">La cocina lo ve en su pantalla y marca cada plato apenas lo termina.</p>
+          </span>
+        </div>
+      </div>
+
+      <div class="shift-row">
+        <div class="shift-before">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Antes</span>
+            <p class="shift-txt">Cerrar el día es sumar boletas a mano, sin saber bien qué se vendió más.</p>
+          </span>
+        </div>
+        <span class="shift-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+        <div class="shift-after">
+          <span class="shift-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9"/>
+            </svg>
+          </span>
+          <span>
+            <span class="shift-tag">Ahora</span>
+            <p class="shift-txt">Al cerrar, ya tienes las ventas del día y qué se vendió más, sin sumar nada.</p>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="showcase" id="producto">
+  <div class="wrap showcase-inner">
+    <div class="devices" id="devices">
+
+      <div class="browser dev" aria-hidden="true">
+        <div class="b-bar">
+          <span class="b-dot"></span><span class="b-dot"></span><span class="b-dot"></span>
+          <span class="b-url">menupro.tech/owner</span>
+        </div>
+        <div class="b-body">
+          <div class="b-title">Cola del día</div>
+          <div class="b-cols">
+            <div class="b-col">
+              <span class="b-col-h">Pendientes <b>2</b></span>
+              <div class="b-chip">Mesa 4</div>
+              <div class="b-chip">Para llevar</div>
+            </div>
+            <div class="b-col">
+              <span class="b-col-h">En cocina <b>3</b></span>
+              <div class="b-chip">Mesa 7</div>
+              <div class="b-chip">Mesa 2</div>
+              <div class="b-chip">Mesa 9</div>
+            </div>
+            <div class="b-col">
+              <span class="b-col-h">Listos <b>1</b></span>
+              <div class="b-chip b-chip--ok">Mesa 1</div>
             </div>
           </div>
         </div>
-
       </div>
-    </div>
-  </section>
 
-
-  <!-- ═══════════════════════════════════════════
-       PROBLEMA
-  ═══════════════════════════════════════════ -->
-  <section id="problema" class="reveal bg-gray-50 py-20 px-4">
-    <div class="max-w-3xl mx-auto">
-      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
-        ¿Todavía gestionas todo<br class="hidden sm:block"> con cuaderno y WhatsApp?
-      </h2>
-      <p class="text-gray-500 text-lg mb-10">Cuatro problemas reales que Menupro resuelve desde el día uno.</p>
-
-      <div class="flex flex-col gap-5">
-
-        <div class="stagger card-lift bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start" style="--i:0">
-          <span class="text-3xl flex-shrink-0 mt-0.5">📋</span>
+      <div class="phone dev" aria-hidden="true">
+        <div class="phone-screen">
           <div>
-            <p class="font-bold text-gray-900 mb-1">El mozo olvida pedidos en hora pico</p>
-            <p class="text-gray-500 text-sm leading-relaxed">
-              Con Menupro los pedidos llegan directo del celular del cliente al panel de cocina.
-              Sin papelitos, sin gritos, sin olvidos.
-            </p>
+            <span class="m-rest">El Rincón de Meche</span>
+            <span class="m-day">Martes 9 &nbsp;·&nbsp; Menú del día</span>
           </div>
-        </div>
-
-        <div class="stagger card-lift bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start" style="--i:1">
-          <span class="text-3xl flex-shrink-0 mt-0.5">👨‍🍳</span>
-          <div>
-            <p class="font-bold text-gray-900 mb-1">La cocina no sabe qué preparar primero</p>
-            <p class="text-gray-500 text-sm leading-relaxed">
-              El panel de cocina muestra todos los pedidos ordenados por urgencia y hora de llegada.
-              El cocinero sabe exactamente qué va antes.
-            </p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start" style="--i:2">
-          <span class="text-3xl flex-shrink-0 mt-0.5">💬</span>
-          <div>
-            <p class="font-bold text-gray-900 mb-1">Las reservas por WhatsApp se pierden en el caos</p>
-            <p class="text-gray-500 text-sm leading-relaxed">
-              Cuando llegan muchas de golpe es imposible hacerles seguimiento.
-              Tus clientes reservan desde el QR y tú confirmas o rechazas con un toque — todo en un panel.
-            </p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex gap-4 items-start" style="--i:3">
-          <span class="text-3xl flex-shrink-0 mt-0.5">📊</span>
-          <div>
-            <p class="font-bold text-gray-900 mb-1">No sabes cuánto ganaste este mes</p>
-            <p class="text-gray-500 text-sm leading-relaxed">
-              El sistema lleva el historial completo de órdenes y reservas.
-              Tus ganancias del día, semana o mes están a un toque.
-            </p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ═══════════════════════════════════════════
-       TUTORIAL — ASÍ DE SIMPLE
-  ═══════════════════════════════════════════ -->
-  <section id="tutorial" class="reveal bg-white py-20 px-4">
-    <div class="max-w-5xl mx-auto">
-
-      <div class="text-center mb-14">
-        <span class="inline-block bg-brand/10 text-brand text-xs font-semibold px-3 py-1 rounded-full mb-3 uppercase tracking-wide">
-          Tutorial
-        </span>
-        <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Así de simple</h2>
-      </div>
-
-      <!-- Paso 1 -->
-      <div class="flex flex-col md:flex-row md:items-center gap-8 mb-16">
-        <div class="md:flex-1">
-          <div class="flex items-center gap-3 mb-3">
-            <span class="bg-brand text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">1</span>
-            <h3 class="text-xl font-bold text-gray-900">El cliente pide desde su celular</h3>
-          </div>
-          <p class="text-gray-500 leading-relaxed">
-            Pegas el QR en la mesa. El cliente lo escanea, ve el menú del día y la carta,
-            elige sus platos y confirma. Sin descargar nada, sin crear cuenta.
-          </p>
-        </div>
-        <div class="md:flex-shrink-0 flex justify-center md:justify-end">
-          <div class="phone-frame">
-            <img src="/landing/screenshots/paso1-cliente-elige.png"
-                 alt="Cliente eligiendo platos desde su celular"
-                 width="220">
-          </div>
-        </div>
-      </div>
-
-      <!-- Paso 2 -->
-      <div class="flex flex-col md:flex-row-reverse md:items-center gap-8 mb-16">
-        <div class="md:flex-1">
-          <div class="flex items-center gap-3 mb-3">
-            <span class="bg-brand text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">2</span>
-            <h3 class="text-xl font-bold text-gray-900">La cocina lo recibe en el momento</h3>
-          </div>
-          <p class="text-gray-500 leading-relaxed">
-            El pedido aparece al instante en el panel de cocina. Nada de gritos ni papelitos.
-            Cuando el plato está listo, el mozo recibe la señal.
-          </p>
-        </div>
-        <div class="md:flex-shrink-0 flex justify-center md:justify-start">
-          <div class="phone-frame">
-            <img src="/landing/screenshots/paso2-cocina-panel.png"
-                 alt="Panel de cocina con pedidos activos"
-                 width="220">
-          </div>
-        </div>
-      </div>
-
-      <!-- Paso 3 -->
-      <div class="flex flex-col md:flex-row md:items-center gap-8">
-        <div class="md:flex-1">
-          <div class="flex items-center gap-3 mb-3">
-            <span class="bg-brand text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">3</span>
-            <h3 class="text-xl font-bold text-gray-900">Cobras y cierras la mesa</h3>
-          </div>
-          <p class="text-gray-500 leading-relaxed">
-            El mozo marca el pedido como entregado, el cliente paga con Yape, Plin o efectivo,
-            y la orden pasa al historial. Tus ganancias del día, en tiempo real.
-          </p>
-        </div>
-        <div class="md:flex-shrink-0 flex justify-center md:justify-end">
-          <div class="phone-frame">
-            <img src="/landing/screenshots/paso3-cobrar.png"
-                 alt="Cola del día con tab por cobrar"
-                 width="220">
-          </div>
+          <div class="m-price">S/ 12<span>por menú</span></div>
+          <ul class="m-list">
+            <li><span class="m-tag">Entrada</span> Papa a la huancaína</li>
+            <li><span class="m-tag">Segundo</span> Lomo saltado <em>o</em> Ají de gallina</li>
+            <li><span class="m-tag">Postre</span> Mazamorra morada</li>
+            <li><span class="m-tag">Bebida</span> Chicha morada</li>
+          </ul>
+          <button class="m-cta" type="button" tabindex="-1">Pedir</button>
         </div>
       </div>
 
     </div>
-  </section>
+  </div>
+</section>
 
+<section class="about" id="que-es">
+  <div class="wrap about-inner">
+    <h2 class="about-h">¿Qué es menupro<span class="tld">.tech</span>?</h2>
+    <p class="about-p" lang="es">Menupro es una app móvil para restaurantes que venden menús. Te ayuda a atender a tus comensales de forma ordenada, sobre todo en las horas pico, para que todos se sientan bien atendidos y sin esperas largas. Su carta inteligente agiliza la toma de comandas, evita confusiones de pedidos entre los mozos y la cocina, y te deja un registro claro de tus ventas.</p>
+  </div>
+</section>
 
-  <!-- ═══════════════════════════════════════════
-       FEATURES — QUÉ INCLUYE
-  ═══════════════════════════════════════════ -->
-  <section id="features" class="reveal bg-gray-900 text-white py-20 px-4">
-    <div class="max-w-5xl mx-auto">
+<section class="flow" id="flujo">
+  <div class="wrap">
+    <h2 class="flow-h">Cómo funciona</h2>
+    <p class="flow-sub">Cada paso queda registrado en la app. Nadie anota en papel.</p>
 
-      <div class="text-center mb-14">
-        <h2 class="text-3xl sm:text-4xl font-extrabold mb-3">Todo lo que necesitas para empezar</h2>
-        <p class="text-gray-400 text-lg">Sin módulos extras, sin pagos adicionales por feature.</p>
-      </div>
+    <ol class="flow-steps">
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
-        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:0">
-          <span class="text-2xl flex-shrink-0">📱</span>
-          <div>
-            <p class="font-semibold mb-1">Menú QR para el cliente</p>
-            <p class="text-gray-400 text-sm">El cliente abre desde su celular. Sin app, sin cuenta.</p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:1">
-          <span class="text-2xl flex-shrink-0">🍽</span>
-          <div>
-            <p class="font-semibold mb-1">Pedidos y reservas</p>
-            <p class="text-gray-400 text-sm">Flujo completo: pide → cocina → entrega → cobro.</p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:2">
-          <span class="text-2xl flex-shrink-0">👨‍🍳</span>
-          <div>
-            <p class="font-semibold mb-1">Panel de cocina</p>
-            <p class="text-gray-400 text-sm">Vista unificada ordenada por urgencia y hora.</p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:3">
-          <span class="text-2xl flex-shrink-0">📋</span>
-          <div>
-            <p class="font-semibold mb-1">Kanban del día</p>
-            <p class="text-gray-400 text-sm">Pendientes → En cocina → Listos → Por cobrar.</p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:4">
-          <span class="text-2xl flex-shrink-0">💳</span>
-          <div>
-            <p class="font-semibold mb-1">Yape / Plin / Efectivo</p>
-            <p class="text-gray-400 text-sm">El cliente sube foto del comprobante al confirmar.</p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:5">
-          <span class="text-2xl flex-shrink-0">📊</span>
-          <div>
-            <p class="font-semibold mb-1">Reportes y ganancias</p>
-            <p class="text-gray-400 text-sm">Gráficas por día, semana o mes. Descarga Excel.</p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:6">
-          <span class="text-2xl flex-shrink-0">🔔</span>
-          <div>
-            <p class="font-semibold mb-1">Notificaciones push</p>
-            <p class="text-gray-400 text-sm">Avisa al celular aunque la app esté cerrada.</p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:7">
-          <span class="text-2xl flex-shrink-0">🗺</span>
-          <div>
-            <p class="font-semibold mb-1">Plano de mesas</p>
-            <p class="text-gray-400 text-sm">Estado en tiempo real: libre, ocupada o reservada.</p>
-          </div>
-        </div>
-
-        <div class="stagger card-lift bg-gray-800 rounded-2xl p-5 border border-gray-700 flex gap-4" style="--i:8">
-          <span class="text-2xl flex-shrink-0">📲</span>
-          <div>
-            <p class="font-semibold mb-1">Instala como app</p>
-            <p class="text-gray-400 text-sm">PWA: se instala en el celular sin Play Store.</p>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Screenshots secundarios -->
-      <div class="flex flex-wrap justify-center gap-6 mt-14">
-        <div class="phone-frame">
-          <img src="/landing/screenshots/feature-plano-mesas.png"
-               alt="Plano de mesas en tiempo real"
-               width="200">
-        </div>
-        <div class="phone-frame hidden sm:block">
-          <img src="/landing/screenshots/feature-reportes.png"
-               alt="Reportes y ganancias"
-               width="200">
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-
-  <!-- ═══════════════════════════════════════════
-       QUIÉN LO HACE
-  ═══════════════════════════════════════════ -->
-  <section class="reveal bg-brand-light py-20 px-4">
-    <div class="max-w-3xl mx-auto">
-
-      <div class="flex flex-col md:flex-row md:items-center gap-10">
-
-        <div class="md:flex-shrink-0 flex justify-center">
-          <div class="phone-frame">
-            <img src="/landing/screenshots/owner-panel.png"
-                 alt="Panel del dueño en celular"
-                 width="200">
-          </div>
-        </div>
-
-        <div>
-          <span class="inline-block bg-brand/15 text-brand text-xs font-semibold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">
-            Etapa de validación
-          </span>
-          <h2 class="text-3xl font-extrabold text-gray-900 mb-4 leading-tight">
-            Consíguelo gratis.<br>Soporte directo.
-          </h2>
-          <p class="text-gray-600 leading-relaxed mb-4">
-            Menupro está en etapa de validación: queremos probar que el sistema funciona
-            de verdad en un restaurante real — el tuyo. Por eso, durante esta etapa está
-            disponible gratis. Lo usas, nos das feedback, y mejoramos juntos.
-          </p>
-          <p class="text-gray-600 leading-relaxed">
-            Hay una persona real detrás de esto, disponible por WhatsApp.
-            Sin burocracia, sin tickets de soporte automatizado.
-          </p>
-        </div>
-
-      </div>
-
-    </div>
-  </section>
-
-
-  <!-- ═══════════════════════════════════════════
-       FAQ
-  ═══════════════════════════════════════════ -->
-  <section id="faq" class="reveal bg-white py-20 px-4">
-    <div class="max-w-2xl mx-auto">
-
-      <div class="text-center mb-12">
-        <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Preguntas frecuentes</h2>
-      </div>
-
-      <div class="flex flex-col gap-3">
-
-        <!-- FAQ 1 -->
-        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
-          <summary class="flex items-center justify-between gap-4 p-5">
-            <span class="font-semibold text-gray-900 text-sm">¿Necesito instalar algo en el restaurante?</span>
-            <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-body">
-            <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
-              No. Solo necesitas celular con internet. Ni computadora ni tablet obligatorio.
-            </p>
-          </div>
-        </details>
-
-        <!-- FAQ 2 -->
-        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
-          <summary class="flex items-center justify-between gap-4 p-5">
-            <span class="font-semibold text-gray-900 text-sm">¿El cliente necesita crear una cuenta para pedir?</span>
-            <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-body">
-            <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
-              No. El cliente abre el QR, pide y listo. Sin registros, sin contraseñas.
-            </p>
-          </div>
-        </details>
-
-        <!-- FAQ 3 -->
-        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
-          <summary class="flex items-center justify-between gap-4 p-5">
-            <span class="font-semibold text-gray-900 text-sm">¿Funciona sin internet?</span>
-            <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-body">
-            <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
-              El sistema necesita conexión para recibir pedidos. Cualquier celular con datos
-              o WiFi es suficiente.
-            </p>
-          </div>
-        </details>
-
-        <!-- FAQ 4 -->
-        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
-          <summary class="flex items-center justify-between gap-4 p-5">
-            <span class="font-semibold text-gray-900 text-sm">¿Qué pasa si tengo varios menús (universitario y ejecutivo)?</span>
-            <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-body">
-            <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
-              Puedes crear varios menús activos al mismo tiempo con precios distintos.
-              El cliente elige cuál quiere.
-            </p>
-          </div>
-        </details>
-
-        <!-- FAQ 5 -->
-        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
-          <summary class="flex items-center justify-between gap-4 p-5">
-            <span class="font-semibold text-gray-900 text-sm">¿Puedo usar Yape o Plin?</span>
-            <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-body">
-            <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
-              Sí. El sistema genera un botón que abre directo la app de Yape o Plin en el celular
-              del cliente con tu número precargado.
-            </p>
-          </div>
-        </details>
-
-        <!-- FAQ 6 -->
-        <details class="faq-item card-lift border border-gray-200 rounded-2xl overflow-hidden">
-          <summary class="flex items-center justify-between gap-4 p-5">
-            <span class="font-semibold text-gray-900 text-sm">¿Cuánto cuesta?</span>
-            <svg class="faq-chevron w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </summary>
-          <div class="faq-body">
-            <p class="px-5 pb-5 text-gray-500 text-sm leading-relaxed">
-              Durante la etapa de validación el sistema es gratis. Cuando pase a pago será
-              mes a mes, sin contrato de permanencia. Si no funciona para ti, listo.
-            </p>
-          </div>
-        </details>
-
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ═══════════════════════════════════════════
-       CTA FINAL
-  ═══════════════════════════════════════════ -->
-  <section class="reveal bg-gray-900 text-white py-20 px-4">
-    <div class="max-w-2xl mx-auto text-center">
-      <span class="inline-block bg-green-500/15 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-5 uppercase tracking-wide">
-        🎁 Primer mes gratis
-      </span>
-      <h2 class="text-3xl sm:text-4xl font-extrabold mb-4 leading-tight">
-        ¿Quieres probarlo en tu restaurante?
-      </h2>
-      <p class="text-gray-400 text-lg mb-8 leading-relaxed">
-        Los primeros restaurantes usan el sistema <strong class="text-white">gratis durante 1 mes</strong>.
-        Escríbeme por WhatsApp y coordinamos una demo de 15 minutos.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-3 justify-center">
-        <a href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante.%20%C2%BFPodemos%20coordinar%20una%20demo%3F"
-           target="_blank" rel="noopener"
-           class="inline-flex items-center justify-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-8 py-4 rounded-2xl text-base transition-colors min-h-[56px]">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-            <path d="M11.998 0C5.372 0 0 5.372 0 12c0 2.114.551 4.1 1.513 5.834L.057 23.268a.5.5 0 00.611.64l5.598-1.465A11.945 11.945 0 0011.998 24c6.626 0 12-5.372 12-12S18.624 0 11.998 0zm0 21.818a9.818 9.818 0 01-5.015-1.378l-.36-.213-3.722.976.994-3.624-.234-.373A9.818 9.818 0 012.18 12c0-5.417 4.403-9.818 9.818-9.818 5.416 0 9.818 4.401 9.818 9.818 0 5.416-4.402 9.818-9.818 9.818z"/>
+      <li class="step">
+        <span class="step-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <path d="M14 14h3v3M21 14v7h-7M17.5 20.5h.01"/>
           </svg>
-          Escribir por WhatsApp
-        </a>
-        <a href="/menu?restaurante=1&mesa=1"
-           target="_blank" rel="noopener"
-           class="inline-flex items-center justify-center gap-2 border border-gray-600 hover:border-brand text-gray-300 hover:text-white font-bold px-8 py-4 rounded-2xl text-base transition-colors min-h-[56px]">
-          Ver cómo lo vería tu cliente
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-        </a>
-      </div>
-      <p class="text-gray-600 text-sm mt-5">Sin compromiso · Respuesta en menos de 24 horas</p>
+        </span>
+        <span class="step-n">01</span>
+        <span class="step-t">QR</span>
+        <span class="step-d">El comensal escanea el código de su mesa.</span>
+      </li>
+
+      <li class="step">
+        <span class="step-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/>
+          </svg>
+        </span>
+        <span class="step-n">02</span>
+        <span class="step-t">Ir a la web</span>
+        <span class="step-d">Se abre la carta del día en su celular, sin instalar nada.</span>
+      </li>
+
+      <li class="step">
+        <span class="step-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 6h13M8 12h13M8 18h13"/>
+            <circle cx="3.6" cy="6" r="1.3"/><circle cx="3.6" cy="12" r="1.3"/><circle cx="3.6" cy="18" r="1.3"/>
+          </svg>
+        </span>
+        <span class="step-n">03</span>
+        <span class="step-t">Cola de pendientes</span>
+        <span class="step-d">El pedido entra a la cola del día y el mozo lo confirma.</span>
+      </li>
+
+      <li class="step">
+        <span class="step-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 10h16v3.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/>
+            <path d="M2.5 10h19"/>
+            <path d="M9 6.5c0-1.2 1-1.2 1-2.5M14 6.5c0-1.2 1-1.2 1-2.5"/>
+          </svg>
+        </span>
+        <span class="step-n">04</span>
+        <span class="step-t">Cocina</span>
+        <span class="step-d">La cocina ve cada plato y marca lo que va saliendo.</span>
+      </li>
+
+      <li class="step step--ok">
+        <span class="step-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M8 12.5l2.6 2.6L16 9"/>
+          </svg>
+        </span>
+        <span class="step-n">05</span>
+        <span class="step-t">Listos</span>
+        <span class="step-d">El mozo sabe al instante qué llevar a cada mesa.</span>
+      </li>
+
+      <li class="step">
+        <span class="step-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2.5" y="6" width="19" height="12" rx="2"/>
+            <circle cx="12" cy="12" r="2.6"/>
+            <path d="M6 9.5h.01M18 14.5h.01"/>
+          </svg>
+        </span>
+        <span class="step-n">06</span>
+        <span class="step-t">Cobranza</span>
+        <span class="step-d">Se cobra por Yape o efectivo y se cierra la mesa.</span>
+      </li>
+
+      <li class="step">
+        <span class="step-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4v16h16"/>
+            <path d="M8 17v-4M13 17V9M18 17v-6"/>
+          </svg>
+        </span>
+        <span class="step-n">07</span>
+        <span class="step-t">Estadísticas</span>
+        <span class="step-d">Ventas del día, platos más pedidos y horas pico.</span>
+      </li>
+
+    </ol>
+  </div>
+</section>
+
+<section class="features" id="funciones">
+  <div class="wrap">
+    <h2 class="feat-h">Todo lo que necesitas para empezar</h2>
+    <p class="feat-sub">Lo que tu restaurante usa desde el primer día, todo desde el celular.</p>
+    <ul class="feat-grid">
+      <li class="feat">
+        <span class="feat-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7M17.5 20.5h.01"/></svg>
+        </span>
+        <span class="feat-body">
+          <span class="feat-t">Menú QR para el cliente</span>
+          <span class="feat-d">El cliente abre desde su celular. Sin app, sin cuenta.</span>
+        </span>
+      </li>
+      <li class="feat">
+        <span class="feat-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><path d="M7 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1"/><path d="M8 12h8M8 16h5"/></svg>
+        </span>
+        <span class="feat-body">
+          <span class="feat-t">Pedidos y reservas</span>
+          <span class="feat-d">Flujo completo: pide → cocina → entrega → cobro.</span>
+        </span>
+      </li>
+      <li class="feat">
+        <span class="feat-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16v3.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/><path d="M2.5 10h19"/><path d="M9 6.5c0-1.2 1-1.2 1-2.5M14 6.5c0-1.2 1-1.2 1-2.5"/></svg>
+        </span>
+        <span class="feat-body">
+          <span class="feat-t">Panel de cocina</span>
+          <span class="feat-d">Vista unificada ordenada por urgencia y hora.</span>
+        </span>
+      </li>
+      <li class="feat">
+        <span class="feat-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        </span>
+        <span class="feat-body">
+          <span class="feat-t">Para llevar o en el local</span>
+          <span class="feat-d">El cliente elige cómo lo quiere y el cobro ya incluye el tapper.</span>
+        </span>
+      </li>
+      <li class="feat">
+        <span class="feat-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5h.01M18 14.5h.01"/></svg>
+        </span>
+        <span class="feat-body">
+          <span class="feat-t">Yape / Plin / Efectivo</span>
+          <span class="feat-d">El cliente sube la foto del comprobante al confirmar.</span>
+        </span>
+      </li>
+      <li class="feat">
+        <span class="feat-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="M8 17v-4M13 17V9M18 17v-6"/></svg>
+        </span>
+        <span class="feat-body">
+          <span class="feat-t">Reportes y ganancias</span>
+          <span class="feat-d">Gráficas por día, semana o mes, y descarga a Excel.</span>
+        </span>
+      </li>
+      <li class="feat">
+        <span class="feat-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg>
+        </span>
+        <span class="feat-body">
+          <span class="feat-t">Notificaciones push</span>
+          <span class="feat-d">Avisa al celular aunque la app esté cerrada.</span>
+        </span>
+      </li>
+      <li class="feat">
+        <span class="feat-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="3.5"/><circle cx="17" cy="7" r="3.5"/><circle cx="7" cy="17" r="3.5"/><circle cx="17" cy="17" r="3.5"/></svg>
+        </span>
+        <span class="feat-body">
+          <span class="feat-t">Plano de mesas</span>
+          <span class="feat-d">Estado en tiempo real: libre, ocupada o reservada.</span>
+        </span>
+      </li>
+      <li class="feat">
+        <span class="feat-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M12 8v6M9.5 11.5 12 14l2.5-2.5"/></svg>
+        </span>
+        <span class="feat-body">
+          <span class="feat-t">Instala como app</span>
+          <span class="feat-d">Se instala en el celular sin pasar por la Play Store.</span>
+        </span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+
+
+<section class="closing" id="probar">
+  <div class="wrap closing-inner">
+    <h2 class="closing-h">¿Quieres probarlo en tu restaurante?</h2>
+    <p class="closing-p">Primer mes gratis, sin compromiso. Escríbenos por WhatsApp y coordinamos una demo de 15 minutos.</p>
+    <div class="closing-actions">
+      <a class="btn btn--primary" href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante.%20%C2%BFPodemos%20coordinar%20una%20demo%3F" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.9 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5z"/></svg>
+        Escribir por WhatsApp
+      </a>
+      <a class="btn btn--ghost" href="/menu?restaurante=1&amp;mesa=1" target="_blank" rel="noopener">Ver cómo lo vería tu cliente</a>
     </div>
-  </section>
+    <p class="closing-note">Precio fijo por restaurante, no por venta.</p>
+  </div>
+</section>
 
-
-  <!-- ═══════════════════════════════════════════
-       FOOTER
-  ═══════════════════════════════════════════ -->
-  <footer class="bg-gray-950 text-gray-500 py-10 px-4">
-    <div class="max-w-5xl mx-auto">
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
-
-        <div class="text-center sm:text-left">
-          <a href="/" class="text-white font-bold text-lg tracking-tight">
-            menu<span class="text-brand">pro</span>
-          </a>
-          <p class="text-sm mt-1">Sistema de pedidos para restaurantes</p>
-        </div>
-
-        <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-sm">
-          <a href="/manuales" class="hover:text-white transition-colors">Manuales</a>
-          <a href="/login" class="hover:text-white transition-colors">Ingresar</a>
-          <a href="mailto:hola@menupro.tech" class="hover:text-white transition-colors flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            Contacto
-          </a>
-          <a href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante."
-             target="_blank" rel="noopener"
-             class="hover:text-white transition-colors flex items-center gap-1.5" aria-label="WhatsApp">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-              <path d="M11.998 0C5.372 0 0 5.372 0 12c0 2.114.551 4.1 1.513 5.834L.057 23.268a.5.5 0 00.611.64l5.598-1.465A11.945 11.945 0 0011.998 24c6.626 0 12-5.372 12-12S18.624 0 11.998 0zm0 21.818a9.818 9.818 0 01-5.015-1.378l-.36-.213-3.722.976.994-3.624-.234-.373A9.818 9.818 0 012.18 12c0-5.417 4.403-9.818 9.818-9.818 5.416 0 9.818 4.401 9.818 9.818 0 5.416-4.402 9.818-9.818 9.818z"/>
-            </svg>
-            WhatsApp
-          </a>
-        </div>
-      </div>
-
-      <div class="border-t border-gray-800 mt-8 pt-6 text-xs text-gray-600 text-center">
-        © <span id="year"></span> Menupro · Hecho en Perú 🇵🇪
-      </div>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div class="foot-brand">
+      <span class="foot-mark">MENUPRO<span class="dot">.</span><span class="tld">TECH</span></span>
+      <p class="foot-tag">Sistema de pedidos para restaurantes</p>
     </div>
-  </footer>
+    <nav class="foot-links" aria-label="Enlaces del pie">
+      <a href="/manuales" target="_blank" rel="noopener">Manuales</a>
+      <a href="/login">Ingresar</a>
+      <a href="mailto:hola@menupro.tech">Contacto</a>
+      <a href="https://wa.me/51921340185?text=Hola%2C%20me%20interesa%20probar%20Menupro%20en%20mi%20restaurante." target="_blank" rel="noopener">WhatsApp</a>
+    </nav>
+  </div>
+  <div class="wrap foot-legal">
+    <span>© <span id="year">2026</span> Menupro · Hecho en Perú</span>
+    <span>Hecho con inteligencia artificial, diseñado y cuidado por una persona.</span>
+  </div>
+</footer>
 
+<script>
+  document.documentElement.classList.add("js");
 
-  <!-- ═══════════════════════════════════════════
-       SCRIPTS — animaciones on-scroll + nav shrink
-  ═══════════════════════════════════════════ -->
-  <script>
-    // Año dinámico del footer
-    document.getElementById('year').textContent = new Date().getFullYear();
+  /* año del pie */
+  (function () {
+    var y = document.getElementById("year");
+    if (y) y.textContent = new Date().getFullYear();
+  })();
 
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* MENUPRO.TECH: aparición al cargar + onda de desenfoque al pasar el mouse */
+  (function () {
+    var wm = document.querySelector(".wordmark");
+    if (!wm) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    // ── Animaciones on-scroll (IntersectionObserver) ──
-    if (!reduceMotion && 'IntersectionObserver' in window) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in-view');
-            io.unobserve(e.target);
-          }
-        });
-      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-      document.querySelectorAll('.reveal').forEach((s) => io.observe(s));
-    } else {
-      // Sin animación: mostrar todo de inmediato
-      document.querySelectorAll('.reveal').forEach((s) => s.classList.add('in-view'));
+    /* se parte en letras para que el desenfoque del hover corra de izquierda a derecha */
+    var text = "MENUPRO.TECH";
+    var html = "";
+    for (var i = 0; i < text.length; i++) {
+      var c = text.charAt(i);
+      var cls = "ch" + (c === "." ? " dot" : i >= 8 ? " tld" : "");
+      html += '<span class="' + cls + '" style="--i:' + i + '">' + c + '</span>';
+    }
+    wm.innerHTML = html;
+
+    wm.addEventListener("animationend", function (e) {
+      if (e.animationName === "wordmarkIn") wm.classList.remove("in");
+    });
+    wm.classList.add("in");
+
+    /* repetir la onda de desenfoque en automático cada 10 s: en móvil no hay
+       hover, así el título no se queda estático */
+    var SWEEP_MS = 1100;   // 12 letras * 40 ms de stagger + 550 ms de animación
+    var heroVisible = true;
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        heroVisible = entries[0].isIntersecting;
+      }, { threshold: 0.4 }).observe(wm);
+    }
+    setInterval(function () {
+      if (document.hidden || !heroVisible) return;
+      wm.classList.add("sweep");
+      setTimeout(function () { wm.classList.remove("sweep"); }, SWEEP_MS);
+    }, 6000);
+  })();
+
+  /* frases rotativas del hero — editar libremente esta lista */
+  (function () {
+    var el = document.querySelector(".tagline");
+    if (!el) return;
+
+    var PHRASES = [
+      "Para restaurantes que venden menús",
+      "¿Tu restaurante todavía anota los pedidos en papel?",
+      "Para registrar mejor tus ventas del día",
+      "Para ordenar la hora punta sin perder un pedido",
+      "Que la cocina y el mozo hablen el mismo idioma",
+      "El menú del día, sin papeles",
+      "¿Sabes qué plato vende más?",
+      "De la mesa a la caja, sin comandas perdidas"
+    ];
+
+    /* envuelve el texto en un span para poder animar el cambio */
+    var span = document.createElement("span");
+    span.className = "t-txt";
+    el.textContent = "";
+    el.appendChild(span);
+
+    /* al cargar / recargar: arranca en una frase al azar */
+    var i = Math.floor(Math.random() * PHRASES.length);
+    span.textContent = PHRASES[i];
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    var visible = true;
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (e) { visible = e[0].isIntersecting; },
+        { threshold: 0.2 }).observe(el);
     }
 
-    // ── Nav glassmorphism shrink al scrollear ──
-    const nav = document.getElementById('nav');
-    let ticking = false;
-    function onScroll() {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          nav.classList.toggle('nav-shrunk', window.scrollY > 80);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-  </script>
+    /* cada 9 s cambia a la siguiente, con desenfoque + fundido */
+    setInterval(function () {
+      if (document.hidden || !visible) return;
+      i = (i + 1) % PHRASES.length;
+      el.classList.add("swapping");
+      setTimeout(function () {
+        span.textContent = PHRASES[i];
+        el.classList.remove("swapping");
+      }, 400);
+    }, 9000);
+  })();
 
+  (function () {
+    var devices = document.getElementById("devices");
+    if (!devices || !("IntersectionObserver" in window)) {
+      if (devices) devices.classList.add("is-visible");
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { devices.classList.add("is-visible"); io.disconnect(); }
+      });
+    }, { threshold: 0.2 });
+    io.observe(devices);
+  })();
+
+  /* video de Karina: botón de play propio; vuelve a aparecer al terminar */
+  (function () {
+    var v = document.getElementById("karina-video");
+    var b = document.getElementById("karina-play");
+    if (!v || !b) return;
+    b.addEventListener("click", function () {
+      if (v.ended) v.currentTime = 0;
+      v.play();
+    });
+    v.addEventListener("play", function () { b.hidden = true; });
+    v.addEventListener("ended", function () { b.hidden = false; });
+  })();
+</script>
 </body>
 </html>

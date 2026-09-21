@@ -26,6 +26,47 @@ del Gap 8 (ISS-093).
 
 ## ▶️ PRÓXIMO — retomar el 2026-09-09: landing nueva (diseño en artifact)
 
+**Actualización 2026-09-21 (artifact versión 43) — la landing quedó lista para lanzar; falta portarla.**
+Decisiones tomadas con el usuario en esta sesión:
+
+- **Precios OCULTOS en la landing pública por ahora** (sección `#precios` con `hidden` en el mockup,
+  se reactiva quitando el atributo). Razones: solo hay un dato real de mercado y es especial (Karina
+  paga S/250 con funciones Premium; una tabla pública diría Premium = S/300 en su mismo vecindario),
+  el gating Básico/Pro/Premium aún no está en el código (P1) y falta el análisis de competencia
+  (restaurant.pe). El precio se cotiza en la demo. **Se muestran cuando:** (1) el gating esté en el
+  código, (2) haya ≥5 clientes pagando, (3) se haya revisado la competencia. Se conserva el mensaje
+  "precio fijo por restaurante, no por venta" en el cierre, sin cifras.
+- **Cabecera fija** con "Ver demo" (`/menu?restaurante=1&mesa=1`), "Ingresar" (`/login`) y botón
+  "Probar gratis" (WhatsApp `51921340185`, mismo mensaje de siempre). En celular solo Ingresar + Probar
+  gratis (probado a 360 px, sin scroll lateral).
+- **Nueva sección de funciones** ("Todo lo que necesitas para empezar", 9 celdas con íconos de línea).
+  Sin la promesa "sin pagos adicionales por feature" (chocaría con los planes). "Kanban del día" se
+  cambió por "Para llevar o en el local" (ya está en el flujo de 7 pasos).
+- **Cierre con CTA** antes del pie: "¿Quieres probarlo en tu restaurante? Primer mes gratis…".
+- **Video de Karina en la zona 2** (justo después del hero). Se queda alojado en la propia landing
+  (11 MB, `preload="none"` + póster: solo pesa si lo tocan) **y además se sube al canal de YouTube**.
+- **YouTube para la zona de videos (a construir poco a poco):** los tutoriales van al canal (streaming
+  adaptativo con datos móviles, subtítulos —ya existe el `.vtt`—, enlaces que se ven bien en WhatsApp,
+  canal que crece solo). Se incrustan con *fachada* (miniatura + play; el iframe `youtube-nocookie` con
+  `rel=0` carga solo al tocar) para no cargar JS de YouTube al abrir la landing. **No armar la zona de
+  videos hasta tener 2–3 videos** (una sección vacía resta). Primeros videos, con datos demo y no de
+  clientes: cómo pide el comensal por QR, cómo ve la cocina los pedidos, cobrar y cerrar el día. El
+  artifact bloquea iframes externos, así que la fachada solo se puede probar ya en `public/`.
+- **✅ Portada a `public/landing.html` el 2026-09-21 (pendiente de commit y deploy del usuario).** Se
+  genera con `node scripts/build-landing.js` desde el mockup (rutas relativas, video en
+  `public/landing/media/` —**sí va en git**, 11 MB—, Open Graph + favicon, precios omitidos del HTML).
+  Se agregó al pie Manuales · Ingresar · Contacto · WhatsApp (los de la landing anterior). El SW deja pasar
+  `Range`/`.mp4` sin cachear. Verificado en local: 200 en todas las rutas, video `206` y reproduciendo,
+  sin errores de consola ni bloqueos CSP, sin scroll lateral a 360/390/1280 px, 524/524 jest.
+- **Pendiente antes/después del deploy:** (1) probar en un celular real (Android gama media) con datos
+  móviles; (2) **verificar que el restaurante `id=1` de producción muestre un menú presentable**: es el
+  destino de "Ver demo" (ver `deploy.md` §10.1 — puede ser Karina Menú y no un demo sembrado);
+  (3) confirmar con el usuario las 3 frases dudosas de los subtítulos (ver `status.md`); (4) crear el
+  canal de YouTube; (5) para la fachada de YouTube habrá que ampliar la CSP de `app.js`
+  (`frame-src https://www.youtube-nocookie.com` e `img-src https://i.ytimg.com`, hoy el servidor solo
+  permite recursos propios, Google Fonts y unos CDN); (6) opcional: enlace a `/terminos.html` en el pie
+  (la landing anterior no lo tenía).
+
 **Tarea inmediata acordada con el usuario (2026-09-08):** continuar el diseño de la landing
 premium **primero en el artifact**, antes de tocar `public/landing.html`.
 
@@ -43,6 +84,12 @@ premium **primero en el artifact**, antes de tocar `public/landing.html`.
   tabla de precios Básico/Pro/Premium (ya sin bloqueo — precios cerrados 2026-09-16) · FAQ
   (hardware, wifi caído, tiempo de montaje) · CTA + WhatsApp. Reemplazar las maquetas dibujadas por
   capturas reales del piloto cuando estén.
+- **✅ Video de Karina Menú — grabado, editado (66 s, 720p, 11 MB) e integrado en el mockup el
+  2026-09-21** (sección `#testimonio` del artifact; ver `status.md`). Quedó como testimonio a cámara +
+  insertos reales; **faltan** los comensales opinando y la versión vertical 9:16 (el usuario pidió solo
+  horizontal por ahora). Pendiente: llevarlo a `public/landing.html` (donde vive el hosting real del MP4 —
+  decidir si va en `public/` o en almacenamiento aparte) y confirmar con el usuario 3 frases dudosas de
+  los subtítulos (listadas en `status.md`). Plan original del video:
 - **Video de Karina Menú** (a grabar la semana del 2026-09-16, guion revisado con el usuario):
   ella hablando de su experiencia (nombre + "uso Menú Pro" + qué mejoró, evitar precisar un número
   exacto de meses de uso) + ella usándolo en servicio (cocina → listos → mesa) + un comensal

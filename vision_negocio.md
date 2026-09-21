@@ -661,6 +661,13 @@ un cambio de estructura.
 > y frase del hero rotativa. Fondo del hero: la **aurora** (`hero-bg-a`) es la elegida; queda un
 > experimento de ilustración SVG de un restaurante (`hero--scene`). Detalle en `status.md`.
 >
+> **Avance 2026-09-21 — precios ocultos en la landing pública.** Decisión con el usuario: no publicar
+> la tabla Básico/Pro/Premium todavía (sigue en el mockup con `hidden`). Motivos: un solo dato de mercado
+> y es especial (Karina: features Premium a S/250 fijo), gating de planes aún no implementado, competencia
+> sin relevar. Se muestran al cumplirse: gating en código + ≥5 clientes pagando + revisión de competencia.
+> Mientras, el precio se cotiza en la demo por WhatsApp y el mensaje público es "primer mes gratis" y
+> "precio fijo por restaurante, no por venta". Detalle en `backlog.md` §PRÓXIMO.
+>
 > **Modelo VAN (2026-09-09):** `finanzas/van-menupro.html` + artifact
 > https://claude.ai/code/artifact/5c90b322-55f3-4e15-809d-64df906b6b42 — flujo de caja y VAN a 10
 > años, base para un futuro pitch a inversionista/aceleradora. Pendiente: análisis de competencia

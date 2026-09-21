@@ -97,6 +97,12 @@ self.addEventListener('fetch', e => {
   // El propio sw.js nunca se cachea: es lo que avisa que hay versión nueva.
   if (url.pathname === '/sw.js') return;
 
+  // Video y audio (el testimonio de la landing) van directo a la red: el <video>
+  // pide por tramos (cabecera `Range`) y una respuesta reenviada o cacheada por el
+  // SW puede romper la reproducción/adelantar en Safari. Además pesan ~11 MB: no
+  // deben ocupar el caché del SW.
+  if (e.request.headers.has('range') || /\.(mp4|webm|mp3|vtt)$/i.test(url.pathname)) return;
+
   // Los HTML son el punto de entrada y NO llevan `?v=` en la URL, así que son
   // los únicos que pueden quedar viejos en el caché. Se sirven del caché para
   // que la app abra rápido (T11) y se revalidan en segundo plano, de modo que

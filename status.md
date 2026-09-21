@@ -122,6 +122,80 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🎬 Sesión 2026-09-21 — video testimonial de Karina para la landing (borrador editado)
+
+**Prompt del usuario:** editar el video testimonial de Karina (primera clienta pagante) para la
+landing, usando la información de la web. Sesión sin cambios en el código de la app: el video
+se trabaja fuera del repo, en `C:\Users\pedro.rotta.s\Documents\audios\video_landing\`.
+
+**Qué se hizo:**
+- Transcripción con `faster-whisper` (instalado en `Documents\audios\.venv-ia`). El modelo `small` se
+  equivoca bastante con la voz separada ("Menú Pro" → "mi turo"); **el texto de los subtítulos lo
+  corrigió el usuario a mano** y con eso se armó el guion. Ver riesgos abajo.
+- Hallazgo: el original de WhatsApp es **848×478**; el `Proyecto de vídeo.mp4` de 192 MB / 1080p era ese
+  mismo video agrandado. Se trabajó desde el original y se exportó a **720p** (16 MB, 66,6 s).
+- Cortes solo en silencios reales (análisis de energía), sin cortar el audio donde Karina encadena
+  frases. Pausas recortadas; zoom alterno 100 % / 115 % en cada salto de contenido.
+- Piezas: gancho de apertura ("¿Todavía gestionas todo con cuaderno y WhatsApp?"), nombre en
+  pantalla ("Karina · Dueña de Karina Menú"), subtítulos quemados (Manrope, bloques ≤ 44 caracteres),
+  insertos (clip real de Karina tomando un pedido, foto de la cocina, tarjeta con la captura de
+  `paso2-cocina-panel.png`), marca "Menú Pro" discreta y cierre "Primer mes gratis · WhatsApp
+  921 340 185 · menupro.tech" (mismo CTA y número de `public/landing.html`).
+- Audio: voz `_ia` + `musica_fondo.mp3` a −22 dB bajo la voz (−11 dB en gancho y cierre), loudnorm −16 LUFS.
+
+**Archivos** (en `Documents\audios\video_landing\`): `karina_landing_720p.mp4`,
+`karina_landing_poster.jpg`, `karina_landing.vtt`, `editar_video.py` (todo el pipeline, re-ejecutable).
+
+**Integrado en el mockup (artifact `bb16c4fd-…`, versión 41):** sección nueva `#testimonio`
+("Karina ya lo usa en su restaurante") entre "¿Tienes alguno de estos problemas?" y el producto: video
+16:9 con póster (el fotograma del gancho), botón de play propio, y dos citas ("Menú Pro me arregló la
+vida" / "Ya no tengo necesidad de más personal"). Fuente: `landing/landing-concepto.html`. Para cumplir el
+límite de 15 MB por archivo binario de los artifacts, el MP4 se re-renderizó con CRF 25: **11,1 MB**
+(16,4 MB con CRF 22). Los medios viven en `landing/media/` (en `.gitignore`, no van al repo); el `.vtt` no se
+sirve en artifacts, así que el mockup no lleva `<track>` (los subtítulos ya van quemados). **No se vio
+renderizado en navegador** — revisar en el artifact que el video cargue y el play funcione en celular.
+
+**Ajustes del mismo día (artifact versión 42):** (1) el video pasó a la **zona 2**, justo después del
+título/hero y antes de "¿Tienes alguno de estos problemas?"; (2) SVG del hero: mesitas con comensales
+a escala 2 (antes ~1,0) para acercarlas a la proporción de la casa, **mesera llevando un plato** (con
+vapor y un pequeño rebote al caminar; estática en celular, como el resto de la escena), pizarra "Menú del
+día" más grande y a la izquierda, planta movida junto a la casa; viewBox pasó de `0 0 320 300` a
+`-10 0 340 320`. Verificado con una captura local (escritorio y celular).
+
+**Tanda final del día (artifact versión 43)** — TODO aprobado por el usuario: (1) sección de precios
+**oculta** (`hidden`), decisión y disparadores en `backlog.md` §PRÓXIMO y `vision_negocio.md` §16;
+(2) **cabecera fija** con Ver demo / Ingresar / Probar gratis (WhatsApp), nuevo token `--on-accent`
+para el texto sobre el botón en claro y oscuro; (3) **sección de funciones** (9 celdas, íconos de línea,
+una sola pieza con filetes) adaptada de la captura que le gustó al usuario, sin "sin pagos adicionales
+por feature"; (4) **cierre con CTA** antes del pie; (5) plan de **YouTube** documentado en `backlog.md`
+(sin código). Verificado con capturas locales (claro/oscuro, 1280 y 360 px) y sin scroll lateral (se
+recortó el resplandor del hero en celular con `overflow-x: clip`). **Sin verificar:** que los enlaces
+absolutos a `menupro.tech/menu` y `/login` abran desde el artifact, y el video con el reproductor real.
+**Portada a producción (misma sesión, pedido "deja los links del footer también"):**
+`scripts/build-landing.js` (nuevo) genera `public/landing.html` desde el mockup — documento completo
+con Open Graph, favicon, rutas relativas, video en `public/landing/media/` (sí va en git, 11 MB) y **sin
+la sección de precios** (se quita del HTML, no solo se oculta). El pie de la landing anterior se conservó
+y pasó al mockup (artifact versión 44): **Manuales · Ingresar · Contacto (mailto:hola@menupro.tech) ·
+WhatsApp** + © año + la frase de transparencia sobre IA (que cubre la entrada de `features.md`).
+`public/sw.js`: bypass de `Range` y `.mp4/.webm/.mp3/.vtt` (el video no pasa ni se cachea por el SW).
+Imagen para compartir `public/landing/og-menupro.jpg` (1200×630, del póster). **Verificación local:**
+servidor en puerto 3077 → `/`, `/menu`, `/login`, `/manuales`, póster, OG, íconos = 200; video `206`
+con `Content-Range` y reproduciendo (2,5 s en 3,5 s, duración 66,6 s); `.vtt` como `text/vtt`; 0 errores
+de consola y 0 bloqueos CSP en Chromium; sin scroll lateral a 360/390/1280; precios ausentes del DOM;
+**524/524 jest**. `deploy.md` §16 documenta que `public/landing.html` es generado. **Sin commit todavía**
+— archivos: `public/landing.html`, `public/sw.js`, `scripts/build-landing.js`, `public/landing/media/`,
+`public/landing/og-menupro.jpg`, `landing/landing-concepto.html`, `.gitignore` y los `.md`.
+**Deploy: pendiente y lo hace el usuario** (al commitear, preguntar si ya está desplegado).
+
+**Pendiente (el usuario ya vio el borrador y dijo "está bien"):** confirmar el texto dudoso —
+"me ahorró el tiempo" (R9), "definitivamente" en R4 (Whisper lo oye ahí, el usuario lo dictó en R10),
+"preparo y llevo el plato" (R8), y que se dejó fuera "porque … toda la toma de pedidos la hace"
+por no tener el texto. Después: copiar el MP4/póster a `public/` (o a un almacenamiento aparte, 16 MB
+no van al repo sin decidirlo), embeberlo en `landing-concepto.html` / `landing.html` con `<video
+poster preload="metadata" playsinline controls>` y agregar `<track>` con el `.vtt`.
+
+---
+
 ## 🎯 Sesión 2026-09-16 (2) — ISS-095: "Agregar manual" ahora marca para llevar
 
 **Prompt del usuario:** preguntó directo si en "Agregar manual" se podía indicar que un pedido es

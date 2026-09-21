@@ -925,6 +925,7 @@ pm2 restart menupro
 - **La BD SQLite no está en git** — los datos de producción solo existen en el servidor. Verificar backups antes de cualquier migración de esquema.
 - **Migraciones de BD** — `config/database.js` corre migraciones idempotentes al arrancar. Un `pm2 restart` después del `git pull` las aplica automáticamente.
 - **Las imágenes del bot** (`landing/bot/output/screenshots/`) están en `.gitignore`. Si se regeneran localmente, subirlas con `scp` manualmente.
+- **`public/landing.html` es un archivo GENERADO** (desde `landing/landing-concepto.html`, el mockup del artifact). Si se cambia el mockup, correr `node scripts/build-landing.js` **antes de commitear**; no editar `public/landing.html` a mano. El script quita la sección de precios del HTML público. El video del testimonio (~11 MB) vive en `public/landing/media/` y **sí va en git** (a diferencia de `landing/media/`, que es solo el origen local y está en `.gitignore`), así que el `git pull` lo trae; ese primer pull es más pesado que un deploy normal. Tras el deploy, verificar `https://menupro.tech/` y que el video avance (el servidor debe responder `206` a las peticiones con `Range`).
 - **VAPID keys** — no cambiarlas en producción a menos que sea estrictamente necesario. Si cambian, todos los dispositivos con push activo pierden la suscripción.
 - **SSL** — se renueva automáticamente con certbot. Para verificar: `certbot renew --dry-run`.
 

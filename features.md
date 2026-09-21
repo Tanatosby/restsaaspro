@@ -623,8 +623,22 @@ que antes). Se extrajo `utils/pushNotificaciones.js` como helper genérico de en
 `autoPreparacion.js` (refactor sin cambio de comportamiento), `routes/public.js` y el job nuevo.
 Tests: `tests/recordatorio-menu.test.js` (16 casos). **283/283 jest verde.**
 
+### Landing nueva — testimonio en video, cabecera con acciones y funciones (2026-09-21)
+*Generada por `scripts/build-landing.js` desde el mockup `landing/landing-concepto.html`. Pendiente de deploy.*
+
+Reemplaza la landing oscura en Tailwind. Estructura: cabecera fija (Ver demo · Ingresar · Probar gratis →
+WhatsApp) → hero con ilustración del restaurante (mesitas grandes + mesera con plato) → **video testimonial
+de Karina** (zona 2) → "¿Tienes alguno de estos problemas?" (antes/ahora) → producto → "¿Qué es
+menupro.tech?" → "Cómo funciona" (7 pasos) → "Todo lo que necesitas para empezar" (9 funciones) →
+cierre con CTA → pie (Manuales · Ingresar · Contacto · WhatsApp). Paleta papel/terracota/verde, Manrope +
+IBM Plex, tema claro y oscuro por `prefers-color-scheme`. **Los precios NO se publican** (decisión
+2026-09-21, ver `backlog.md` §PRÓXIMO): el script los quita del HTML de producción. Incluye etiquetas Open
+Graph (imagen `public/landing/og-menupro.jpg`) para que el link se vea bien al compartirlo por WhatsApp.
+`public/sw.js` ahora deja pasar directo a la red las peticiones `Range` y los `.mp4/.webm/.mp3/.vtt`.
+
 ### Landing — disclosure de transparencia sobre IA
-*Anotado 2026-07-16, pendiente de implementar.*
+*Anotado 2026-07-16. **Cubierto en la landing nueva (2026-09-21):** el pie dice "Hecho con inteligencia
+artificial, diseñado y cuidado por una persona." — ver el bloque de abajo, que sigue siendo el criterio.*
 
 `public/landing.html` debe decir en algún lugar visible que la aplicación fue desarrollada con
 Inteligencia Artificial, pero diseñada y monitoreada por una persona. Ver principio 9 en
