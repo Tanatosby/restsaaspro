@@ -473,6 +473,43 @@ pm2 status
 pm2 monit   # dashboard interactivo con CPU y RAM
 ```
 
+### Chequeo de salud del servidor (después de cada deploy y una vez por semana)
+
+`curl /health` solo dice que el proceso responde. Para saber que **todo** está bien, correr esto por SSH
+(es solo lectura, no cambia nada) y revisar contra la columna "Debe verse":
+
+```bash
+cd /var/www/menupro
+echo "== app ==";        pm2 status; curl -s localhost:3000/health; echo
+echo "== errores ==";    pm2 logs menupro --lines 60 --nostream --err
+echo "== recursos ==";   free -m; df -h /; uptime
+echo "== nginx/ssl =="; nginx -t; certbot certificates | grep -E "Domains|Expiry"
+echo "== backups ==";    ls -lh backups | tail -4; tail -4 /var/log/backup-menupro.log; crontab -l | grep backup
+echo "== firewall ==";   ufw status | head -10
+echo "== arranque ==";   systemctl is-enabled pm2-root
+echo "== git ==";        git log --oneline -2; git status --short | head
+```
+
+| Bloque | Debe verse |
+|---|---|
+| app | `online`; el contador `↺` **no sube solo** entre un chequeo y otro (sube +1 por cada `pm2 restart` tuyo; si sube sin que reinicies, la app se está cayendo); `/health` → `{"status":"ok"}` |
+| errores | sin `Error`/`SQLITE_`/`Unhandled` repetidos. Una línea suelta vieja no es problema |
+| recursos | RAM libre > 150 MB; disco usado < 80 % (el video, los backups y `uploads/` crecen) |
+| nginx/ssl | `syntax is ok` / `test is successful`; `Expiry Date` a más de 30 días |
+| backups | **hay un `.sqlite` de hoy con tamaño razonable** (no 0 KB) y el log no dice `No such file`. Ver §7: un backup que falla en silencio ya nos pasó una vez |
+| firewall | activo, con 22/80/443; el 3000 **no** abierto |
+| arranque | `enabled` (si no, tras reiniciar el servidor la app no vuelve sola: `pm2 save` + `pm2 startup`) |
+| git | último commit = el que desplegaste; sin archivos modificados a mano |
+
+**Desde afuera (sin SSH)** — lo puede correr cualquiera, incluido Claude Code: `https://menupro.tech/`,
+`/login`, `/menu?restaurante=1&mesa=1`, `/terminos.html` → 200; `curl -H "Range: bytes=0-1023"
+https://menupro.tech/landing/media/karina-landing.mp4` → `206`.
+
+**Pendientes de salud que hoy NO están cubiertos:** (1) un **aviso automático** si el sitio se cae
+(UptimeRobot u otro gratuito apuntando a `https://menupro.tech/health` cada 5 min, con aviso al correo o
+WhatsApp de Pedro) — hoy nos enteramos porque una dueña reclama; (2) el **restore de prueba** del backup
+(§7); (3) copia **externa** de los backups; (4) `PRAGMA integrity_check` periódico de la BD.
+
 ### Si la app se cae
 
 ```bash

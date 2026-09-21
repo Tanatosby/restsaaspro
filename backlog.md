@@ -52,15 +52,16 @@ Decisiones tomadas con el usuario en esta sesión:
   videos hasta tener 2–3 videos** (una sección vacía resta). Primeros videos, con datos demo y no de
   clientes: cómo pide el comensal por QR, cómo ve la cocina los pedidos, cobrar y cerrar el día. El
   artifact bloquea iframes externos, así que la fachada solo se puede probar ya en `public/`.
-- **✅ Portada a `public/landing.html` el 2026-09-21 (pendiente de commit y deploy del usuario).** Se
+- **✅ Portada a `public/landing.html` y DESPLEGADA el 2026-09-21 (`b5e471b..21859ce`).** Se
   genera con `node scripts/build-landing.js` desde el mockup (rutas relativas, video en
   `public/landing/media/` —**sí va en git**, 11 MB—, Open Graph + favicon, precios omitidos del HTML).
   Se agregó al pie Manuales · Ingresar · Contacto · WhatsApp (los de la landing anterior). El SW deja pasar
   `Range`/`.mp4` sin cachear. Verificado en local: 200 en todas las rutas, video `206` y reproduciendo,
   sin errores de consola ni bloqueos CSP, sin scroll lateral a 360/390/1280 px, 524/524 jest.
 - **Pendiente antes/después del deploy:** (1) probar en un celular real (Android gama media) con datos
-  móviles; (2) **verificar que el restaurante `id=1` de producción muestre un menú presentable**: es el
-  destino de "Ver demo" (ver `deploy.md` §10.1 — puede ser Karina Menú y no un demo sembrado);
+  móviles; (2) **activar un menú del día en el restaurante demo (`id=1`, "Restaurante Demo")**: es el destino de
+  "Ver demo" y hoy tiene carta pero `/api/public/menu?restaurante=1` devuelve `[]` — el visitante vería
+  la carta sin el "menú del día" que la landing promete (ver `deploy.md` §10.1);
   (3) confirmar con el usuario las 3 frases dudosas de los subtítulos (ver `status.md`); (4) crear el
   canal de YouTube; (5) para la fachada de YouTube habrá que ampliar la CSP de `app.js`
   (`frame-src https://www.youtube-nocookie.com` e `img-src https://i.ytimg.com`, hoy el servidor solo

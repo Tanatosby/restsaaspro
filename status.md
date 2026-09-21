@@ -2,7 +2,7 @@
 
 ---
 
-## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-16
+## 📍 DÓNDE ESTAMOS — actualizado el 2026-09-21
 
 **Lo que está en producción** — nueve deploys entre el 17 y el 21 de agosto, todos confirmados
 por el usuario:
@@ -38,6 +38,7 @@ por el usuario:
 | 2026-09-07 | `805fdd9..bda3610` | **ISS-088** — el resumen "Tu pedido" en la pantalla de pago se colapsa detrás de un link "Ver mi pedido" (antes quedaba siempre visible bajo el adjuntar-comprobante). `git pull` fast-forward, `pm2 restart` → online (↺ 66, mem 61.9 MB), `curl /health` → `{"status":"ok","uptime":2.9}`. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-08 | `bda3610..fdc9877` | **ISS-060** — acceso del pensionista a su pantalla: link "🧾 ¿Eres pensionista?" en el header de `menu.html` → `/login.html` (que ya redirige el rol a `/pensionista.html`) + botón "📲 Instalar app" en `pensionista.html` (oculto salvo que la PWA sea instalable). Frontend puro. `git pull` fast-forward, `pm2 restart` → online (↺ 67, mem 60.8 MB), `curl /health` → `{"status":"ok","uptime":2.8}`. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-13 | `fdc9877..b5e471b` | **Rediseño de la Cola completo:** **ISS-090** (pedidos de la app directo a cocina), **ISS-089** ("Por cobrar" por mesa con cobro en bloque), **ISS-093** (auto-merge apagado, con migración), **ISS-091** ("Listos" se vacía sola a los 3 min + `ordenes.listo_at` + poll a 20 s), aviso de cobro legible con "no volver a preguntar", **ISS-092** (nombre opcional en "Agregar manual") e **ISS-094** (mesas de una vez + mesa escrita en "Agregar manual"). Además, docs de landing y VAN. 52 archivos. `git pull` fast-forward, `pm2 restart` → online (↺ 68, mem 61.3 MB), `curl /health` → `{"status":"ok","uptime":2.8}`. Confirmado por el usuario (log de consola SSH). |
+| 2026-09-21 | `b5e471b..21859ce` | **Landing nueva** (video testimonial de Karina, cabecera con acciones, funciones, cierre con CTA, pie con Manuales · Términos · Ingresar · Contacto · WhatsApp; precios NO publicados; `public/landing.html` ahora se genera con `scripts/build-landing.js`; `sw.js` deja pasar `Range`/`.mp4` sin cachear) + **ISS-095** ("Agregar manual" marca para llevar) + planes Básico/Pro/Premium solo en docs. `git pull` fast-forward (30 archivos, primer pull de ~11 MB por el video), `pm2 restart` → online (↺ 69, mem 61.8 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). **Verificado desde afuera el mismo día:** `/`, póster, imagen OG, `/terminos.html`, `/manuales`, `/login` y `/menu?restaurante=1&mesa=1` = 200; video `206` con `Content-Range`; `.vtt` como `text/vtt`; HTTP→HTTPS 301; landing sin precios. **Ojo:** el `id=1` es "Restaurante Demo" (no Karina), con carta cargada pero **sin menú del día para hoy** (`/api/public/menu?restaurante=1` → `[]`). |
 
 **Deploy `b5e471b` confirmado el 2026-09-13.** Todo el rediseño de la Cola (ISS-089 a ISS-093) +
 ISS-094, en un solo deploy. **Sin verificar en uso real** — lo que hay que mirar con la dueña en
@@ -185,9 +186,9 @@ de consola y 0 bloqueos CSP en Chromium; sin scroll lateral a 360/390/1280; prec
 **524/524 jest**. `deploy.md` §16 documenta que `public/landing.html` es generado. **Sin commit todavía**
 — archivos: `public/landing.html`, `public/sw.js`, `scripts/build-landing.js`, `public/landing/media/`,
 `public/landing/og-menupro.jpg`, `landing/landing-concepto.html`, `.gitignore` y los `.md`.
-**Deploy: pendiente y lo hace el usuario** (al commitear, preguntar si ya está desplegado).
+**Desplegado el 2026-09-21** (`b5e471b..21859ce`, ver la tabla de arriba).
 Commit `a959d94` (landing) + commit siguiente con el enlace **Términos** en el pie (el usuario confirmó
-que `terminos.html` del 28-08 está bien). Pusheados a `main`; **falta que el usuario confirme el deploy**.
+que `terminos.html` del 28-08 está bien). Pusheados a `main` y desplegados el mismo día.
 
 **Pendiente (el usuario ya vio el borrador y dijo "está bien"):** confirmar el texto dudoso —
 "me ahorró el tiempo" (R9), "definitivamente" en R4 (Whisper lo oye ahí, el usuario lo dictó en R10),
@@ -229,7 +230,7 @@ regresión), `test-modalidad-mixta.js` 19/19 (sin regresión tras mover el cálc
 `scripts/test-iss095-manual-para-llevar.js` **19/19**. Detalle completo en
 [`issues/ISS-095-manual-para-llevar.md`](issues/ISS-095-manual-para-llevar.md).
 
-**Pendiente: deploy.**
+**Desplegado el 2026-09-21** (dentro de `b5e471b..21859ce`). Sin verificar todavía en uso real.
 
 ---
 
