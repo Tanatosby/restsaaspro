@@ -140,7 +140,8 @@ Desde afuera: `/.env`, `/.git/*`, `/database.sqlite`, `/backups/*`, `/package.js
    servidor siguen igual (500 + stack). Tests nuevos `tests/manejador-errores.test.js` (9 casos, incl. el ataque real contra Express;
    con el manejador viejo fallan 6). **jest 533/533**; verificado con servidor local: el ataque → `400`.
 2. **Sin swap** (957 MB de RAM, `Swap: 0`). El usuario creó `/swapfile` de 1 GB y lo activó con `swapon` (2026-09-21).
-   **Pendiente de confirmar:** que corrió la línea de `/etc/fstab` — sin ella el swap se pierde al reiniciar.
+   **✅ Confirmado:** también corrió `echo '/swapfile none swap sw 0 0' >> /etc/fstab`, así que el swap sobrevive al reinicio.
+   (Opcional sin hacer: `vm.swappiness=10`.)
 3. **El login dice `*** System restart required ***`** (115 días de uptime, kernel por actualizar). Pendiente: reinicio planificado de
    madrugada tras un backup manual (procedimiento en `deploy.md` §9).
 4. `scripts/backup.sh` existe solo en el servidor (`??` en su git): no subirlo al repo sin coordinar (rompería el `git pull`).
