@@ -482,11 +482,12 @@ pm2 monit   # dashboard interactivo con CPU y RAM
 cd /var/www/menupro
 echo "== app ==";        pm2 status; curl -s localhost:3000/health; echo
 echo "== errores ==";    pm2 logs menupro --lines 60 --nostream --err
-echo "== recursos ==";   free -m; df -h /; uptime
+echo "== recursos ==";   free -m; swapon --show; df -h /; uptime
 echo "== nginx/ssl =="; nginx -t; certbot certificates | grep -E "Domains|Expiry"
 echo "== backups ==";    ls -lh backups | tail -4; tail -4 /var/log/backup-menupro.log; crontab -l | grep backup
 echo "== firewall ==";   ufw status | head -10
 echo "== arranque ==";   systemctl is-enabled pm2-root
+echo "== reinicio ==";   ls /var/run/reboot-required 2>/dev/null; apt list --upgradable 2>/dev/null | head -5
 echo "== git ==";        git log --oneline -2; git status --short | head
 ```
 
@@ -494,12 +495,22 @@ echo "== git ==";        git log --oneline -2; git status --short | head
 |---|---|
 | app | `online`; el contador `↺` **no sube solo** entre un chequeo y otro (sube +1 por cada `pm2 restart` tuyo; si sube sin que reinicies, la app se está cayendo); `/health` → `{"status":"ok"}` |
 | errores | sin `Error`/`SQLITE_`/`Unhandled` repetidos. Una línea suelta vieja no es problema |
-| recursos | RAM libre > 150 MB; disco usado < 80 % (el video, los backups y `uploads/` crecen) |
+| recursos | `available` (no `free`) > 150 MB — Linux usa la RAM libre como caché, `free` bajo es normal; `/swapfile` de 1G visible en `swapon --show`; disco usado < 80 % (el video, los backups y `uploads/` crecen) |
 | nginx/ssl | `syntax is ok` / `test is successful`; `Expiry Date` a más de 30 días |
 | backups | **hay un `.sqlite` de hoy con tamaño razonable** (no 0 KB) y el log no dice `No such file`. Ver §7: un backup que falla en silencio ya nos pasó una vez |
 | firewall | activo, con 22/80/443; el 3000 **no** abierto |
 | arranque | `enabled` (si no, tras reiniciar el servidor la app no vuelve sola: `pm2 save` + `pm2 startup`) |
-| git | último commit = el que desplegaste; sin archivos modificados a mano |
+| reinicio | **no existe** `/var/run/reboot-required`. Si existe (o el login dice `*** System restart required ***`), hay actualizaciones del kernel pendientes: planificar el reinicio (ver abajo) |
+| git | último commit = el que desplegaste; sin archivos modificados a mano. `?? scripts/backup.sh` es esperado: ese script vive solo en el servidor (no subirlo al repo sin coordinar: un `git pull` se negaría a sobrescribirlo) |
+
+**Líneas `[400] GET /..%c0%af..%c0%af...env` en el log** = escáneres de internet buscando el `.env`. Son normales: la app
+los rechaza con 400 antes de tocar disco (`middleware/manejadorErrores.js`, desde 2026-09-21). Solo preocupa un `[ERROR]` con stack.
+Además cada 90 días el certificado se renueva solo; comprobarlo con `certbot renew --dry-run` cuando falten ~30 días.
+
+**Reinicio del servidor** (cuando pida `restart required`): hacerlo de noche, con el restaurante cerrado, y solo si el swap
+está en `/etc/fstab` (`grep swap /etc/fstab`). Antes: `/var/www/menupro/scripts/backup.sh`. Después de `reboot` y ~1 minuto:
+`pm2 status` (online), `curl -s localhost:3000/health`, `systemctl is-active nginx`, `swapon --show` y abrir `https://menupro.tech/`.
+Es viable sin sustos porque `pm2-root` está habilitado (la app arranca sola).
 
 **Desde afuera (sin SSH)** — lo puede correr cualquiera, incluido Claude Code: `https://menupro.tech/`,
 `/login`, `/menu?restaurante=1&mesa=1`, `/terminos.html` → 200; `curl -H "Range: bytes=0-1023"

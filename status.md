@@ -123,6 +123,33 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 🩺 Sesión 2026-09-21 (3) — primer chequeo de salud del servidor + manejador de errores 4xx
+
+**Prompt del usuario:** "¿cómo sé que todo está bien en el servidor?" → corrió el bloque de `deploy.md` §9 por SSH y
+pegó la salida; después pidió arreglar lo que salió y él hizo el swap.
+
+**Resultado del chequeo (2026-09-21 ~17:40 Lima):** ✅ `pm2` online (↺ 69, sin subir), `/health` ok, RAM `available` 510 MB de 957,
+disco 27 %, carga 0,07, nginx ok, certificado hasta el 2026-10-27 (35 días, válido), **backups diarios OK** (uno por noche a las 3:00,
+612 KB, el de hoy incluido, log sin errores), `ufw` solo 22/80/443, `pm2-root` enabled, servidor en `21859ce`.
+Desde afuera: `/.env`, `/.git/*`, `/database.sqlite`, `/backups/*`, `/package.json`, `/node_modules/*`, `/status.md`… todos **404**.
+
+**Hallazgos y qué se hizo:**
+1. **Ruido de escáneres en el error log** (`GET /..%c0%af..%c0%af...env` → 500 + stack de 12 líneas por intento). No filtraba nada pero
+   respondía 500 en vez de 400 y tapaba errores reales. **Arreglado:** nuevo `middleware/manejadorErrores.js` (lo usa `app.js`): los
+   errores 4xx del cliente responden su código con `{error:'Solicitud inválida'}` y dejan UNA línea `[400] …` en stdout; los errores de
+   servidor siguen igual (500 + stack). Tests nuevos `tests/manejador-errores.test.js` (9 casos, incl. el ataque real contra Express;
+   con el manejador viejo fallan 6). **jest 533/533**; verificado con servidor local: el ataque → `400`.
+2. **Sin swap** (957 MB de RAM, `Swap: 0`). El usuario creó `/swapfile` de 1 GB y lo activó con `swapon` (2026-09-21).
+   **Pendiente de confirmar:** que corrió la línea de `/etc/fstab` — sin ella el swap se pierde al reiniciar.
+3. **El login dice `*** System restart required ***`** (115 días de uptime, kernel por actualizar). Pendiente: reinicio planificado de
+   madrugada tras un backup manual (procedimiento en `deploy.md` §9).
+4. `scripts/backup.sh` existe solo en el servidor (`??` en su git): no subirlo al repo sin coordinar (rompería el `git pull`).
+5. Sigue sin cubrirse: aviso automático de caída (UptimeRobot → `/health`), restore de prueba del backup, copia externa de backups.
+
+**Pendiente: deploy** del manejador de errores (lo hace el usuario). El servidor quedó en `21859ce` y el repo en `83d95f3` + este commit.
+
+---
+
 ## 🎬 Sesión 2026-09-21 — video testimonial de Karina para la landing (borrador editado)
 
 **Prompt del usuario:** editar el video testimonial de Karina (primera clienta pagante) para la

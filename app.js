@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const path         = require('path');
 const fs           = require('fs');
 const logger       = require('./middleware/logger');
+const manejadorErrores = require('./middleware/manejadorErrores');
 const { BUILD }    = require('./utils/buildVersion');
 
 const webpush            = require('web-push');
@@ -209,11 +210,9 @@ app.get('/:slug', (req, res, next) => {
   res.redirect(`/menu?restaurante=${rest.id}`);
 });
 
-app.use((err, req, res, next) => {
-  console.error(`[ERROR] ${req.method} ${req.originalUrl} → ${err.message}`);
-  console.error(err.stack);
-  res.status(500).json({ error: 'Error interno del servidor' });
-});
+// Errores 4xx del cliente (URL mal formada de un escáner, JSON roto…) → su código y una línea de log;
+// errores reales del servidor → 500 con stack. Ver middleware/manejadorErrores.js
+app.use(manejadorErrores);
 
 // Iniciar job de auto-preparación de reservas (Gap 3)
 const db = require('./config/database');
