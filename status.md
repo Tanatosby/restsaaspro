@@ -40,6 +40,7 @@ por el usuario:
 | 2026-09-13 | `fdc9877..b5e471b` | **Rediseño de la Cola completo:** **ISS-090** (pedidos de la app directo a cocina), **ISS-089** ("Por cobrar" por mesa con cobro en bloque), **ISS-093** (auto-merge apagado, con migración), **ISS-091** ("Listos" se vacía sola a los 3 min + `ordenes.listo_at` + poll a 20 s), aviso de cobro legible con "no volver a preguntar", **ISS-092** (nombre opcional en "Agregar manual") e **ISS-094** (mesas de una vez + mesa escrita en "Agregar manual"). Además, docs de landing y VAN. 52 archivos. `git pull` fast-forward, `pm2 restart` → online (↺ 68, mem 61.3 MB), `curl /health` → `{"status":"ok","uptime":2.8}`. Confirmado por el usuario (log de consola SSH). |
 | 2026-09-21 | `b5e471b..21859ce` | **Landing nueva** (video testimonial de Karina, cabecera con acciones, funciones, cierre con CTA, pie con Manuales · Términos · Ingresar · Contacto · WhatsApp; precios NO publicados; `public/landing.html` ahora se genera con `scripts/build-landing.js`; `sw.js` deja pasar `Range`/`.mp4` sin cachear) + **ISS-095** ("Agregar manual" marca para llevar) + planes Básico/Pro/Premium solo en docs. `git pull` fast-forward (30 archivos, primer pull de ~11 MB por el video), `pm2 restart` → online (↺ 69, mem 61.8 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). **Verificado desde afuera el mismo día:** `/`, póster, imagen OG, `/terminos.html`, `/manuales`, `/login` y `/menu?restaurante=1&mesa=1` = 200; video `206` con `Content-Range`; `.vtt` como `text/vtt`; HTTP→HTTPS 301; landing sin precios. **Ojo:** el `id=1` es "Restaurante Demo" (no Karina), con carta cargada pero **sin menú del día para hoy** (`/api/public/menu?restaurante=1` → `[]`). |
 | 2026-09-21 (2) | `21859ce..4c27845` | **Manejador de errores 4xx** (`middleware/manejadorErrores.js`): las URLs mal formadas de escáneres (`..%c0%af...env`) responden 400 con una línea de log en vez de 500 + stack; tests `manejador-errores.test.js`. El resto son docs (chequeo de salud, swap). `git pull` fast-forward, `pm2 restart` → online (↺ 70, mem 62.4 MB), `curl /health` → `{"status":"ok"}`. Confirmado por el usuario (log de consola SSH). **Verificado desde afuera:** el ataque → `400 {"error":"Solicitud inválida"}`; `/`, `/login`, `/menu`, `/terminos.html` = 200, `/.env` = 404, video `206`. |
+| 2026-09-22 | `4c27845..02f0edd` | **Sección "producto" de la landing con 3 capturas reales** (Cola del día en escritorio + Menú del cliente y Cocina en celular, con datos de Karina Menú en local) reemplazando el mockup dibujado en CSS + `scripts/take-showcase-screenshots.js` y `scripts/crop-browser-chrome.py` (nuevos, no corren en el servidor — solo generaron las imágenes que sí se subieron). `git pull` fast-forward (11 archivos, ~3 MB), `pm2 restart` → online (↺ 71, mem 64.1 MB). `curl /health` **no imprimió salida en el pegado** (mismo patrón ya visto el 2026-09-02: el proceso quedó online igual, ver fila de esa fecha) — pendiente que el usuario confirme `curl /health` de nuevo o abra la landing desde afuera. Confirmado por el usuario (log de consola SSH). **Ojo:** las imágenes son capturas estáticas ya generadas — el deploy no toca los datos de producción; el `id=1` en el servidor sigue siendo "Restaurante Demo" (ver fila 2026-09-21), no Karina. |
 
 **Deploy `b5e471b` confirmado el 2026-09-13.** Todo el rediseño de la Cola (ISS-089 a ISS-093) +
 ISS-094, en un solo deploy. **Sin verificar en uso real** — lo que hay que mirar con la dueña en
@@ -178,7 +179,10 @@ min-width` para kanban de columnas). El "browser" del mockup usaba ese layout de
 `landing/bot/assets-web/{lomo-saltado-real,chicha-morada-real}.jpg`.
 **Modificados:** `landing/landing-concepto.html`, `public/landing.html`.
 
-**Sin commitear todavía** — pendiente de tu ok. **Pendiente: deploy** (no aplica hasta commitear).
+**Commiteado y pusheado** — `02f0edd` (incluye también la continuación de más abajo, las 3 capturas
+finales con Karina Menú). **Desplegado el 2026-09-22** (`4c27845..02f0edd`, ver la tabla de arriba).
+Confirmado por el usuario (log de consola SSH) — `curl /health` sin salida visible en el pegado,
+pero `pm2 status` ya mostraba online con memoria estable.
 
 ### Continuación (mismo día) — 3 capturas reales (Karina Menú), reemplazando las automáticas
 
@@ -214,7 +218,8 @@ panel **Cocina** en celular.
 **Archivos nuevos de esta parte:** `scripts/crop-browser-chrome.py`,
 `public/landing/screenshots/showcase-cola-desktop.png`,
 `public/landing/screenshots/showcase-cocina.png`.
-**Sigue sin commitear** — mismo pendiente que arriba.
+**Commiteado y pusheado junto con lo de arriba** — `02f0edd`, `git push origin main` OK.
+**Desplegado el 2026-09-22** junto con la parte de arriba, mismo commit.
 
 ---
 
