@@ -124,6 +124,100 @@ real al menos una vez, y copiar los backups a un lugar externo al servidor.
 
 ---
 
+## 📸 Sesión 2026-09-22 — sección "producto" de la landing con capturas reales (no mockup dibujado)
+
+**Prompt del usuario:** "se hizo la landing pero las imágenes no eran de la web, puedes tomar
+imágenes por la web para que se vea más realista, es la sección 4" → luego, para la captura de
+la Cola del día: "tienes que crear casos de pedidos para que se vea en la cola".
+
+**Diagnóstico:** la sección 4 (`showcase`, `id="producto"`) de `landing/landing-concepto.html`
+no tenía ninguna foto — era una recreación del navegador (`owner.html`) y el celular
+(`menu.html`) **dibujada a mano en HTML/CSS**, con datos inventados. De paso se confirmó algo
+que no estaba documentado en la landing: la app real **no tiene una vista de 3 columnas de
+escritorio** como mostraba el mockup — `panel-pedidos` es *tabs* (Pendientes/En cocina/Listos/Por
+cobrar) con badges de conteo, mobile-first en cualquier ancho de pantalla (no hay `@media
+min-width` para kanban de columnas). El "browser" del mockup usaba ese layout de fantasía.
+
+**Qué se hizo:**
+1. **`scripts/take-showcase-screenshots.js` (nuevo)** — levanta el server local, corre
+   `seed-demo-data.js` (ya existía; siembra pedidos reales en Pendientes/En cocina/Listos),
+   inicia sesión como owner, cierra el modal "Qué hay de nuevo" (bloqueaba los clicks), sube
+   fotos a los platos y toma 2 capturas con Playwright:
+   - `showcase-cola.png` — panel de pedidos (`owner.html`), tab **"En cocina"**, con el banner de
+     "pedidos de días anteriores sin cerrar" y el bottom-nav ocultos (ruido de datos de prueba /
+     se duplicaba al recortar el elemento).
+   - `showcase-menu.png` — `menu.html` (vista del cliente), viewport 390×844.
+2. **Las fotos de referencia de `landing/bot/assets/` son en su mayoría ilustraciones genéricas
+   generadas por Playwright, no fotos reales** (ya lo decía `status.md` más abajo: "papa-huancaina
+   real, resto placeholder Playwright" — se confirmó de nuevo al ver que la tarjeta seguía
+   pareciendo falsa pese a subir la foto). Se bajaron 2 fotos reales de **Wikimedia Commons** y se
+   subieron a `landing/bot/assets-web/` (nueva carpeta, sí versionada):
+   - `lomo-saltado-real.jpg` — Miguel Alan Córdova Silva, **CC BY-SA 4.0**.
+   - `chicha-morada-real.jpg` — young shanahan, **CC BY 2.0**.
+   El script las sube al plato "Lomo saltado" (fijado como portada del menú del día vía
+   `PATCH /api/menu/menus-dia/:id/portada`) y a "Chicha morada", para que la tarjeta del showcase
+   muestre comida real en vez del ícono genérico.
+3. **`landing/landing-concepto.html`** — sección `showcase`: se reemplazó el markup dibujado
+   (`.b-cols`, `.b-chip`, `.m-list`, etc., ya eliminados del CSS) por `<img class="b-shot">` /
+   `<img class="p-shot">` apuntando a `/landing/screenshots/showcase-{cola,menu}.png`, dentro de
+   los mismos frames `.browser`/`.phone` (se conserva la barra falsa "menupro.tech/owner" como
+   contexto). Se redujo el ancho de `.browser` (`min(560px,100%)` → `min(320px,100%)`): estaba
+   pensado para una captura ancha de escritorio; ahora aloja una captura vertical de celular real,
+   coherente con que la app es 100% mobile (sin vista de escritorio real que mostrar).
+4. `node scripts/build-landing.js` → regeneró `public/landing.html` (64.6 KB).
+5. Verificado con Claude in Chrome en `localhost:3000/landing.html`, viewport 1280×900: se ve
+   bien, capturas reales lado a lado, sin recortes raros. **No se pudo verificar el viewport
+   mobile con la herramienta del navegador** (`resize_window` no afectó la captura, limitación de
+   la extensión en esta sesión) — no se tocó la media query mobile existente (`column-reverse`,
+   `.browser{width:100%}`), y las imágenes usan `width:100%;height:auto` sin recorte ni
+   distorsión, así que debería heredar el comportamiento mobile-first ya probado del resto de la
+   página. **Pendiente para el usuario:** confirmar visualmente en su celular.
+
+**Archivos nuevos:** `scripts/take-showcase-screenshots.js`,
+`public/landing/screenshots/showcase-{cola,menu}.png`,
+`landing/bot/assets-web/{lomo-saltado-real,chicha-morada-real}.jpg`.
+**Modificados:** `landing/landing-concepto.html`, `public/landing.html`.
+
+**Sin commitear todavía** — pendiente de tu ok. **Pendiente: deploy** (no aplica hasta commitear).
+
+### Continuación (mismo día) — 3 capturas reales (Karina Menú), reemplazando las automáticas
+
+El usuario renombró el restaurante demo (`id=1`) de "Crisolito" a **"Karina Menu"** con owner
+**"María Dueña"** (para que el ejemplo de la landing sea la clienta piloto real) y pasó su propia
+captura de escritorio (`Downloads/pc.png`, tema oscuro, sidebar completo, panel Cola del día) con
+el pedido: "rehaz la foto con esta que es desktop y pon también una desde celular" → aclarado con
+`AskUserQuestion`: **3 fotos** — Cola del día en desktop (la suya) + `menu.html` en celular +
+panel **Cocina** en celular.
+
+**Qué se hizo:**
+1. **`scripts/crop-browser-chrome.py`** (nuevo) — recorta la barra de direcciones + la barra de
+   marcadores/extensiones de una captura de escritorio a mano, dejando solo la app. Aplicado a
+   `pc.png` → `public/landing/screenshots/showcase-cola-desktop.png`.
+2. **`scripts/take-showcase-screenshots.js`** simplificado: ya no genera la captura de la Cola del
+   día (la reemplaza la del usuario); ahora toma **2** capturas mobile con Playwright, ambas con
+   los datos de Karina Menú: `showcase-menu.png` (`menu.html`, sin cambios de lógica, solo
+   refleja el nombre nuevo) y **`showcase-cocina.png`** (nueva — panel "Cocina" de `owner.html`,
+   viewport 390×844, sin banners que ocultar).
+3. **`landing/landing-concepto.html`** — sección `showcase` rediseñada para 3 dispositivos: el
+   `.browser` (ahora `min(720px,100%)`, aspecto real de escritorio ~2.25:1) arriba, y un
+   `.phones-row` nuevo con los 2 celulares uno al lado del otro debajo. En mobile
+   (`column-reverse` ya existente) los celulares quedan arriba (se leen mejor a ese ancho) y el
+   desktop abajo; `.phone` bajó a `min(160px,46%)` en el media query mobile para que los 2 quepan
+   sin overflow a 360px.
+4. `node scripts/build-landing.js` → regenerado. Verificado en Chrome a 1280px: se ve bien, sin
+   overlaps. **No se verificó a 360px con la herramienta del navegador** (misma limitación de
+   `resize_window` de la sesión anterior) — igual que antes, no se tocó el mecanismo de reversión
+   mobile ya probado, solo los anchos.
+5. Se borró `public/landing/screenshots/showcase-cola.png` (la captura automática vieja, ya sin
+   referencias).
+
+**Archivos nuevos de esta parte:** `scripts/crop-browser-chrome.py`,
+`public/landing/screenshots/showcase-cola-desktop.png`,
+`public/landing/screenshots/showcase-cocina.png`.
+**Sigue sin commitear** — mismo pendiente que arriba.
+
+---
+
 ## 🩺 Sesión 2026-09-21 (3) — primer chequeo de salud del servidor + manejador de errores 4xx
 
 **Prompt del usuario:** "¿cómo sé que todo está bien en el servidor?" → corrió el bloque de `deploy.md` §9 por SSH y

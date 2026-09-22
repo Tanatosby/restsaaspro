@@ -361,11 +361,24 @@
     gap: clamp(2.5rem, 7vw, 4.5rem);
   }
 
+  /* 3 capturas reales: el escritorio (Cola del día, ancha) arriba, y los 2
+     celulares (Menú del cliente + Cocina) uno al lado del otro debajo. En
+     mobile se invierte el orden (los celulares primero, se leen mejor a ese
+     ancho; el escritorio queda como dato secundario). */
   .devices {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(1.5rem, 4vw, 2.5rem);
+    width: 100%;
+  }
+  .phones-row {
+    order: 2;
+    display: flex;
+    flex-wrap: wrap;
     align-items: flex-end;
     justify-content: center;
-    gap: clamp(1rem, 4vw, 3rem);
+    gap: clamp(1rem, 4vw, 2rem);
     width: 100%;
   }
 
@@ -377,12 +390,18 @@
       transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1);
     }
     html.js .devices.is-visible .dev { opacity: 1; transform: none; }
-    html.js .devices.is-visible .dev:nth-child(2) { transition-delay: .08s; }
+    html.js .devices.is-visible .phones-row .dev:nth-child(2) { transition-delay: .08s; }
   }
 
-  /* -- browser -- */
+  /* -- browser --
+     Captura real de owner.html (Cola del día, Karina Menú — clienta piloto),
+     tomada por el usuario en su propio navegador. Ancho real de escritorio
+     (~2.25:1) — es la única de las 3 pensada para pantalla grande; el resto
+     de la app es 100% mobile. La barra falsa de URL da contexto ("esto es la
+     web, no una app que hay que instalar"). */
   .browser {
-    width: min(560px, 100%);
+    order: 1;
+    width: min(720px, 100%);
     border: 1px solid var(--device-ln);
     border-radius: 16px;
     background: var(--device-bg);
@@ -401,39 +420,11 @@
     font-size: .72rem;
     color: var(--muted);
   }
-  .b-body { padding: clamp(1rem, 3.5vw, 1.6rem); }
-  .b-title {
-    font-family: "Manrope", sans-serif;
-    font-weight: 700;
-    font-size: 1.05rem;
-    margin-bottom: 1rem;
-  }
-  .b-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
-  .b-col { display: flex; flex-direction: column; gap: .5rem; }
-  .b-col-h {
-    font-size: .68rem;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .b-col-h b { color: var(--ink); font-weight: 600; }
-  .b-chip {
-    font-size: .78rem;
-    padding: .42rem .55rem;
-    border-radius: 8px;
-    background: var(--ground);
-    border: 1px solid var(--device-ln);
-    color: var(--ink);
-  }
-  .b-chip--ok {
-    color: var(--green);
-    border-color: color-mix(in srgb, var(--green) 35%, transparent);
-    background: color-mix(in srgb, var(--green) 10%, var(--ground));
-  }
+  .b-shot { display: block; width: 100%; height: auto; }
 
   /* -- phone -- */
   .phone {
-    width: min(228px, 58%);
+    width: min(220px, 44%);
     border: 1px solid var(--device-ln);
     border-radius: 26px;
     background: var(--device-bg);
@@ -443,65 +434,9 @@
   .phone-screen {
     border: 1px solid var(--device-ln);
     border-radius: 20px;
-    padding: 1.05rem .95rem 1.1rem;
-    display: flex;
-    flex-direction: column;
-    gap: .8rem;
+    overflow: hidden;
   }
-  .m-rest {
-    display: block;
-    font-family: "Manrope", sans-serif;
-    font-weight: 700;
-    font-size: 1rem;
-  }
-  .m-day {
-    display: block;
-    font-size: .72rem;
-    color: var(--muted);
-    margin-top: .15rem;
-  }
-  .m-price {
-    font-family: "Manrope", sans-serif;
-    font-weight: 800;
-    font-size: 1.7rem;
-    color: var(--accent);
-    line-height: 1;
-  }
-  .m-price span {
-    font-family: "IBM Plex Sans", sans-serif;
-    font-weight: 400;
-    font-size: .7rem;
-    color: var(--muted);
-    margin-left: .35rem;
-  }
-  .m-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
-  .m-list li {
-    font-size: .8rem;
-    padding-bottom: .5rem;
-    border-bottom: 1px solid var(--device-ln);
-  }
-  .m-list li:last-child { border-bottom: 0; padding-bottom: 0; }
-  .m-list em { color: var(--muted); font-style: normal; }
-  .m-tag {
-    display: inline-block;
-    min-width: 4.4rem;
-    font-size: .64rem;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .m-cta {
-    margin-top: .25rem;
-    border: 0;
-    border-radius: 11px;
-    background: var(--accent-br);
-    color: #fff;
-    font-family: "IBM Plex Sans", sans-serif;
-    font-weight: 600;
-    font-size: .92rem;
-    padding: .7rem 1rem;
-    cursor: pointer;
-  }
+  .p-shot { display: block; width: 100%; height: auto; }
 
   /* ============ ABOUT ============ */
   .about {
@@ -1204,10 +1139,10 @@
       opacity: .54;
     }
     .devices {
-      flex-direction: column-reverse;   /* el celular queda arriba */
+      flex-direction: column-reverse;   /* los celulares quedan arriba, se leen mejor */
       align-items: center;
     }
-    .phone { width: min(240px, 66%); }
+    .phone { width: min(160px, 46%); }  /* 2 celulares uno al lado del otro, sin overflow a 360px */
     .browser { width: 100%; }
 
     .shift-row { grid-template-columns: 1fr; }
@@ -1507,42 +1442,23 @@
           <span class="b-dot"></span><span class="b-dot"></span><span class="b-dot"></span>
           <span class="b-url">menupro.tech/owner</span>
         </div>
-        <div class="b-body">
-          <div class="b-title">Cola del día</div>
-          <div class="b-cols">
-            <div class="b-col">
-              <span class="b-col-h">Pendientes <b>2</b></span>
-              <div class="b-chip">Mesa 4</div>
-              <div class="b-chip">Para llevar</div>
-            </div>
-            <div class="b-col">
-              <span class="b-col-h">En cocina <b>3</b></span>
-              <div class="b-chip">Mesa 7</div>
-              <div class="b-chip">Mesa 2</div>
-              <div class="b-chip">Mesa 9</div>
-            </div>
-            <div class="b-col">
-              <span class="b-col-h">Listos <b>1</b></span>
-              <div class="b-chip b-chip--ok">Mesa 1</div>
-            </div>
-          </div>
-        </div>
+        <img class="b-shot" src="/landing/screenshots/showcase-cola-desktop.png"
+             alt="Cola del día de Karina Menú en menupro.tech, vista desde la computadora">
       </div>
 
-      <div class="phone dev" aria-hidden="true">
-        <div class="phone-screen">
-          <div>
-            <span class="m-rest">El Rincón de Meche</span>
-            <span class="m-day">Martes 9 &nbsp;·&nbsp; Menú del día</span>
+      <div class="phones-row">
+        <div class="phone dev" aria-hidden="true">
+          <div class="phone-screen">
+            <img class="p-shot" src="/landing/screenshots/showcase-menu.png"
+                 alt="Menú de Karina Menú desde el celular del cliente, con el menú del día y su precio">
           </div>
-          <div class="m-price">S/ 12<span>por menú</span></div>
-          <ul class="m-list">
-            <li><span class="m-tag">Entrada</span> Papa a la huancaína</li>
-            <li><span class="m-tag">Segundo</span> Lomo saltado <em>o</em> Ají de gallina</li>
-            <li><span class="m-tag">Postre</span> Mazamorra morada</li>
-            <li><span class="m-tag">Bebida</span> Chicha morada</li>
-          </ul>
-          <button class="m-cta" type="button" tabindex="-1">Pedir</button>
+        </div>
+
+        <div class="phone dev" aria-hidden="true">
+          <div class="phone-screen">
+            <img class="p-shot" src="/landing/screenshots/showcase-cocina.png"
+                 alt="Cola de Cocina desde el celular, con los pedidos en preparación">
+          </div>
         </div>
       </div>
 
